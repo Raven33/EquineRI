@@ -1,0 +1,175 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "clangcl-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "EQUINE_VULKAN_BACKEND": true,
+        "EQUINE_D3D12_BACKEND": true
+      }
+    },
+    {
+      "name": "clangcl-debug",
+      "displayName": "Clang-CL Debug",
+      "description": "Both backends, tests, and samples with clang-cl, Ninja, and sanitizers.",
+      "inherits": "clangcl-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EQUINE_BUILD_TESTS": true,
+        "EQUINE_BUILD_SAMPLES": true,
+        "EQUINE_VALIDATION": true
+      }
+    },
+    {
+      "name": "clangcl-release",
+      "displayName": "Clang-CL Release",
+      "description": "Both backends with release optimizations and sanitizers.",
+      "inherits": "clangcl-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EQUINE_BUILD_TESTS": false,
+        "EQUINE_BUILD_SAMPLES": true,
+        "EQUINE_VALIDATION": false
+      }
+    },
+    {
+      "name": "clangcl-bench",
+      "displayName": "Clang-CL Release Benchmark (no sanitizers)",
+      "description": "Optimized build without ASan/UBSan for measurement. Not a correctness configuration.",
+      "inherits": "clangcl-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EQUINE_SANITIZERS": false,
+        "EQUINE_BUILD_TESTS": true,
+        "EQUINE_BUILD_SAMPLES": true,
+        "EQUINE_VALIDATION": false
+      }
+    },
+    {
+      "name": "clang-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "EQUINE_VULKAN_BACKEND": true
+      }
+    },
+    {
+      "name": "clang-debug",
+      "displayName": "Clang Debug (Linux)",
+      "description": "Vulkan backend, tests, and samples with clang, Ninja, and sanitizers.",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EQUINE_BUILD_TESTS": true,
+        "EQUINE_BUILD_SAMPLES": true,
+        "EQUINE_VALIDATION": true
+      }
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang Release (Linux)",
+      "description": "Vulkan backend with release optimizations and sanitizers.",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EQUINE_BUILD_TESTS": false,
+        "EQUINE_BUILD_SAMPLES": true,
+        "EQUINE_VALIDATION": false
+      }
+    },
+    {
+      "name": "clang-bench",
+      "displayName": "Clang Release Benchmark (Linux, no sanitizers)",
+      "description": "Optimized build without ASan/UBSan for measurement. Not a correctness configuration.",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EQUINE_SANITIZERS": false,
+        "EQUINE_BUILD_TESTS": true,
+        "EQUINE_BUILD_SAMPLES": true,
+        "EQUINE_VALIDATION": false
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "clangcl-debug",
+      "configurePreset": "clangcl-debug"
+    },
+    {
+      "name": "clangcl-release",
+      "configurePreset": "clangcl-release"
+    },
+    {
+      "name": "clangcl-bench",
+      "configurePreset": "clangcl-bench"
+    },
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang-debug"
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang-release"
+    },
+    {
+      "name": "clang-bench",
+      "configurePreset": "clang-bench"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "clangcl-debug",
+      "configurePreset": "clangcl-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clangcl-bench",
+      "configurePreset": "clangcl-bench",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-bench",
+      "configurePreset": "clang-bench",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# Each preset builds into build/<presetName>. Point clangd at the debug tree
+# (use build/clang-debug on Linux).
+CompileFlags:
+  CompilationDatabase: build/clangcl-debug
