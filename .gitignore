@@ -1,0 +1,34 @@
+# Build trees (one per preset: build/<presetName>)
+/build/
+/build-*/
+/out/
+CMakeCache.txt
+CMakeFiles/
+_deps/
+
+# Compiled artefacts
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.spv
+*.dxil
+*.raddbgi
+
+# IDEs and tools
+.vs/
+.idea/
+.cache/
+.vscode/
+*.sln
+*.vcxproj*
+
+# Local agent instructions and generated maps
+AGENTS.md
+codemap.md
+/.slim/
