@@ -32,3 +32,11 @@ _deps/
 AGENTS.md
 codemap.md
 /.slim/
+
+# Documentation site (docs/site): Python venv, build output, generated files
+.venv/
+/docs/site/site/
+/docs/site/generated/
+/docs/site/docs/design-notes/decisions.md
+/docs/site/docs/about/coverage.md
+__pycache__/

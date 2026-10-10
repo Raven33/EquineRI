@@ -1,0 +1,144 @@
+# EquineRI documentation site (docs/DocsProposal.md). Build from the repository root:
+#   python -m venv .venv && .venv/bin/pip install -r docs/site/requirements.txt
+#   .venv/bin/mkdocs build --strict -f docs/site/mkdocs.yml     # output: docs/site/site/
+#   .venv/bin/mkdocs serve -f docs/site/mkdocs.yml               # live preview
+# The design documents in docs/*.md are not part of the site; CONTEXT.md is, as
+# the generated Design notes page.
+
+site_name: EquineRI
+site_description: A research rendering interface over Vulkan and Direct3D 12.
+docs_dir: docs
+site_dir: site
+# Offline browsing from file:// needs plain .html links.
+use_directory_urls: false
+strict: true
+
+theme:
+  name: material
+  language: en
+  icon:
+    logo: material/horse-variant
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link # one RI | Vulkan | D3D12 choice for every tab group on the site
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Follow the system theme
+
+extra:
+  # Version selector: versions are published with `mike` (latest + dev until v1).
+  version:
+    provider: mike
+    default: latest
+    alias: true
+
+hooks:
+  - hooks/equine_docs.py
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix # page.md (English), page.fr.md (French)
+      fallback_to_default: true # untranslated pages show the English text
+      reconfigure_material: true # adds the language toggle
+      reconfigure_search: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: fr
+          name: Français
+          build: true
+          site_description: Une interface de rendu pour la recherche, au-dessus de Vulkan et Direct3D 12.
+          nav_translations:
+            Home: Accueil
+            Getting started: Premiers pas
+            Build and test: Compiler et tester
+            Concepts: Concepts
+            The error channel: Le canal d'erreurs
+            Validation: Validation
+            Reference: Référence
+            Native access: Accès natif
+            Helpers: Aides
+            Design notes: Notes de conception
+            Decision log: Journal des décisions
+            About these docs: À propos de cette documentation
+            Writing pages: Écrire une page
+            Coverage: Couverture
+  - offline
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      # base_path is set to docs/site (absolute) by hooks/equine_docs.py.
+      # Missing includes never fail: the hook shows a placeholder instead.
+      check_paths: false
+      dedent_subsections: true
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Build and test: getting-started/build.md
+  - Concepts:
+      - The error channel: concepts/error-channel.md
+      - Validation: concepts/validation.md
+  - Reference:
+      - reference/index.md
+      - RI::listGpus: reference/listGpus.md
+      - RI::createDevice, RI::destroyDevice: reference/createDevice.md
+      - RI::Gpu: reference/Gpu.md
+      - RI::DeviceDesc, RI::Device: reference/DeviceDesc.md
+  - Native access:
+      - native/index.md
+      - "Vulkan: device creation": native/vulkan/device-creation.md
+      - "D3D12: device creation": native/d3d12/device-creation.md
+  - Helpers: helpers/index.md
+  - Design notes:
+      - design-notes/index.md
+      - Decision log: design-notes/decisions.md
+  - About these docs:
+      - Writing pages: about/writing-pages.md
+      - Coverage: about/coverage.md
