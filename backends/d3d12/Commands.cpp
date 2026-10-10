@@ -48,11 +48,16 @@ D3D12_BARRIER_SYNC syncOf(Stage stage) {
     return sync;
 }
 
-// Every access the stages can make (coarse barriers, P36).
+// The accesses a global barrier covers (coarse barriers, P36). Global
+// barriers cannot touch layouts, so they list only what textures at rest (A')
+// and buffers allow: shader reads and writes, copies, constant buffers,
+// indirect arguments. Attachment accesses are made visible by RI's own switch
+// back to rest at cmdEndRendering; textures resting in an attachment layout
+// see only ordered attachment writes. An empty set is NO_ACCESS (an execution
+// dependency), never COMMON.
 D3D12_BARRIER_ACCESS accessOf(Stage stage) {
-    // COMMON on one side only is invalid in a global barrier, so eAll lists every access.
     if ((stage & Stage::eAll) != Stage::eNone) {
-        stage = Stage::eCopy | Stage::eCompute | Stage::eIndirect | Stage::eRenderTarget | Stage::eDepthStencil;
+        stage = Stage::eCopy | Stage::eCompute | Stage::eIndirect | Stage::eVertex | Stage::ePixel;
     }
     D3D12_BARRIER_ACCESS access = D3D12_BARRIER_ACCESS_COMMON;
     if ((stage & Stage::eCopy) != Stage::eNone) {
@@ -62,16 +67,13 @@ D3D12_BARRIER_ACCESS accessOf(Stage stage) {
         access |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_SHADER_RESOURCE |
                   D3D12_BARRIER_ACCESS_CONSTANT_BUFFER;
     }
-    if ((stage & Stage::eRenderTarget) != Stage::eNone) {
-        access |= D3D12_BARRIER_ACCESS_RENDER_TARGET;
-    }
-    if ((stage & Stage::eDepthStencil) != Stage::eNone) {
-        access |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE;
+    if ((stage & Stage::eVertex) != Stage::eNone) {
+        access |= D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_INDEX_BUFFER;
     }
     if ((stage & Stage::eIndirect) != Stage::eNone) {
         access |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
     }
-    return access;
+    return access == D3D12_BARRIER_ACCESS_COMMON ? D3D12_BARRIER_ACCESS_NO_ACCESS : access;
 }
 
 uint64 completedValue(DeviceState &state) {
