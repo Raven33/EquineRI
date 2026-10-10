@@ -66,7 +66,9 @@ struct Fixture {
         heap = RI::createDescriptorHeap(device, {.resourceCount = 64});
         const uint64 bytes = kSize * kSize * 16;
         output = placeBuffer(device, gpu,
-                             {.size = bytes, .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc});
+                             {.size = bytes,
+                              .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc |
+                                       RI::BufferUsage::eCopyDst});
         result = placeBuffer(device, readback, {.size = bytes, .usage = RI::BufferUsage::eCopyDst});
         RI::writeDescriptors(device, heap,
                              {{.slot = kOutputSlot, .descriptor = RI::ReadWriteView{.buffer = output, .stride = 16}}});
