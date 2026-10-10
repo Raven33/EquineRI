@@ -91,7 +91,7 @@ void checkNotRendering(const CommandList &cmd, const char *call) {
 } // namespace
 
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
-    DeviceState &state = *cmd.internal.device;
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     checkNotRendering(cmd, "cmdBeginRendering");
     if (desc.colors.size() > 8) {
         reportError(ErrorCategory::eProgrammerError, "cmdBeginRendering: at most 8 color attachments");
