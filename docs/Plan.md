@@ -7,6 +7,10 @@ Rule for every milestone: small, testable, and ends with something the user runs
 hardware. Performance-affecting choices are measured together before they are fixed
 (P18). Nothing is committed or pushed without the user asking.
 
+**Definition of done:** a feature is not done until its documentation page exists
+(`docs/DocsProposal.md`). Snippets (RI, canonical Vulkan, canonical D3D12) may follow
+later; missing ones show a placeholder and appear in the coverage report.
+
 ## Milestone 1: build check
 
 - The user configures and builds the scaffold with `clangcl-debug` (Windows, both
@@ -28,6 +32,12 @@ Shared (portable) part:
   tracking state in `internal`.
 - The conformance source file compiled against each backend (P83).
 - `equine/root.hlsli` with `EQ_ROOT_DATA` (P45).
+- Documentation site scaffold (`docs/DocsProposal.md`): MkDocs + Material (as a test),
+  language toggle, theme toggle, version selector (mike: `latest` + `dev`), offline
+  plugin, linked `RI | Vulkan | D3D12` tabs; the page template; snippet folders with
+  marker sections; the local snippet build target (`EQUINE_BUILD_DOC_SNIPPETS`); the
+  header-extraction and coverage-report scripts; a free CI job that builds the site and
+  the report. First pages: the Milestone 2 features.
 
 Per backend (`RI::Vk::`, `RI::D3D12::`, P83), with native access only through the native
 headers (P84):

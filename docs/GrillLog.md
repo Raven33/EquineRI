@@ -616,3 +616,17 @@ for people that don't use those. I don't really care how we validate ... propose
 ReadView/ReadWriteView/ConstantBufferView vs RView/RWView/CBView; validation: forwarding
 backend, shared check functions, or scope reduction. "2+3 is good, A is good too" → P87,
 P88.
+
+## User-facing documentation (2026-10-10)
+
+"I want a comprehensive website documenting ALL of the RI (and later Equine Engine) ...
+explicit examples of what it would have looked like in each backend ... scaffolding early
+will help." → `docs/DocsProposal.md`. "The website needs language toggles, theme toggle,
+API version selector, offline mode. VK/DX code is not necessarily what RI does, but a
+canonical version ... it also serves as a teaching resource" → requirements recorded.
+"MkDocs + Material as a test, we may need to roll our own. How do we ensure it keeps in
+sync?" → sync plan. "What is a version of the site? ... Do not stop building if a snippet
+is missing ... compilation is VERY HEAVY, not for a free GitHub Action ... textual
+snippets should not include the full snippet" → revised: marker sections, placeholders +
+coverage report, local compilation, cheap CI. "Ok with me" → docs plan added to
+`docs/Plan.md`.
