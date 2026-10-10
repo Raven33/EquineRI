@@ -85,10 +85,14 @@ EQ_TEST(vk, list_gpus_while_device_alive) {
 
 // A broken driver manifest makes the loader report an error (CMake points
 // VK_ADD_DRIVER_FILES at one). It is not the program's fault: no abort.
+// Linux only: the Windows loader fails the whole instance instead (see
+// tests/CMakeLists.txt).
+#ifndef _WIN32
 EQ_TEST(vk, loader_errors_do_not_abort) {
     RI::Device device = RI::createDevice({.gpu = RI::listGpus()[0]});
     RI::destroyDevice(device);
 }
+#endif
 
 // Aborts by design (see tests/CMakeLists.txt).
 EQ_TEST(vk, unknown_gpu_reports) {

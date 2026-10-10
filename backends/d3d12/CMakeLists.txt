@@ -7,12 +7,19 @@ endif()
 # ── Agility SDK (pinned download; CONTEXT.md P55) ────────────────────────────
 include(EquineAgilitySDK)
 
-# ── Backend scaffold ──────────────────────────────────────────────────────────
+# ── Backend library ──────────────────────────────────────────────────────────
 add_library(EquineD3D12Backend STATIC
     RI/D3D12/Backend.hpp
+    RI/D3D12/Native.hpp
     D3D12AgilityExports.hpp
-    D3D12BackendHeaderCheck.cpp
+    Adapter.hpp
+    Adapter.cpp
+    D3D12Check.hpp
+    D3D12Check.cpp
+    Device.cpp
+    DeviceState.hpp
 )
+target_compile_definitions(EquineD3D12Backend PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(EquineD3D12Backend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
