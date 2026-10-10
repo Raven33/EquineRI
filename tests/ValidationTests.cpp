@@ -1,5 +1,6 @@
 #include <TestHarness.hpp>
 
+#include <RI/Validation/Checks.hpp>
 #include <RI/Validation/ObjectTracker.hpp>
 
 #include <csignal>
@@ -48,3 +49,22 @@ EQ_TEST(validation, macro_reports_failure) {
     EQ_VALIDATE(RI::Validation::CheckResult{"slot 3 is still in use"});
 }
 #endif
+
+// Milestone 3 checks: rendering-section state, view formats and view ranges (P40, P73, P74).
+EQ_TEST(validation, texture_and_rendering_checks) {
+    using namespace RI::Validation;
+    EQ_CHECK(!checkRenderingSection(true, true, "cmdDraw"));
+    EQ_CHECK(!checkRenderingSection(false, false, "cmdClearTexture"));
+    const CheckResult notOpen = checkRenderingSection(false, true, "cmdEndRendering");
+    EQ_CHECK(notOpen && notOpen->find("cmdEndRendering: no rendering section is open") != std::string::npos);
+    const CheckResult inside = checkRenderingSection(true, false, "cmdClearTexture");
+    EQ_CHECK(inside && inside->find("cmdClearTexture: not allowed inside") != std::string::npos);
+
+    EQ_CHECK(!checkViewFormatCompatible(RI::Format::eRGBA8Unorm, RI::Format::eRGBA8Srgb));
+    EQ_CHECK(!checkViewFormatCompatible(RI::Format::eRGBA8Unorm, RI::Format::eR32Float));
+    EQ_CHECK(checkViewFormatCompatible(RI::Format::eRGBA8Unorm, RI::Format::eRGBA16Float).has_value());
+
+    EQ_CHECK(!checkViewRange(1, 2, 3, 0, 1, 1));
+    EQ_CHECK(checkViewRange(2, 2, 3, 0, 1, 1).has_value());
+    EQ_CHECK(checkViewRange(0, 1, 1, 1, 1, 1).has_value());
+}

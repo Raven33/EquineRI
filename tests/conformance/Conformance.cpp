@@ -5,6 +5,7 @@
 #include <RI/RI.hpp>
 
 #include <initializer_list>
+#include <optional>
 #include <span>
 #include <type_traits>
 #include <vector>
@@ -79,10 +80,72 @@ EQ_SIGNATURE(submit, RI::TimelinePoint (*)(RI::Queue &, RI::CommandList &));
 EQ_SIGNATURE(wait, void (*)(RI::Queue &, RI::TimelinePoint));
 EQ_SIGNATURE(isReached, bool (*)(RI::Queue &, RI::TimelinePoint));
 
+// Limits and requirements (P58, P71)
+EQ_FIELD(DeviceLimits, timestampFrequency, uint64);
+EQ_FIELD(MemoryRequirements, kinds, uint32);
+
+// Textures and views (P58, P69, P73, P74)
+EQ_SIGNATURE(formatSupported, bool (*)(RI::Device &, RI::Format, RI::TextureUsage, uint32));
+EQ_SIGNATURE(textureRequirements, RI::MemoryRequirements (*)(RI::Device &, const RI::TextureDesc &));
+EQ_SIGNATURE(createTexture, RI::Texture (*)(RI::Device &, const RI::Memory &, uint64, const RI::TextureDesc &));
+EQ_SIGNATURE(destroyTexture, void (*)(RI::Device &, RI::Texture &));
+EQ_SIGNATURE(createView, RI::TextureView (*)(RI::Device &, const RI::Texture &, const RI::TextureViewDesc &));
+EQ_SIGNATURE(destroyView, void (*)(RI::Device &, RI::TextureView &));
+EQ_FIELD(Texture, width, uint32);
+EQ_FIELD(Texture, height, uint32);
+EQ_FIELD(Texture, layers, uint32);
+EQ_FIELD(Texture, mips, uint32);
+EQ_FIELD(Texture, samples, uint32);
+EQ_FIELD(Texture, format, RI::Format);
+EQ_FIELD(Texture, usage, RI::TextureUsage);
+EQ_FIELD(Texture, view, RI::TextureView);
+EQ_FIELD(TextureView, format, RI::Format);
+EQ_FIELD(TextureView, width, uint32);
+EQ_FIELD(TextureView, height, uint32);
+EQ_FIELD(TextureView, samples, uint32);
+EQ_FIELD(ReadView, texture, RI::TextureView);
+EQ_FIELD(ReadWriteView, texture, RI::TextureView);
+
+// Queries (P51, P71)
+EQ_SIGNATURE(createQueryPool, RI::QueryPool (*)(RI::Device &, const RI::QueryPoolDesc &));
+EQ_SIGNATURE(destroyQueryPool, void (*)(RI::Device &, RI::QueryPool &));
+EQ_SIGNATURE(resetQueries, void (*)(RI::Device &, RI::QueryPool &, uint32, uint32));
+EQ_FIELD(QueryPool, type, RI::QueryType);
+EQ_FIELD(QueryPool, count, uint32);
+
+// Rendering and graphics pipelines (P38, P40, P75)
+EQ_SIGNATURE(createGraphicsPipeline, RI::Pipeline (*)(RI::Device &, const RI::GraphicsPipelineDesc &));
+EQ_FIELD(ColorAttachment, view, RI::TextureView);
+EQ_FIELD(ColorAttachment, load, RI::LoadOp);
+EQ_FIELD(ColorAttachment, store, RI::StoreOp);
+EQ_FIELD(ColorAttachment, clear, RI::ClearValue);
+EQ_FIELD(DepthAttachment, view, RI::TextureView);
+EQ_FIELD(DepthAttachment, load, RI::LoadOp);
+EQ_FIELD(DepthAttachment, store, RI::StoreOp);
+EQ_FIELD(DepthAttachment, stencilLoad, RI::LoadOp);
+EQ_FIELD(DepthAttachment, stencilStore, RI::StoreOp);
+EQ_FIELD(DepthAttachment, clear, RI::ClearValue);
+EQ_FIELD(DepthAttachment, depthReadOnly, bool);
+EQ_FIELD(DepthAttachment, stencilReadOnly, bool);
+EQ_FIELD(RenderingDesc, colors, std::vector<RI::ColorAttachment>);
+EQ_FIELD(RenderingDesc, depth, std::optional<RI::DepthAttachment>);
+EQ_SIGNATURE(cmdBeginRendering, void (*)(RI::CommandList &, const RI::RenderingDesc &));
+EQ_SIGNATURE(cmdEndRendering, void (*)(RI::CommandList &));
+EQ_SIGNATURE(cmdDraw, void (*)(RI::CommandList &, uint32, uint32, uint32, uint32));
+EQ_SIGNATURE(cmdDiscard, void (*)(RI::CommandList &, const RI::TextureView &));
+EQ_SIGNATURE(cmdClearTexture, void (*)(RI::CommandList &, const RI::TextureView &, const RI::ClearValue &));
+EQ_SIGNATURE(cmdClearBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint32));
+EQ_SIGNATURE(cmdWriteTimestamp, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
+EQ_SIGNATURE(cmdResetQueries, void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32));
+EQ_SIGNATURE(cmdResolveQueries,
+             void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32, const RI::Buffer &, uint64));
+
 // Thin values (P81).
 static_assert(std::is_copy_constructible_v<RI::Device> && std::is_copy_constructible_v<RI::Buffer> &&
               std::is_copy_constructible_v<RI::Memory> && std::is_copy_constructible_v<RI::Pipeline> &&
-              std::is_copy_constructible_v<RI::DescriptorHeap> && std::is_copy_constructible_v<RI::CommandList>);
+              std::is_copy_constructible_v<RI::DescriptorHeap> && std::is_copy_constructible_v<RI::CommandList> &&
+              std::is_copy_constructible_v<RI::Texture> && std::is_copy_constructible_v<RI::TextureView> &&
+              std::is_copy_constructible_v<RI::QueryPool>);
 
 struct Root {
     float value;

@@ -1,5 +1,8 @@
 #include <TestHarness.hpp>
 
+#include "../gpu/GpuTestCommon.hpp"
+#include "../gpu/TextureChecks.hpp"
+
 #include <RI/RI.hpp>
 #include <RI/Vk/Native.hpp>
 
@@ -7,6 +10,7 @@
 #include <array>
 #include <csignal>
 #include <cstdlib>
+#include <vector>
 
 EQ_TEST(vk, list_gpus) {
     const std::vector<RI::Gpu> gpus = RI::listGpus();
@@ -100,4 +104,32 @@ EQ_TEST(vk, unknown_gpu_reports) {
     RI::Gpu missing;
     missing.name = "Nonexistent GPU";
     RI::createDevice({.gpu = missing});
+}
+
+// Every layout mode the GPU supports gives the same results (L1, P78, P95):
+// render -> sample, depth -> sample and storage -> sample.
+EQ_TEST(vk, layout_modes) {
+    const RI::Gpu gpu = gputest::pickGpu();
+    RI::Device automatic = RI::createDevice({.gpu = gpu});
+    const RI::Vk::LayoutMode chosen = RI::Vk::native(automatic).layoutMode;
+    EQ_CHECK(chosen != RI::Vk::LayoutMode::eAuto);
+    RI::destroyDevice(automatic);
+
+    bool unified = false;
+#ifdef VK_KHR_unified_image_layouts
+    unified = RI::Vk::defaultDeviceFeatures(gpu).unifiedLayouts.unifiedImageLayouts == VK_TRUE;
+#endif
+    EQ_CHECK(chosen == (unified ? RI::Vk::LayoutMode::eUnified : RI::Vk::LayoutMode::eTransitions));
+    std::vector<RI::Vk::LayoutMode> modes{RI::Vk::LayoutMode::eGeneral, RI::Vk::LayoutMode::eTransitions};
+    if (unified) {
+        modes.push_back(RI::Vk::LayoutMode::eUnified);
+    }
+    for (RI::Vk::LayoutMode mode : modes) {
+        RI::Device device = RI::Vk::createDevice({.gpu = gpu}, {.layoutMode = mode});
+        EQ_CHECK(RI::Vk::native(device).layoutMode == mode);
+        gputest::renderThenSample(device);
+        gputest::depthWriteThenSample(device);
+        gputest::storageWriteThenSample(device);
+        RI::destroyDevice(device);
+    }
 }

@@ -455,7 +455,7 @@ void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 
 // ── Discard and clears (P65, P69) ────────────────────────────────────────────
 
 void cmdDiscard(CommandList &cmd, const TextureView &view) {
-    DeviceState &state = *cmd.internal.device;
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdDiscard"));
     // Full scope on both halves (P68, P69); UNDEFINED drops contents and metadata.
