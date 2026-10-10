@@ -13,6 +13,7 @@
 #endif
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -417,7 +418,10 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
     RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
     RI::resetCommandList(cmd);
     const uint32 passCount = static_cast<uint32>(w.passes.size());
-    std::vector<std::vector<double>> times(passCount + 1);
+    // Pass times, the frame, and the CPU wall time from submit to the end of the
+    // wait (includes everything recorded after the last timestamp, such as
+    // Vulkan's host barrier at cmdEnd, P94 (6)).
+    std::vector<std::vector<double>> times(passCount + 2);
     const double msPerTick = 1000.0 / static_cast<double>(c.device.limits.timestampFrequency);
 
     for (uint32 frame = 0; frame < c.options.warmup + c.options.frames; ++frame) {
@@ -437,7 +441,9 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
         }
         RI::cmdResolveQueries(cmd, c.queries, 0, passCount + 1, c.ticks, 0);
         RI::cmdEnd(cmd);
+        const auto start = std::chrono::steady_clock::now();
         RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
+        const double cpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
         RI::resetQueries(c.device, c.queries, 0, passCount + 1);
         if (frame < c.options.warmup) {
             continue;
@@ -447,6 +453,7 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
             times[i].push_back(static_cast<double>(t[i + 1] - t[i]) * msPerTick);
         }
         times[passCount].push_back(static_cast<double>(t[passCount] - t[0]) * msPerTick);
+        times[passCount + 1].push_back(cpuMs);
     }
     RI::destroyCommandList(c.device, cmd);
 
@@ -465,6 +472,7 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
         line(w.passes[i].name, stats(times[i]));
     }
     line("frame", stats(times[passCount]));
+    line("cpu_submit_wait", stats(times[passCount + 1]));
 }
 
 } // namespace

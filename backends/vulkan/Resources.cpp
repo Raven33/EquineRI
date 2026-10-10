@@ -122,9 +122,9 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
                                                 .pCreateInfo = &createInfo};
     VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
     state.functions.vkGetDeviceBufferMemoryRequirements(state.device, &info, &requirements);
-    return {.size = requirements.memoryRequirements.size,
-            .alignment = requirements.memoryRequirements.alignment,
-            .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)};
+    return withGranularity(state, {.size = requirements.memoryRequirements.size,
+                                   .alignment = requirements.memoryRequirements.alignment,
+                                   .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)});
 }
 
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {

@@ -241,9 +241,11 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     };
     const VkPipelineDepthStencilStateCreateInfo depthStencil{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = desc.depth.test ? VK_TRUE : VK_FALSE,
-        .depthWriteEnable = desc.depth.test && desc.depth.write ? VK_TRUE : VK_FALSE,
-        .depthCompareOp = compareOf(desc.depth.compare),
+        // Writing depth needs the test on: test with eAlways when only writing,
+        // as on D3D12, so both backends write depth for the same descriptions.
+        .depthTestEnable = desc.depth.test || desc.depth.write ? VK_TRUE : VK_FALSE,
+        .depthWriteEnable = desc.depth.write ? VK_TRUE : VK_FALSE,
+        .depthCompareOp = desc.depth.test ? compareOf(desc.depth.compare) : VK_COMPARE_OP_ALWAYS,
     };
     // No blending yet: every color target is written as is.
     const std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(
