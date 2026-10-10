@@ -371,3 +371,200 @@ memory-requirements and format-support queries as default consequences.
 ## Review round B4 (2026-10-05)
 
 **Descriptor heap: user-sized, default helper, no overwriting in-flight slots?** Yes → P59.
+
+## Review round B5 (2026-10-07)
+
+**Device creation.** The user objected that a feature list means wrapping every feature
+behind a clean cross-API boundary. Counter-proposal: D3D12 has no enable step, so Vulkan
+enables everything supported (except robustness); native additions for overrides;
+queries wrapped only for features RI's commands use. "Go" → P60.
+
+## Review round B6 (2026-10-07)
+
+**GPU addresses: an address query, with buffers always addressable?** "Go" → P61.
+
+## Review round B7 (2026-10-07)
+
+**Work-graph inputs and library root signatures?** "Ok, I am still apprehensive about
+P45's markings, but let's go for now" → P62, with S4 opened to revisit P45.
+
+## Review round B8 (2026-10-08)
+
+**Present and submit.** First proposal: the next submit after `acquire()` waits on the
+image, and a list touching the swapchain is valid for one frame only. The user suggested
+hiding the screen and blitting to it internally on Vulkan. Then: "The real question is, do
+we even want commandList resubmission, what does this enable? Today basically all the
+command buffers are re-recorded each frame anyways. If we need it, how does D3D12 handle
+the swapchain? For me we follow it, and only on Vulkan we add an emulated screen texture."
+Answer: resubmission only saves CPU recording time, which matters little here, so drop it.
+D3D12 hands out the current back buffer, and queue ordering does the rest. Without
+resubmission, Vulkan can match this by hiding the semaphores, with no copy needed.
+**Drop resubmission and follow D3D12 on both backends?** "Perfect, go" → P63 (amends P34).
+
+## Review round B9 (2026-10-08)
+
+**Swapchain format and color space: supported-pairs query, user picks, default helper,
+tearing as a present mode, compute-to-screen as a capability?** "Ok, add a note about the
+compute shader screen thing, this may be a good reason to emulate the screen with a normal
+texture, anyways this needs to be clear to the user." → P64.
+
+## Review round B10 (2026-10-08)
+
+**Clears outside rendering: `clearBuffer/clearTexture(resource, slot, value)`, with a
+helper for slot-free clears?** "No, no helper, we directly implement this behavior using
+compute shader in DX12 (this is what most engines do anyways)" → P65. 
+
+**B10a. Reserve a few slots at the end of the user heap for the D3D12 clear shaders, or
+switch to an RI-owned heap during the clear (possible GPU stall)?** "For now let's go with
+the potential stall, if it becomes a problem or we have other reasons to reserve part of
+the heap, then we will reassess, note it down" → P65 (2).
+
+## Review round B11 (2026-10-08)
+
+**Memory budget query?** "Do we even need this?" Only for programs near the VRAM limit, and
+the native query is a few lines. "Drop it, this is completely irrelevant for our use case.
+If some user requests it we will add it" → P66.
+
+## Review round B12 (2026-10-08)
+
+**Reflection: D3D12 reads the root signature natively; Vulkan uses SPIRV-Reflect or an
+in-house reader? dxcompiler at runtime only in validation builds?** "SPIRV-Reflect for now,
+I agree with your validation-only proposal for dxcompiler" → P67. Review group B is done.
+
+## Review round C1 (2026-10-08)
+
+**Scope of RI's own layout switches on D3D12 / RDNA2 Vulkan: full scope (wait for all,
+block all), measured with L1, or merge the user's barrier into the switch?** "Option 1"
+→ P68.
+
+## Review round C2 (2026-10-08)
+
+**Discard: always required after aliasing (load ops don't count), full-scope barrier,
+reported by validation?** "Ok" → P69.
+
+## Review round C3 (2026-10-08)
+
+**Native sections: `endNative` restores everything RI relies on (heap/set, layout, last
+pipeline, root data); allowed inside rendering sections with limits?** "Ok" → P70.
+
+## Review round C4 (2026-10-08)
+
+**Adding queues later: narrow P37 (texture hand-off between queues is open), note it in
+L1, add an optional measurement?** "Ok" → P37 amended, LayoutEvaluation item 6.
+
+## Review round C5 (2026-10-08)
+
+**Queries: explicit `resetQueries` (no-op on D3D12), a pipeline-statistics result-layout
+query, timestamp frequency per queue once queues exist?** "Go" → P71.
+
+## Review round C6 (2026-10-08)
+
+**AS compaction: a compacted-size query type in the P51 pools?** "Ray tracing is not a main
+target for v1" → R50 deferred until ray tracing is implemented; feature table updated.
+Review group C is done.
+
+## Open item Y4 (2026-10-08)
+
+**Fine-grained barriers: no resource-naming barrier in RI; fine-grained = precise stages
+plus native sections?** "Ok" → P72.
+
+## Open item R10 (2026-10-08)
+
+**Naming part of a texture: view objects created once (with a default whole-texture
+view), or ranges written inline every time (hidden native view creation/cache)?** "1"
+→ P73.
+
+**Format reinterpretation: an optional list of extra view formats at texture creation,
+empty by default?** "Go" → P74.
+
+**Read-only depth: `depthReadOnly` / `stencilReadOnly` flags on the depth attachment?**
+"Ok" → P75.
+
+**Depth/stencil resolve modes with a capability query, no emulation?** "Why should it not
+do sampleZero emulation?" I proposed emulating depth `sampleZero` on D3D12 (internal draw
+writing `SV_Depth`, like P65) plus a general emulation rule. "No you are right, we don't
+implement sample zero in D3D" → P76, no emulation and no general rule.
+
+Noted while checking: native-to-RI import (review R30, part 2) was never discussed; added
+to §5 as I1.
+
+## Open item F1 (2026-10-09)
+
+**Sparse / tiled resources: not in v1, added later as a queue operation plus a capability
+query when a workload needs it?** "Ok" → feature table.
+
+## Open item F2 (2026-10-10)
+
+**Variable-rate shading: not in v1 (per-draw and per-primitive already work natively), the
+rate image in `beginRendering` later?** "Ok" → feature table.
+
+## Open item F3 (2026-10-10)
+
+**Cooperative matrix / vectors: shader-only, enabled by P60, queried natively, so not an
+RI concern?** "Go" → feature table.
+
+## Open item I1 (2026-10-10)
+
+**Native-to-RI import: import calls (RI does not own imported objects; textures in the
+resting layout), plus raw native descriptor writes?** "Go" → P77.
+
+## Open item X1 (2026-10-10)
+
+**Status returns change signatures, so decide now which calls return "result or error"
+(allocation, currentTexture/present, pipeline creation)?** "I don't care, changing every
+user call is not a problem as I am the only user until this is resolved, I will test it on
+myself until I am satisfied with the API" → X1 stays open by design; P57 notes updated.
+
+## Open item L1, pre-measurement choices (2026-10-10)
+
+**RDNA2 Vulkan: implement both modes (`GENERAL` everywhere / around-operation switches),
+measure, pick automatically per GPU and driver, with a force option?** "Ok" → P78.
+
+**Decision rule: frame ≤ 2% slower than optimal hand-written transitions, no pass > 10%
+slower unless under 0.05 ms, on every tested GPU?** "Ok" → P79.
+
+## Inference review (2026-10-10)
+
+The user: "we infer nothing" (P36) is too harsh; soften to "we prefer not inferring, but if
+it is evident or it simplifies the API greatly, we check"; review all decisions first,
+don't change the P rows yet. Review in `docs/Review-Inference-2026-10-10.md`.
+
+**"We check": (a) RI infers and does it, or (b) validation?** "a".
+
+**Query reset (A2).** "What are the effects of query reset? What about host reset?" →
+explained the Vulkan query states and GPU vs host reset. "What does query usage look like
+exactly using RI?" → code sketch. "What does resolve queries do on each backend?" →
+explained. "Ok let's go with CPU query reset." → A2 decided: host reset by the user after
+reading; pool host-reset at creation.
+
+**RI's own layout switches (A1): the half touching RI's own operation becomes exact, the
+other half stays full?** "Ok" → A1 decided (entering: exact "after"; leaving: exact
+"before", the mirror case, noted to the user).
+
+**Work-graph INITIALIZE flag (A3): set automatically on first use or when the backing
+memory changes, plus a "force initialize" flag?** "Ok" → A3 decided.
+
+**D3D12 root signature without `[RootSignature]` (A4).** "Show me a sample shader with and
+without" → samples. "Show me with the helper" → P45 helper sample. "Is there no way to get
+sizeof? Do we really need EQ_ROOT_SIGNATURE, couldn't that just be at the end of root
+data?" → tested with DXC: `_Static_assert(sizeof)` checks the count; `-rootsig-define`
+removes the attribute. "Why is EQ_ROOT_COUNT out of EQ_ROOT_DATA? We don't need
+rootsig-define, we can just do a big macro" → tested, works. "What to do with several
+entry points? How does that even compile to SPIR-V? I don't understand your questions" →
+explained (one compile per entry point; extra entry points need `EQ_ROOT_SIGNATURE`),
+reduced to two choices. "We don't want to load dxcompiler at runtime because we don't want
+to force the user to have HLSL available at runtime" → A4 decided: keep the markings with
+the single big macro.
+
+**Iterating on the macro.** "Ideally EQ_ROOT_SIGNATURE does NOT require the size to be put
+again" → a count `#define` next to the struct. "No, this is not good enough, dig more" →
+found the constant-buffer size in the DXIL `dx.resources` metadata (readable without
+dxcompiler; dxil-spirv as prior art), so RI can build the root signature itself. "This is
+good, but I would prefer a macro to mark a specific constant buffer as the root data" →
+marking by reserved register space (space 999), tested. "Ideally I would not want a
+reserved space, what are our other options?" → type-name marking (`EquineRootData`,
+relies on a DXC detail) or "only constant buffer" rule. "There are no additional costs to
+space 999?" → none beyond the reservation. "Let's go" → A4 final: reserved space.
+
+**Apply the review to the P rows?** "Yes" → P36, P45, P62, P67, P68, P71 updated; S4
+settled.
