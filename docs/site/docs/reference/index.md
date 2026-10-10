@@ -35,6 +35,7 @@ RI::Device device = RI::createDevice({.gpu = chosen});
 | [`RI::Gpu`](Gpu.md) | The facts about one GPU: name, vendor, memory, ID. |
 | [`RI::DeviceDesc`, `RI::Device`](DeviceDesc.md) | What you pass to `createDevice`, and what you get back. |
 | [`RI::DeviceLimits`](DeviceLimits.md) | Heap sizes, root data size, `eGPUUpload` availability. |
+| [`RI::Window`](Window.md) | A window's OS handles, for the future swapchain. |
 
 ## Memory and buffers
 
