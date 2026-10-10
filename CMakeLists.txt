@@ -182,6 +182,11 @@ message(STATUS "Equine clang-tidy: ${CMAKE_CXX_CLANG_TIDY}")
 if (MSVC)
     add_compile_options(/W4)
 endif()
+# Descriptions rely on designated initializers with defaults (P86), so leaving
+# fields out is the intended style, not a mistake.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-missing-designated-field-initializers>)
+endif()
 
 # ── Core library ──────────────────────────────────────────────────────────────
 # Backend-independent part: portable types shared by every backend (P83), the
