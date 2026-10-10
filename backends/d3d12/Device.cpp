@@ -72,7 +72,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     if (additions.beforeDeviceCreation != nullptr) {
         additions.beforeDeviceCreation(state->adapter, additions.user);
     }
-    checkHr(D3D12CreateDevice(state->adapter, kMinFeatureLevel, IID_PPV_ARGS(&state->device)), "D3D12CreateDevice");
+    checkHr(D3D12CreateDevice(state->adapter, kMinFeatureLevel, IID_PPV_ARGS(&state->device)),
+            "D3D12CreateDevice (ID3D12Device10: Agility SDK runtime)");
 
     const D3D_FEATURE_LEVEL levels[] = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0};
     D3D12_FEATURE_DATA_FEATURE_LEVELS featureLevels{.NumFeatureLevels = 3, .pFeatureLevelsRequested = levels};
@@ -95,7 +96,27 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
 
     const D3D12_COMMAND_QUEUE_DESC queueDesc{.Type = D3D12_COMMAND_LIST_TYPE_DIRECT};
     checkHr(state->device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&state->graphicsQueue)), "CreateCommandQueue");
+    checkHr(state->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&state->fence)), "CreateFence");
 
+    state->resourceDescriptorSize =
+        state->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    state->samplerDescriptorSize = state->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+    // GPU memory the CPU can write (P32): all-or-nothing on D3D12.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16{};
+    state->gpuUploadHeap =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&
+        options16.GPUUploadHeapSupported;
+
+    // Resource binding tier 3 and the root signature's 64-DWORD budget (P44).
+    device.limits = {
+        .maxResourceDescriptors = D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_2,
+        .maxSamplerDescriptors = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE,
+        .maxRootDataSize = 64 * 4,
+        .gpuUploadMemory = state->gpuUploadHeap,
+    };
+
+    device.graphicsQueue.internal.device = state;
     device.internal.state = state;
     return device;
 }
@@ -105,6 +126,7 @@ void destroyDevice(Device &device) {
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
+    release(state->fence);
     release(state->graphicsQueue);
     if (state->infoQueue != nullptr) {
         state->infoQueue->UnregisterMessageCallback(state->messageCallbackCookie);

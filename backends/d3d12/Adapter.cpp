@@ -33,7 +33,8 @@ bool meetsRequirements(ID3D12Device *device, bool &uma) {
     }
     D3D12_FEATURE_DATA_D3D12_OPTIONS options{};
     if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))) ||
-        options.ResourceBindingTier < D3D12_RESOURCE_BINDING_TIER_3) {
+        options.ResourceBindingTier < D3D12_RESOURCE_BINDING_TIER_3 ||
+        options.ResourceHeapTier < D3D12_RESOURCE_HEAP_TIER_2) { // any buffer in any heap (P31)
         return false;
     }
     D3D12_FEATURE_DATA_D3D12_OPTIONS12 options12{};

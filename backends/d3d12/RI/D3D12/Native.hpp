@@ -21,6 +21,31 @@ struct NativeDevice {
 
 NativeDevice native(const Device &device);
 
+// Native objects behind RI objects (P84). Borrowed pointers.
+inline ID3D12Heap *native(const Memory &memory) { return static_cast<ID3D12Heap *>(memory.internal.heap); }
+inline ID3D12Resource *native(const Buffer &buffer) { return static_cast<ID3D12Resource *>(buffer.internal.resource); }
+inline ID3D12GraphicsCommandList7 *native(const CommandList &cmd) {
+    return static_cast<ID3D12GraphicsCommandList7 *>(cmd.internal.list);
+}
+
+struct NativeDescriptorHeap {
+    ID3D12DescriptorHeap *resourceHeap = nullptr; // CBV_SRV_UAV, shader-visible
+    ID3D12DescriptorHeap *samplerHeap = nullptr;  // SAMPLER, shader-visible
+};
+inline NativeDescriptorHeap native(const DescriptorHeap &heap) {
+    return {static_cast<ID3D12DescriptorHeap *>(heap.internal.resourceHeap),
+            static_cast<ID3D12DescriptorHeap *>(heap.internal.samplerHeap)};
+}
+
+struct NativePipeline {
+    ID3D12PipelineState *pipelineState = nullptr;
+    ID3D12RootSignature *rootSignature = nullptr;
+};
+inline NativePipeline native(const Pipeline &pipeline) {
+    return {static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState),
+            static_cast<ID3D12RootSignature *>(pipeline.internal.rootSignature)};
+}
+
 // Native additions at device creation (P60 (3)). D3D12 has no feature enable
 // step, so the addition is a hook that runs just before D3D12CreateDevice,
 // e.g. to call D3D12EnableExperimentalFeatures. listGpus also creates
