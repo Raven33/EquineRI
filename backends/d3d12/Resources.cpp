@@ -6,6 +6,7 @@
 #include <RI/D3D12/Native.hpp>
 #include <RI/Error.hpp>
 #include <RI/Validation/Checks.hpp>
+#include <RI/Validation/Placement.hpp>
 
 #include <algorithm>
 #include <format>
@@ -39,7 +40,9 @@ D3D12_HEAP_TYPE heapTypeOf(MemoryKind kind) {
     return D3D12_HEAP_TYPE_DEFAULT;
 }
 
-D3D12_RESOURCE_DESC1 bufferDesc(uint64 size, BufferUsage usage) {
+// `clearable`: eCopyDst buffers in GPU memory also allow UAV access, which
+// RI's cmdClearBuffer needs on D3D12 (P65); UPLOAD/READBACK heaps forbid it.
+D3D12_RESOURCE_DESC1 bufferDesc(uint64 size, BufferUsage usage, bool clearable = false) {
     return {
         .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
         .Alignment = kPlacementAlignment,
@@ -50,8 +53,10 @@ D3D12_RESOURCE_DESC1 bufferDesc(uint64 size, BufferUsage usage) {
         .Format = DXGI_FORMAT_UNKNOWN,
         .SampleDesc = {.Count = 1, .Quality = 0},
         .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags = (usage & BufferUsage::eReadWrite) != BufferUsage::eNone ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-                                                                         : D3D12_RESOURCE_FLAG_NONE,
+        .Flags = (usage & BufferUsage::eReadWrite) != BufferUsage::eNone ||
+                         (clearable && (usage & BufferUsage::eCopyDst) != BufferUsage::eNone)
+                     ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+                     : D3D12_RESOURCE_FLAG_NONE,
     };
 }
 
@@ -65,6 +70,58 @@ ID3D12Resource *placeBuffer(DeviceState &state, ID3D12Heap *heap, uint64 offset,
 }
 
 uint64 alignUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
+
+// Texture views in descriptors (P87): an SRV or a UAV of the view's range.
+// Returns false when the descriptor names a buffer.
+bool writeTextureView(DeviceState &state, const Descriptor &descriptor, D3D12_CPU_DESCRIPTOR_HANDLE slot) {
+    const TextureView *view = nullptr;
+    bool readWrite = false;
+    if (const auto *r = std::get_if<ReadView>(&descriptor); r != nullptr && r->texture.internal.resource != nullptr) {
+        view = &r->texture;
+    } else if (const auto *w = std::get_if<ReadWriteView>(&descriptor);
+               w != nullptr && w->texture.internal.resource != nullptr) {
+        view = &w->texture;
+        readWrite = true;
+    }
+    if (view == nullptr) {
+        return false;
+    }
+    EQ_DX_CHECK_ALIVE(&state, view->internal.textureId, "texture");
+    const auto &in = view->internal;
+    auto *resource = static_cast<ID3D12Resource *>(in.resource);
+    const bool array = in.textureLayers > 1;
+    const UINT planeSlice = (in.planes & 1u) != 0 ? 0u : 1u;
+    if (readWrite) {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uav{.Format = static_cast<DXGI_FORMAT>(in.dxgiFormat)};
+        if (array) {
+            uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+            uav.Texture2DArray = {.MipSlice = in.baseMip, .FirstArraySlice = in.baseLayer, .ArraySize = in.layerCount};
+        } else {
+            uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+            uav.Texture2D = {.MipSlice = in.baseMip};
+        }
+        state.device->CreateUnorderedAccessView(resource, nullptr, &uav, slot);
+        return true;
+    }
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv{.Format = static_cast<DXGI_FORMAT>(in.dxgiFormat),
+                                        .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING};
+    if (view->samples > 1) {
+        srv.ViewDimension = array ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DMS;
+        srv.Texture2DMSArray = {.FirstArraySlice = in.baseLayer, .ArraySize = in.layerCount};
+    } else if (array) {
+        srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+        srv.Texture2DArray = {.MostDetailedMip = in.baseMip,
+                              .MipLevels = in.mipCount,
+                              .FirstArraySlice = in.baseLayer,
+                              .ArraySize = in.layerCount,
+                              .PlaneSlice = planeSlice};
+    } else {
+        srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srv.Texture2D = {.MostDetailedMip = in.baseMip, .MipLevels = in.mipCount, .PlaneSlice = planeSlice};
+    }
+    state.device->CreateShaderResourceView(resource, &srv, slot);
+    return true;
+}
 
 } // namespace
 
@@ -108,6 +165,9 @@ void freeMemory(Device &device, Memory &memory) {
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_DX_UNTRACK(&state, memory.internal.id);
+#if EQUINE_VALIDATION
+    Validation::forgetMemory(state.placements, memory.internal.id);
+#endif
     auto *whole = static_cast<ID3D12Resource *>(memory.internal.mapBuffer);
     release(whole);
     auto *heap = static_cast<ID3D12Heap *>(memory.internal.heap);
@@ -121,7 +181,14 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
     DeviceState &state = *device.internal.state;
     const D3D12_RESOURCE_DESC1 native = bufferDesc(desc.size, desc.usage);
     const D3D12_RESOURCE_ALLOCATION_INFO info = state.device->GetResourceAllocationInfo2(0, 1, &native, nullptr);
-    return {.size = info.SizeInBytes, .alignment = info.Alignment};
+    uint32 kinds = 0;
+    for (MemoryKind kind : {MemoryKind::eGPU, MemoryKind::eUpload, MemoryKind::eReadback}) {
+        kinds |= 1u << static_cast<uint32>(kind);
+    }
+    if (state.gpuUploadHeap) {
+        kinds |= 1u << static_cast<uint32>(MemoryKind::eGPUUpload);
+    }
+    return {.size = info.SizeInBytes, .alignment = info.Alignment, .kinds = kinds};
 }
 
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
@@ -131,8 +198,9 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
     EQ_VALIDATE(Validation::checkRange(offset, requirements.size, alignUp(memory.size, kPlacementAlignment),
                                        requirements.alignment, "createBuffer: placing the buffer in memory"));
 
-    ID3D12Resource *resource =
-        placeBuffer(state, static_cast<ID3D12Heap *>(memory.internal.heap), offset, bufferDesc(desc.size, desc.usage));
+    const bool clearable = memory.kind == MemoryKind::eGPU || memory.kind == MemoryKind::eGPUUpload;
+    ID3D12Resource *resource = placeBuffer(state, static_cast<ID3D12Heap *>(memory.internal.heap), offset,
+                                           bufferDesc(desc.size, desc.usage, clearable));
     Buffer result;
     result.size = desc.size;
     result.usage = desc.usage;
@@ -140,6 +208,10 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
     result.mapped = memory.mapped != nullptr ? static_cast<std::byte *>(memory.mapped) + offset : nullptr;
     result.internal.resource = resource;
     result.internal.id = EQ_DX_TRACK(&state);
+#if EQUINE_VALIDATION
+    Validation::placeResource(state.placements, memory.internal.id, offset, requirements.size, result.internal.id,
+                              false);
+#endif
     return result;
 }
 
@@ -208,6 +280,9 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
     for (const DescriptorWrite &write : writes) {
         EQ_VALIDATE(Validation::checkSlot(write.slot, heap.resourceCount, "resource"));
         const D3D12_CPU_DESCRIPTOR_HANDLE slot{start.ptr + static_cast<SIZE_T>(write.slot) * state.resourceDescriptorSize};
+        if (writeTextureView(state, write.descriptor, slot)) {
+            continue;
+        }
 
         const auto [buffer, offset, size, stride, kind] = std::visit(
             [](const auto &view) {

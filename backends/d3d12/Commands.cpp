@@ -6,6 +6,7 @@
 #include <RI/D3D12/Native.hpp>
 #include <RI/Error.hpp>
 #include <RI/Validation/Checks.hpp>
+#include <RI/Validation/Placement.hpp>
 
 #include <format>
 
@@ -22,14 +23,27 @@ D3D12_BARRIER_SYNC syncOf(Stage stage) {
         return D3D12_BARRIER_SYNC_ALL;
     }
     D3D12_BARRIER_SYNC sync = D3D12_BARRIER_SYNC_NONE;
+    // Clears outside rendering sections count as copies (P65).
     if ((stage & Stage::eCopy) != Stage::eNone) {
-        sync |= D3D12_BARRIER_SYNC_COPY;
+        sync |= D3D12_BARRIER_SYNC_COPY | D3D12_BARRIER_SYNC_CLEAR_UNORDERED_ACCESS_VIEW;
     }
     if ((stage & Stage::eCompute) != Stage::eNone) {
         sync |= D3D12_BARRIER_SYNC_COMPUTE_SHADING;
     }
     if ((stage & Stage::eIndirect) != Stage::eNone) {
         sync |= D3D12_BARRIER_SYNC_EXECUTE_INDIRECT;
+    }
+    if ((stage & Stage::eVertex) != Stage::eNone) {
+        sync |= D3D12_BARRIER_SYNC_VERTEX_SHADING;
+    }
+    if ((stage & Stage::ePixel) != Stage::eNone) {
+        sync |= D3D12_BARRIER_SYNC_PIXEL_SHADING;
+    }
+    if ((stage & Stage::eRenderTarget) != Stage::eNone) {
+        sync |= D3D12_BARRIER_SYNC_RENDER_TARGET;
+    }
+    if ((stage & Stage::eDepthStencil) != Stage::eNone) {
+        sync |= D3D12_BARRIER_SYNC_DEPTH_STENCIL;
     }
     return sync;
 }
@@ -41,11 +55,17 @@ D3D12_BARRIER_ACCESS accessOf(Stage stage) {
     }
     D3D12_BARRIER_ACCESS access = D3D12_BARRIER_ACCESS_COMMON;
     if ((stage & Stage::eCopy) != Stage::eNone) {
-        access |= D3D12_BARRIER_ACCESS_COPY_SOURCE | D3D12_BARRIER_ACCESS_COPY_DEST;
+        access |= D3D12_BARRIER_ACCESS_COPY_SOURCE | D3D12_BARRIER_ACCESS_COPY_DEST | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
     }
-    if ((stage & Stage::eCompute) != Stage::eNone) {
+    if ((stage & (Stage::eCompute | Stage::eVertex | Stage::ePixel)) != Stage::eNone) {
         access |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_SHADER_RESOURCE |
                   D3D12_BARRIER_ACCESS_CONSTANT_BUFFER;
+    }
+    if ((stage & Stage::eRenderTarget) != Stage::eNone) {
+        access |= D3D12_BARRIER_ACCESS_RENDER_TARGET;
+    }
+    if ((stage & Stage::eDepthStencil) != Stage::eNone) {
+        access |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE;
     }
     if ((stage & Stage::eIndirect) != Stage::eNone) {
         access |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
@@ -110,9 +130,12 @@ void cmdBegin(CommandList &cmd) {
     EQ_DX_CHECK_ALIVE(cmd.internal.device, cmd.internal.id, "command list");
     checkHr(list(cmd)->Reset(static_cast<ID3D12CommandAllocator *>(cmd.internal.allocator), nullptr),
             "ID3D12GraphicsCommandList::Reset");
-    cmd.internal.rootSignature = nullptr;
+    cmd.internal.rootSignature[0] = nullptr;
+    cmd.internal.rootSignature[1] = nullptr;
+    cmd.internal.graphics = false;
     cmd.internal.heapSet = false;
     cmd.internal.rootDataSize = 0;
+    cmd.internal.rendering = false;
 }
 
 // Writes are visible to the CPU once the fence value is reached: no barrier needed.
@@ -124,27 +147,48 @@ void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
                                      static_cast<ID3D12DescriptorHeap *>(heap.internal.samplerHeap)};
     list(cmd)->SetDescriptorHeaps(2, heaps);
     cmd.internal.heapSet = true;
+    cmd.internal.heaps[0] = heaps[0];
+    cmd.internal.heaps[1] = heaps[1];
     // Root signatures with heap-indexing flags read the heaps bound when they
-    // are set, so a bound root signature is set again (P70: implicit state).
-    if (cmd.internal.rootSignature != nullptr) {
-        list(cmd)->SetComputeRootSignature(static_cast<ID3D12RootSignature *>(cmd.internal.rootSignature));
+    // are set, so bound root signatures are set again (P70: implicit state).
+    if (cmd.internal.rootSignature[0] != nullptr) {
+        list(cmd)->SetComputeRootSignature(static_cast<ID3D12RootSignature *>(cmd.internal.rootSignature[0]));
+    }
+    if (cmd.internal.rootSignature[1] != nullptr) {
+        list(cmd)->SetGraphicsRootSignature(static_cast<ID3D12RootSignature *>(cmd.internal.rootSignature[1]));
     }
 }
 
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
+    EQ_VALIDATE(Validation::checkDepthWriteAllowed(cmd.internal.rendering && cmd.internal.depthReadOnly,
+                                                   pipeline.internal.depthWrite));
     list(cmd)->SetPipelineState(static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState));
-    if (cmd.internal.rootSignature != pipeline.internal.rootSignature) {
-        cmd.internal.rootSignature = pipeline.internal.rootSignature;
-        list(cmd)->SetComputeRootSignature(static_cast<ID3D12RootSignature *>(pipeline.internal.rootSignature));
+    const int point = pipeline.internal.graphics ? 1 : 0;
+    if (cmd.internal.rootSignature[point] != pipeline.internal.rootSignature) {
+        cmd.internal.rootSignature[point] = pipeline.internal.rootSignature;
+        auto *rootSignature = static_cast<ID3D12RootSignature *>(pipeline.internal.rootSignature);
+        if (pipeline.internal.graphics) {
+            list(cmd)->SetGraphicsRootSignature(rootSignature);
+        } else {
+            list(cmd)->SetComputeRootSignature(rootSignature);
+        }
     }
+    if (pipeline.internal.graphics) {
+        list(cmd)->IASetPrimitiveTopology(static_cast<D3D_PRIMITIVE_TOPOLOGY>(pipeline.internal.topology));
+    }
+    cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
 }
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
     EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
-    list(cmd)->SetComputeRoot32BitConstants(0, (size + 3) / 4, data, 0);
+    if (cmd.internal.graphics) {
+        list(cmd)->SetGraphicsRoot32BitConstants(0, (size + 3) / 4, data, 0);
+    } else {
+        list(cmd)->SetComputeRoot32BitConstants(0, (size + 3) / 4, data, 0);
+    }
 }
 
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) { list(cmd)->Dispatch(x, y, z); }

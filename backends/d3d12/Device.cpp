@@ -57,7 +57,50 @@ void CALLBACK onDebugMessage(D3D12_MESSAGE_CATEGORY /*category*/, D3D12_MESSAGE_
     }
 }
 
+DeviceState::CpuHeap createCpuHeap(ID3D12Device10 *device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 count) {
+    DeviceState::CpuHeap heap;
+    const D3D12_DESCRIPTOR_HEAP_DESC desc{.Type = type, .NumDescriptors = count};
+    checkHr(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap.heap)), "CreateDescriptorHeap (RI CPU heap)");
+    heap.increment = device->GetDescriptorHandleIncrementSize(type);
+    heap.free.reserve(count);
+    for (uint32 i = count; i > 0; --i) {
+        heap.free.push_back(i - 1);
+    }
+    return heap;
+}
+
 } // namespace
+
+uint32 allocateSlot(DeviceState::CpuHeap &heap, const char *what) {
+    if (heap.free.empty()) {
+        reportError(ErrorCategory::eOutOfMemory, std::format("RI's {} descriptor heap is full: destroy unused views", what));
+    }
+    const uint32 slot = heap.free.back();
+    heap.free.pop_back();
+    return slot;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE slotHandle(const DeviceState::CpuHeap &heap, uint32 slot) {
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = heap.heap->GetCPUDescriptorHandleForHeapStart();
+    handle.ptr += static_cast<SIZE_T>(slot) * heap.increment;
+    return handle;
+}
+
+void beginInternal(DeviceState &state) {
+    checkHr(state.internalAllocator->Reset(), "ID3D12CommandAllocator::Reset (internal)");
+    checkHr(state.internalList->Reset(state.internalAllocator, nullptr), "ID3D12GraphicsCommandList::Reset (internal)");
+}
+
+void endAndWaitInternal(DeviceState &state) {
+    checkHr(state.internalList->Close(), "ID3D12GraphicsCommandList::Close (internal)");
+    ID3D12CommandList *lists[] = {state.internalList};
+    state.graphicsQueue->ExecuteCommandLists(1, lists);
+    const uint64 value = ++state.lastSignaled;
+    checkHr(state.graphicsQueue->Signal(state.fence, value), "ID3D12CommandQueue::Signal (internal)");
+    if (state.fence->GetCompletedValue() < value) {
+        checkHr(state.fence->SetEventOnCompletion(value, nullptr), "ID3D12Fence::SetEventOnCompletion (internal)");
+    }
+}
 
 Device createDevice(const DeviceDesc &desc) { return createDevice(desc, {}); }
 
@@ -108,12 +151,32 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&
         options16.GPUUploadHeapSupported;
 
+    state->rtvHeap = createCpuHeap(state->device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, kRtvHeapSize);
+    state->dsvHeap = createCpuHeap(state->device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, kDsvHeapSize);
+    const D3D12_DESCRIPTOR_HEAP_DESC clearDesc{.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                                               .NumDescriptors = kClearHeapSize,
+                                               .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE};
+    const D3D12_DESCRIPTOR_HEAP_DESC clearCpuDesc{.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                                                  .NumDescriptors = kClearHeapSize};
+    checkHr(state->device->CreateDescriptorHeap(&clearDesc, IID_PPV_ARGS(&state->clearHeap)), "CreateDescriptorHeap");
+    checkHr(state->device->CreateDescriptorHeap(&clearCpuDesc, IID_PPV_ARGS(&state->clearCpuHeap)),
+            "CreateDescriptorHeap");
+    checkHr(state->device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&state->internalAllocator)),
+            "CreateCommandAllocator (internal)");
+    checkHr(state->device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
+                                              IID_PPV_ARGS(&state->internalList)),
+            "CreateCommandList1 (internal)");
+
+    UINT64 timestampFrequency = 0;
+    checkHr(state->graphicsQueue->GetTimestampFrequency(&timestampFrequency), "GetTimestampFrequency");
+
     // Resource binding tier 3 and the root signature's 64-DWORD budget (P44).
     device.limits = {
         .maxResourceDescriptors = D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_2,
         .maxSamplerDescriptors = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE,
         .maxRootDataSize = 64 * 4,
         .gpuUploadMemory = state->gpuUploadHeap,
+        .timestampFrequency = timestampFrequency,
     };
 
     device.graphicsQueue.internal.device = state;
@@ -126,6 +189,12 @@ void destroyDevice(Device &device) {
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
+    release(state->internalList);
+    release(state->internalAllocator);
+    release(state->clearHeap);
+    release(state->clearCpuHeap);
+    release(state->rtvHeap.heap);
+    release(state->dsvHeap.heap);
     release(state->fence);
     release(state->graphicsQueue);
     if (state->infoQueue != nullptr) {
