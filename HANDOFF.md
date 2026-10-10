@@ -1,19 +1,21 @@
 # Handoff
 
-State on 2026-10-10: **Milestone 1 (build check) is done.** `clangcl-debug` (Windows) and
-`clang-debug` (Linux) configure, build and pass `ctest` with no fixes needed; the Agility SDK
-download was verified; P21's preset values are confirmed. Milestone 2 of `docs/Plan.md`
-(minimal core, both backends) has started: the Vulkan loader is volk (P89); the `RI::`
-alias and the error channel exist (P90). The validation skeleton exists (P91). GPU listing and device creation exist on both
-backends (P92): Vulkan tested on an RDNA2 680M (RADV, Linux) and an RTX 3080 (Windows);
-D3D12 tested on Windows. A conformance file keeps the backends' portable surface equal
-(P83). Next: memory and buffers. A Windows assistant session (`windows-equineri`, Remote
-Control) builds and tests pushed commits on request. Owed: docs
-pages for the error channel and validation, once the docs site scaffold exists.
+State on 2026-10-10: **Milestones 1 and 2 are done** (`docs/Plan.md`). Both backends list
+GPUs, create devices, allocate memory kinds, place buffers, write descriptor heaps, build
+compute pipelines from shader reflection, record and submit command lists, and wait on
+timeline points. The Milestone 2 sample (`samples/compute_readback`, buffer -> compute ->
+readback) gives correct results on Vulkan (RADV 680M on Linux, RTX 3080 on Windows) and
+D3D12 (RTX 3080), with validation on and off. Decisions taken during implementation:
+P89-P94 (P94 settles D1 and was decided by the assistant under the user's goal: review it).
+Next: Milestone 3 (the L1 measurement harness), together with the user.
+
+A Windows assistant session (`windows-equineri`, Remote Control) builds and tests pushed
+commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
+(`mkdocs build --strict -f docs/site/mkdocs.yml`); every Milestone 2 feature has a page.
 
 ## Where to read
 
-- `CONTEXT.md`: the decision log (P1–P88) and the open questions (§5). Start here.
+- `CONTEXT.md`: the decision log (P1–P94) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
 - `docs/RIApiProposal.md`: the decided API style (P80–P88) with code sketches.
 - `docs/DocsProposal.md`: the user-facing documentation site (MkDocs + Material as a

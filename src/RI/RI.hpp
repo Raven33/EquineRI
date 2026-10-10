@@ -10,6 +10,7 @@
 // both backends is compiled once per backend, in separate targets.
 
 #include <RI/Error.hpp>
+#include <RI/Window.hpp>
 
 #if EQUINE_BACKEND_VULKAN && EQUINE_BACKEND_D3D12
 #error "Both EQUINE_BACKEND_VULKAN and EQUINE_BACKEND_D3D12 are set: compile RI code once per backend, in separate targets."
