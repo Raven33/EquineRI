@@ -337,9 +337,13 @@ int main(int argc, char **argv) {
     rootSignature.Reset();
     viewHeap.Reset();
     samplerHeap.Reset();
-    for (ComPtr<ID3D12Resource> *buffer : {&input, &output, &staging, &params, &result}) {
-        buffer->Reset(); // placed resources before their heaps
-    }
+    // Placed resources before their heaps. (ComPtr overloads operator&, so no
+    // loop over addresses here.)
+    input.Reset();
+    output.Reset();
+    staging.Reset();
+    params.Reset();
+    result.Reset();
     gpuMemory.Reset();
     uploadMemory.Reset();
     readbackMemory.Reset();
