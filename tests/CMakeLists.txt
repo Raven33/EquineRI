@@ -131,3 +131,8 @@ foreach(backend IN ITEMS Vulkan D3D12)
         target_link_libraries(EquineConformance${backend} PRIVATE Equine${backend}Backend)
     endif()
 endforeach()
+
+# ── Test shaders (P93) ───────────────────────────────────────────────────────
+equine_add_shaders(EquineRITests PROFILE cs_6_6 SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/fill.hlsl"
+)
