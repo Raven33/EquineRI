@@ -191,8 +191,13 @@ time.
 
 **Applying P79.** For each GPU and backend, A' passes when the best A' mode allowed on that
 driver (`eUnified` where available; otherwise the faster of T and G, chosen per GPU as P78
-says) meets both conditions on every workload: frame time at most 2% above the baseline,
-and no pass more than 10% above it unless the difference is under 0.05 ms. Decompression
+says) meets P79's two conditions: (1) the realistic frame (workload 4) at most 2% above
+the baseline; (2) no pass of any workload (nor the total of a smaller workload) more than
+10% above it, unless the difference is under 0.05 ms. *Correction, made after the first
+results and before any verdict was recorded: this paragraph first applied the 2% limit to
+every workload's total, which is stricter than P79 (P79 says "a realistic frame"); on the
+micro-workloads, 2% is a few microseconds. The analysis follows P79; both readings are
+shown in the results.* Decompression
 checks in RGP / Nsight (item 2) are done by hand only if a pass fails.
 
 **Host barrier (P94 (6)).** The same harness measures one empty command list and the

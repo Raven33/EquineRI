@@ -5,10 +5,11 @@ Usage: analyze.py results.csv [more.csv ...]
 
 Rows: backend,gpu,mode,res,workload,pass,median_ms,p10_ms,p90_ms. Repeated runs of the
 same configuration are averaged (median of medians). For every backend/GPU/resolution
-and every non-baseline mode, each workload is compared with the baseline:
-  - frame: at most 2% slower than the baseline;
-  - each pass: at most 10% slower, unless the difference is under 0.05 ms.
-A mode passes on a GPU when every workload passes. Prints Markdown.
+and every non-baseline mode, compared with the baseline, as P79 states it:
+  (1) the realistic frame (workload "frame", row "frame") at most 2% slower;
+  (2) every pass of every workload (and the total of each smaller workload) at most
+      10% slower, unless the difference is under 0.05 ms.
+A mode passes on a GPU when both hold. Prints Markdown.
 """
 
 import csv
@@ -57,10 +58,10 @@ def main():
                 a = values[(workload, pass_)]
                 diff = a - b
                 pct = diff / b if b > 0 else 0.0
-                if pass_ == "frame":
-                    ok = pct <= FRAME_LIMIT
+                if workload == "frame" and pass_ == "frame":
+                    ok = pct <= FRAME_LIMIT  # rule (1): the realistic frame
                 else:
-                    ok = pct <= PASS_LIMIT or diff < NOISE_MS
+                    ok = pct <= PASS_LIMIT or diff < NOISE_MS  # rule (2)
                 if not ok:
                     failures.append(f"{workload}/{pass_}")
                 print(f"| {workload} | {pass_} | {b:.4f} | {a:.4f} | {diff:+.4f} | {pct * 100:+.1f}% | {'yes' if ok else '**no**'} |")
