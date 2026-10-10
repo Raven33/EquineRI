@@ -153,6 +153,7 @@ nav:
           - RI::Gpu: reference/Gpu.md
           - RI::DeviceDesc, RI::Device: reference/DeviceDesc.md
           - RI::DeviceLimits: reference/DeviceLimits.md
+          - RI::Window: reference/Window.md
       - Memory and buffers:
           - RI::allocateMemory, RI::freeMemory: reference/memory.md
           - RI::bufferRequirements: reference/bufferRequirements.md

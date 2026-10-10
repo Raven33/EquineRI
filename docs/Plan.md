@@ -13,6 +13,8 @@ later; missing ones show a placeholder and appear in the coverage report.
 
 ## Milestone 1: build check
 
+**Done 2026-10-10.**
+
 - The user configures and builds the scaffold with `clangcl-debug` (Windows, both
   backends) and `clang-debug` (Linux, Vulkan), and runs the GPU-free tests.
 - Fix whatever breaks. In particular: the Agility SDK download (P55), the clang-tidy
@@ -20,6 +22,9 @@ later; missing ones show a placeholder and appear in the coverage report.
 - Exit: both presets build and `ctest` passes.
 
 ## Milestone 2: minimal core, both backends
+
+**Done 2026-10-10** (P89–P94): `samples/compute_readback` passes on Vulkan (RADV, RTX 3080) and
+D3D12 (RTX 3080) with validation on and off; every feature has its documentation page.
 
 Goal: buffer → compute → readback on Vulkan and D3D12, in the decided API style.
 
