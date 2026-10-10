@@ -11,6 +11,15 @@
 
 namespace RI::Vk {
 
+// How the Vulkan backend hides image layouts (L1, A', P78). Backend-internal:
+// user code is identical in every mode (P16).
+enum class LayoutMode : uint8 {
+    eAuto,        // eUnified when VK_KHR_unified_image_layouts is on, else the measured choice (P78)
+    eUnified,     // everything rests in GENERAL; VK_KHR_unified_image_layouts makes it optimal
+    eGeneral,     // mode G: everything rests in GENERAL without the extension (no switches)
+    eTransitions, // mode T: D3D12-style resting layouts, switched around RI's operations (P68)
+};
+
 struct NativeDevice {
     VkInstance instance = VK_NULL_HANDLE;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -88,15 +97,6 @@ struct DeviceFeatures {
 };
 
 DeviceFeatures defaultDeviceFeatures(const Gpu &gpu);
-
-// How the Vulkan backend hides image layouts (L1, A', P78). Backend-internal:
-// user code is identical in every mode (P16).
-enum class LayoutMode : uint8 {
-    eAuto,        // eUnified when VK_KHR_unified_image_layouts is on, else the measured choice (P78)
-    eUnified,     // everything rests in GENERAL; VK_KHR_unified_image_layouts makes it optimal
-    eGeneral,     // mode G: everything rests in GENERAL without the extension (no switches)
-    eTransitions, // mode T: D3D12-style resting layouts, switched around RI's operations (P68)
-};
 
 // Native additions at device creation (P60 (3)).
 struct NativeDeviceAdditions {

@@ -4,6 +4,7 @@
 // (P88: only what native layers cannot see). Plain checks returning a
 // CheckResult (P91); backends call them through EQ_VALIDATE.
 
+#include <RI/Textures.hpp>
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
 
@@ -41,5 +42,16 @@ CheckResult checkBufferView(uint64 offset, uint64 size, uint64 bufferSize, uint3
 
 // Rounds a constant buffer view's size up to the 256-byte block (both backends).
 inline constexpr uint64 constantViewSize(uint64 size) { return (size + 255) & ~uint64{255}; }
+
+// A command that must be recorded inside (`inside` true) or outside a
+// rendering section (P40, P65, P71): `call` names it.
+CheckResult checkRenderingSection(bool rendering, bool inside, std::string_view call);
+
+// A view's format reinterprets the texture's (P74): same bytes per texel.
+CheckResult checkViewFormatCompatible(Format texture, Format view);
+
+// A view's mip and layer range (counts already resolved) lies inside the texture (P73).
+CheckResult checkViewRange(uint32 baseMip, uint32 mipCount, uint32 mips, uint32 baseLayer, uint32 layerCount,
+                           uint32 layers);
 
 } // namespace RI::Validation

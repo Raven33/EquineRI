@@ -3,9 +3,10 @@
 // Backend-private state behind RI::Vk::Device (P82: hidden state behind
 // `internal`). Heap-allocated once per device, so Device stays a small value.
 
-#include <RI/Vk/Backend.hpp>
+#include <RI/Vk/Native.hpp>
 #if EQUINE_VALIDATION
 #include <RI/Validation/ObjectTracker.hpp>
+#include <RI/Validation/Placement.hpp>
 #endif
 
 #include <volk.h>
@@ -40,12 +41,44 @@ struct DeviceState {
     VkSemaphore timeline = VK_NULL_HANDLE;
     uint64 lastSignaled = 0;
 
+    // How image layouts are hidden (L1, P78, P95); never eAuto.
+    LayoutMode layoutMode = LayoutMode::eTransitions;
+
+    // RI's own command buffer, for the initial reset of new textures (R16, P69).
+    VkCommandPool internalPool = VK_NULL_HANDLE;
+    VkCommandBuffer internalCommands = VK_NULL_HANDLE;
+
 #if EQUINE_VALIDATION
     Validation::ObjectTracker objects;
+    Validation::PlacementTracker placements; // discard after aliasing (P69)
 #endif
 };
 
 inline uint32 kindIndex(MemoryKind kind) { return static_cast<uint32>(kind); }
+// Every memory kind whose native type is in `typeBits`, as MemoryRequirements::kinds.
+uint32 kindsOf(const DeviceState &state, uint32 typeBits);
+
+// Formats and layouts (Textures.cpp), shared by the backend's sources.
+VkFormat toVkFormat(Format format);
+const char *formatName(Format format);
+// The layout `usage` rests in under `mode` (L1, P95).
+VkImageLayout restingLayoutOf(LayoutMode mode, TextureUsage usage);
+
+// Image barriers (Commands.cpp and Textures.cpp).
+struct ImageTransition {
+    VkPipelineStageFlags2 srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    VkAccessFlags2 srcAccess = VK_ACCESS_2_NONE;
+    VkPipelineStageFlags2 dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    VkAccessFlags2 dstAccess = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
+    VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+};
+VkImageSubresourceRange rangeOf(const TextureView &view);
+VkImageMemoryBarrier2 imageBarrier(const TextureView &view, const ImageTransition &t);
+// RI's own command buffer: begin recording, then submit on the graphics queue
+// (signalling the next timeline value) and wait for it.
+VkCommandBuffer beginInternal(DeviceState &state);
+void submitInternal(DeviceState &state);
 
 // Validation builds: the id of a new object, and the checks on its use.
 #if EQUINE_VALIDATION

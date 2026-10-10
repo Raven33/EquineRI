@@ -5,7 +5,14 @@
 
 #include <RI/Error.hpp>
 #include <RI/Validation/Checks.hpp>
+#include <RI/Validation/Placement.hpp>
 #include <RI/Vk/Native.hpp>
+
+#include <algorithm>
+#include <format>
+#include <iterator>
+#include <span>
+#include <vector>
 
 namespace RI::Vk {
 
@@ -27,22 +34,91 @@ VkPipelineStageFlags2 stagesOf(Stage stage) {
     if ((stage & Stage::eIndirect) != Stage::eNone) {
         flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
     }
+    if ((stage & Stage::eVertex) != Stage::eNone) {
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    }
+    if ((stage & Stage::ePixel) != Stage::eNone) {
+        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    }
+    if ((stage & Stage::eRenderTarget) != Stage::eNone) {
+        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    }
+    if ((stage & Stage::eDepthStencil) != Stage::eNone) {
+        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    }
     return flags;
 }
 
-// Binds the heap's sets with the current pipeline layout. Pipelines with
-// different root data sizes have incompatible layouts, so the sets are bound
-// again whenever the layout changes (P70: RI's implicit state).
-void bindHeap(CommandList &cmd) {
-    if (cmd.internal.boundLayout == 0 || cmd.internal.heapResourceSet == 0) {
+uint32 bindIndex(bool graphics) { return graphics ? 1 : 0; }
+VkPipelineBindPoint bindPointOf(uint32 index) {
+    return index == 1 ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+}
+
+// Binds the heap's sets at one bind point (0 compute, 1 graphics) with that
+// bind point's pipeline layout. Pipelines with different root data sizes have
+// incompatible layouts, so the sets are bound again whenever the layout or the
+// heap changes (P70: RI's implicit state).
+void bindHeap(CommandList &cmd, uint32 index) {
+    if (cmd.internal.boundLayout[index] == 0 || cmd.internal.heapResourceSet == 0) {
         return;
     }
     const VkDescriptorSet sets[] = {reinterpret_cast<VkDescriptorSet>(cmd.internal.heapResourceSet),
                                     reinterpret_cast<VkDescriptorSet>(cmd.internal.heapSamplerSet)};
-    fn(cmd).vkCmdBindDescriptorSets(native(cmd), VK_PIPELINE_BIND_POINT_COMPUTE,
-                                    reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout), 0, 2, sets, 0,
-                                    nullptr);
+    fn(cmd).vkCmdBindDescriptorSets(native(cmd), bindPointOf(index),
+                                    reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[index]), 0, 2, sets,
+                                    0, nullptr);
 }
+
+void pipelineBarrier(const CommandList &cmd, std::span<const VkImageMemoryBarrier2> barriers) {
+    if (barriers.empty()) {
+        return;
+    }
+    const VkDependencyInfo dependency{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                      .imageMemoryBarrierCount = static_cast<uint32>(barriers.size()),
+                                      .pImageMemoryBarriers = barriers.data()};
+    fn(cmd).vkCmdPipelineBarrier2(native(cmd), &dependency);
+}
+
+
+VkAttachmentLoadOp loadOf(LoadOp op) {
+    switch (op) {
+    case LoadOp::eLoad: return VK_ATTACHMENT_LOAD_OP_LOAD;
+    case LoadOp::eClear: return VK_ATTACHMENT_LOAD_OP_CLEAR;
+    case LoadOp::eDontCare: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    }
+    return VK_ATTACHMENT_LOAD_OP_LOAD;
+}
+
+// Read-only aspects store nothing (P75): a store would be a write.
+VkAttachmentStoreOp storeOf(StoreOp op, bool readOnly) {
+    if (readOnly) {
+        return VK_ATTACHMENT_STORE_OP_NONE;
+    }
+    return op == StoreOp::eStore ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+}
+
+// The layout of a depth attachment during a rendering section (P75). GENERAL
+// in unified and G modes. Mode T uses sync2's generic layouts where they apply,
+// so a sampled depth texture (resting in READ_ONLY_OPTIMAL) needs no switch in
+// a read-only section.
+VkImageLayout depthSectionLayout(LayoutMode mode, bool depthReadOnly, bool stencilReadOnly, bool stencil) {
+    if (mode != LayoutMode::eTransitions) {
+        return VK_IMAGE_LAYOUT_GENERAL;
+    }
+    const bool stencilRO = stencil ? stencilReadOnly : depthReadOnly;
+    if (depthReadOnly && stencilRO) {
+        return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+    }
+    if (!depthReadOnly && !stencilRO) {
+        return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    }
+    return depthReadOnly ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
+                         : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
+}
+
+constexpr VkPipelineStageFlags2 kDepthStages =
+    VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+constexpr VkAccessFlags2 kAllAccess = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
 
 uint64 completedValue(DeviceState &state) {
     uint64 value = 0;
@@ -101,13 +177,18 @@ void cmdBegin(CommandList &cmd) {
     const VkCommandBufferBeginInfo info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                                         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
     checkVk(fn(cmd).vkBeginCommandBuffer(native(cmd), &info), "vkBeginCommandBuffer");
-    cmd.internal.boundLayout = 0;
+    cmd.internal.boundLayout[0] = 0;
+    cmd.internal.boundLayout[1] = 0;
+    cmd.internal.graphics = false;
+    cmd.internal.rendering = false;
+    cmd.internal.depthReadOnly = false;
     cmd.internal.heapResourceSet = 0;
     cmd.internal.heapSamplerSet = 0;
     cmd.internal.rootDataSize = 0;
 }
 
 void cmdEnd(CommandList &cmd) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdEnd"));
     // Writes become visible to the CPU once the submission's timeline point is
     // reached, as on D3D12 (Vulkan needs an explicit host barrier for this).
     const VkMemoryBarrier2 toHost{
@@ -127,23 +208,29 @@ void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, heap.internal.id, "descriptor heap");
     cmd.internal.heapResourceSet = heap.internal.resourceSet;
     cmd.internal.heapSamplerSet = heap.internal.samplerSet;
-    bindHeap(cmd);
+    bindHeap(cmd, 0);
+    bindHeap(cmd, 1);
 }
 
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapResourceSet != 0));
-    fn(cmd).vkCmdBindPipeline(native(cmd), VK_PIPELINE_BIND_POINT_COMPUTE, native(pipeline).pipeline);
+    EQ_VALIDATE(Validation::checkDepthWriteAllowed(cmd.internal.rendering && cmd.internal.depthReadOnly,
+                                                   pipeline.internal.depthWrite));
+    const uint32 index = bindIndex(pipeline.internal.graphics);
+    fn(cmd).vkCmdBindPipeline(native(cmd), bindPointOf(index), native(pipeline).pipeline);
+    cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
-    if (cmd.internal.boundLayout != pipeline.internal.layout) {
-        cmd.internal.boundLayout = pipeline.internal.layout;
-        bindHeap(cmd);
+    if (cmd.internal.boundLayout[index] != pipeline.internal.layout) {
+        cmd.internal.boundLayout[index] = pipeline.internal.layout;
+        bindHeap(cmd, index);
     }
 }
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
     EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
-    fn(cmd).vkCmdPushConstants(native(cmd), reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout),
+    fn(cmd).vkCmdPushConstants(native(cmd),
+                               reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[bindIndex(cmd.internal.graphics)]),
                                VK_SHADER_STAGE_ALL, 0, size, data);
 }
 
@@ -169,6 +256,297 @@ void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const 
     EQ_VK_CHECK_ALIVE(cmd.internal.device, dst.internal.id, "buffer");
     const VkBufferCopy region{.srcOffset = srcOffset, .dstOffset = dstOffset, .size = size};
     fn(cmd).vkCmdCopyBuffer(native(cmd), native(src), native(dst), 1, &region);
+}
+
+// ── Rendering sections (P40, P68, P75) ──────────────────────────────────────
+
+namespace {
+
+bool isUintFormat(Format format) {
+    return format == Format::eR32Uint || format == Format::eRG32Uint || format == Format::eRGBA32Uint;
+}
+
+VkClearColorValue clearColorOf(Format format, const ClearValue &value) {
+    VkClearColorValue color{};
+    for (size_t i = 0; i < 4; ++i) {
+        if (isUintFormat(format)) {
+            color.uint32[i] = static_cast<uint32>(value.color[i]);
+        } else {
+            color.float32[i] = value.color[i];
+        }
+    }
+    return color;
+}
+
+} // namespace
+
+void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdBeginRendering"));
+    constexpr size_t kMaxColors = std::size(CommandList{}.internal.colors);
+    if (desc.colors.size() > kMaxColors) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("cmdBeginRendering: {} color attachments; at most {}", desc.colors.size(), kMaxColors));
+    }
+    if (desc.colors.empty() && !desc.depth) {
+        reportError(ErrorCategory::eProgrammerError, "cmdBeginRendering: a rendering section needs an attachment");
+    }
+    const bool transitions = state.layoutMode == LayoutMode::eTransitions;
+    std::vector<VkImageMemoryBarrier2> barriers;
+    std::vector<VkRenderingAttachmentInfo> colors;
+    colors.reserve(desc.colors.size());
+    uint32 width = UINT32_MAX;
+    uint32 height = UINT32_MAX;
+    uint32 layers = UINT32_MAX;
+    const auto cover = [&](const TextureView &view) {
+        width = std::min(width, view.width);
+        height = std::min(height, view.height);
+        layers = std::min(layers, view.internal.layerCount);
+    };
+
+    for (size_t i = 0; i < desc.colors.size(); ++i) {
+        const ColorAttachment &a = desc.colors[i];
+        EQ_VK_CHECK_ALIVE(&state, a.view.internal.textureId, "texture");
+#if EQUINE_VALIDATION
+        EQ_VALIDATE(Validation::checkDiscarded(state.placements, a.view.internal.textureId, "cmdBeginRendering"));
+#endif
+        const auto resting = static_cast<VkImageLayout>(a.view.internal.restingLayout);
+        const VkImageLayout layout = transitions ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+        if (layout != resting) {
+            // Full src half, exact dst half (P68). Contents the load op does not
+            // read need no preserving (evident, P36).
+            barriers.push_back(imageBarrier(
+                a.view, {.srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                         .srcAccess = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                         .dstStage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                         .dstAccess = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                         .oldLayout = a.load == LoadOp::eLoad ? resting : VK_IMAGE_LAYOUT_UNDEFINED,
+                         .newLayout = layout}));
+        }
+        VkClearValue clear{};
+        clear.color = clearColorOf(a.view.format, a.clear);
+        colors.push_back({.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                          .imageView = native(a.view),
+                          .imageLayout = layout,
+                          .loadOp = loadOf(a.load),
+                          .storeOp = storeOf(a.store, false),
+                          .clearValue = clear});
+        cover(a.view);
+        cmd.internal.colors[i] = a.view;
+    }
+    cmd.internal.colorCount = static_cast<uint32>(desc.colors.size());
+
+    VkRenderingAttachmentInfo depthInfo{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+    VkRenderingAttachmentInfo stencilInfo{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+    bool depthAspect = false;
+    bool stencilAspect = false;
+    cmd.internal.depth = {};
+    cmd.internal.depthReadOnly = false;
+    if (desc.depth) {
+        const DepthAttachment &d = *desc.depth;
+        EQ_VK_CHECK_ALIVE(&state, d.view.internal.textureId, "texture");
+#if EQUINE_VALIDATION
+        EQ_VALIDATE(Validation::checkDiscarded(state.placements, d.view.internal.textureId, "cmdBeginRendering"));
+#endif
+        depthAspect = (d.view.internal.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
+        stencilAspect = (d.view.internal.aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
+        const auto resting = static_cast<VkImageLayout>(d.view.internal.restingLayout);
+        const VkImageLayout layout =
+            depthSectionLayout(state.layoutMode, d.depthReadOnly, d.stencilReadOnly, stencilAspect);
+        if (layout != resting) {
+            const bool keep =
+                (depthAspect && d.load == LoadOp::eLoad) || (stencilAspect && d.stencilLoad == LoadOp::eLoad);
+            barriers.push_back(imageBarrier(
+                d.view, {.srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                         .srcAccess = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                         .dstStage = kDepthStages,
+                         .dstAccess = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                      VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                         .oldLayout = keep ? resting : VK_IMAGE_LAYOUT_UNDEFINED,
+                         .newLayout = layout}));
+        }
+        VkClearValue clear{};
+        clear.depthStencil = {.depth = d.clear.depth, .stencil = d.clear.stencil};
+        depthInfo = {.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                     .imageView = native(d.view),
+                     .imageLayout = layout,
+                     .loadOp = loadOf(d.load),
+                     .storeOp = storeOf(d.store, d.depthReadOnly),
+                     .clearValue = clear};
+        stencilInfo = depthInfo;
+        stencilInfo.loadOp = loadOf(d.stencilLoad);
+        stencilInfo.storeOp = storeOf(d.stencilStore, d.stencilReadOnly);
+        cover(d.view);
+        cmd.internal.depth = d.view;
+        cmd.internal.depthLayout = static_cast<uint32>(layout);
+        cmd.internal.depthReadOnly = d.depthReadOnly;
+    }
+    pipelineBarrier(cmd, barriers);
+
+    const VkRenderingInfo info{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea = {.offset = {0, 0}, .extent = {width, height}},
+        .layerCount = layers,
+        .colorAttachmentCount = static_cast<uint32>(colors.size()),
+        .pColorAttachments = colors.data(),
+        .pDepthAttachment = depthAspect ? &depthInfo : nullptr,
+        .pStencilAttachment = stencilAspect ? &stencilInfo : nullptr,
+    };
+    fn(cmd).vkCmdBeginRendering(native(cmd), &info);
+
+    // The viewport covers the attachments, with D3D12's orientation: a
+    // negative height makes clip-space y point up on both backends.
+    const VkViewport viewport{.x = 0.0f,
+                              .y = static_cast<float>(height),
+                              .width = static_cast<float>(width),
+                              .height = -static_cast<float>(height),
+                              .minDepth = 0.0f,
+                              .maxDepth = 1.0f};
+    const VkRect2D scissor{.offset = {0, 0}, .extent = {width, height}};
+    fn(cmd).vkCmdSetViewport(native(cmd), 0, 1, &viewport);
+    fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
+    cmd.internal.rendering = true;
+}
+
+void cmdEndRendering(CommandList &cmd) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdEndRendering"));
+    fn(cmd).vkCmdEndRendering(native(cmd));
+
+    // Back to rest: exact src half, full dst half (P68).
+    std::vector<VkImageMemoryBarrier2> barriers;
+    const bool transitions = cmd.internal.device->layoutMode == LayoutMode::eTransitions;
+    for (uint32 i = 0; i < cmd.internal.colorCount; ++i) {
+        const TextureView &view = cmd.internal.colors[i];
+        const VkImageLayout layout = transitions ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+        const auto resting = static_cast<VkImageLayout>(view.internal.restingLayout);
+        if (layout != resting) {
+            barriers.push_back(imageBarrier(view, {.srcStage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                                   .srcAccess = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                                   .dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                   .dstAccess = kAllAccess,
+                                                   .oldLayout = layout,
+                                                   .newLayout = resting}));
+        }
+    }
+    const TextureView &depth = cmd.internal.depth;
+    if (depth.internal.view != 0 && cmd.internal.depthLayout != depth.internal.restingLayout) {
+        barriers.push_back(imageBarrier(depth, {.srcStage = kDepthStages,
+                                                .srcAccess = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                                                .dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                .dstAccess = kAllAccess,
+                                                .oldLayout = static_cast<VkImageLayout>(cmd.internal.depthLayout),
+                                                .newLayout = static_cast<VkImageLayout>(depth.internal.restingLayout)}));
+    }
+    pipelineBarrier(cmd, barriers);
+    for (uint32 i = 0; i < cmd.internal.colorCount; ++i) {
+        cmd.internal.colors[i] = {};
+    }
+    cmd.internal.colorCount = 0;
+    cmd.internal.depth = {};
+    cmd.internal.rendering = false;
+    cmd.internal.depthReadOnly = false;
+}
+
+void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdDraw"));
+    fn(cmd).vkCmdDraw(native(cmd), vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+// ── Discard and clears (P65, P69) ────────────────────────────────────────────
+
+void cmdDiscard(CommandList &cmd, const TextureView &view) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdDiscard"));
+    // Full scope on both halves (P68, P69); UNDEFINED drops contents and metadata.
+    const VkImageMemoryBarrier2 barrier =
+        imageBarrier(view, {.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                            .newLayout = static_cast<VkImageLayout>(view.internal.restingLayout)});
+    pipelineBarrier(cmd, {&barrier, 1});
+#if EQUINE_VALIDATION
+    Validation::markDiscarded(state.placements, view.internal.textureId);
+#endif
+}
+
+void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value) {
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
+    EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdClearTexture"));
+#if EQUINE_VALIDATION
+    EQ_VALIDATE(Validation::checkDiscarded(state.placements, view.internal.textureId, "cmdClearTexture"));
+#endif
+    // GENERAL textures are cleared in place; others switch to the transfer
+    // layout and back (mode T, P68).
+    const auto resting = static_cast<VkImageLayout>(view.internal.restingLayout);
+    const VkImageLayout layout =
+        resting == VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    if (layout != resting) {
+        const VkImageMemoryBarrier2 into = imageBarrier(view, {.srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                               .srcAccess = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                                                               .dstStage = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                                                               .dstAccess = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                                               .oldLayout = resting,
+                                                               .newLayout = layout});
+        pipelineBarrier(cmd, {&into, 1});
+    }
+    const VkImageSubresourceRange range = rangeOf(view);
+    const auto image = reinterpret_cast<VkImage>(view.internal.image);
+    if ((view.internal.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT) != 0) {
+        const VkClearColorValue color = clearColorOf(view.format, value);
+        fn(cmd).vkCmdClearColorImage(native(cmd), image, layout, &color, 1, &range);
+    } else {
+        const VkClearDepthStencilValue depthStencil{.depth = value.depth, .stencil = value.stencil};
+        fn(cmd).vkCmdClearDepthStencilImage(native(cmd), image, layout, &depthStencil, 1, &range);
+    }
+    if (layout != resting) {
+        const VkImageMemoryBarrier2 back = imageBarrier(view, {.srcStage = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                                                               .srcAccess = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                                               .dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                               .dstAccess = kAllAccess,
+                                                               .oldLayout = layout,
+                                                               .newLayout = resting});
+        pipelineBarrier(cmd, {&back, 1});
+    }
+}
+
+void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdClearBuffer"));
+    if ((buffer.usage & BufferUsage::eCopyDst) == BufferUsage::eNone) {
+        reportError(ErrorCategory::eProgrammerError, "cmdClearBuffer: the buffer needs BufferUsage::eCopyDst");
+    }
+    fn(cmd).vkCmdFillBuffer(native(cmd), native(buffer), 0, VK_WHOLE_SIZE, value);
+}
+
+// ── Timestamps (P51, P71) ────────────────────────────────────────────────────
+
+void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdWriteTimestamp: the query"));
+    fn(cmd).vkCmdWriteTimestamp2(native(cmd), VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, native(pool), index);
+}
+
+void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResetQueries"));
+    EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "cmdResetQueries: the query range"));
+    fn(cmd).vkCmdResetQueryPool(native(cmd), native(pool), first, count);
+}
+
+void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
+                       uint64 offset) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolveQueries"));
+    EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "cmdResolveQueries: the query range"));
+    EQ_VALIDATE(Validation::checkRange(offset, uint64{count} * 8, buffer.size, 8,
+                                       "cmdResolveQueries: the results in the buffer"));
+    if ((buffer.usage & BufferUsage::eCopyDst) == BufferUsage::eNone) {
+        reportError(ErrorCategory::eProgrammerError, "cmdResolveQueries: the buffer needs BufferUsage::eCopyDst");
+    }
+    // 64-bit values, waiting for each query (P71 (1)); never resets them.
+    fn(cmd).vkCmdCopyQueryPoolResults(native(cmd), native(pool), first, count, native(buffer), offset, 8,
+                                      VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 }
 
 // ── Submission (P20) ─────────────────────────────────────────────────────────

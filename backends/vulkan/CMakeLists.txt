@@ -45,6 +45,7 @@ add_library(EquineVulkanBackend STATIC
     VkCheck.hpp
     VkCheck.cpp
     Resources.cpp
+    Textures.cpp
     Pipeline.cpp
     Commands.cpp
 )
