@@ -50,8 +50,9 @@ D3D12_BARRIER_SYNC syncOf(Stage stage) {
 
 // Every access the stages can make (coarse barriers, P36).
 D3D12_BARRIER_ACCESS accessOf(Stage stage) {
+    // COMMON on one side only is invalid in a global barrier, so eAll lists every access.
     if ((stage & Stage::eAll) != Stage::eNone) {
-        return D3D12_BARRIER_ACCESS_COMMON;
+        stage = Stage::eCopy | Stage::eCompute | Stage::eIndirect | Stage::eRenderTarget | Stage::eDepthStencil;
     }
     D3D12_BARRIER_ACCESS access = D3D12_BARRIER_ACCESS_COMMON;
     if ((stage & Stage::eCopy) != Stage::eNone) {

@@ -1,0 +1,557 @@
+// L1 measurement harness (Milestone 3; docs/LayoutEvaluation.md, "Measurement
+// harness"). Usage:
+//   layout_bench_<backend> [--gpu nvidia|amd|<index>] [--mode <mode>] [--res 1080|2160]
+//                          [--frames N] [--warmup N] [--out results.csv]
+// Modes: Vulkan: unified, general, transitions, baseline; D3D12: ri, baseline.
+// Prints one CSV line per pass and per frame: median, p10 and p90 in ms.
+
+#include "Bench.hpp"
+
+#include <RI/RI.hpp>
+#if EQUINE_BACKEND_VULKAN
+#include <RI/Vk/Native.hpp>
+#endif
+
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <vector>
+
+#if EQUINE_BACKEND_D3D12
+#include <D3D12AgilityExports.hpp>
+EQUINE_D3D12_AGILITY_SDK_EXPORTS()
+#endif
+
+namespace {
+
+using bench::Pass;
+using bench::PassKind;
+using bench::Role;
+using bench::Use;
+using bench::Workload;
+
+// ── Options ──────────────────────────────────────────────────────────────────
+
+struct Options {
+    std::string gpu;
+    std::string mode;
+    uint32 height = 1080;
+    uint32 frames = 300;
+    uint32 warmup = 30;
+    std::string out;
+};
+
+Options parse(int argc, char **argv) {
+    Options o;
+#if EQUINE_BACKEND_VULKAN
+    o.mode = "transitions";
+#else
+    o.mode = "ri";
+#endif
+    for (int i = 1; i + 1 < argc; i += 2) {
+        const std::string key = argv[i];
+        const std::string value = argv[i + 1];
+        if (key == "--gpu") {
+            o.gpu = value;
+        } else if (key == "--mode") {
+            o.mode = value;
+        } else if (key == "--res") {
+            o.height = static_cast<uint32>(std::stoul(value));
+        } else if (key == "--frames") {
+            o.frames = static_cast<uint32>(std::stoul(value));
+        } else if (key == "--warmup") {
+            o.warmup = static_cast<uint32>(std::stoul(value));
+        } else if (key == "--out") {
+            o.out = value;
+        }
+    }
+    return o;
+}
+
+RI::Gpu pickGpu(const std::string &want) {
+    const std::vector<RI::Gpu> gpus = RI::listGpus();
+    for (const RI::Gpu &gpu : gpus) {
+        if ((want == "nvidia" && gpu.vendor == RI::GpuVendor::eNvidia) ||
+            (want == "amd" && gpu.vendor == RI::GpuVendor::eAMD)) {
+            return gpu;
+        }
+    }
+    const size_t index = want.empty() ? 0 : std::strtoul(want.c_str(), nullptr, 10);
+    return gpus[index < gpus.size() ? index : 0];
+}
+
+std::vector<std::byte> loadShader(const char *name) {
+#if EQUINE_BACKEND_VULKAN
+    const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".spv";
+#else
+    const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".dxil";
+#endif
+    std::ifstream file(path, std::ios::binary);
+    const std::vector<char> bytes{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    std::vector<std::byte> out(bytes.size());
+    std::memcpy(out.data(), bytes.data(), bytes.size());
+    return out;
+}
+
+uint64 alignUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
+
+// ── Root data (mirrors tools/layout_bench/shaders) ──────────────────────────
+
+struct DrawRoot {
+    float depth;
+    float tilt;
+    uint32 seed;
+    uint32 pad;
+};
+struct ReadRoot {
+    uint32 textureSlot, outputSlot, width, height, multisampled, pad[3];
+};
+struct WriteRoot {
+    uint32 textureSlot, width, height, seed;
+};
+struct LightRoot {
+    uint32 albedoSlot, normalSlot, depthSlot, litSlot, width, height, pad[2];
+};
+struct HizRoot {
+    uint32 depthSlot, outputSlot, width, height;
+};
+struct PostRoot {
+    uint32 litSlot, pad[3];
+};
+
+// ── Shared objects ───────────────────────────────────────────────────────────
+
+constexpr uint32 kOutputSlot = 0;
+
+struct Shaders {
+    std::vector<std::byte> vs, ps, postVs, postPs, read, write, light, hiz;
+};
+
+struct Context {
+    Options options;
+    RI::Device device;
+    RI::Memory gpuMemory;
+    uint64 used = 0;
+    RI::Memory readbackMemory;
+    RI::DescriptorHeap heap;
+    RI::Buffer output; // per-tile sums of read passes
+    RI::Buffer ticks;
+    RI::QueryPool queries;
+    Shaders shaders;
+    RI::Pipeline read, write, light, hiz;
+    uint32 nextSlot = 1;
+    bench::Baseline *baseline = nullptr;
+    bool useBaseline = false;
+};
+
+RI::Texture placeTexture(Context &c, const RI::TextureDesc &desc) {
+    const RI::MemoryRequirements req = RI::textureRequirements(c.device, desc);
+    const uint64 offset = alignUp(c.used, req.alignment);
+    c.used = offset + req.size;
+    if (c.used > c.gpuMemory.size) {
+        std::fprintf(stderr, "layout_bench: GPU memory block too small\n");
+        std::exit(2);
+    }
+    return RI::createTexture(c.device, c.gpuMemory, offset, desc);
+}
+
+bench::Texture makeTexture(Context &c, RI::Format format, uint32 width, uint32 height, uint32 samples,
+                           RI::TextureUsage usage) {
+    bench::Texture t;
+    t.texture = placeTexture(c, {.width = width, .height = height, .samples = samples, .format = format, .usage = usage});
+    t.sampledView = RI::isDepthFormat(format) ? RI::createView(c.device, t.texture, {.aspect = RI::Aspect::eDepth})
+                                              : t.texture.view;
+    t.sampledSlot = c.nextSlot++;
+    t.storageSlot = c.nextSlot++;
+    return t;
+}
+
+void writeDescriptors(Context &c, Workload &w) {
+    if (c.useBaseline) {
+        bench::baselineWriteDescriptors(*c.baseline, w);
+        return;
+    }
+    for (bench::Texture &t : w.textures) {
+        if ((t.texture.usage & RI::TextureUsage::eSampled) != RI::TextureUsage::eNone) {
+            RI::writeDescriptors(c.device, c.heap,
+                                 {{.slot = t.sampledSlot, .descriptor = RI::ReadView{.texture = t.sampledView}}});
+        }
+        if ((t.texture.usage & RI::TextureUsage::eStorage) != RI::TextureUsage::eNone) {
+            RI::writeDescriptors(c.device, c.heap,
+                                 {{.slot = t.storageSlot, .descriptor = RI::ReadWriteView{.texture = t.texture.view}}});
+        }
+    }
+}
+
+RI::Pipeline drawPipeline(Context &c, std::vector<RI::Format> colors, RI::Format depth, uint32 samples) {
+    RI::GraphicsPipelineDesc desc{.vertex = c.shaders.vs,
+                                  .pixel = colors.empty() ? RI::Bytecode{} : RI::Bytecode{c.shaders.ps},
+                                  .colorFormats = std::move(colors),
+                                  .depthFormat = depth,
+                                  .samples = samples};
+    desc.depth = {.test = depth != RI::Format::eUndefined, .write = depth != RI::Format::eUndefined,
+                  .compare = RI::CompareOp::eLessEqual};
+    return RI::createGraphicsPipeline(c.device, desc);
+}
+
+// A compute pass reading texture `t` over the whole size.
+Pass readPass(Context &c, const char *name, const Workload &w, uint32 t, uint32 width, uint32 height) {
+    const bench::Texture &tex = w.textures[t];
+    const uint32 slot = tex.sampledSlot;
+    const uint32 ms = tex.texture.samples > 1 ? 1u : 0u;
+    return {name, PassKind::eCompute, {{t, Role::eSampled}}, [&c, slot, width, height, ms](RI::CommandList &cmd) {
+                RI::cmdSetPipeline(cmd, c.read);
+                RI::cmdSetRootData(cmd, ReadRoot{slot, kOutputSlot, width, height, ms, {}});
+                RI::cmdDispatch(cmd, (width + 7) / 8, (height + 7) / 8, 1);
+            }};
+}
+
+// ── Workloads ────────────────────────────────────────────────────────────────
+
+struct Owned {
+    std::vector<RI::Pipeline> pipelines;
+};
+
+Workload renderThenSample(Context &c, Owned &owned, RI::Format format, uint32 samples, const char *name) {
+    const uint32 w = c.options.height * 16 / 9;
+    const uint32 h = c.options.height;
+    const bool depth = RI::isDepthFormat(format);
+    Workload wl{.name = name};
+    wl.textures.push_back(makeTexture(
+        c, format, w, h, samples,
+        RI::TextureUsage::eSampled | (depth ? RI::TextureUsage::eDepthStencil : RI::TextureUsage::eRenderTarget)));
+    const RI::Pipeline pipeline = depth ? drawPipeline(c, {}, format, samples) : drawPipeline(c, {format}, RI::Format::eUndefined, samples);
+    owned.pipelines.push_back(pipeline);
+    wl.passes.push_back({"render", PassKind::eRender, {{0, depth ? Role::eDepthTarget : Role::eColorTarget, true}},
+                         [pipeline](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, pipeline);
+                             RI::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 17, 0});
+                             RI::cmdDraw(cmd, 3, 8);
+                         }});
+    wl.passes.push_back(readPass(c, "sample", wl, 0, w, h));
+    return wl;
+}
+
+Workload storageThenSample(Context &c) {
+    const uint32 w = c.options.height * 16 / 9;
+    const uint32 h = c.options.height;
+    Workload wl{.name = "storage_sample_rgba16f"};
+    wl.textures.push_back(
+        makeTexture(c, RI::Format::eRGBA16Float, w, h, 1, RI::TextureUsage::eSampled | RI::TextureUsage::eStorage));
+    const uint32 slot = wl.textures[0].storageSlot;
+    wl.passes.push_back({"write", PassKind::eCompute, {{0, Role::eStorage, true}}, [&c, slot, w, h](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, c.write);
+                             RI::cmdSetRootData(cmd, WriteRoot{slot, w, h, 5});
+                             RI::cmdDispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
+                         }});
+    wl.passes.push_back(readPass(c, "sample", wl, 0, w, h));
+    return wl;
+}
+
+Workload depthThenHiz(Context &c, Owned &owned) {
+    const uint32 w = c.options.height * 16 / 9;
+    const uint32 h = c.options.height;
+    Workload wl{.name = "depth_hiz_d32f"};
+    wl.textures.push_back(makeTexture(c, RI::Format::eD32Float, w, h, 1,
+                                      RI::TextureUsage::eSampled | RI::TextureUsage::eDepthStencil));
+    wl.textures.push_back(makeTexture(c, RI::Format::eR32Float, w / 2, h / 2, 1,
+                                      RI::TextureUsage::eSampled | RI::TextureUsage::eStorage));
+    const RI::Pipeline pipeline = drawPipeline(c, {}, RI::Format::eD32Float, 1);
+    owned.pipelines.push_back(pipeline);
+    wl.passes.push_back({"depth", PassKind::eRender, {{0, Role::eDepthTarget, true}}, [pipeline](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, pipeline);
+                             RI::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 3, 0});
+                             RI::cmdDraw(cmd, 3, 8);
+                         }});
+    const uint32 depthSlot = wl.textures[0].sampledSlot;
+    const uint32 outSlot = wl.textures[1].storageSlot;
+    wl.passes.push_back({"hiz", PassKind::eCompute, {{0, Role::eSampled}, {1, Role::eStorage, true}},
+                         [&c, depthSlot, outSlot, w, h](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, c.hiz);
+                             RI::cmdSetRootData(cmd, HizRoot{depthSlot, outSlot, w / 2, h / 2});
+                             RI::cmdDispatch(cmd, (w / 2 + 7) / 8, (h / 2 + 7) / 8, 1);
+                         }});
+    return wl;
+}
+
+Workload realisticFrame(Context &c, Owned &owned) {
+    const uint32 w = c.options.height * 16 / 9;
+    const uint32 h = c.options.height;
+    Workload wl{.name = "frame"};
+    using U = RI::TextureUsage;
+    wl.textures.push_back(makeTexture(c, RI::Format::eRGBA8Unorm, w, h, 1, U::eSampled | U::eRenderTarget));    // 0 albedo
+    wl.textures.push_back(makeTexture(c, RI::Format::eRGBA16Float, w, h, 1, U::eSampled | U::eRenderTarget));   // 1 normal
+    wl.textures.push_back(makeTexture(c, RI::Format::eD32Float, w, h, 1, U::eSampled | U::eDepthStencil));      // 2 depth
+    wl.textures.push_back(makeTexture(c, RI::Format::eRGBA16Float, w, h, 1, U::eSampled | U::eStorage));        // 3 lit
+    wl.textures.push_back(makeTexture(c, RI::Format::eR32Float, w / 2, h / 2, 1, U::eSampled | U::eStorage));   // 4 hiz
+    wl.textures.push_back(makeTexture(c, RI::Format::eRGBA8Unorm, w, h, 1, U::eSampled | U::eRenderTarget));    // 5 output
+
+    const RI::Pipeline gbuffer =
+        drawPipeline(c, {RI::Format::eRGBA8Unorm, RI::Format::eRGBA16Float}, RI::Format::eD32Float, 1);
+    const RI::Pipeline post = RI::createGraphicsPipeline(
+        c.device, {.vertex = c.shaders.postVs, .pixel = c.shaders.postPs, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    owned.pipelines.push_back(gbuffer);
+    owned.pipelines.push_back(post);
+
+    wl.passes.push_back({"gbuffer",
+                         PassKind::eRender,
+                         {{0, Role::eColorTarget, true}, {1, Role::eColorTarget, true}, {2, Role::eDepthTarget, true}},
+                         [gbuffer](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, gbuffer);
+                             RI::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 29, 0});
+                             RI::cmdDraw(cmd, 3, 8);
+                         }});
+    const LightRoot light{wl.textures[0].sampledSlot, wl.textures[1].sampledSlot, wl.textures[2].sampledSlot,
+                          wl.textures[3].storageSlot, w, h, {}};
+    wl.passes.push_back({"lighting",
+                         PassKind::eCompute,
+                         {{0, Role::eSampled}, {1, Role::eSampled}, {2, Role::eSampled}, {3, Role::eStorage, true}},
+                         [&c, light, w, h](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, c.light);
+                             RI::cmdSetRootData(cmd, light);
+                             RI::cmdDispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
+                         }});
+    const HizRoot hiz{wl.textures[2].sampledSlot, wl.textures[4].storageSlot, w / 2, h / 2};
+    wl.passes.push_back({"hiz", PassKind::eCompute, {{2, Role::eSampled}, {4, Role::eStorage, true}},
+                         [&c, hiz, w, h](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, c.hiz);
+                             RI::cmdSetRootData(cmd, hiz);
+                             RI::cmdDispatch(cmd, (w / 2 + 7) / 8, (h / 2 + 7) / 8, 1);
+                         }});
+    const uint32 litSlot = wl.textures[3].sampledSlot;
+    wl.passes.push_back({"post", PassKind::eRender, {{5, Role::eColorTarget, true}, {3, Role::eSampled}},
+                         [post, litSlot](RI::CommandList &cmd) {
+                             RI::cmdSetPipeline(cmd, post);
+                             RI::cmdSetRootData(cmd, PostRoot{litSlot, {}});
+                             RI::cmdDraw(cmd, 3);
+                         }});
+    wl.passes.push_back(readPass(c, "present", wl, 5, w, h));
+    return wl;
+}
+
+// ── Recording ────────────────────────────────────────────────────────────────
+
+RI::Stage stageOf(const Pass &pass) {
+    return pass.kind == PassKind::eRender
+               ? RI::Stage::eVertex | RI::Stage::ePixel | RI::Stage::eRenderTarget | RI::Stage::eDepthStencil
+               : RI::Stage::eCompute;
+}
+
+// The RI path: RI rendering sections; one coarse barrier between passes.
+void recordRI(Workload &w, RI::CommandList &cmd, const Pass &pass, const Pass *previous) {
+    if (previous != nullptr) {
+        RI::cmdBarrier(cmd, stageOf(*previous), stageOf(pass));
+    }
+    if (pass.kind == PassKind::eCompute) {
+        pass.record(cmd);
+        return;
+    }
+    RI::RenderingDesc desc;
+    for (const Use &use : pass.uses) {
+        const RI::Texture &t = w.textures[use.texture].texture;
+        const RI::LoadOp load = use.discard ? RI::LoadOp::eClear : RI::LoadOp::eLoad;
+        if (use.role == Role::eColorTarget) {
+            desc.colors.push_back({.view = t.view, .load = load});
+        } else if (use.role == Role::eDepthTarget) {
+            desc.depth = RI::DepthAttachment{.view = t.view, .load = load, .stencilLoad = load, .clear = {.depth = 1.0f}};
+        }
+    }
+    RI::cmdBeginRendering(cmd, desc);
+    pass.record(cmd);
+    RI::cmdEndRendering(cmd);
+}
+
+void recordBaseline(Context &c, Workload &w, RI::CommandList &cmd, const Pass &pass) {
+    bench::baselineBeforePass(*c.baseline, cmd, w, pass);
+    if (pass.kind == PassKind::eCompute) {
+        pass.record(cmd);
+        return;
+    }
+    bench::baselineBeginRendering(*c.baseline, cmd, w, pass);
+    pass.record(cmd);
+    bench::baselineEndRendering(*c.baseline, cmd);
+}
+
+struct Stats {
+    double median = 0, p10 = 0, p90 = 0;
+};
+
+Stats stats(std::vector<double> v) {
+    std::sort(v.begin(), v.end());
+    const auto at = [&](double q) { return v[static_cast<size_t>(q * static_cast<double>(v.size() - 1))]; };
+    return {at(0.5), at(0.1), at(0.9)};
+}
+
+void run(Context &c, Workload &w, FILE *out, const std::string &gpuName) {
+    if (c.useBaseline) {
+        bench::baselineReset(*c.baseline, w);
+    }
+    writeDescriptors(c, w);
+    RI::CommandList cmd = RI::createCommandList(c.device);
+    const uint32 passCount = static_cast<uint32>(w.passes.size());
+    std::vector<std::vector<double>> times(passCount + 1);
+    const double msPerTick = 1000.0 / static_cast<double>(c.device.limits.timestampFrequency);
+
+    for (uint32 frame = 0; frame < c.options.warmup + c.options.frames; ++frame) {
+        if (frame > 0) {
+            RI::resetCommandList(cmd);
+        }
+        RI::cmdBegin(cmd);
+        RI::cmdSetHeap(cmd, c.heap);
+        RI::cmdWriteTimestamp(cmd, c.queries, 0);
+        for (uint32 i = 0; i < passCount; ++i) {
+            if (c.useBaseline) {
+                recordBaseline(c, w, cmd, w.passes[i]);
+            } else {
+                recordRI(w, cmd, w.passes[i], i > 0 ? &w.passes[i - 1] : nullptr);
+            }
+            RI::cmdWriteTimestamp(cmd, c.queries, i + 1);
+        }
+        RI::cmdResolveQueries(cmd, c.queries, 0, passCount + 1, c.ticks, 0);
+        RI::cmdEnd(cmd);
+        RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
+        RI::resetQueries(c.device, c.queries, 0, passCount + 1);
+        if (frame < c.options.warmup) {
+            continue;
+        }
+        const auto *t = static_cast<const uint64 *>(c.ticks.mapped);
+        for (uint32 i = 0; i < passCount; ++i) {
+            times[i].push_back(static_cast<double>(t[i + 1] - t[i]) * msPerTick);
+        }
+        times[passCount].push_back(static_cast<double>(t[passCount] - t[0]) * msPerTick);
+    }
+    RI::destroyCommandList(c.device, cmd);
+
+    const auto line = [&](const std::string &pass, const Stats &s) {
+#if EQUINE_BACKEND_VULKAN
+        const char *backend = "vulkan";
+#else
+        const char *backend = "d3d12";
+#endif
+        std::fprintf(out, "%s,%s,%s,%u,%s,%s,%.4f,%.4f,%.4f\n", backend, gpuName.c_str(), c.options.mode.c_str(),
+                     c.options.height, w.name.c_str(), pass.c_str(), s.median, s.p10, s.p90);
+        std::fflush(out);
+    };
+    for (uint32 i = 0; i < passCount; ++i) {
+        line(w.passes[i].name, stats(times[i]));
+    }
+    line("frame", stats(times[passCount]));
+}
+
+} // namespace
+
+int main(int argc, char **argv) {
+    Context c;
+    c.options = parse(argc, argv);
+    const RI::Gpu gpu = pickGpu(c.options.gpu);
+#if EQUINE_BACKEND_VULKAN
+    RI::Vk::LayoutMode mode = RI::Vk::LayoutMode::eAuto;
+    if (c.options.mode == "unified") {
+        mode = RI::Vk::LayoutMode::eUnified;
+    } else if (c.options.mode == "general") {
+        mode = RI::Vk::LayoutMode::eGeneral;
+    } else if (c.options.mode == "transitions") {
+        mode = RI::Vk::LayoutMode::eTransitions;
+    }
+    c.device = RI::Vk::createDevice({.gpu = gpu}, {.layoutMode = mode});
+#else
+    c.device = RI::createDevice({.gpu = gpu});
+#endif
+    c.useBaseline = c.options.mode == "baseline";
+
+    c.gpuMemory = RI::allocateMemory(c.device, RI::MemoryKind::eGPU, c.options.height > 1080 ? 1536ull << 20 : 512ull << 20);
+    c.readbackMemory = RI::allocateMemory(c.device, RI::MemoryKind::eReadback, 1 << 16);
+    c.heap = RI::createDescriptorHeap(c.device, {.resourceCount = 4096});
+    const RI::BufferDesc outputDesc{.size = 4 << 20, .usage = RI::BufferUsage::eReadWrite};
+    const RI::MemoryRequirements outReq = RI::bufferRequirements(c.device, outputDesc);
+    c.output = RI::createBuffer(c.device, c.gpuMemory, 0, outputDesc);
+    c.used = alignUp(outReq.size, outReq.alignment);
+    c.ticks = RI::createBuffer(c.device, c.readbackMemory, 0, {.size = 256, .usage = RI::BufferUsage::eCopyDst});
+    c.queries = RI::createQueryPool(c.device, {.type = RI::QueryType::eTimestamp, .count = 32});
+    RI::writeDescriptors(c.device, c.heap,
+                         {{.slot = kOutputSlot, .descriptor = RI::ReadWriteView{.buffer = c.output, .stride = 4}}});
+
+    c.shaders = {loadShader("bench_vs"),   loadShader("bench_ps"),    loadShader("bench_post_vs"),
+                 loadShader("bench_post_ps"), loadShader("bench_read"), loadShader("bench_write"),
+                 loadShader("bench_light"), loadShader("bench_hiz")};
+    c.read = RI::createComputePipeline(c.device, {.shader = c.shaders.read});
+    c.write = RI::createComputePipeline(c.device, {.shader = c.shaders.write});
+    c.light = RI::createComputePipeline(c.device, {.shader = c.shaders.light});
+    c.hiz = RI::createComputePipeline(c.device, {.shader = c.shaders.hiz});
+    if (c.useBaseline) {
+        c.baseline = bench::createBaseline(c.device, c.heap);
+    }
+
+    FILE *out = stdout;
+    FILE *file = nullptr;
+    if (!c.options.out.empty()) {
+        file = std::fopen(c.options.out.c_str(), "a");
+        out = file != nullptr ? file : stdout;
+    }
+    std::fprintf(stderr, "layout_bench: %s, mode %s, %up, %u frames\n", c.device.gpu.name.c_str(), c.options.mode.c_str(),
+                 c.options.height, c.options.frames);
+
+    // One workload at a time; its textures are freed (and the memory reused) after it.
+    using U = RI::TextureUsage;
+    struct Target {
+        RI::Format format;
+        uint32 samples;
+        const char *name;
+    };
+    std::vector<Target> targets = {{RI::Format::eRGBA8Unorm, 1, "render_sample_rgba8"},
+                                   {RI::Format::eRGBA16Float, 1, "render_sample_rgba16f"},
+                                   {RI::Format::eR11G11B10Float, 1, "render_sample_r11g11b10f"},
+                                   {RI::Format::eRGBA16Float, 4, "render_sample_rgba16f_msaa4"},
+                                   {RI::Format::eD32Float, 1, "render_sample_d32f"},
+                                   {RI::Format::eD24UnormS8Uint, 1, "render_sample_d24s8"},
+                                   {RI::Format::eD32FloatS8Uint, 1, "render_sample_d32fs8"}};
+    std::vector<std::function<Workload(Owned &)>> makers;
+    for (const Target &t : targets) {
+        const U usage = U::eSampled | (RI::isDepthFormat(t.format) ? U::eDepthStencil : U::eRenderTarget);
+        if (RI::formatSupported(c.device, t.format, usage, t.samples)) {
+            makers.push_back([&c, t](Owned &o) { return renderThenSample(c, o, t.format, t.samples, t.name); });
+        }
+    }
+    makers.push_back([&c](Owned &) { return storageThenSample(c); });
+    makers.push_back([&c](Owned &o) { return depthThenHiz(c, o); });
+    makers.push_back([&c](Owned &o) { return realisticFrame(c, o); });
+
+    const uint64 baseUsed = c.used;
+    for (auto &make : makers) {
+        Owned owned;
+        c.used = baseUsed;
+        Workload w = make(owned);
+        run(c, w, out, c.device.gpu.name);
+        for (bench::Texture &t : w.textures) {
+            if (t.sampledView.internal.textureId != 0 && RI::isDepthFormat(t.texture.format)) {
+                RI::destroyView(c.device, t.sampledView);
+            }
+            RI::destroyTexture(c.device, t.texture);
+        }
+        for (RI::Pipeline &p : owned.pipelines) {
+            RI::destroyPipeline(c.device, p);
+        }
+    }
+
+    if (c.baseline != nullptr) {
+        bench::destroyBaseline(c.baseline);
+    }
+    for (RI::Pipeline *p : {&c.read, &c.write, &c.light, &c.hiz}) {
+        RI::destroyPipeline(c.device, *p);
+    }
+    RI::destroyQueryPool(c.device, c.queries);
+    RI::destroyBuffer(c.device, c.output);
+    RI::destroyBuffer(c.device, c.ticks);
+    RI::destroyDescriptorHeap(c.device, c.heap);
+    RI::freeMemory(c.device, c.gpuMemory);
+    RI::freeMemory(c.device, c.readbackMemory);
+    RI::destroyDevice(c.device);
+    if (file != nullptr) {
+        std::fclose(file);
+    }
+    return 0;
+}
