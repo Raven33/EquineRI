@@ -182,8 +182,15 @@ cleared, and exact stage masks on both sides of each barrier.
    writes R32F) → a full-screen pass reading `lit` into an RGBA8 output → a compute pass
    reading the output (stands in for presentation, which v1 has no swapchain for yet).
 
-**Timing.** GPU timestamps (P71) before and after every pass, so RI's layout switches at
-`cmdEndRendering` count in the pass that caused them. Each configuration runs 30 warm-up
+**Timing.** GPU timestamps (P71) right before and after every pass's own work, inside its
+rendering section, on both paths. Barriers and layout switches between passes (RI's at
+`cmdBeginRendering` / `cmdEndRendering`, the baseline's before each pass) therefore fall
+between passes for both, and show up in the frame total and in a `between` row (frame
+minus the sum of passes). *Revision (v2, 2026-10-11): the first runs stamped only between
+passes, which counted RI's switch back to rest in the pass before it and the baseline's
+transition in the pass after it; on the AMD iGPU with 4x MSAA this moved a decompression
+from one pass to the other with an unchanged total. All measurements were repeated with v2;
+the first-round data is kept in `docs/measurements/round1/`.* Each configuration runs 30 warm-up
 frames and 300 measured frames, each frame submitted and waited on alone; the reported value
 per pass and per frame is the median. Frames run back to back in one command list per
 frame, so a full-scope transition that removes overlap between passes shows up in the frame

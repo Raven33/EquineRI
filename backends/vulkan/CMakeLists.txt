@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 3.25)
 
 # ── Vulkan ────────────────────────────────────────────────────────────────────
 # Only the headers: functions are loaded at runtime by volk (CONTEXT.md P89),
-# so nothing links the system loader. No allocator here: RI places resources in
-# user memory (P31), and automatic allocation is a helper (P41, P17).
-find_package(Vulkan REQUIRED)
+# so nothing links the system loader. The headers are pinned in the repository
+# (git submodule, P96): an older installed SDK would silently compile out
+# extensions RI uses (VK_KHR_unified_image_layouts with SDK 1.4.309). No
+# allocator here: RI places resources in user memory (P31, P41, P17).
+equine_require_submodule("${EQUINE_THIRD_PARTY_DIR}/Vulkan-Headers/include/vulkan/vulkan_core.h" Vulkan-Headers)
+add_library(EquineVulkanHeaders INTERFACE)
+target_include_directories(EquineVulkanHeaders SYSTEM INTERFACE "${EQUINE_THIRD_PARTY_DIR}/Vulkan-Headers/include")
 
 # volk (git submodule, pinned tag): built here from its single source file rather
 # than through volk's own CMake. VK_NO_PROTOTYPES is public so no translation
@@ -18,7 +22,7 @@ target_include_directories(volk PUBLIC
 )
 target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
 target_link_libraries(volk PUBLIC
-    Vulkan::Headers
+    EquineVulkanHeaders
     ${CMAKE_DL_LIBS}
 )
 equine_mark_nonproject_dependency(volk)

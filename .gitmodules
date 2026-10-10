@@ -4,3 +4,6 @@
 [submodule "third_party/SPIRV-Reflect"]
 	path = third_party/SPIRV-Reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect
+[submodule "third_party/Vulkan-Headers"]
+	path = third_party/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers

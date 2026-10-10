@@ -357,13 +357,27 @@ RI::Stage stageOf(const Pass &pass) {
                : RI::Stage::eCompute;
 }
 
+// Timing (v2): each pass writes a timestamp right before and right after its
+// own work, inside its rendering section. Barriers and layout switches between
+// passes (RI's at cmdBeginRendering/cmdEndRendering, the baseline's before each
+// pass) fall between passes on both paths, so passes compare like with like,
+// and the frame total (and "between" = frame - sum of passes) carries the
+// transition cost.
+struct Stamp {
+    RI::QueryPool *pool;
+    uint32 start;
+    uint32 end;
+};
+
 // The RI path: RI rendering sections; one coarse barrier between passes.
-void recordRI(Workload &w, RI::CommandList &cmd, const Pass &pass, const Pass *previous) {
+void recordRI(Workload &w, RI::CommandList &cmd, const Pass &pass, const Pass *previous, Stamp stamp) {
     if (previous != nullptr) {
         RI::cmdBarrier(cmd, stageOf(*previous), stageOf(pass));
     }
     if (pass.kind == PassKind::eCompute) {
+        RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.start);
         pass.record(cmd);
+        RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.end);
         return;
     }
     RI::RenderingDesc desc;
@@ -377,18 +391,24 @@ void recordRI(Workload &w, RI::CommandList &cmd, const Pass &pass, const Pass *p
         }
     }
     RI::cmdBeginRendering(cmd, desc);
+    RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.start);
     pass.record(cmd);
+    RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.end);
     RI::cmdEndRendering(cmd);
 }
 
-void recordBaseline(Context &c, Workload &w, RI::CommandList &cmd, const Pass &pass) {
+void recordBaseline(Context &c, Workload &w, RI::CommandList &cmd, const Pass &pass, Stamp stamp) {
     bench::baselineBeforePass(*c.baseline, cmd, w, pass);
     if (pass.kind == PassKind::eCompute) {
+        RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.start);
         pass.record(cmd);
+        RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.end);
         return;
     }
     bench::baselineBeginRendering(*c.baseline, cmd, w, pass);
+    RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.start);
     pass.record(cmd);
+    RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.end);
     bench::baselineEndRendering(*c.baseline, cmd);
 }
 
@@ -421,7 +441,7 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
     // Pass times, the frame, and the CPU wall time from submit to the end of the
     // wait (includes everything recorded after the last timestamp, such as
     // Vulkan's host barrier at cmdEnd, P94 (6)).
-    std::vector<std::vector<double>> times(passCount + 2);
+    std::vector<std::vector<double>> times(passCount + 3);
     const double msPerTick = 1000.0 / static_cast<double>(c.device.limits.timestampFrequency);
 
     for (uint32 frame = 0; frame < c.options.warmup + c.options.frames; ++frame) {
@@ -430,30 +450,38 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
         }
         RI::cmdBegin(cmd);
         RI::cmdSetHeap(cmd, c.heap);
+        // Timestamps: 0 frame start, 1 + 2i / 2 + 2i around pass i, last frame end.
+        const uint32 last = 2 * passCount + 1;
         RI::cmdWriteTimestamp(cmd, c.queries, 0);
         for (uint32 i = 0; i < passCount; ++i) {
+            const Stamp stamp{&c.queries, 1 + 2 * i, 2 + 2 * i};
             if (c.useBaseline) {
-                recordBaseline(c, w, cmd, w.passes[i]);
+                recordBaseline(c, w, cmd, w.passes[i], stamp);
             } else {
-                recordRI(w, cmd, w.passes[i], i > 0 ? &w.passes[i - 1] : nullptr);
+                recordRI(w, cmd, w.passes[i], i > 0 ? &w.passes[i - 1] : nullptr, stamp);
             }
-            RI::cmdWriteTimestamp(cmd, c.queries, i + 1);
         }
-        RI::cmdResolveQueries(cmd, c.queries, 0, passCount + 1, c.ticks, 0);
+        RI::cmdWriteTimestamp(cmd, c.queries, last);
+        RI::cmdResolveQueries(cmd, c.queries, 0, last + 1, c.ticks, 0);
         RI::cmdEnd(cmd);
         const auto start = std::chrono::steady_clock::now();
         RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
         const double cpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
-        RI::resetQueries(c.device, c.queries, 0, passCount + 1);
+        RI::resetQueries(c.device, c.queries, 0, last + 1);
         if (frame < c.options.warmup) {
             continue;
         }
         const auto *t = static_cast<const uint64 *>(c.ticks.mapped);
+        double passSum = 0.0;
         for (uint32 i = 0; i < passCount; ++i) {
-            times[i].push_back(static_cast<double>(t[i + 1] - t[i]) * msPerTick);
+            const double ms = static_cast<double>(t[2 + 2 * i] - t[1 + 2 * i]) * msPerTick;
+            times[i].push_back(ms);
+            passSum += ms;
         }
-        times[passCount].push_back(static_cast<double>(t[passCount] - t[0]) * msPerTick);
+        const double frameMs = static_cast<double>(t[last] - t[0]) * msPerTick;
+        times[passCount].push_back(frameMs);
         times[passCount + 1].push_back(cpuMs);
+        times[passCount + 2].push_back(frameMs - passSum);
     }
     RI::destroyCommandList(c.device, cmd);
 
@@ -473,6 +501,7 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
     }
     line("frame", stats(times[passCount]));
     line("cpu_submit_wait", stats(times[passCount + 1]));
+    line("between", stats(times[passCount + 2]));
 }
 
 } // namespace
