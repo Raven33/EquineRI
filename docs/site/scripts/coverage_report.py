@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""Writes the documentation coverage report (docs/about/coverage.md).
+
+Never fails the build (docs/DocsProposal.md: missing never blocks). It lists:
+
+  1. every page with its includes: RI, Vulkan and D3D12 snippets and generated
+     signatures, and which of them are missing (they show a placeholder);
+  2. public functions and types (generated/api.json, from extract_headers.py)
+     that no page documents;
+  3. symbols a page claims (front matter `symbols:`) that no longer exist;
+  4. decision numbers (P57) cited by pages that are not in CONTEXT.md;
+  5. translations: how many pages each language has, and stale ones (the
+     English page changed after the translation, by git history).
+
+A page documents a symbol by naming it in its front matter:
+
+    ---
+    symbols: [RI::createDevice, RI::destroyDevice]
+    ---
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from docs_common import (  # noqa: E402
+    API_JSON,
+    CONTEXT_MD,
+    COVERAGE_PAGE,
+    DOCS_DIR,
+    GENERATED_PAGES,
+    KIND_LABELS,
+    REPO_DIR,
+    TRANSLATIONS,
+    english_pages,
+    missing_reason,
+    snippet_refs,
+    split_front_matter,
+    write_if_changed,
+)
+
+SNIPPET_KINDS = ("ri", "vulkan", "d3d12")
+P_CITE = re.compile(r"(?<![\w#/])P(\d{1,3})(?!\w)")
+
+
+def page_link(page: Path) -> str:
+    """A link from the coverage page to `page`."""
+    rel = Path("..") / page.relative_to(DOCS_DIR)
+    return f"[`{page.relative_to(DOCS_DIR).as_posix()}`]({rel.as_posix()})"
+
+
+def last_change(path: Path) -> int | None:
+    """Commit time of the last change to `path`; None outside git or if uncommitted."""
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%ct", "--", str(path)],
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+        return int(out) if out else None
+    except (OSError, ValueError):
+        return None
+
+
+def known_decisions() -> set[int]:
+    nums = set()
+    for line in CONTEXT_MD.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^\|\s*P(\d+)\s*\|", line)
+        if m:
+            nums.add(int(m.group(1)))
+    return nums
+
+
+def strip_code(markdown: str) -> str:
+    """Drops fenced blocks and inline code, where 'P57' is not a citation."""
+    markdown = re.sub(r"(?ms)^[ \t]*(```|~~~).*?^[ \t]*\1[ \t]*$", "", markdown)
+    return re.sub(r"`[^`\n]*`", "", markdown)
+
+
+def status_cell(refs: list, kind: str) -> str:
+    wanted = [r for r in refs if r.kind == kind]
+    if not wanted:
+        return "-"
+    missing = [r for r in wanted if missing_reason(r)]
+    if not missing:
+        return f"{len(wanted)}/{len(wanted)}"
+    names = ", ".join(f"`{r.section or Path(r.path).name}`" for r in missing)
+    return f"**{len(wanted) - len(missing)}/{len(wanted)}**, missing {names}"
+
+
+def render() -> str:
+    api: dict[str, dict] = json.loads(API_JSON.read_text(encoding="utf-8")) if API_JSON.exists() else {}
+    decisions = known_decisions()
+    pages = [p for p in english_pages() if p not in GENERATED_PAGES]
+
+    rows = []
+    documented: dict[str, list[Path]] = {}
+    stale_symbols: list[tuple[Path, str]] = []
+    bad_citations: list[tuple[Path, str]] = []
+    missing_total = {kind: 0 for kind in (*SNIPPET_KINDS, "signature", "other")}
+    for page in pages:
+        meta, body = split_front_matter(page.read_text(encoding="utf-8"))
+        symbols = meta.get("symbols", [])
+        symbols = symbols if isinstance(symbols, list) else [symbols]
+        for symbol in symbols:
+            documented.setdefault(symbol, []).append(page)
+            if symbol not in api:
+                stale_symbols.append((page, symbol))
+        refs = snippet_refs(body)
+        for ref in refs:
+            if missing_reason(ref):
+                missing_total[ref.kind] += 1
+        for num in sorted({int(n) for n in P_CITE.findall(strip_code(body))}):
+            if num not in decisions:
+                bad_citations.append((page, f"P{num}"))
+        if refs or symbols:
+            sig = status_cell(refs, "signature")
+            rows.append(
+                f"| {page_link(page)} | {', '.join(f'`{s}`' for s in symbols) or '-'} | {sig} | "
+                + " | ".join(status_cell(refs, kind) for kind in SNIPPET_KINDS)
+                + " |"
+            )
+
+    functions = [s for s, info in api.items() if info["kind"] == "function"]
+    types = [s for s, info in api.items() if info["kind"] != "function"]
+    undocumented_functions = [s for s in functions if s not in documented]
+    undocumented_types = [s for s in types if s not in documented]
+
+    out = [
+        "---",
+        "title: Documentation coverage",
+        "---",
+        "",
+        "<!-- Generated by docs/site/scripts/coverage_report.py. Do not edit. -->",
+        "",
+        "# Documentation coverage",
+        "",
+        "What the site documents and what is still missing. Missing pieces never stop the build: a",
+        "missing snippet shows a placeholder on its page and is counted here. This page is rebuilt",
+        "on every build.",
+        "",
+        "## Summary",
+        "",
+        f"- Public functions with a page: **{len(functions) - len(undocumented_functions)} of {len(functions)}**.",
+        f"- Public types with a page: **{len(types) - len(undocumented_types)} of {len(types)}**.",
+    ]
+    for kind in (*SNIPPET_KINDS, "signature"):
+        what = "signature includes" if kind == "signature" else f"{KIND_LABELS[kind]} snippets"
+        out.append(f"- Missing {what}: **{missing_total[kind]}**.")
+    out += [
+        f"- Symbols named by a page that no longer exist: **{len(stale_symbols)}**.",
+        f"- Citations of unknown decisions: **{len(bad_citations)}**.",
+        "",
+        "## Pages",
+        "",
+        "Each cell counts the includes a page has of that kind and names the missing ones",
+        "(a section name, or a file name when the whole file is missing). `-`: the page has none.",
+        "",
+        "| Page | Symbols | Signature | RI | Vulkan | D3D12 |",
+        "|---|---|---|---|---|---|",
+        *rows,
+        "",
+        "## Public functions without a page",
+        "",
+    ]
+    out += [f"- `{s}` ({', '.join(api[s]['headers'])})" for s in undocumented_functions] or ["None."]
+    out += ["", "## Public types without a page", ""]
+    out += [f"- `{s}` ({', '.join(api[s]['headers'])})" for s in undocumented_types] or ["None."]
+    out += ["", "## Symbols that no longer exist", "", "Named in a page's `symbols:` but not found in the headers.", ""]
+    out += [f"- `{s}` in {page_link(p)}" for p, s in stale_symbols] or ["None."]
+    out += ["", "## Unknown decision numbers", "", "Cited by a page but not in `CONTEXT.md`.", ""]
+    out += [f"- {num} in {page_link(p)}" for p, num in bad_citations] or ["None."]
+    out += ["", "## Translations", "", "Untranslated pages fall back to English.", ""]
+    for lang in TRANSLATIONS:
+        translated = [p for p in pages if p.with_name(f"{p.stem}.{lang}.md").exists()]
+        out.append(f"- `{lang}`: {len(translated)} of {len(pages)} pages translated.")
+        for page in translated:
+            english, translation = last_change(page), last_change(page.with_name(f"{page.stem}.{lang}.md"))
+            if english is not None and translation is not None and english > translation:
+                out.append(f"    - Stale: {page_link(page)} changed after its `{lang}` translation.")
+    return "\n".join(out).rstrip() + "\n"
+
+
+def main() -> int:
+    content = render()
+    write_if_changed(COVERAGE_PAGE, content)
+    print(f"coverage_report: -> {COVERAGE_PAGE.relative_to(REPO_DIR)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -230,6 +230,9 @@ option(EQUINE_BUILD_SAMPLES "Build sample applications" OFF)
 option(EQUINE_BUILD_TESTS "Build GPU-free unit tests and register them with CTest" OFF)
 option(EQUINE_VULKAN_BACKEND "Build the Vulkan rendering backend" OFF)
 option(EQUINE_D3D12_BACKEND "Build the Direct3D 12 rendering backend" OFF)
+# Compiles every documentation snippet (docs/site/snippets) against its backend.
+# Compile only, never run; local use, not CI (docs/DocsProposal.md).
+option(EQUINE_BUILD_DOC_SNIPPETS "Compile the documentation site's code snippets" OFF)
 
 if (EQUINE_D3D12_BACKEND AND NOT WIN32)
     message(FATAL_ERROR "EQUINE_D3D12_BACKEND is supported only on Windows.")
@@ -271,6 +274,13 @@ endif()
 
 if (EQUINE_BUILD_SAMPLES)
     add_subdirectory(samples)
+endif()
+
+if (EQUINE_BUILD_DOC_SNIPPETS)
+    if (NOT EQUINE_VULKAN_BACKEND AND NOT EQUINE_D3D12_BACKEND)
+        message(FATAL_ERROR "EQUINE_BUILD_DOC_SNIPPETS needs at least one backend (EQUINE_VULKAN_BACKEND or EQUINE_D3D12_BACKEND).")
+    endif()
+    add_subdirectory(docs/site/snippets)
 endif()
 
 if (EQUINE_BUILD_TESTS)
