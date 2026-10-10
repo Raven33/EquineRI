@@ -35,7 +35,7 @@ with Milestone 1 of `docs/Plan.md` (the user's build check).
   RI prefers not to infer (P36). Performance-affecting choices are measured together
   first (P18).
 - The layer the user builds on top of RI must never shape RI's API (P80).
-- The user validates builds themselves. Commit or push only when asked.
+- Commit or push only when asked.
 
 ## Build
 
