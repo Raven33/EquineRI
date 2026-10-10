@@ -1,8 +1,8 @@
 # EquineRI Architecture Context
 
 > Started 2026-10-03 from the design grill recorded in `docs/GrillLog.md`. This file is
-> the decision log: it separates settled contracts from open questions. Nothing here is
-> an implementation plan yet.
+> the decision log: it separates settled contracts from open questions. The design phase
+> ended on 2026-10-10; the implementation plan is `docs/Plan.md`.
 
 ## 1. Project and design posture
 
@@ -30,6 +30,11 @@ not an engine: hence the name EquineRI (P13).
 evaluation** (P18). A proposal that might cost performance becomes a measurement first.
 
 ## 2. Settled decisions
+
+Code fragments in rows written before P81 use method syntax (`cmd.discard(...)`,
+`device.createView(...)`, …). They are illustrative only: the API style is set by P81–P88
+(plain structs, free functions, `cmd`-prefixed commands, gated native headers), e.g.
+`RI::cmdDiscard(cmd, texture)`, `RI::createView(device, ...)`.
 
 | ID | Decision | Source |
 |----|----------|--------|
@@ -112,6 +117,15 @@ evaluation** (P18). A proposal that might cost performance becomes a measurement
 | P77 | Native-to-RI import (settles I1; makes P22 two-way). (1) `device.importTexture(native, desc)`, `importBuffer`, `importMemory`, `importPipeline` wrap natively created objects as RI objects. The user supplies a short description (format, size, usage), since Vulkan cannot report image creation info. **RI does not own imported objects**: destroying the RI object only forgets it; the user destroys the native object. An imported texture must be in RI's resting layout before RI first uses it; RI reports that native layout (as `beginNative` does, P27). (2) A raw descriptor write puts a **native** descriptor (Vulkan `VkDescriptorImageInfo`/`VkDescriptorBufferInfo`, D3D12 CPU handle) into a user heap slot, for view types RI does not model. | Open item I1 |
 | P78 | Vulkan without `VK_KHR_unified_image_layouts` (RDNA2): the backend implements **both** A' modes, G (everything rests in `GENERAL`, no switches) and T (D3D12-style resting layout with around-operation switches, P68). The measurement (LayoutEvaluation items 2–3) decides the faster one; the backend selects it automatically at device creation from GPU and driver, and a device-creation option can force either mode for testing. Backend-internal: user code is identical in both modes (P16). | Open item L1 |
 | P79 | L1 decision rule, fixed before measuring. Baseline: hand-written optimal per-texture layout transitions (candidate B, rejected as an API but used as the speed reference). A' is accepted if, on **every** tested GPU (Turing, RDNA2, and newer): (1) a realistic frame is at most **2%** slower than the baseline, and (2) no single pass is more than **10%** slower, unless the absolute difference is under **0.05 ms** (noise floor). Otherwise, the fallbacks in `docs/LayoutEvaluation.md` apply (other mode per GPU, P78; accept the cost; opt-in per-texture mode; reopen L1 together). | Open item L1 |
+| P80 | EquineRI is designed for itself. The layer the user will build on top of it (EquineEngine) is **not** RI's concern: it must not shape or leak into RI's API, and RI makes no provision for it. RI's API style is not constrained by the user: the assistant proposes and the user picks (`docs/RIApiProposal.md`). U1 (the hello-world) is dropped. | 2026-10-10; amended the same day |
+| P81 | RI object model: **thin value objects** (style B, `docs/RIApiProposal.md`). An RI object (`RI::Buffer`, `RI::Texture`, …) is a small copyable struct holding the native handle(s) and a few cached facts (size, GPU address); it owns nothing, like a `VkBuffer`. No lookup table, no RAII. Facts are fields (`buf.gpuAddress`, P82); native handles are reached through the native header (P84); destruction is explicit and immediate on the device (`device.destroy(buf)`, P20). Use after destroy is detected only in validation builds (P21). | RI API proposals, Q1 |
+| P82 | Code style of RI (user preference: no OOP). (1) RI types are **plain data structs with public fields**; facts about an object are fields (`buf.size`, `buf.gpuAddress`), not methods. (2) Operations are **free functions** taking the struct (`RI::createBuffer(device, memory, offset, desc)`), so RI functions, helpers (P41), and the user's own helpers share one style. Methods only where they clearly make sense (none identified yet). (3) Hidden state uses no `private`/`protected`: it lives in an unnamed struct field named `internal` (EquineEngineV2 convention), so the user sees clearly that nothing there is guaranteed. (4) The `Device` struct exists because its data lives and dies together (native device, function tables, RI's internal state); a hidden global device was rejected. Amends P81's examples (`buf.gpuAddress()` → `buf.gpuAddress`). | RI API proposals, Q2 |
+| P83 | Backend structure (refines P28). Each backend defines its own structs and functions in its own namespace (`RI::Vk::`, `RI::D3D12::`); nothing is shared between backends, so adding a backend changes no existing struct. `RI::` is an alias to one backend, chosen by the build (`EQUINE_BACKEND_VULKAN` / `EQUINE_BACKEND_D3D12` macros). Both backends can coexist in one program (P28 wrapper, tests) with user code compiled once per backend. Consistency: the same free-function signatures and the same portable field names in every backend, enforced by a conformance source file compiled against each backend. | RI API proposals, Q2 |
+| P84 | Native access is gated (refines P22, P27, P60, P77). Portable RI headers contain no native types; native handles are kept in `internal`. Native access requires (1) including the backend's native header (`<RI/Vk/Native.hpp>`, `<RI/D3D12/Native.hpp>`) and (2) naming the backend explicitly (`RI::Vk::native(device)` → a plain struct of native handles). The `RI::` alias does not bring native functions in. Everything native lives there: handle structs, import (P77), `beginNative`/`endNative` (P27), device-creation additions (P60). Per-backend native code is written in `#if EQUINE_BACKEND_*` blocks; native code for the wrong backend fails to compile. | RI API proposals, Q2 |
+| P85 | Recording functions carry a **`cmd` prefix**, like Vulkan's `vkCmd*`: `RI::cmdDispatch(cmd, x, y, z)`, `RI::cmdBeginRendering(cmd, …)`, `RI::Vk::cmdBeginNative(cmd)`. Commands read as commands at a glance, native commands keep the explicit backend name (P84), and user helpers follow the same shape (`cmdBlur(cmd, …)`). Methods on the command list were rejected: they cannot be added by the native header, so they would either mix styles or drop the backend name. (A user layer on top may wrap them into objects with methods; RI does not plan for it, P80.) | RI API proposals, Q2 |
+| P86 | Descriptions are plain structs filled with C++20 designated initializers, with sensible defaults (as in V2); no builders, no long argument lists. Naming (as V2 and vulkan.hpp): `RI::` namespace, `camelCase` functions, `PascalCase` types, enumerators prefixed with `e` (`RI::MemoryKind::eUpload`), flags combined with `\|`. | RI API proposals, Q2 |
+| P87 | Descriptor kinds are named by access, with "View": `RI::ReadView` (D3D12 SRV; Vulkan sampled image, read-only storage buffer, or acceleration structure), `RI::ReadWriteView` (UAV; storage image or storage buffer), `RI::ConstantBufferView` (CBV, D3D12's own full name; uniform buffer); samplers are written as the `RI::Sampler` itself. A field names the target: `.texture` (a P73 texture view), `.buffer` (with range, and stride or format for typed buffers), `.accelerationStructure`. Optional free helpers `RI::srv(x)`, `RI::uav(x)`, `RI::cbv(x)` build them. The batching form of the write function stays open (D1). | RI API proposals |
+| P88 | Where RI's own checks live (refines P21). (1) **Shared check functions** in a common `validation/` folder (plain free functions, written once for all backends); each backend function calls them through one `EQ_VALIDATE(...)` line that compiles to nothing in release; tracking state (destroyed objects, memory placements, in-flight slots, query resolves) lives in `internal` only in validation builds. (2) **Scope:** RI checks only what native layers and GPU-AV (P53) cannot see: RI's own rules (discard after aliasing P69, native out map P27, root-data marking and size P45, read-only depth P75, view formats P74, slot reuse P59, command-list reuse P56, …). A forwarding validation backend was considered and not chosen (wrapper structs, unwrapping for native access). | RI API proposals |
 
 ### Feature scope (Round 1, Q7)
 
@@ -154,78 +168,27 @@ reflection-driven binding tables, and the print-and-return-invalid stub conventi
 
 ## 5. Open questions
 
-Each one is to be settled in a grill round and then moved to §2.
+Settled during implementation (`docs/Plan.md`).
 
-**Naming**
-- N1. Settled (P25).
+- **L1. Hiding image layouts under bindless (P16). Blocking; requires joint evaluation
+  (P18).** Direction A': one resting layout; RI transitions only around its own
+  operations, with exact/full halves (P68). B is rejected (P26). RDNA2 Vulkan runs modes G
+  and T, chosen by measurement (P78). Decision rule fixed (P79). What remains is the
+  measurement (Milestone 3, `docs/LayoutEvaluation.md`). If A' fails as a whole, L1 is
+  reopened with the user (P16 and P36 depend on it).
+- **D1. Descriptor-write batching.** Provisional form: one `RI::writeDescriptors(device,
+  heap, writes)` taking a list of `{slot, descriptor}` (P87 kinds), a single write being a
+  list of one; one native call on Vulkan, a loop on D3D12. Kept open until the Vulkan
+  descriptor mechanism is chosen (descriptor sets with update-after-bind vs descriptor
+  buffer / descriptor heap extensions, P59), in Milestone 2.
+- **X1. Error policy per category (P57).** Deliberately open: the user settles it by using
+  the API; signature churn is acceptable until then.
+- Implementation choice: the Vulkan loader (Vulkan::Vulkan vs volk).
 
-**Escape hatches**
-- E1. Settled (P22, P27).
-
-**Shaders**
-- S1. Settled (P54).
-- S2. Settled (P29).
-- S3. Settled (P30).
-
-**Memory and lifetime**
-- M1. Settled (P31).
-- M2. Settled (P20).
-- M3. Settled (P32, P33).
-
-**Synchronization and submission**
-- L1. **Blocking; requires joint evaluation (P18).** How are image layouts hidden (P16)
-  while the base stays bindless (it cannot see which textures a shader touches)?
-  **Current direction: A'** (one resting layout; Equine transitions only around the
-  operations it executes itself). It is confirmed only after measurement (P18). B is
-  rejected (P26). Driver research and the measurement plan are in
-  `docs/LayoutEvaluation.md`. RDNA2-Vulkan mode settled (P78: both, chosen by
-  measurement). Decision rule fixed (P79). What remains is the measurement itself. If A'
-  as a whole fails, L1 is reopened with the user (P36 depends on it).
-- Y1. Settled (P36).
-- Y2. Settled (P37): later, with the cross-queue texture hand-off open (P37, L1).
-- Y3. Settled (P34, P35).
-- Y4. Settled (P72).
-- Y5. Settled (P56): single-threaded in v1.
-
-**Pipelines**
-- G1. Settled (P38).
-- G2. Settled (P39).
-- G3. Settled (P38, P40, P52).
-
-**Backends and build**
-- B1. Settled (P28).
-- B2. Settled (P55).
-
-**Surface not yet discussed** (added round 16)
-- R1. Settled (P43).
-- R2. Settled (P44, P45).
-- R3. Settled (P46).
-- R4. Settled (P47).
-- R5. Settled (P48).
-- R6. Settled (P49).
-- R7. Settled (P50).
-- R8. Settled (P51).
-- R9. Settled (P42).
-
-**Features still undecided** (added in the review, 2026-10-04)
-- F1. Settled: not in v1 (feature table).
-- F2. Settled: not in v1 (feature table).
-- F3. Settled: not an RI concern (feature table, P60).
-
-**Resources**
-- R10. Settled (P73–P76).
-- I1. Settled (P77).
-
-**Shaders (revisit)**
-- S4. Settled (P45 replaced: one `EQ_ROOT_DATA` macro, RI builds the D3D12 root signature).
-
-**Errors**
-- X1. Deliberately open (P57): settled by the user through use; API churn is acceptable until then.
-
-**Tooling**
-- T1. Settled (P53; timestamps in P51).
-
-**Workloads**
-- W1. Answered: mesh + compute, and missing features were the pain (§3). This feeds E1.
-- U1. The ideal hello-world (buffer → compute → readback; texture → swapchain). Deferred
-  while the user consults colleagues; the user leans toward raw-Vulkan-like code.
+Closed items, for reference: N1 (P25), E1 (P22, P27), S1 (P54), S2 (P29), S3 (P30),
+S4 (P45), M1 (P31), M2 (P20), M3 (P32, P33), Y1 (P36), Y2 (P37: later; cross-queue
+texture hand-off open), Y3 (P34, P35), Y4 (P72), Y5 (P56), G1 (P38), G2 (P39), G3 (P38,
+P40, P52), B1 (P28, P83), B2 (P55), R1 (P43, P63, P64), R2 (P44, P45), R3 (P46), R4 (P47),
+R5 (P48), R6 (P49), R7 (P50, P62), R8 (P51, P71), R9 (P42, P59), R10 (P73–P76), I1 (P77),
+F1 (not in v1), F2 (not in v1), F3 (not an RI concern), T1 (P53), W1 (§3), U1 (dropped,
+P80).

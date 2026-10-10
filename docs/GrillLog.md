@@ -568,3 +568,51 @@ space 999?" → none beyond the reservation. "Let's go" → A4 final: reserved s
 
 **Apply the review to the P rows?** "Yes" → P36, P45, P62, P67, P68, P71 updated; S4
 settled.
+
+## Next steps (2026-10-10)
+
+"Commit. Next" → committed (437b0ab); proposed an implementation plan. "Let's drop U1,
+ideally the final EquineEngine API is similar to the current EquineEngine one, EquineRI on
+the other hand, I don't really care, make proposals" → P80; proposals in
+`docs/RIApiProposal.md`.
+
+**RI object model: handles (A), thin value objects (B), or RAII (C)?** "B" → P81.
+
+**Function placement, descriptions, backends, naming.** "Why is device an object? What
+about backend swapping, doesn't this produce name collisions?" → device as object vs free
+functions vs hidden global; per-backend namespaces with an `RI::` alias. "I really dislike
+object oriented programming ... I want to be very sure that this Device object has good
+reasons to live" → pros/cons; plain structs + free functions (P82). ".vk.? .d3d12.? Do we
+share a global device struct? ... I use an unnamed struct with a field named internal" →
+no shared struct, one set per backend namespace (P83), `internal` convention (P82). "I have
+a problem with device.device, native access must be more gated" → native header + explicit
+backend namespace. "Is it possible to have begin/endNative regions for each backend and it
+compiles?" → `#if EQUINE_BACKEND_*` blocks. "I like the native header, this feels good" →
+P84. Open: commands as free functions are not clearly "command list" at a glance.
+
+**Commands: `cmd` prefix, `RI::Cmd::` namespace, or methods on the command list?** "How
+would the methods work with the native include?" → they cannot be added from the native
+header: mixed styles or the backend name disappears. "Go with 1, a layer on top can always
+create an object with methods from it" → P85.
+
+**Descriptions (designated initializers) and naming (V2 / vulkan.hpp conventions)?** "Yes"
+→ P86. The RI API style is decided; sketches rewritten in `docs/RIApiProposal.md`.
+
+The user edited `RIApiProposal.md` (removed "EquineEngine should look like the V2 API").
+"How would overlapping frames look like? What is the use of a timeline point? How do we
+pass surface to the backend? It is not clear what writeXBuffer is" → explained (frames-in-
+flight loop with per-slot timeline points; timeline point = queue counter value; portable
+`RI::Window` struct of OS handles; descriptor writes). "Yes change P80, do not pollute RI
+with the subsequent layer I will build on top" → P80 amended. "For descriptor writes, in
+Vulkan we try to batch them, what about here?" → batch form `writeDescriptors(device, heap,
+writes)`. "Ok, keep this open until we are sure if we use the Vulkan extensions" → D1.
+
+"storageTexture/sampledTexture etc. are a bit too verbose, give other options (they map to
+what on each backend? On DX it is just SRV and UAV anyway). What about a validation
+backend?" → Srv/Uav/Cbv, Read/ReadWrite/Constants, or helpers; a forwarding validation
+backend. "Having View in the text clarifies ... but [ConstView] obscures what a CBV is. I
+am not opposed to the helper free functions uav, srv, cbv, but the name needs to be good
+for people that don't use those. I don't really care how we validate ... propose" →
+ReadView/ReadWriteView/ConstantBufferView vs RView/RWView/CBView; validation: forwarding
+backend, shared check functions, or scope reduction. "2+3 is good, A is good too" → P87,
+P88.
