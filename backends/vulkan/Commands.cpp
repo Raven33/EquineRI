@@ -448,7 +448,8 @@ void cmdEndRendering(CommandList &cmd) {
 }
 
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
-    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdDraw"));
+    // No RI section check: native rendering sections (escape hatch) may hold RI draws;
+    // the validation layer reports a draw outside any section.
     fn(cmd).vkCmdDraw(native(cmd), vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
