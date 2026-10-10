@@ -3,6 +3,7 @@
 // pass, so RI's layout handling (A', L1) is exercised end to end.
 
 #include "GpuTestCommon.hpp"
+#include "TextureChecks.hpp"
 
 #include <TestHarness.hpp>
 
@@ -59,8 +60,14 @@ struct Fixture {
     RI::Pipeline read;
     RI::CommandList cmd;
 
-    Fixture() {
-        device = createTestDevice();
+    bool ownsDevice = true;
+
+    Fixture() : Fixture(createTestDevice(), true) {}
+
+    // `owns`: the fixture destroys the device at the end.
+    Fixture(RI::Device existing, bool owns) {
+        device = existing;
+        ownsDevice = owns;
         gpu.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 64ull << 20);
         readback.memory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 20);
         heap = RI::createDescriptorHeap(device, {.resourceCount = 64});
@@ -108,7 +115,9 @@ struct Fixture {
         RI::destroyBuffer(device, result);
         RI::freeMemory(device, gpu.memory);
         RI::freeMemory(device, readback.memory);
-        RI::destroyDevice(device);
+        if (ownsDevice) {
+            RI::destroyDevice(device);
+        }
     }
 };
 
@@ -163,8 +172,8 @@ EQ_TEST(texture, create_and_views) {
 }
 
 // Render (clear + draw) -> sample, for several color formats (L1 item 2).
-EQ_TEST(texture, render_then_sample) {
-    Fixture f;
+void gputest::renderThenSample(RI::Device &device) {
+    Fixture f(device, false);
     for (RI::Format format : {RI::Format::eRGBA8Unorm, RI::Format::eRGBA16Float, RI::Format::eR11G11B10Float}) {
         if (!RI::formatSupported(f.device, format, RI::TextureUsage::eSampled | RI::TextureUsage::eRenderTarget)) {
             continue;
@@ -193,6 +202,12 @@ EQ_TEST(texture, render_then_sample) {
     RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
 }
 
+EQ_TEST(texture, render_then_sample) {
+    RI::Device device = createTestDevice();
+    gputest::renderThenSample(device);
+    RI::destroyDevice(device);
+}
+
 // A cleared attachment that is not drawn to keeps its clear color (load op).
 EQ_TEST(texture, clear_load_op) {
     Fixture f;
@@ -211,8 +226,8 @@ EQ_TEST(texture, clear_load_op) {
 }
 
 // Depth write -> sample (L1 item 4).
-EQ_TEST(texture, depth_write_then_sample) {
-    Fixture f;
+void gputest::depthWriteThenSample(RI::Device &device) {
+    Fixture f(device, false);
     for (RI::Format format : {RI::Format::eD32Float, RI::Format::eD32FloatS8Uint, RI::Format::eD24UnormS8Uint}) {
         const RI::TextureUsage usage = RI::TextureUsage::eSampled | RI::TextureUsage::eDepthStencil;
         if (!RI::formatSupported(f.device, format, usage)) {
@@ -241,6 +256,12 @@ EQ_TEST(texture, depth_write_then_sample) {
     }
     RI::cmdEnd(f.cmd);
     RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+}
+
+EQ_TEST(texture, depth_write_then_sample) {
+    RI::Device device = createTestDevice();
+    gputest::depthWriteThenSample(device);
+    RI::destroyDevice(device);
 }
 
 // Read-only depth: the depth texture is sampled while it is the depth attachment (P75).
@@ -284,8 +305,8 @@ EQ_TEST(texture, msaa_render_then_sample) {
 }
 
 // Storage write -> sample (L1 item 3).
-EQ_TEST(texture, storage_write_then_sample) {
-    Fixture f;
+void gputest::storageWriteThenSample(RI::Device &device) {
+    Fixture f(device, false);
     const RI::TextureUsage usage = RI::TextureUsage::eSampled | RI::TextureUsage::eStorage;
     RI::Texture texture =
         placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float, .usage = usage});
@@ -300,6 +321,12 @@ EQ_TEST(texture, storage_write_then_sample) {
     EQ_CHECK(near(texels[(5 * kSize + 3) * 4 + 0], 3.0f) && near(texels[(5 * kSize + 3) * 4 + 1], 5.0f));
     RI::destroyPipeline(f.device, write);
     RI::destroyTexture(f.device, texture);
+}
+
+EQ_TEST(texture, storage_write_then_sample) {
+    RI::Device device = createTestDevice();
+    gputest::storageWriteThenSample(device);
+    RI::destroyDevice(device);
 }
 
 // Clears outside rendering sections (P65): a render target, a storage texture,

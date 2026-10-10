@@ -19,6 +19,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.tracker_rejects_never_created
     validation.tracker_rejects_other_device
     validation.macro_evaluates_only_when_on
+    validation.texture_and_rendering_checks
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -162,6 +163,7 @@ if (TARGET EquineVulkanBackend)
         vk.native_extension_and_pnext
         vk.list_gpus_while_device_alive
         vk.unknown_gpu_reports
+        vk.layout_modes
     )
     # The Windows loader (1.4.321) fails the whole instance with
     # VK_ERROR_OUT_OF_HOST_MEMORY when a VK_ADD_DRIVER_FILES driver cannot be
