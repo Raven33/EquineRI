@@ -455,6 +455,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     resolveDependencies(state->physicalDevice, chain.f);
     requireFeatures(setup, chain.f);
     state->layoutMode = chooseLayoutMode(setup, chain.f, additions.layoutMode);
+    state->hostBarrierAtEnd = additions.hostBarrierAtEnd;
 
     const float priority = 1.0f;
     const VkDeviceQueueCreateInfo queueInfo{

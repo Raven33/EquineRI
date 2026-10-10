@@ -200,7 +200,9 @@ void cmdEnd(CommandList &cmd) {
     };
     const VkDependencyInfo dependency{
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO, .memoryBarrierCount = 1, .pMemoryBarriers = &toHost};
-    fn(cmd).vkCmdPipelineBarrier2(native(cmd), &dependency);
+    if (cmd.internal.device->hostBarrierAtEnd) {
+        fn(cmd).vkCmdPipelineBarrier2(native(cmd), &dependency);
+    }
     checkVk(fn(cmd).vkEndCommandBuffer(native(cmd)), "vkEndCommandBuffer");
 }
 

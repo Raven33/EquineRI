@@ -43,6 +43,7 @@ struct DeviceState {
 
     // How image layouts are hidden (L1, P78, P95); never eAuto.
     LayoutMode layoutMode = LayoutMode::eTransitions;
+    bool hostBarrierAtEnd = true; // P94 (6); off only to measure it
 
     // RI's own command buffer, for the initial reset of new textures (R16, P69).
     VkCommandPool internalPool = VK_NULL_HANDLE;
