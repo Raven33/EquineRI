@@ -5,6 +5,7 @@ add_executable(EquineRITests
     "${CMAKE_CURRENT_SOURCE_DIR}/TestMain.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ErrorTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ValidationTests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/DxilTests.cpp"
 )
 target_include_directories(EquineRITests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(EquineRITests PRIVATE EquineRI)
@@ -18,6 +19,24 @@ set(EQUINE_RI_TEST_NAMES
     validation.tracker_rejects_never_created
     validation.tracker_rejects_other_device
     validation.macro_evaluates_only_when_on
+    dxil.fill_heap_and_root_data
+    dxil.root_data_4_bytes
+    dxil.root_data_64_bytes
+    dxil.root_data_with_arrays
+    dxil.declared_bindings
+    dxil.sampler_heap_only
+    dxil.space999_other_register_is_error
+    dxil.space999_second_resource_is_error
+    dxil.newer_psv_layout
+    dxil.oldest_psv_layout_numthreads_from_metadata
+    dxil.empty_input
+    dxil.not_a_container
+    dxil.truncated_container
+    dxil.missing_parts
+    dxil.truncated_bitcode
+    dxil.corrupted_bitcode
+    dxil.corrupted_container
+    dxil.garbage_bitcode
 )
 if (EQUINE_VALIDATION)
     list(APPEND EQUINE_RI_TEST_NAMES validation.macro_reports_failure)
@@ -175,4 +194,11 @@ endforeach()
 # ── Test shaders (P93) ───────────────────────────────────────────────────────
 equine_add_shaders(EquineRITests PROFILE cs_6_6 SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/fill.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/root4.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/root64.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/root_arrays.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/declared.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/sampler_heap.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_b1.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_extra.hlsl"
 )
