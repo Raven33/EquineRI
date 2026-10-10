@@ -132,6 +132,7 @@ void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
 
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
+    EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapResourceSet != 0));
     fn(cmd).vkCmdBindPipeline(native(cmd), VK_PIPELINE_BIND_POINT_COMPUTE, native(pipeline).pipeline);
     cmd.internal.rootDataSize = pipeline.rootDataSize;
     if (cmd.internal.boundLayout != pipeline.internal.layout) {

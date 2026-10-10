@@ -112,7 +112,7 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
-    const MemoryRequirements requirements = bufferRequirements(device, desc);
+    [[maybe_unused]] const MemoryRequirements requirements = bufferRequirements(device, desc);
     EQ_VALIDATE(Validation::checkRange(offset, requirements.size, memory.size, requirements.alignment,
                                        "createBuffer: placing the buffer in memory"));
 

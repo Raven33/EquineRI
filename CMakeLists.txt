@@ -181,6 +181,9 @@ message(STATUS "Equine clang-tidy: ${CMAKE_CXX_CLANG_TIDY}")
 
 if (MSVC)
     add_compile_options(/W4)
+else()
+    # The same warning level as /W4 on Windows, so Linux catches the same issues.
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall> $<$<COMPILE_LANGUAGE:CXX>:-Wextra>)
 endif()
 # Descriptions rely on designated initializers with defaults (P86), so leaving
 # fields out is the intended style, not a mistake.

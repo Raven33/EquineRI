@@ -177,11 +177,23 @@ EQ_TEST(compute, root_data_size_mismatch_reports) {
     RI::Device device = createTestDevice();
     const std::vector<std::byte> bytecode = loadShader("fill");
     RI::Pipeline fill = RI::createComputePipeline(device, {.shader = bytecode});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
     RI::CommandList cmd = RI::createCommandList(device);
     RI::cmdBegin(cmd);
+    RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, fill);
     const uint32 tooSmall[2] = {1, 2};
     RI::cmdSetRootData(cmd, tooSmall);
+}
+
+EQ_TEST(compute, pipeline_before_heap_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    const std::vector<std::byte> bytecode = loadShader("fill");
+    RI::Pipeline fill = RI::createComputePipeline(device, {.shader = bytecode});
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdSetPipeline(cmd, fill);
 }
 
 EQ_TEST(compute, descriptor_slot_out_of_range_reports) {

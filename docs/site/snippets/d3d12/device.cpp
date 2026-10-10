@@ -12,6 +12,7 @@
 #include <wrl/client.h>
 
 #include <cstdio>
+#include <cwchar>
 
 using Microsoft::WRL::ComPtr;
 

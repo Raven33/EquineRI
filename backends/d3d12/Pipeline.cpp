@@ -91,7 +91,7 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
 }
 
 void destroyPipeline(Device &device, Pipeline &pipeline) {
-    DeviceState &state = *device.internal.state;
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, pipeline.internal.id, "pipeline");
     EQ_DX_UNTRACK(&state, pipeline.internal.id);
     auto *pso = static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState);
