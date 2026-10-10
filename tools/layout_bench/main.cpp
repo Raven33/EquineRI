@@ -44,6 +44,7 @@ struct Options {
     uint32 frames = 300;
     uint32 warmup = 30;
     std::string out;
+    bool hostBarrier = true; // Vulkan: --host-barrier off measures P94 (6)
 };
 
 Options parse(int argc, char **argv) {
@@ -73,6 +74,8 @@ Options parse(int argc, char **argv) {
             o.warmup = static_cast<uint32>(std::stoul(value));
         } else if (key == "--out") {
             o.out = value;
+        } else if (key == "--host-barrier") {
+            o.hostBarrier = value != "off";
         } else {
             std::fprintf(stderr, "usage: layout_bench [--gpu nvidia|amd|<index>] [--mode <mode>] [--res 1080|2160] "
                                  "[--frames N] [--warmup N] [--out file.csv]\n");
@@ -479,7 +482,10 @@ int main(int argc, char **argv) {
     } else if (c.options.mode == "transitions") {
         mode = RI::Vk::LayoutMode::eTransitions;
     }
-    c.device = RI::Vk::createDevice({.gpu = gpu}, {.layoutMode = mode});
+    c.device = RI::Vk::createDevice({.gpu = gpu}, {.layoutMode = mode, .hostBarrierAtEnd = c.options.hostBarrier});
+    if (!c.options.hostBarrier) {
+        c.options.mode += "-nohost";
+    }
 #else
     c.device = RI::createDevice({.gpu = gpu});
 #endif

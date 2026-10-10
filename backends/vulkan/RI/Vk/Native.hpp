@@ -112,6 +112,9 @@ struct NativeDeviceAdditions {
     const void *pNext = nullptr;
     // Forces a layout mode, for testing and measuring (P78). eUnified needs the extension.
     LayoutMode layoutMode = LayoutMode::eAuto;
+    // cmdEnd's barrier to the host (P94 (6)). Off only to measure its cost: CPU
+    // reads after a timeline point are then not guaranteed to see GPU writes.
+    bool hostBarrierAtEnd = true;
 };
 
 Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additions);
