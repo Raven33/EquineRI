@@ -34,5 +34,46 @@ RI::Device device = RI::createDevice({.gpu = chosen});
 | [`RI::createDevice`, `RI::destroyDevice`](createDevice.md) | Open a GPU for use, and close it. |
 | [`RI::Gpu`](Gpu.md) | The facts about one GPU: name, vendor, memory, ID. |
 | [`RI::DeviceDesc`, `RI::Device`](DeviceDesc.md) | What you pass to `createDevice`, and what you get back. |
+| [`RI::DeviceLimits`](DeviceLimits.md) | Heap sizes, root data size, `eGPUUpload` availability. |
+
+## Memory and buffers
+
+| Page | What it is for |
+|---|---|
+| [`RI::allocateMemory`, `RI::freeMemory`](memory.md) | Memory blocks of the four kinds. |
+| [`RI::bufferRequirements`](bufferRequirements.md) | Size and alignment of a buffer before placing it. |
+| [`RI::createBuffer`, `RI::destroyBuffer`](buffer.md) | Buffers placed in memory, with usage flags. |
+
+## Descriptors
+
+| Page | What it is for |
+|---|---|
+| [`RI::createDescriptorHeap`, `RI::destroyDescriptorHeap`](descriptorHeap.md) | The heap bindless shaders index. |
+| [`RI::writeDescriptors`](writeDescriptors.md) | Read, read-write and constant buffer views in heap slots. |
+
+## Pipelines
+
+| Page | What it is for |
+|---|---|
+| [`RI::createComputePipeline`, `RI::destroyPipeline`](pipeline.md) | A compute shader ready to run. |
+
+## Command lists
+
+| Page | What it is for |
+|---|---|
+| [`RI::createCommandList`, `RI::resetCommandList`, `RI::destroyCommandList`](commandList.md) | Lists to record GPU work into, reused after their timeline point. |
+| [`RI::cmdBegin`, `RI::cmdEnd`](cmdBegin.md) | Open and close a list for recording. |
+| [`RI::cmdSetHeap`](cmdSetHeap.md) | The descriptor heap shaders index (before the pipeline). |
+| [`RI::cmdSetPipeline`](cmdSetPipeline.md) | The shader that dispatches run. |
+| [`RI::cmdSetRootData`](cmdSetRootData.md) | The shader's root data. |
+| [`RI::cmdDispatch`](cmdDispatch.md) | Run a compute shader. |
+| [`RI::cmdBarrier`](cmdBarrier.md) | Make earlier writes visible to later commands. |
+| [`RI::cmdCopyBuffer`](cmdCopyBuffer.md) | Copy bytes between buffers. |
+
+## Submission
+
+| Page | What it is for |
+|---|---|
+| [`RI::submit`, `RI::wait`, `RI::isReached`](submit.md) | Send work to the GPU; know when it is done. |
 
 What is still missing is listed in the [coverage report](../about/coverage.md).

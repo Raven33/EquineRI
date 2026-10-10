@@ -79,6 +79,19 @@ plugins:
             Home: Accueil
             Getting started: Premiers pas
             Build and test: Compiler et tester
+            Your first compute dispatch: Votre premier dispatch de calcul
+            Memory kinds and placed resources: Types de mémoire et ressources placées
+            Descriptor heaps and bindless: Tas de descripteurs et bindless
+            Root data: Données racine
+            Timeline points and command-list reuse: Points de timeline et réutilisation des listes
+            Barriers: Barrières
+            Compiling shaders for RI: Compiler les shaders pour RI
+            Device: Device
+            Memory and buffers: Mémoire et buffers
+            Descriptors: Descripteurs
+            Pipelines: Pipelines
+            Command lists: Listes de commandes
+            Submission: Soumission
             Concepts: Concepts
             The error channel: Le canal d'erreurs
             Validation: Validation
@@ -122,19 +135,50 @@ nav:
   - Home: index.md
   - Getting started:
       - Build and test: getting-started/build.md
+      - Your first compute dispatch: getting-started/first-compute.md
   - Concepts:
       - The error channel: concepts/error-channel.md
       - Validation: concepts/validation.md
+      - Memory kinds and placed resources: concepts/memory.md
+      - Descriptor heaps and bindless: concepts/descriptors.md
+      - Root data: concepts/root-data.md
+      - Timeline points and command-list reuse: concepts/timeline.md
+      - Barriers: concepts/barriers.md
+      - Compiling shaders for RI: concepts/shaders.md
   - Reference:
       - reference/index.md
-      - RI::listGpus: reference/listGpus.md
-      - RI::createDevice, RI::destroyDevice: reference/createDevice.md
-      - RI::Gpu: reference/Gpu.md
-      - RI::DeviceDesc, RI::Device: reference/DeviceDesc.md
+      - Device:
+          - RI::listGpus: reference/listGpus.md
+          - RI::createDevice, RI::destroyDevice: reference/createDevice.md
+          - RI::Gpu: reference/Gpu.md
+          - RI::DeviceDesc, RI::Device: reference/DeviceDesc.md
+          - RI::DeviceLimits: reference/DeviceLimits.md
+      - Memory and buffers:
+          - RI::allocateMemory, RI::freeMemory: reference/memory.md
+          - RI::bufferRequirements: reference/bufferRequirements.md
+          - RI::createBuffer, RI::destroyBuffer: reference/buffer.md
+      - Descriptors:
+          - RI::createDescriptorHeap, RI::destroyDescriptorHeap: reference/descriptorHeap.md
+          - RI::writeDescriptors: reference/writeDescriptors.md
+      - Pipelines:
+          - RI::createComputePipeline, RI::destroyPipeline: reference/pipeline.md
+      - Command lists:
+          - RI::createCommandList, RI::resetCommandList: reference/commandList.md
+          - RI::cmdBegin, RI::cmdEnd: reference/cmdBegin.md
+          - RI::cmdSetHeap: reference/cmdSetHeap.md
+          - RI::cmdSetPipeline: reference/cmdSetPipeline.md
+          - RI::cmdSetRootData: reference/cmdSetRootData.md
+          - RI::cmdDispatch: reference/cmdDispatch.md
+          - RI::cmdBarrier: reference/cmdBarrier.md
+          - RI::cmdCopyBuffer: reference/cmdCopyBuffer.md
+      - Submission:
+          - RI::submit, RI::wait, RI::isReached: reference/submit.md
   - Native access:
       - native/index.md
       - "Vulkan: device creation": native/vulkan/device-creation.md
+      - "Vulkan: native handles": native/vulkan/objects.md
       - "D3D12: device creation": native/d3d12/device-creation.md
+      - "D3D12: native objects": native/d3d12/objects.md
   - Helpers: helpers/index.md
   - Design notes:
       - design-notes/index.md

@@ -104,7 +104,7 @@ def render() -> str:
     documented: dict[str, list[Path]] = {}
     stale_symbols: list[tuple[Path, str]] = []
     bad_citations: list[tuple[Path, str]] = []
-    missing_total = {kind: 0 for kind in (*SNIPPET_KINDS, "signature", "other")}
+    missing_total = {kind: 0 for kind in (*SNIPPET_KINDS, "hlsl", "signature", "other")}
     for page in pages:
         meta, body = split_front_matter(page.read_text(encoding="utf-8"))
         symbols = meta.get("symbols", [])

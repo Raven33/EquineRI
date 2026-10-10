@@ -1,0 +1,65 @@
+---
+symbols: [RI::DeviceLimits]
+---
+
+# RI::DeviceLimits
+
+## What it is
+
+`device.limits` tells what this device allows, for the few things RI's own functions depend
+on. It is filled in by [`RI::createDevice`](createDevice.md) and never changes. Anything else
+about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
+
+| Field | Meaning | Vulkan | D3D12 |
+|---|---|---|---|
+| `maxResourceDescriptors` | the most view slots in a [descriptor heap](descriptorHeap.md) | the smallest update-after-bind descriptor limit of the GPU, at most 1,000,000 | 1,000,000 |
+| `maxSamplerDescriptors` | the most sampler slots in a heap | the GPU's update-after-bind sampler limit, at most 2048 | 2048 |
+| `maxRootDataSize` | the most bytes of [root data](../concepts/root-data.md) a shader may declare | `maxPushConstantsSize` (at least 128) | 256 (64 root constants) |
+| `gpuUploadMemory` | whether [`MemoryKind::eGPUUpload`](memory.md) can be allocated | all of the largest device-local heap is host-visible (ReBAR) | `GPUUploadHeapSupported` |
+
+## Signature
+
+--8<-- "generated/signatures/RI.DeviceLimits.md"
+
+## Example
+
+```cpp
+--8<-- "snippets/ri/compute.cpp:limits"
+```
+
+## The same in native code
+
+=== "RI"
+
+    ```cpp
+    --8<-- "snippets/ri/compute.cpp:limits"
+    ```
+
+=== "Vulkan"
+
+    The limits come from `VkPhysicalDeviceLimits` and `VkPhysicalDeviceVulkan12Properties`
+    (`maxDescriptorSetUpdateAfterBind*`, `maxPerStageDescriptorUpdateAfterBind*`), and from
+    the memory heaps and types for `gpuUploadMemory`. RI also checks with
+    `vkGetDescriptorSetLayoutSupport` that a heap of the maximum size can be created.
+
+=== "D3D12"
+
+    The heap limits are fixed by resource binding tier 3
+    (`D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_2`,
+    `D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE`); a root signature holds 64 32-bit values;
+    `gpuUploadMemory` is `D3D12_FEATURE_DATA_D3D12_OPTIONS16::GPUUploadHeapSupported`.
+
+## Rules and errors
+
+- A heap larger than the limits is a **programmer error** at
+  [`createDescriptorHeap`](descriptorHeap.md).
+- A shader with more root data than `maxRootDataSize` fails
+  [`createComputePipeline`](pipeline.md) with an **unsupported** error.
+- `eGPUUpload` memory without `gpuUploadMemory` is an **unsupported** error.
+
+## Related decisions
+
+- [P59](../design-notes/decisions.md#p59): heap sizes within limits RI reports.
+- [P44](../design-notes/decisions.md#p44): root data size.
+- [P32](../design-notes/decisions.md#p32): `eGPUUpload` availability.
+- [P94](../design-notes/decisions.md#p94): the limits' values.

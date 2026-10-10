@@ -44,6 +44,37 @@ int main() {
     std::printf("mesh shaders: %s\n", options7.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED ? "yes" : "no");
     // --8<-- [end:native-handles]
 
+    // --8<-- [start:object-handles]
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 65536);
+    RI::Buffer buffer = RI::createBuffer(device, memory, 0, {.size = 1024, .usage = RI::BufferUsage::eReadWrite});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 16, .samplerCount = 16});
+    ID3D12Resource *resource = RI::D3D12::native(buffer); // borrowed: no Release
+    ID3D12Heap *nativeMemory = RI::D3D12::native(memory);
+    const RI::D3D12::NativeDescriptorHeap nativeHeap = RI::D3D12::native(heap);
+    // Name the buffer for PIX and debug-layer messages.
+    resource->SetName(L"particles");
+    std::printf("heap %llu bytes; view heap holds %u descriptors\n",
+                static_cast<unsigned long long>(nativeMemory->GetDesc().SizeInBytes),
+                nativeHeap.resourceHeap->GetDesc().NumDescriptors);
+    // --8<-- [end:object-handles]
+
+    // --8<-- [start:native-command]
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    // A native command recorded into RI's command list: write one 32-bit value.
+    // It changes no state RI relies on (no heaps, root signature or pipeline).
+    ID3D12GraphicsCommandList7 *list = RI::D3D12::native(cmd);
+    const D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write{.Dest = buffer.gpuAddress, .Value = 42};
+    list->WriteBufferImmediate(1, &write, nullptr);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    // --8<-- [end:native-command]
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, buffer);
+    RI::freeMemory(device, memory);
+
     std::printf("experimental shader models: %s\n", experimental ? "on" : "off");
     RI::destroyDevice(device);
     return 0;

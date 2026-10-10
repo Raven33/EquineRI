@@ -102,10 +102,18 @@ Without RI, each API has its own way, and checking every result is up to you.
     --8<-- "snippets/vulkan/errors.cpp:check-result"
     ```
 
+    ```cpp
+    --8<-- "snippets/vulkan/errors.cpp:messenger"
+    ```
+
 === "D3D12"
 
     ```cpp
     --8<-- "snippets/d3d12/errors.cpp:check-hresult"
+    ```
+
+    ```cpp
+    --8<-- "snippets/d3d12/errors.cpp:info-queue"
     ```
 
 ## Related decisions

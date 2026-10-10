@@ -28,7 +28,9 @@ Native code for the wrong backend does not compile, so a mistake shows at build 
 | Backend | Page | What you can do |
 |---|---|---|
 | Vulkan | [Device creation](vulkan/device-creation.md) | Change the features RI enables (e.g. robustness), add extensions and feature structures, reach the instance, device, queue and function table. |
+| Vulkan | [Native handles](vulkan/objects.md) | The `VkDeviceMemory`, `VkBuffer`, descriptor sets, pipeline and command buffer behind RI objects. |
 | D3D12 | [Device creation](d3d12/device-creation.md) | Run code just before the device is created (e.g. experimental features), reach the factory, adapter, device and queue. |
+| D3D12 | [Native objects](d3d12/objects.md) | The heap, resource, descriptor heaps, pipeline state, root signature and command list behind RI objects. |
 
 Native sections inside command lists, and importing natively created objects into RI, will
 be documented here when they are implemented

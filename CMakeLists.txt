@@ -260,7 +260,7 @@ if (EQUINE_BUILD_SHADER_COMPILER)
 endif()
 
 # Build-time shader compilation for tests and samples (P93): one pinned DXC.
-if (EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES)
+if (EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES OR EQUINE_BUILD_DOC_SNIPPETS)
     include(EquineDXC)
 endif()
 

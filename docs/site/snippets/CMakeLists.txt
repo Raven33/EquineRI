@@ -9,6 +9,7 @@
 #            compiled once per backend).
 #   vulkan/  canonical Vulkan and Vulkan native access (<RI/Vk/Native.hpp>),
 #            compiled against EquineVulkanBackend.
+#   hlsl/    the examples' shaders, compiled to SPIR-V and DXIL with RI's rule.
 #   d3d12/   canonical D3D12 and D3D12 native access (<RI/D3D12/Native.hpp>),
 #            compiled against EquineD3D12Backend; skipped when that backend is
 #            off (always on Linux).
@@ -26,6 +27,9 @@ foreach(backend IN ITEMS Vulkan D3D12)
         add_library(EquineDocSnippetsRI${backend} OBJECT ${EQUINE_DOC_SNIPPETS_RI})
         target_link_libraries(EquineDocSnippetsRI${backend} PRIVATE Equine${backend}Backend)
         add_dependencies(EquineDocSnippets EquineDocSnippetsRI${backend})
+        # The examples' shader, with RI's compile rule (P93); defines EQUINE_SHADER_DIR.
+        equine_add_shaders(EquineDocSnippetsRI${backend} PROFILE cs_6_6 SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/hlsl/doc_compute.hlsl")
     endif()
 endforeach()
 

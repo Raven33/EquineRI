@@ -84,6 +84,11 @@ already filled in, without the `sType` / `pNext` bookkeeping.
   `DeviceFeatures` instead.
 - `defaultDeviceFeatures` opens a short-lived instance to ask the GPU. Call it with a `Gpu`
   from `listGpus`.
+- RI's own commands need some features (mutable descriptors, timeline semaphores, buffer
+  device addresses, synchronization2, descriptor indexing with update-after-bind). Turning one
+  of them off in `DeviceFeatures` makes `createDevice` report an **unsupported** error that
+  names it. `mutableDescriptor` is the structure of `VK_EXT_mutable_descriptor_type`, which
+  RI's [descriptor heaps](../../concepts/descriptors.md) are built on.
 - An extension or feature the GPU does not support makes `vkCreateDevice` fail, reported as
   **unsupported** through the [error channel](../../concepts/error-channel.md).
 

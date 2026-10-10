@@ -23,8 +23,19 @@ Step by step, `createDevice`:
    behaves like D3D12, which has no feature list ([P60](../design-notes/decisions.md#p60));
 4. gets one **graphics queue** (Vulkan: from a queue family with graphics and compute; D3D12:
    a DIRECT queue);
-5. in validation builds, turns on the native validation layer and routes its errors to the
+5. prepares what the rest of RI needs: the queue's timeline (a Vulkan timeline semaphore or a
+   D3D12 fence, see [Timeline points](../concepts/timeline.md)), the memory type behind each
+   [memory kind](../concepts/memory.md), and on Vulkan the descriptor set layouts behind
+   [descriptor heaps](../concepts/descriptors.md);
+6. fills in [`device.limits`](DeviceLimits.md) and `device.graphicsQueue`;
+7. in validation builds, turns on the native validation layer and routes its errors to the
    [error channel](../concepts/error-channel.md) (see [Validation](../concepts/validation.md)).
+
+On Vulkan, the GPU must also support what RI's own commands rely on, or `createDevice`
+reports an **unsupported** error naming what is missing: `VK_EXT_mutable_descriptor_type`,
+timeline semaphores, buffer device addresses, synchronization2, and descriptor indexing with
+partially bound, variable-count, update-after-bind descriptors of every buffer and image type.
+Every GPU at RI's hardware floor has them.
 
 The returned `device.gpu` is a fresh description of the GPU, read while creating the device.
 
@@ -119,7 +130,8 @@ your own renderer, not necessarily what RI does internally.
 - features that need an extension RI does not enable.
 
 It does **not** mean every extension, because some extensions change behaviour just by
-being on. RI enables these extensions when the GPU has them: swapchain, mesh shader,
+being on. RI always enables mutable descriptor type (required, for descriptor heaps), and
+enables these extensions when the GPU has them: swapchain, mesh shader,
 deferred host operations with acceleration structure and ray query, unified image layouts,
 and device fault (validation builds only). The instance always has `VK_EXT_debug_utils`,
 for object names and markers ([P53](../design-notes/decisions.md#p53)).

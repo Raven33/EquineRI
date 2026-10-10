@@ -35,6 +35,7 @@ selector only appears on a site published with `mike` (below).
 | `docs/site/docs/` | The pages. `page.md` is English; `page.fr.md` its French translation. |
 | `docs/site/templates/reference-page.md` | The template for a reference page. |
 | `docs/site/snippets/{ri,vulkan,d3d12}/` | Code examples: complete, compilable source files. |
+| `docs/site/snippets/hlsl/` | The examples' shaders, compiled to SPIR-V and DXIL with RI's rule. |
 | `docs/site/scripts/` | Header extraction, decision log, coverage report. |
 | `docs/site/hooks/equine_docs.py` | Runs the scripts and shows placeholders for missing snippets. |
 | `docs/site/generated/` | Generated includes (signatures, `api.json`). Not committed. |
@@ -57,6 +58,8 @@ A snippet is a **complete source file** (includes, `main`, cleanup) under
 - `ri/`: RI code, compiled once per enabled backend;
 - `vulkan/`: canonical Vulkan code, and code using `<RI/Vk/Native.hpp>`;
 - `d3d12/`: canonical D3D12 code, and code using `<RI/D3D12/Native.hpp>`.
+- `hlsl/`: shaders, compiled with `equine_add_shaders` into `EQUINE_SHADER_DIR` for the RI
+  snippets.
 
 A page shows only a **named section** of the file, between two marker comments:
 
