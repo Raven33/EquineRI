@@ -36,6 +36,7 @@ with Milestone 1 of `docs/Plan.md` (the user's build check).
 
 ## Build
 
-Presets: `clangcl-debug` (Windows, both backends) and `clang-debug` (Linux, Vulkan). Run
-`git submodule update --init --recursive` first. The D3D12 backend downloads the Agility
-SDK 1.619.6 at configure time. Not yet validated by the user (Milestone 1).
+Presets: `clangcl-debug` (Windows, both backends) and `clang-debug` (Linux, Vulkan). The
+D3D12 backend downloads the Agility SDK 1.619.6 at configure time. The scaffold holds only
+what v1 needs: integer aliases (`src/types.hpp`), RavenLib's bitmask, backend header-check
+targets, the Agility SDK module, `FindDXC`, and an empty GPU-free test harness. Not yet validated by the user (Milestone 1).
