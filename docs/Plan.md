@@ -71,11 +71,18 @@ depends on it.
 - RI's own layout transitions with exact/full halves (P68); on Vulkan without unified
   layouts, both modes G and T (P78) with the force option.
 - Timestamp queries with CPU reset (P51, P71).
+- Measure the cost of the automatic host barrier at `cmdEnd` on Vulkan (P94 (6)) against an
+  explicit `Stage::eHost`, and decide.
 - The baseline: hand-written optimal per-texture transitions (P79).
 - Run `docs/LayoutEvaluation.md` items 1–5 (item 6, multi-queue, optional) on the test
   GPUs, together with the user. Apply the decision rule (P79).
 
 Exit: L1 confirmed (or reopened together), and P36 / P16 confirmed with it.
+
+## Later measurement (P18, P94 (1))
+
+- Vulkan descriptor heaps: mutable descriptors on update-after-bind sets (current) against
+  `VK_EXT_descriptor_heap`, on every target GPU that has the extension.
 
 ## Milestone 4: the rest of v1 (order chosen together)
 
