@@ -190,7 +190,8 @@ endif()
 
 # ── Core library ──────────────────────────────────────────────────────────────
 # Backend-independent part: portable types shared by every backend (P83), the
-# central error channel (P57), and RI's shared validation checks (P88). User code includes <RI/RI.hpp>.
+# central error channel (P57), RI's shared validation checks (P88), and RI's own
+# DXIL reader (P67). User code includes <RI/RI.hpp>.
 add_library(EquineRI STATIC
     src/types.hpp
     src/RI/RI.hpp
@@ -205,6 +206,8 @@ add_library(EquineRI STATIC
     src/RI/Validation/Validation.hpp
     src/RI/Validation/ObjectTracker.hpp
     src/RI/Validation/ObjectTracker.cpp
+    src/RI/Reflection/Dxil.hpp
+    src/RI/Reflection/Dxil.cpp
 )
 target_include_directories(EquineRI PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
