@@ -48,6 +48,11 @@ struct Options {
 
 Options parse(int argc, char **argv) {
     Options o;
+    if (argc % 2 == 0) {
+        std::fprintf(stderr, "usage: layout_bench [--gpu nvidia|amd|<index>] [--mode <mode>] [--res 1080|2160] "
+                             "[--frames N] [--warmup N] [--out file.csv]\n");
+        std::exit(1);
+    }
 #if EQUINE_BACKEND_VULKAN
     o.mode = "transitions";
 #else
@@ -73,10 +78,6 @@ Options parse(int argc, char **argv) {
                                  "[--frames N] [--warmup N] [--out file.csv]\n");
             std::exit(1);
         }
-    }
-    if (argc % 2 == 0) {
-        std::fprintf(stderr, "layout_bench: every option takes a value\n");
-        std::exit(1);
     }
     return o;
 }
@@ -403,6 +404,15 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
     }
     writeDescriptors(c, w);
     RI::CommandList cmd = RI::createCommandList(c.device);
+    // Each workload reuses the previous one's memory, so its textures are
+    // discarded before first use (P69), on both paths.
+    RI::cmdBegin(cmd);
+    for (bench::Texture &t : w.textures) {
+        RI::cmdDiscard(cmd, t.texture.view);
+    }
+    RI::cmdEnd(cmd);
+    RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
+    RI::resetCommandList(cmd);
     const uint32 passCount = static_cast<uint32>(w.passes.size());
     std::vector<std::vector<double>> times(passCount + 1);
     const double msPerTick = 1000.0 / static_cast<double>(c.device.limits.timestampFrequency);
