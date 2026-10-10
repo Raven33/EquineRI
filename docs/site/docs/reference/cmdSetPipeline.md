@@ -6,8 +6,11 @@ symbols: [RI::cmdSetPipeline]
 
 ## What it does
 
-`RI::cmdSetPipeline(cmd, pipeline)` chooses the [pipeline](pipeline.md) (the shader) that the
-following [`cmdDispatch`](cmdDispatch.md) calls run. It also sets the pipeline's layout (its
+`RI::cmdSetPipeline(cmd, pipeline)` chooses the pipeline that the following commands run: a
+[compute pipeline](pipeline.md) for [`cmdDispatch`](cmdDispatch.md), or a
+[graphics pipeline](graphicsPipeline.md) for [`cmdDraw`](cmdDraw.md) inside a
+[rendering section](../concepts/rendering.md). One pipeline is current at a time on D3D12:
+after a dispatch, set the graphics pipeline again before drawing, and the other way round. It also sets the pipeline's layout (its
 root signature on D3D12) and remembers the shader's root data size, so
 [`cmdSetRootData`](cmdSetRootData.md) can be checked against it.
 
@@ -59,6 +62,9 @@ switch: each pipeline expects its own.
   descriptor heap with cmdSetHeap first (D3D12 needs the heaps bound before a root signature
   that indexes them)`.
 - In validation builds, a destroyed pipeline is a **programmer error**.
+- In a read-only depth section ([P75](../design-notes/decisions.md#p75)), a pipeline that
+  writes depth is a **programmer error** in validation builds: `cmdSetPipeline: the pipeline
+  writes depth, but the rendering section's depth is read-only (P75)`.
 
 ## Related decisions
 

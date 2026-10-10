@@ -1,5 +1,5 @@
 ---
-symbols: [RI::Vk::DeviceFeatures, RI::Vk::defaultDeviceFeatures, RI::Vk::NativeDeviceAdditions, RI::Vk::createDevice, RI::Vk::native, RI::Vk::NativeDevice]
+symbols: [RI::Vk::DeviceFeatures, RI::Vk::defaultDeviceFeatures, RI::Vk::NativeDeviceAdditions, RI::Vk::createDevice, RI::Vk::native, RI::Vk::NativeDevice, RI::Vk::LayoutMode]
 ---
 
 # Vulkan: device creation
@@ -23,6 +23,9 @@ There are three ways to change the device, and you can combine them:
 3. **Add feature structures RI does not know.** Put them in `.pNext`. RI appends your chain
    after its own and does not touch it.
 
+A fourth addition is for testing and measuring: `.layoutMode` forces how the backend hides
+image layouts (below).
+
 ## Signature
 
 --8<-- "generated/signatures/RI.Vk.DeviceFeatures.md"
@@ -44,6 +47,30 @@ There are three ways to change the device, and you can combine them:
 ```cpp
 --8<-- "snippets/vulkan/native-device.cpp:extension"
 ```
+
+## Example: force a layout mode
+
+```cpp
+--8<-- "snippets/vulkan/native-device.cpp:layout-mode"
+```
+
+The Vulkan backend hides image layouts in one of three **layout modes**
+([P78](../../design-notes/decisions.md#p78)), described in
+[Image layouts are RI's business](../../concepts/layouts.md):
+
+--8<-- "generated/signatures/RI.Vk.LayoutMode.md"
+
+| `layoutMode` | Effect |
+|---|---|
+| `eAuto` (default) | `eUnified` when `VK_KHR_unified_image_layouts` is enabled with its `unifiedImageLayouts` feature; otherwise `eTransitions` until the Milestone 3 measurement decides per GPU |
+| `eUnified` | every texture rests in `GENERAL`, no switches; needs the extension (**unsupported** error otherwise) |
+| `eGeneral` | mode G: `GENERAL` everywhere without the extension |
+| `eTransitions` | mode T: resting layouts per usage, switched around RI's operations |
+
+Your RI code is identical in every mode ([P16](../../design-notes/decisions.md#p16)); only
+native code that touches RI's textures sees the difference, through each texture's resting
+layout ([Vulkan: native handles](objects.md)). `NativeDevice::layoutMode` reports the mode in
+use, never `eAuto`.
 
 ## The same in native code
 
@@ -85,7 +112,8 @@ already filled in, without the `sType` / `pNext` bookkeeping.
 - `defaultDeviceFeatures` opens a short-lived instance to ask the GPU. Call it with a `Gpu`
   from `listGpus`.
 - RI's own commands need some features (mutable descriptors, timeline semaphores, buffer
-  device addresses, synchronization2, descriptor indexing with update-after-bind). Turning one
+  device addresses, synchronization2, descriptor indexing with update-after-bind, dynamic
+  rendering, separate depth-stencil layouts, host query reset). Turning one
   of them off in `DeviceFeatures` makes `createDevice` report an **unsupported** error that
   names it. `mutableDescriptor` is the structure of `VK_EXT_mutable_descriptor_type`, which
   RI's [descriptor heaps](../../concepts/descriptors.md) are built on.
@@ -123,3 +151,4 @@ The handles are borrowed: RI destroys them in `destroyDevice`.
   `extensions` and `pNext`; why replacing RI's structures by `sType` was rejected.
 - [P84](../../design-notes/decisions.md#p84): native access is gated.
 - [P89](../../design-notes/decisions.md#p89): volk and the per-device function table.
+- [P78](../../design-notes/decisions.md#p78): the layout modes and the option to force one.

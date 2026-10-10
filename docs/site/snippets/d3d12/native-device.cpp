@@ -70,6 +70,30 @@ int main() {
     RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
     // --8<-- [end:native-command]
 
+    // --8<-- [start:native-texture]
+    // A texture's resource and the layout it rests in. Native code may move it
+    // to another layout, but must return it to restingLayout before RI uses it.
+    RI::Memory textureMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 16u << 20);
+    RI::Texture texture = RI::createTexture(device, textureMemory, 0,
+                                            {.width = 256,
+                                             .height = 256,
+                                             .format = RI::Format::eRGBA8Unorm,
+                                             .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopyDst});
+    const RI::D3D12::NativeTexture native = RI::D3D12::native(texture); // borrowed: no Release
+    native.resource->SetName(L"albedo");
+    const bool common = native.restingLayout == D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COMMON; // sampled or copied
+    std::printf("rests in DIRECT_QUEUE_COMMON: %s\n", common ? "yes" : "no");
+    // --8<-- [end:native-texture]
+
+    // --8<-- [start:native-query-pool]
+    RI::QueryPool pool = RI::createQueryPool(device, {.type = RI::QueryType::eTimestamp, .count = 2});
+    ID3D12QueryHeap *queryHeap = RI::D3D12::native(pool); // a TIMESTAMP query heap
+    queryHeap->SetName(L"frame timestamps");
+    // --8<-- [end:native-query-pool]
+
+    RI::destroyQueryPool(device, pool);
+    RI::destroyTexture(device, texture);
+    RI::freeMemory(device, textureMemory);
     RI::destroyCommandList(device, cmd);
     RI::destroyDescriptorHeap(device, heap);
     RI::destroyBuffer(device, buffer);

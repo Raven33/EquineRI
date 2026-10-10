@@ -14,8 +14,10 @@ description, without creating anything ([P58](../design-notes/decisions.md#p58))
 Use the result to size memory blocks and to choose offsets: each buffer's offset must be a
 multiple of `alignment`, and `size` bytes from there must fit in the block.
 
-Every buffer fits every [memory kind](../concepts/memory.md), so there is no "memory type"
-part in the answer.
+The answer also has `kinds`: a bit per [memory kind](../concepts/memory.md) that can hold the
+resource, tested with [`RI::fits`](textureRequirements.md). Every buffer fits every memory kind
+the device has; `kinds` matters for textures ([`textureRequirements`](textureRequirements.md)),
+which usually fit `eGPU` only.
 
 ## Signature
 

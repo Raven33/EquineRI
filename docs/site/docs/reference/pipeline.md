@@ -9,7 +9,9 @@ symbols: [RI::createComputePipeline, RI::destroyPipeline, RI::Pipeline, RI::Comp
 A **pipeline** is a shader compiled by the driver for this GPU, with everything it needs to
 run. `RI::createComputePipeline(device, desc)` takes the compute shader's **bytecode** (SPIR-V
 on Vulkan, DXIL on D3D12; see [Compiling shaders](../concepts/shaders.md)) and returns a
-ready `RI::Pipeline` ([P38](../design-notes/decisions.md#p38)).
+ready `RI::Pipeline` ([P38](../design-notes/decisions.md#p38)). Graphics pipelines (vertex and
+pixel shaders) are created with [`createGraphicsPipeline`](graphicsPipeline.md) and destroyed
+with the same `destroyPipeline`.
 
 Step by step:
 

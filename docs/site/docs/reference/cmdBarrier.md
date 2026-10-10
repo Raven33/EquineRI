@@ -12,8 +12,23 @@ recorded later ([P36](../design-notes/decisions.md#p36), [P94](../design-notes/d
 
 Use it between a command that writes memory and a later one that reads (or writes) it: a copy
 then a dispatch that reads the copied data, a dispatch then a copy of its output, two
-dispatches where the second reads what the first wrote. Why barriers exist, and why RI's are
-coarse, is explained in [Barriers](../concepts/barriers.md).
+dispatches where the second reads what the first wrote, a rendering section then a shader that
+samples its result. Why barriers exist, and why RI's are coarse, is explained in
+[Barriers](../concepts/barriers.md).
+
+| `Stage` | Covers |
+|---|---|
+| `eCopy` | copies and clears |
+| `eCompute` | compute shaders |
+| `eIndirect` | reading indirect arguments (later) |
+| `eVertex` | vertex shaders |
+| `ePixel` | pixel shaders |
+| `eRenderTarget` | color attachment reads and writes |
+| `eDepthStencil` | depth and stencil tests and writes |
+| `eAll` | every stage |
+
+A barrier names no texture and changes no layout: textures stay in their resting layout between
+operations ([Image layouts are RI's business](../concepts/layouts.md)).
 
 ## Signature
 
@@ -29,6 +44,12 @@ coarse, is explained in [Barriers](../concepts/barriers.md).
 
 ```cpp
 --8<-- "snippets/ri/compute.cpp:barrier-compute-copy"
+```
+
+After a rendering section, before shaders sample what it wrote:
+
+```cpp
+--8<-- "snippets/ri/textures.cpp:barrier-render-sample"
 ```
 
 ## The same in native code
@@ -69,6 +90,11 @@ coarse, is explained in [Barriers](../concepts/barriers.md).
 ## Rules and errors
 
 - Two reads never need a barrier between them.
+- Not inside a rendering section: end the section, barrier, begin the next.
+- Attachment stages (`eRenderTarget`, `eDepthStencil`): on D3D12 global barriers cannot name
+  attachment accesses, so these stages add nothing there and RI's switch back to rest at
+  `cmdEndRendering` makes the attachment writes visible. Write the barrier anyway: Vulkan uses
+  it.
 - `Stage::eAll` waits for, and blocks, everything: correct but slower than naming the stages.
 - No barrier is needed before the CPU reads results: [`cmdEnd`](cmdBegin.md) and the timeline
   point handle it.
@@ -83,3 +109,4 @@ coarse, is explained in [Barriers](../concepts/barriers.md).
 - [P72](../design-notes/decisions.md#p72): no resource-naming barrier.
 - [P10](../design-notes/decisions.md#p10): coarse is the default.
 - [P94](../design-notes/decisions.md#p94): the stages and their native mapping.
+- [P68](../design-notes/decisions.md#p68): RI's own switches around its operations.

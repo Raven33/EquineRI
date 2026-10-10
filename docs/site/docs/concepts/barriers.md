@@ -26,18 +26,26 @@ in commands recorded later.
 
 | Stage | Covers |
 |---|---|
-| `Stage::eCopy` | copy commands (`cmdCopyBuffer`) |
+| `Stage::eCopy` | copy commands (`cmdCopyBuffer`) and clears (`cmdClearTexture`, `cmdClearBuffer`) |
 | `Stage::eCompute` | compute shaders (`cmdDispatch`) |
 | `Stage::eIndirect` | reading indirect arguments (later) |
+| `Stage::eVertex` | vertex shaders (`cmdDraw`), including the buffers they pull vertices from |
+| `Stage::ePixel` | pixel shaders |
+| `Stage::eRenderTarget` | color attachment reads and writes in a rendering section |
+| `Stage::eDepthStencil` | depth and stencil tests and writes in a rendering section |
 | `Stage::eAll` | every stage |
 
-Stages combine with `|`. Graphics stages come with graphics pipelines.
+Stages combine with `|`.
 
 A barrier is needed **between a write and a later access** of the same memory:
 
 - copy, then a shader reads the copied data: `cmdBarrier(cmd, eCopy, eCompute)`;
 - a shader writes, then a copy reads: `cmdBarrier(cmd, eCompute, eCopy)`;
-- a shader writes, then another dispatch reads: `cmdBarrier(cmd, eCompute, eCompute)`.
+- a shader writes, then another dispatch reads: `cmdBarrier(cmd, eCompute, eCompute)`;
+- a rendering section writes a texture, then shaders sample it:
+  `cmdBarrier(cmd, eRenderTarget | eDepthStencil, ePixel | eCompute)`;
+- a compute shader writes a buffer, then a draw pulls vertices from it:
+  `cmdBarrier(cmd, eCompute, eVertex)`.
 
 The `before` side covers everything recorded earlier, **including earlier submissions**: a
 command list that reads what a previous submission wrote starts with a barrier too.
@@ -50,8 +58,20 @@ of each other need none either.
 Naming resources in a barrier ("only this buffer") is the fine-grained form. RI has **no
 resource-naming barrier** ([P72](../design-notes/decisions.md#p72)): on desktop GPUs, a
 barrier that changes no image layout costs about the same whether it names one resource or
-none. Buffers have no layouts, so for them a global barrier is all there is. Finer control is
+none. Buffers have no layouts, so for them a global barrier is all there is. Textures have layouts,
+but RI keeps every texture in one resting layout between operations, so barriers between your
+work never change one ([Image layouts are RI's business](layouts.md)). Finer control is
 available through native code.
+
+## Attachments
+
+Rendering sections are RI's own operations. Around them RI switches textures between layouts,
+and its switch back to rest at `cmdEndRendering` already makes the section's attachment writes
+visible on backends that switch. Write the barrier after a section anyway: on Vulkan with
+unified layouts there is no switch, and the barrier is what orders the next reads. On D3D12,
+global barriers cannot name attachment accesses, so `eRenderTarget` and `eDepthStencil` add
+nothing there, and a barrier whose `before` or `after` holds only attachment stages records
+nothing.
 
 ## The CPU side: nothing to do
 
@@ -86,6 +106,10 @@ a barrier to the CPU.
     | `eCopy` | `VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT` |
     | `eCompute` | `VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT` |
     | `eIndirect` | `VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT` |
+    | `eVertex` | `VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT` |
+    | `ePixel` | `VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT` |
+    | `eRenderTarget` | `VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT` |
+    | `eDepthStencil` | `VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT \| LATE_FRAGMENT_TESTS_BIT` |
     | `eAll` | `VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT` |
 
     RI uses `MEMORY_WRITE` as the source access and `MEMORY_READ | MEMORY_WRITE` as the
@@ -105,10 +129,13 @@ a barrier to the CPU.
 
     | RI stage | D3D12 sync | Accesses |
     |---|---|---|
-    | `eCopy` | `SYNC_COPY` | `COPY_SOURCE \| COPY_DEST` |
+    | `eCopy` | `SYNC_COPY \| SYNC_CLEAR_UNORDERED_ACCESS_VIEW` | `COPY_SOURCE \| COPY_DEST \| UNORDERED_ACCESS` |
     | `eCompute` | `SYNC_COMPUTE_SHADING` | `UNORDERED_ACCESS \| SHADER_RESOURCE \| CONSTANT_BUFFER` |
     | `eIndirect` | `SYNC_EXECUTE_INDIRECT` | `INDIRECT_ARGUMENT` |
-    | `eAll` | `SYNC_ALL` | `COMMON` (every access) |
+    | `eVertex` | `SYNC_VERTEX_SHADING` | `UNORDERED_ACCESS \| SHADER_RESOURCE \| CONSTANT_BUFFER` |
+    | `ePixel` | `SYNC_PIXEL_SHADING` | `UNORDERED_ACCESS \| SHADER_RESOURCE \| CONSTANT_BUFFER` |
+    | `eRenderTarget`, `eDepthStencil` | none: covered by RI's switch at `cmdEndRendering` | none |
+    | `eAll` | `SYNC_ALL` | every access above |
 
     What to watch for: enhanced barriers need the Agility SDK and a recent driver; the older
     `ResourceBarrier` with resource states is the legacy model.
