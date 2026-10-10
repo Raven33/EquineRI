@@ -42,6 +42,14 @@ CheckResult checkRange(uint64 offset, uint64 size, uint64 total, uint64 alignmen
     return {};
 }
 
+CheckResult checkHeapSetBeforePipeline(bool heapSet) {
+    if (!heapSet) {
+        return std::string("cmdSetPipeline: set a descriptor heap with cmdSetHeap first "
+                           "(D3D12 needs the heaps bound before a root signature that indexes them)");
+    }
+    return {};
+}
+
 CheckResult checkBufferView(uint64 offset, uint64 size, uint64 bufferSize, uint32 stride, bool constant) {
     if (constant) {
         if (CheckResult r = checkRange(offset, constantViewSize(size), bufferSize, 256,

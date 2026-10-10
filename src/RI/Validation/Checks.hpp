@@ -27,6 +27,11 @@ CheckResult checkCommandListIdle(uint64 lastSubmitted, uint64 completed, std::st
 // multiple of `alignment` (resource placement P31, buffer views P87).
 CheckResult checkRange(uint64 offset, uint64 size, uint64 total, uint64 alignment, std::string_view what);
 
+// A descriptor heap is set before a pipeline (P94): D3D12 requires the heaps
+// bound before a root signature that indexes them, so RI makes it the rule on
+// every backend.
+CheckResult checkHeapSetBeforePipeline(bool heapSet);
+
 // Buffer views (P87), one rule for both backends (D3D12 addresses views in
 // elements and 256-byte constant blocks): read and read-write views start at a
 // multiple of 16 bytes and of `stride`, and cover whole elements; constant

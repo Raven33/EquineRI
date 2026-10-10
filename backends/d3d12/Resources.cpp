@@ -105,7 +105,7 @@ Memory allocateMemory(Device &device, MemoryKind kind, uint64 size) {
 }
 
 void freeMemory(Device &device, Memory &memory) {
-    DeviceState &state = *device.internal.state;
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_DX_UNTRACK(&state, memory.internal.id);
     auto *whole = static_cast<ID3D12Resource *>(memory.internal.mapBuffer);
@@ -127,7 +127,7 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
-    const MemoryRequirements requirements = bufferRequirements(device, desc);
+    [[maybe_unused]] const MemoryRequirements requirements = bufferRequirements(device, desc);
     EQ_VALIDATE(Validation::checkRange(offset, requirements.size, alignUp(memory.size, kPlacementAlignment),
                                        requirements.alignment, "createBuffer: placing the buffer in memory"));
 
@@ -144,7 +144,7 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
 }
 
 void destroyBuffer(Device &device, Buffer &buffer) {
-    DeviceState &state = *device.internal.state;
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
     EQ_DX_UNTRACK(&state, buffer.internal.id);
     auto *resource = static_cast<ID3D12Resource *>(buffer.internal.resource);
@@ -185,7 +185,7 @@ DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &de
 }
 
 void destroyDescriptorHeap(Device &device, DescriptorHeap &heap) {
-    DeviceState &state = *device.internal.state;
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     EQ_DX_UNTRACK(&state, heap.internal.id);
     auto *resources = static_cast<ID3D12DescriptorHeap *>(heap.internal.resourceHeap);

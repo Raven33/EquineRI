@@ -86,7 +86,7 @@ CommandList createCommandList(Device &device) {
 }
 
 void destroyCommandList(Device &device, CommandList &cmd) {
-    DeviceState &state = *device.internal.state;
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "destroying"));
     EQ_DX_UNTRACK(&state, cmd.internal.id);
@@ -98,7 +98,7 @@ void destroyCommandList(Device &device, CommandList &cmd) {
 }
 
 void resetCommandList(CommandList &cmd) {
-    DeviceState &state = *cmd.internal.device;
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "resetting"));
     checkHr(static_cast<ID3D12CommandAllocator *>(cmd.internal.allocator)->Reset(), "ID3D12CommandAllocator::Reset");
@@ -133,6 +133,7 @@ void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
 
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
+    EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
     list(cmd)->SetPipelineState(static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState));
     if (cmd.internal.rootSignature != pipeline.internal.rootSignature) {
         cmd.internal.rootSignature = pipeline.internal.rootSignature;

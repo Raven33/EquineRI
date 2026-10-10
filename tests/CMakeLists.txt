@@ -74,11 +74,13 @@ set(EQUINE_GPU_SHARED_ABORT_TESTS)
 if (EQUINE_VALIDATION)
     list(APPEND EQUINE_GPU_SHARED_TEST_NAMES
         compute.root_data_size_mismatch_reports
+        compute.pipeline_before_heap_reports
         compute.descriptor_slot_out_of_range_reports
         compute.buffer_used_after_destroy_reports
     )
     set(EQUINE_GPU_SHARED_ABORT_TESTS
         "compute.root_data_size_mismatch_reports|programmer error: root data is 8 bytes, but the pipeline's shader declares 20 bytes"
+        "compute.pipeline_before_heap_reports|programmer error: cmdSetPipeline: set a descriptor heap with cmdSetHeap first"
         "compute.descriptor_slot_out_of_range_reports|programmer error: slot 8 is outside the resource heap"
         "compute.buffer_used_after_destroy_reports|programmer error: this buffer was destroyed"
     )
