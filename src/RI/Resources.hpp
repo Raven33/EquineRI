@@ -38,12 +38,17 @@ struct BufferDesc {
     BufferUsage usage = BufferUsage::eNone;
 };
 
-// Size and alignment a resource needs when placed in memory (P31, P58 (1)).
-// Buffers fit every memory kind.
+// Size, alignment and compatible memory kinds of a resource placed in memory
+// (P31, P58 (1)). Buffers fit every available kind; textures usually only eGPU.
 struct MemoryRequirements {
     uint64 size = 0;
     uint64 alignment = 0;
+    uint32 kinds = 0; // bit i set: MemoryKind i can hold the resource
 };
+
+inline constexpr bool fits(const MemoryRequirements &requirements, MemoryKind kind) {
+    return (requirements.kinds & (1u << static_cast<uint32>(kind))) != 0;
+}
 
 // Sizes of a descriptor heap pair (P59), within the device's limits.
 struct DescriptorHeapDesc {

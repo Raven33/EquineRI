@@ -21,6 +21,7 @@ struct NativeDevice {
     uint32 graphicsQueueFamily = 0;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     uint32 apiVersion = 0; // the device's Vulkan version, at least 1.3
+    LayoutMode layoutMode = LayoutMode::eAuto; // the mode in use (never eAuto)
 };
 
 NativeDevice native(const Device &device);
@@ -40,6 +41,18 @@ inline NativeDescriptorHeap native(const DescriptorHeap &heap) {
             reinterpret_cast<VkDescriptorSet>(heap.internal.resourceSet),
             reinterpret_cast<VkDescriptorSet>(heap.internal.samplerSet)};
 }
+
+// The native image and the layout it rests in (L1). Native code that leaves a
+// texture in another layout must return it to this one (P27).
+struct NativeTexture {
+    VkImage image = VK_NULL_HANDLE;
+    VkImageLayout restingLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+};
+inline NativeTexture native(const Texture &texture) {
+    return {reinterpret_cast<VkImage>(texture.internal.image), static_cast<VkImageLayout>(texture.internal.restingLayout)};
+}
+inline VkImageView native(const TextureView &view) { return reinterpret_cast<VkImageView>(view.internal.view); }
+inline VkQueryPool native(const QueryPool &pool) { return reinterpret_cast<VkQueryPool>(pool.internal.pool); }
 
 struct NativePipeline {
     VkPipeline pipeline = VK_NULL_HANDLE;
@@ -76,6 +89,15 @@ struct DeviceFeatures {
 
 DeviceFeatures defaultDeviceFeatures(const Gpu &gpu);
 
+// How the Vulkan backend hides image layouts (L1, A', P78). Backend-internal:
+// user code is identical in every mode (P16).
+enum class LayoutMode : uint8 {
+    eAuto,        // eUnified when VK_KHR_unified_image_layouts is on, else the measured choice (P78)
+    eUnified,     // everything rests in GENERAL; VK_KHR_unified_image_layouts makes it optimal
+    eGeneral,     // mode G: everything rests in GENERAL without the extension (no switches)
+    eTransitions, // mode T: D3D12-style resting layouts, switched around RI's operations (P68)
+};
+
 // Native additions at device creation (P60 (3)).
 struct NativeDeviceAdditions {
     // Extra device extensions, enabled alongside RI's own.
@@ -88,6 +110,8 @@ struct NativeDeviceAdditions {
     // single-feature equivalents (e.g. VkPhysicalDeviceImageRobustnessFeatures):
     // Vulkan forbids chaining both; change DeviceFeatures instead.
     const void *pNext = nullptr;
+    // Forces a layout mode, for testing and measuring (P78). eUnified needs the extension.
+    LayoutMode layoutMode = LayoutMode::eAuto;
 };
 
 Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additions);

@@ -7,8 +7,10 @@
 #include <RI/Commands.hpp>
 #include <RI/Device.hpp>
 #include <RI/Resources.hpp>
+#include <RI/Textures.hpp>
 
 #include <initializer_list>
+#include <optional>
 #include <span>
 #include <variant>
 #include <vector>
@@ -77,6 +79,57 @@ struct Buffer {
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc);
 void destroyBuffer(Device &device, Buffer &buffer);
 
+// ── Textures and views (P58, P69, P73, P74, P95) ────────────────────────────
+
+// Part of a texture (P73), created explicitly with createView; every texture
+// also has a ready-made whole-texture view.
+struct TextureView {
+    Format format = Format::eUndefined;
+    uint32 width = 0;  // of the view's first mip
+    uint32 height = 0;
+    uint32 samples = 1;
+    struct {
+        uint64 view = 0;       // VkImageView
+        uint64 image = 0;      // VkImage of the texture
+        uint32 aspectMask = 0; // VkImageAspectFlags
+        uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1;
+        uint32 restingLayout = 0; // VkImageLayout the texture rests in (L1)
+        uint64 textureId = 0;     // validation builds (P91)
+    } internal;
+};
+
+// A texture placed in user memory at `offset` (P31). It owns no memory. Its
+// image layouts are RI's business (P16, L1).
+struct Texture {
+    uint32 width = 0;
+    uint32 height = 0;
+    uint32 layers = 1;
+    uint32 mips = 1;
+    uint32 samples = 1;
+    Format format = Format::eUndefined;
+    TextureUsage usage = TextureUsage::eNone;
+    TextureView view; // the whole texture, in its own format
+    struct {
+        uint64 image = 0; // VkImage
+        uint32 restingLayout = 0;
+        uint64 id = 0;
+    } internal;
+};
+
+// Whether the GPU supports `format` for every usage in `usage` at this sample
+// count (P58 (2)); e.g. AMD Vulkan has no eD24UnormS8Uint.
+bool formatSupported(Device &device, Format format, TextureUsage usage, uint32 samples = 1);
+
+MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc);
+
+// Creates the texture and resets it (contents undefined, ready for use), as a
+// discard would (P69, R16). The reset is submitted on the graphics queue at once.
+Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc);
+void destroyTexture(Device &device, Texture &texture);
+
+TextureView createView(Device &device, const Texture &texture, const TextureViewDesc &desc);
+void destroyView(Device &device, TextureView &view);
+
 // ── Descriptors (P42, P59, P87, P94) ─────────────────────────────────────────
 
 // A resource heap and a sampler heap, written by slot (P42). Writes take effect
@@ -95,15 +148,18 @@ struct DescriptorHeap {
 DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &desc);
 void destroyDescriptorHeap(Device &device, DescriptorHeap &heap);
 
-// Buffer views (P87). `stride` 0 is a raw view (ByteAddressBuffer); otherwise
-// the element size of a StructuredBuffer. `size` kWholeSize: to the end.
+// Views (P87). A read or read-write view names either a texture view or a
+// buffer range. Buffer ranges: `stride` 0 is a raw view (ByteAddressBuffer);
+// otherwise the element size of a StructuredBuffer. `size` kWholeSize: to the end.
 struct ReadView {
+    TextureView texture; // a texture view (Texture2D), or
     Buffer buffer;
     uint64 offset = 0;
     uint64 size = kWholeSize;
     uint32 stride = 0;
 };
 struct ReadWriteView {
+    TextureView texture; // a texture view (RWTexture2D), or
     Buffer buffer;
     uint64 offset = 0;
     uint64 size = kWholeSize;
@@ -126,6 +182,50 @@ struct DescriptorWrite {
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const DescriptorWrite> writes);
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes);
 
+// ── Queries (P51, P71) ───────────────────────────────────────────────────────
+
+struct QueryPool {
+    QueryType type = QueryType::eTimestamp;
+    uint32 count = 0;
+    struct {
+        DeviceState *device = nullptr;
+        uint64 pool = 0; // VkQueryPool
+        uint64 id = 0;
+    } internal;
+};
+
+// Created reset (P71 (1)).
+QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc);
+void destroyQueryPool(Device &device, QueryPool &pool);
+// Resets queries on the CPU, after their results were read (P71 (1)). No GPU cost.
+void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count);
+
+// ── Rendering (P40, P52, P75) ────────────────────────────────────────────────
+
+struct ColorAttachment {
+    TextureView view;
+    LoadOp load = LoadOp::eLoad;
+    StoreOp store = StoreOp::eStore;
+    ClearValue clear;
+};
+
+struct DepthAttachment {
+    TextureView view;
+    LoadOp load = LoadOp::eLoad;
+    StoreOp store = StoreOp::eStore;
+    LoadOp stencilLoad = LoadOp::eLoad;
+    StoreOp stencilStore = StoreOp::eStore;
+    ClearValue clear; // depth and stencil
+    bool depthReadOnly = false;   // the depth texture may be sampled during the section (P75)
+    bool stencilReadOnly = false;
+};
+
+// A rendering section. The viewport and scissor cover the attachments.
+struct RenderingDesc {
+    std::vector<ColorAttachment> colors;
+    std::optional<DepthAttachment> depth;
+};
+
 // ── Pipelines (P38, P45, P67) ────────────────────────────────────────────────
 
 struct Pipeline {
@@ -133,11 +233,14 @@ struct Pipeline {
     struct {
         uint64 pipeline = 0; // VkPipeline
         uint64 layout = 0;   // VkPipelineLayout
+        bool graphics = false;
+        bool depthWrite = false; // checked against read-only depth sections (P75)
         uint64 id = 0;
     } internal;
 };
 
 Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc);
+Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc);
 void destroyPipeline(Device &device, Pipeline &pipeline);
 
 // ── Command lists and submission (P34, P56, P20, P36, P47) ───────────────────
@@ -149,11 +252,19 @@ struct CommandList {
         DeviceState *device = nullptr;
         void *commandBuffer = nullptr; // VkCommandBuffer
         uint64 pool = 0;               // VkCommandPool
-        uint64 boundLayout = 0;        // pipeline layout the heap sets were bound with
-        uint64 heapResourceSet = 0;    // heap set by cmdSetHeap, 0 if none
+        uint64 boundLayout[2] = {0, 0}; // pipeline layout per bind point (compute, graphics)
+        bool graphics = false;          // bind point of the current pipeline
+        uint64 heapResourceSet = 0;     // heap set by cmdSetHeap, 0 if none
         uint64 heapSamplerSet = 0;
-        uint32 rootDataSize = 0;       // of the pipeline set by cmdSetPipeline
-        uint64 lastSubmitted = 0;      // timeline value of its last submission
+        uint32 rootDataSize = 0;        // of the pipeline set by cmdSetPipeline
+        uint64 lastSubmitted = 0;       // timeline value of its last submission
+        // The open rendering section: its attachments go back to rest at cmdEndRendering.
+        bool rendering = false;
+        bool depthReadOnly = false;
+        uint32 colorCount = 0;
+        TextureView colors[8];
+        TextureView depth;
+        uint32 depthLayout = 0; // VkImageLayout used during the section
         uint64 id = 0;
     } internal;
 };
@@ -175,6 +286,28 @@ void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z);
 void cmdBarrier(CommandList &cmd, Stage before, Stage after);
 void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const Buffer &dst, uint64 dstOffset,
                    uint64 size);
+
+// Rendering sections (P40). RI switches attachment layouts around the section
+// when its backend needs to (A', P68); user code is the same everywhere (P16).
+void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc);
+void cmdEndRendering(CommandList &cmd);
+void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
+             uint32 firstInstance = 0);
+
+// Required before first use of a texture whose memory held another resource
+// (P69). A full-scope barrier.
+void cmdDiscard(CommandList &cmd, const TextureView &view);
+
+// Clears outside rendering sections (P65).
+void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value);
+void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value);
+
+// Timestamps (P51, P71).
+void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index);
+void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count);
+// Copies `count` 64-bit results to `buffer` at `offset` (a multiple of 8).
+void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
+                       uint64 offset);
 
 TimelinePoint submit(Queue &queue, CommandList &cmd);
 void wait(Queue &queue, TimelinePoint point);
