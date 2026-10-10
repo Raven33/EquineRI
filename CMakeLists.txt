@@ -282,6 +282,7 @@ endif()
 
 if (EQUINE_BUILD_SAMPLES)
     add_subdirectory(samples)
+    add_subdirectory(tools/layout_bench) # the L1 measurement (Milestone 3)
 endif()
 
 if (EQUINE_BUILD_DOC_SNIPPETS)
