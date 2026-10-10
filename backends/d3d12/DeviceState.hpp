@@ -6,7 +6,10 @@
 #include <RI/D3D12/Backend.hpp>
 #if EQUINE_VALIDATION
 #include <RI/Validation/ObjectTracker.hpp>
+#include <RI/Validation/Placement.hpp>
 #endif
+
+#include <vector>
 
 #include <d3d12.h>
 #include <d3d12sdklayers.h> // ID3D12InfoQueue1
@@ -31,10 +34,51 @@ struct DeviceState {
     ID3D12Fence *fence = nullptr;
     uint64 lastSignaled = 0;
 
+    // RI's own CPU descriptor heaps for render-target and depth-stencil views
+    // (created explicitly with views, P73), with free lists of slots.
+    struct CpuHeap {
+        ID3D12DescriptorHeap *heap = nullptr;
+        UINT increment = 0;
+        std::vector<uint32> free;
+    };
+    CpuHeap rtvHeap;
+    CpuHeap dsvHeap;
+
+    // RI's own small shader-visible heap (and its CPU twin) for UAV clears
+    // (P65): the user's heap holds no RI slots.
+    ID3D12DescriptorHeap *clearHeap = nullptr;
+    ID3D12DescriptorHeap *clearCpuHeap = nullptr;
+    uint32 clearNext = 0;
+
+    // Internal commands (texture resets at creation, R16), submitted at once.
+    ID3D12CommandAllocator *internalAllocator = nullptr;
+    ID3D12GraphicsCommandList7 *internalList = nullptr;
+
 #if EQUINE_VALIDATION
     Validation::ObjectTracker objects;
+    Validation::PlacementTracker placements;
 #endif
 };
+
+inline constexpr uint32 kRtvHeapSize = 4096;
+inline constexpr uint32 kDsvHeapSize = 1024;
+inline constexpr uint32 kClearHeapSize = 1024;
+
+// A slot in one of RI's CPU heaps; reports a readable error when it is full.
+uint32 allocateSlot(DeviceState::CpuHeap &heap, const char *what);
+D3D12_CPU_DESCRIPTOR_HANDLE slotHandle(const DeviceState::CpuHeap &heap, uint32 slot);
+
+// Records `record(list)` on the internal list, submits it and waits (R16).
+template <typename F>
+void submitInternal(DeviceState &state, F record);
+void beginInternal(DeviceState &state);
+void endAndWaitInternal(DeviceState &state);
+template <typename F>
+void submitInternal(DeviceState &state, F record) {
+    beginInternal(state);
+    record(state.internalList);
+    endAndWaitInternal(state);
+}
 
 // Validation builds: the id of a new object, and the checks on its use.
 #if EQUINE_VALIDATION

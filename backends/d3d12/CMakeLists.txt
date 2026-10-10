@@ -21,6 +21,11 @@ add_library(EquineD3D12Backend STATIC
     Resources.cpp
     Pipeline.cpp
     Commands.cpp
+    Barriers.hpp
+    Formats.hpp
+    Formats.cpp
+    Textures.cpp
+    Rendering.cpp
 )
 target_compile_definitions(EquineD3D12Backend PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(EquineD3D12Backend PUBLIC

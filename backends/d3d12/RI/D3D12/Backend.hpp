@@ -98,7 +98,7 @@ struct TextureView {
         uint32 rtvSlot = ~0u, dsvSlot = ~0u, dsvReadOnlySlot = ~0u;
         uint32 dxgiFormat = 0;     // DXGI_FORMAT of the view
         uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1;
-        uint32 planes = 1;         // 2 for depth-stencil formats
+        uint32 planes = 1;         // bitmask of planes: 1 color/depth, 2 stencil
         uint32 restingLayout = 0;  // D3D12_BARRIER_LAYOUT the texture rests in (L1)
         uint32 textureMips = 1, textureLayers = 1;
         uint64 textureId = 0;      // validation builds (P91)
@@ -119,6 +119,7 @@ struct Texture {
     struct {
         void *resource = nullptr; // ID3D12Resource
         uint32 restingLayout = 0;
+        uint64 viewFormats = 0;   // bit per RI::Format a view may use (P74)
         uint64 id = 0;
     } internal;
 };
@@ -262,6 +263,7 @@ struct CommandList {
         void *rootSignature[2] = {nullptr, nullptr}; // bound per bind point (compute, graphics)
         bool graphics = false;                       // bind point of the current pipeline
         bool heapSet = false;
+        void *heaps[2] = {nullptr, nullptr}; // the user's heaps, set again after RI's UAV clears (P65)
         uint32 rootDataSize = 0;
         uint64 lastSubmitted = 0;
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
