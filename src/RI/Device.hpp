@@ -46,4 +46,12 @@ struct DeviceDesc {
     Gpu gpu;
 };
 
+// Limits RI reports for the device (P59, P44).
+struct DeviceLimits {
+    uint32 maxResourceDescriptors = 0; // per descriptor heap
+    uint32 maxSamplerDescriptors = 0;  // per descriptor heap
+    uint32 maxRootDataSize = 0;        // bytes of root data a pipeline may declare
+    bool gpuUploadMemory = false;      // MemoryKind::eGPUUpload is available (P32)
+};
+
 } // namespace RI

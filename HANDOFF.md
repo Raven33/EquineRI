@@ -28,8 +28,6 @@ pages for the error channel and validation, once the docs site scaffold exists.
 ## Still open (CONTEXT.md §5)
 
 - **L1:** confirmed only by the Milestone 3 measurement, done together on real hardware.
-- **D1:** the batching form of `writeDescriptors`, decided in Milestone 2 with the Vulkan
-  descriptor mechanism.
 - **X1:** the error policy; open by design, the user settles it by using the API.
 
 ## Working with the user

@@ -197,6 +197,11 @@ add_library(EquineRI STATIC
     src/RI/Error.hpp
     src/RI/Error.cpp
     src/RI/Device.hpp
+    src/RI/Flags.hpp
+    src/RI/Resources.hpp
+    src/RI/Commands.hpp
+    src/RI/Validation/Checks.hpp
+    src/RI/Validation/Checks.cpp
     src/RI/Validation/Validation.hpp
     src/RI/Validation/ObjectTracker.hpp
     src/RI/Validation/ObjectTracker.cpp

@@ -32,3 +32,4 @@ _deps/
 AGENTS.md
 codemap.md
 /.slim/
+.claude/worktrees/

@@ -25,6 +25,31 @@ struct NativeDevice {
 
 NativeDevice native(const Device &device);
 
+// Native handles of RI objects (P84).
+inline VkDeviceMemory native(const Memory &memory) { return reinterpret_cast<VkDeviceMemory>(memory.internal.memory); }
+inline VkBuffer native(const Buffer &buffer) { return reinterpret_cast<VkBuffer>(buffer.internal.buffer); }
+inline VkCommandBuffer native(const CommandList &cmd) { return static_cast<VkCommandBuffer>(cmd.internal.commandBuffer); }
+
+struct NativeDescriptorHeap {
+    VkDescriptorPool pool = VK_NULL_HANDLE;
+    VkDescriptorSet resourceSet = VK_NULL_HANDLE; // set 0, binding 0: VK_DESCRIPTOR_TYPE_MUTABLE_EXT array
+    VkDescriptorSet samplerSet = VK_NULL_HANDLE;  // set 1, binding 0: sampler array
+};
+inline NativeDescriptorHeap native(const DescriptorHeap &heap) {
+    return {reinterpret_cast<VkDescriptorPool>(heap.internal.pool),
+            reinterpret_cast<VkDescriptorSet>(heap.internal.resourceSet),
+            reinterpret_cast<VkDescriptorSet>(heap.internal.samplerSet)};
+}
+
+struct NativePipeline {
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipelineLayout layout = VK_NULL_HANDLE;
+};
+inline NativePipeline native(const Pipeline &pipeline) {
+    return {reinterpret_cast<VkPipeline>(pipeline.internal.pipeline),
+            reinterpret_cast<VkPipelineLayout>(pipeline.internal.layout)};
+}
+
 // The features RI enables (P60 (2), P92): every feature the GPU reports,
 // minus robustness and capture/replay. Get them with defaultDeviceFeatures,
 // change any field (e.g. turn robustness on), and pass them to createDevice.
@@ -46,6 +71,7 @@ struct DeviceFeatures {
     VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unifiedLayouts{};
 #endif
     VkPhysicalDeviceFaultFeaturesEXT fault{};
+    VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT mutableDescriptor{}; // descriptor heaps (P94)
 };
 
 DeviceFeatures defaultDeviceFeatures(const Gpu &gpu);

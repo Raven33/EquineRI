@@ -13,6 +13,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <format>
+#include <string>
 #include <vector>
 
 namespace RI::Vk {
@@ -34,6 +36,7 @@ struct DeviceSetup {
     bool rayQuery = false;
     bool unifiedLayouts = false;
     bool fault = false;
+    bool mutableDescriptor = false;
 };
 
 // RI's extensions (P60 (2)), each enabled when the GPU has it.
@@ -54,6 +57,7 @@ DeviceSetup chooseSetup(VkPhysicalDevice physicalDevice, uint32 apiVersion) {
         }
         return false;
     };
+    setup.mutableDescriptor = use(VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME); // descriptor heaps (P94), required
     use(VK_KHR_SWAPCHAIN_EXTENSION_NAME);           // P43
     setup.mesh = use(VK_EXT_MESH_SHADER_EXTENSION_NAME); // P39
     // P49: acceleration structures need deferred host operations; ray query needs both.
@@ -91,6 +95,7 @@ struct FeatureChain {
         f.unifiedLayouts.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR;
 #endif
         f.fault.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT;
+        f.mutableDescriptor.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
 
         std::vector<void *> chain{&f.v11, &f.v12, &f.v13};
         if (setup.v14) {
@@ -112,6 +117,9 @@ struct FeatureChain {
 #endif
         if (setup.fault) {
             chain.push_back(&f.fault);
+        }
+        if (setup.mutableDescriptor) {
+            chain.push_back(&f.mutableDescriptor);
         }
 
         head.features = f.core;
@@ -138,7 +146,7 @@ DeviceFeatures queryDefaultFeatures(VkPhysicalDevice physicalDevice, const Devic
 #ifdef VK_KHR_unified_image_layouts
                     static_cast<void *>(&f.unifiedLayouts),
 #endif
-                    static_cast<void *>(&f.fault)}) {
+                    static_cast<void *>(&f.fault), static_cast<void *>(&f.mutableDescriptor)}) {
         static_cast<VkBaseOutStructure *>(s)->pNext = nullptr;
     }
     // Robustness costs performance just by being on. Turn it on through
@@ -183,6 +191,178 @@ void resolveDependencies(VkPhysicalDevice physicalDevice, DeviceFeatures &f) {
 #endif
 }
 
+// Features RI itself relies on. Missing ones (unsupported, or turned off in
+// DeviceFeatures) make device creation fail with a readable error.
+void requireFeatures(const DeviceSetup &setup, const DeviceFeatures &f) {
+    std::string missing;
+    const auto need = [&](VkBool32 value, const char *name) {
+        if (value != VK_TRUE) {
+            missing += missing.empty() ? name : std::string(", ") + name;
+        }
+    };
+    need(setup.mutableDescriptor ? VK_TRUE : VK_FALSE, "VK_EXT_mutable_descriptor_type");
+    need(f.mutableDescriptor.mutableDescriptorType, "mutableDescriptorType");
+    need(f.v12.timelineSemaphore, "timelineSemaphore");
+    need(f.v12.bufferDeviceAddress, "bufferDeviceAddress");
+    need(f.v12.descriptorIndexing, "descriptorIndexing");
+    need(f.v12.runtimeDescriptorArray, "runtimeDescriptorArray");
+    need(f.v12.descriptorBindingPartiallyBound, "descriptorBindingPartiallyBound");
+    need(f.v12.descriptorBindingVariableDescriptorCount, "descriptorBindingVariableDescriptorCount");
+    need(f.v12.descriptorBindingStorageBufferUpdateAfterBind, "descriptorBindingStorageBufferUpdateAfterBind");
+    need(f.v12.descriptorBindingUniformBufferUpdateAfterBind, "descriptorBindingUniformBufferUpdateAfterBind");
+    need(f.v12.descriptorBindingSampledImageUpdateAfterBind, "descriptorBindingSampledImageUpdateAfterBind");
+    need(f.v12.descriptorBindingStorageImageUpdateAfterBind, "descriptorBindingStorageImageUpdateAfterBind");
+    need(f.v12.descriptorBindingUniformTexelBufferUpdateAfterBind, "descriptorBindingUniformTexelBufferUpdateAfterBind");
+    need(f.v12.descriptorBindingStorageTexelBufferUpdateAfterBind, "descriptorBindingStorageTexelBufferUpdateAfterBind");
+    need(f.v13.synchronization2, "synchronization2");
+    if (!missing.empty()) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("this GPU or your DeviceFeatures lack what RI needs: {}", missing));
+    }
+}
+
+// Memory kinds (P32) to native memory types. Types must accept buffers (any
+// memory kind holds any buffer); AMD's device-coherent/uncached types, protected
+// and lazily allocated types are never used.
+void chooseMemoryTypes(DeviceState &state, DeviceLimits &limits) {
+    VkPhysicalDeviceMemoryProperties memory{};
+    vkGetPhysicalDeviceMemoryProperties(state.physicalDevice, &memory);
+
+    const VkBufferCreateInfo probeInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = 65536,
+        .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                 VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+    };
+    const VkDeviceBufferMemoryRequirements probe{.sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
+                                                 .pCreateInfo = &probeInfo};
+    VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    state.functions.vkGetDeviceBufferMemoryRequirements(state.device, &probe, &requirements);
+    const uint32 bufferTypes = requirements.memoryRequirements.memoryTypeBits;
+
+    constexpr VkMemoryPropertyFlags kNever = VK_MEMORY_PROPERTY_PROTECTED_BIT | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT |
+                                             VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD |
+                                             VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD;
+    // The first type with all `required` flags, none of `avoid` if possible.
+    const auto pick = [&](VkMemoryPropertyFlags required, VkMemoryPropertyFlags avoid, VkMemoryPropertyFlags prefer) {
+        uint32 best = UINT32_MAX;
+        int bestScore = -1;
+        for (uint32 i = 0; i < memory.memoryTypeCount; ++i) {
+            const VkMemoryPropertyFlags flags = memory.memoryTypes[i].propertyFlags;
+            if ((bufferTypes & (1u << i)) == 0 || (flags & required) != required || (flags & kNever) != 0) {
+                continue;
+            }
+            const int score = ((flags & avoid) == 0 ? 2 : 0) + ((flags & prefer) == prefer ? 1 : 0);
+            if (score > bestScore) {
+                best = i;
+                bestScore = score;
+            }
+        }
+        return best;
+    };
+    constexpr VkMemoryPropertyFlags kLocal = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    constexpr VkMemoryPropertyFlags kHost = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    state.memoryTypes[kindIndex(MemoryKind::eGPU)] = pick(kLocal, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 0);
+    state.memoryTypes[kindIndex(MemoryKind::eUpload)] = pick(kHost, kLocal | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, 0);
+    state.memoryTypes[kindIndex(MemoryKind::eReadback)] =
+        pick(kHost, kLocal, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+    // GPU memory the CPU can write (P32): only when all of the GPU's memory is
+    // CPU-visible (ReBAR), as on D3D12; a small BAR window does not count.
+    const uint32 gpuUpload = pick(kLocal | kHost, 0, 0);
+    VkDeviceSize largestLocalHeap = 0;
+    for (uint32 i = 0; i < memory.memoryHeapCount; ++i) {
+        if ((memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0) {
+            largestLocalHeap = std::max(largestLocalHeap, memory.memoryHeaps[i].size);
+        }
+    }
+    if (gpuUpload != UINT32_MAX && memory.memoryHeaps[memory.memoryTypes[gpuUpload].heapIndex].size == largestLocalHeap) {
+        state.memoryTypes[kindIndex(MemoryKind::eGPUUpload)] = gpuUpload;
+        limits.gpuUploadMemory = true;
+    }
+}
+
+// The device-wide descriptor set layouts behind descriptor heaps (P94): set 0
+// holds resource views as mutable descriptors (DXC puts every
+// ResourceDescriptorHeap access at set 0, binding 0); set 1 holds samplers
+// (shaders are compiled with -fvk-bind-sampler-heap 0 1). Both bindings have a
+// variable count, so one layout fits heaps of every size.
+void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
+    VkPhysicalDeviceVulkan12Properties v12{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+    VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &v12};
+    vkGetPhysicalDeviceProperties2(state.physicalDevice, &properties);
+    const VkPhysicalDeviceLimits &l = properties.properties.limits;
+    state.storageOffsetAlignment = l.minStorageBufferOffsetAlignment;
+    state.uniformOffsetAlignment = l.minUniformBufferOffsetAlignment;
+
+    // D3D12's resource binding tier 3 limits, or less if the GPU has less.
+    limits.maxResourceDescriptors = std::min({1'000'000u, v12.maxDescriptorSetUpdateAfterBindStorageBuffers,
+                                              v12.maxDescriptorSetUpdateAfterBindUniformBuffers,
+                                              v12.maxDescriptorSetUpdateAfterBindSampledImages,
+                                              v12.maxDescriptorSetUpdateAfterBindStorageImages,
+                                              v12.maxPerStageDescriptorUpdateAfterBindStorageBuffers,
+                                              v12.maxPerStageDescriptorUpdateAfterBindUniformBuffers,
+                                              v12.maxPerStageDescriptorUpdateAfterBindSampledImages,
+                                              v12.maxPerStageDescriptorUpdateAfterBindStorageImages,
+                                              v12.maxPerStageUpdateAfterBindResources});
+    limits.maxSamplerDescriptors = std::min({2048u, v12.maxDescriptorSetUpdateAfterBindSamplers,
+                                             v12.maxPerStageDescriptorUpdateAfterBindSamplers});
+    limits.maxRootDataSize = l.maxPushConstantsSize;
+
+    const VkDescriptorType mutableTypes[] = {
+        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+    };
+    const VkMutableDescriptorTypeListEXT typeList{.descriptorTypeCount = 6, .pDescriptorTypes = mutableTypes};
+    const VkMutableDescriptorTypeCreateInfoEXT mutableInfo{
+        .sType = VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
+        .mutableDescriptorTypeListCount = 1,
+        .pMutableDescriptorTypeLists = &typeList,
+    };
+    constexpr VkDescriptorBindingFlags kBindingFlags = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
+                                                       VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                                                       VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+    const auto create = [&](VkDescriptorType type, uint32 count, const void *next, const char *what) {
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            .pNext = next,
+            .bindingCount = 1,
+            .pBindingFlags = &kBindingFlags,
+        };
+        const VkDescriptorSetLayoutBinding binding{
+            .binding = 0, .descriptorType = type, .descriptorCount = count, .stageFlags = VK_SHADER_STAGE_ALL};
+        const VkDescriptorSetLayoutCreateInfo info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext = &flagsInfo,
+            .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+            .bindingCount = 1,
+            .pBindings = &binding,
+        };
+        VkDescriptorSetLayoutSupport support{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT};
+        state.functions.vkGetDescriptorSetLayoutSupport(state.device, &info, &support);
+        if (support.supported != VK_TRUE) {
+            reportError(ErrorCategory::eUnsupported,
+                        std::format("the GPU cannot hold a {} descriptor heap of {} slots", what, count));
+        }
+        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+        checkVk(state.functions.vkCreateDescriptorSetLayout(state.device, &info, nullptr, &layout),
+                "vkCreateDescriptorSetLayout");
+        return layout;
+    };
+    state.resourceSetLayout =
+        create(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, limits.maxResourceDescriptors, &mutableInfo, "resource");
+    state.samplerSetLayout = create(VK_DESCRIPTOR_TYPE_SAMPLER, limits.maxSamplerDescriptors, nullptr, "sampler");
+}
+
+void createTimeline(DeviceState &state) {
+    const VkSemaphoreTypeCreateInfo typeInfo{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
+    const VkSemaphoreCreateInfo info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, .pNext = &typeInfo};
+    checkVk(state.functions.vkCreateSemaphore(state.device, &info, nullptr, &state.timeline), "vkCreateSemaphore");
+}
+
 uint32 apiVersionOf(VkPhysicalDevice physicalDevice) {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -224,6 +404,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     FeatureChain chain;
     chain.f = additions.features != nullptr ? *additions.features : queryDefaultFeatures(state->physicalDevice, setup);
     resolveDependencies(state->physicalDevice, chain.f);
+    requireFeatures(setup, chain.f);
 
     const float priority = 1.0f;
     const VkDeviceQueueCreateInfo queueInfo{
@@ -246,6 +427,11 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     volkLoadDeviceTable(&state->functions, state->device);
     state->functions.vkGetDeviceQueue(state->device, state->graphicsQueueFamily, 0, &state->graphicsQueue);
 
+    chooseMemoryTypes(*state, device.limits);
+    createHeapLayouts(*state, device.limits);
+    createTimeline(*state);
+
+    device.graphicsQueue.internal.device = state;
     device.internal.state = state;
     return device;
 }
@@ -255,6 +441,9 @@ void destroyDevice(Device &device) {
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
+    state->functions.vkDestroySemaphore(state->device, state->timeline, nullptr);
+    state->functions.vkDestroyDescriptorSetLayout(state->device, state->resourceSetLayout, nullptr);
+    state->functions.vkDestroyDescriptorSetLayout(state->device, state->samplerSetLayout, nullptr);
     state->functions.vkDestroyDevice(state->device, nullptr);
     InstanceHandles instance{
         .instance = state->instance, .messenger = state->messenger, .destroyMessenger = state->destroyMessenger};
