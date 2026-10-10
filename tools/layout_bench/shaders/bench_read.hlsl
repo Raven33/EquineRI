@@ -8,7 +8,9 @@ struct ReadRoot {
     uint width;
     uint height;
     uint multisampled;
-    uint pad[3];
+    uint pad0;
+    uint pad1;
+    uint pad2;
 };
 EQ_ROOT_DATA(ReadRoot, root);
 
