@@ -1,0 +1,9 @@
+# LeakSanitizer suppressions for the Vulkan GPU tests (Linux).
+#
+# Mesa's RADV leaks a small block from a driver thread's one-time init
+# (pthread_once). The loader unloads the driver when the last instance is
+# destroyed, so the stack shows only "<unknown module>" frames under
+# __pthread_once and cannot be matched by library name. Reproduced 2026-10-10
+# with a bare volk program (create instance, enumerate GPUs, destroy) and Mesa
+# 26.2.2: no RI code involved. RI does not call pthread_once/std::call_once.
+leak:__pthread_once
