@@ -8,6 +8,9 @@ with Milestone 1 of `docs/Plan.md` (the user's build check).
 - `CONTEXT.md`: the decision log (P1–P88) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
 - `docs/RIApiProposal.md`: the decided API style (P80–P88) with code sketches.
+- `docs/DocsProposal.md`: the user-facing documentation site (MkDocs + Material as a
+  test; also a teaching resource with canonical Vulkan/D3D12 equivalents). A feature is
+  not done until its page exists.
 - `docs/LayoutEvaluation.md`: the image-layout problem (L1), driver research, the
   measurement plan, and the decision rule (P79). Run in Milestone 3.
 - `docs/GrillLog.md`: the full question-and-answer history, in order. Background only.
