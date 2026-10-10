@@ -134,11 +134,14 @@ Memory allocateMemory(Device &device, MemoryKind kind, uint64 size) {
                     std::format("memory kind {} is not available on '{}' (see DeviceLimits::gpuUploadMemory)",
                                 nameOf(kind), device.gpu.name));
     }
-    const uint64 heapSize = alignUp(std::max<uint64>(size, 1), kPlacementAlignment);
+    // GPU memory may hold MSAA textures, which need 4 MiB placement alignment.
+    const uint64 heapAlignment =
+        kind == MemoryKind::eGPU ? D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : kPlacementAlignment;
+    const uint64 heapSize = alignUp(std::max<uint64>(size, 1), heapAlignment);
     const D3D12_HEAP_DESC desc{
         .SizeInBytes = heapSize,
         .Properties = {.Type = heapTypeOf(kind)},
-        .Alignment = kPlacementAlignment,
+        .Alignment = heapAlignment,
         .Flags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES, // resource heap tier 2
     };
     ID3D12Heap *heap = nullptr;
