@@ -69,4 +69,36 @@ CheckResult checkBufferView(uint64 offset, uint64 size, uint64 bufferSize, uint3
     return {};
 }
 
+CheckResult checkRenderingSection(bool rendering, bool inside, std::string_view call) {
+    if (inside && !rendering) {
+        return std::format("{}: no rendering section is open (cmdBeginRendering first)", call);
+    }
+    if (!inside && rendering) {
+        return std::format("{}: not allowed inside a rendering section (cmdEndRendering first)", call);
+    }
+    return {};
+}
+
+CheckResult checkViewFormatCompatible(Format texture, Format view) {
+    if (texture != view && (bytesPerTexel(texture) == 0 || bytesPerTexel(texture) != bytesPerTexel(view))) {
+        return std::format("createView: a view format must have the texture format's size per texel ({} bytes, "
+                           "the view's has {}) (P74)",
+                           bytesPerTexel(texture), bytesPerTexel(view));
+    }
+    return {};
+}
+
+CheckResult checkViewRange(uint32 baseMip, uint32 mipCount, uint32 mips, uint32 baseLayer, uint32 layerCount,
+                           uint32 layers) {
+    if (mipCount == 0 || baseMip >= mips || mipCount > mips - baseMip) {
+        return std::format("createView: mips {}..{} are outside the texture's {} mips", baseMip,
+                           uint64{baseMip} + mipCount, mips);
+    }
+    if (layerCount == 0 || baseLayer >= layers || layerCount > layers - baseLayer) {
+        return std::format("createView: layers {}..{} are outside the texture's {} layers", baseLayer,
+                           uint64{baseLayer} + layerCount, layers);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

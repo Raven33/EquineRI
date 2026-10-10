@@ -54,8 +54,9 @@ struct Memory {
     uint64 size = 0;
     void *mapped = nullptr; // CPU address for every kind except eGPU (P33)
     struct {
-        uint64 memory = 0; // VkDeviceMemory
-        uint64 id = 0;     // validation builds: use-after-free tracking (P91)
+        uint64 memory = 0;     // VkDeviceMemory
+        uint32 memoryType = 0; // its memory type index
+        uint64 id = 0;         // validation builds: use-after-free tracking (P91)
     } internal;
 };
 
@@ -112,6 +113,7 @@ struct Texture {
     struct {
         uint64 image = 0; // VkImage
         uint32 restingLayout = 0;
+        uint32 viewFormats = 0; // bit per RI::Format views may use besides `format` (P74)
         uint64 id = 0;
     } internal;
 };

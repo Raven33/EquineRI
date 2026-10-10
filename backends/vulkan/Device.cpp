@@ -12,6 +12,7 @@
 #include <RI/Vk/Native.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <format>
 #include <string>
@@ -215,6 +216,9 @@ void requireFeatures(const DeviceSetup &setup, const DeviceFeatures &f) {
     need(f.v12.descriptorBindingUniformTexelBufferUpdateAfterBind, "descriptorBindingUniformTexelBufferUpdateAfterBind");
     need(f.v12.descriptorBindingStorageTexelBufferUpdateAfterBind, "descriptorBindingStorageTexelBufferUpdateAfterBind");
     need(f.v13.synchronization2, "synchronization2");
+    need(f.v13.dynamicRendering, "dynamicRendering");                     // P40
+    need(f.v12.separateDepthStencilLayouts, "separateDepthStencilLayouts"); // depth-only views (P73)
+    need(f.v12.hostQueryReset, "hostQueryReset");                           // P71 (1)
     if (!missing.empty()) {
         reportError(ErrorCategory::eUnsupported,
                     std::format("this GPU or your DeviceFeatures lack what RI needs: {}", missing));
@@ -356,6 +360,51 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
     state.samplerSetLayout = create(VK_DESCRIPTOR_TYPE_SAMPLER, limits.maxSamplerDescriptors, nullptr, "sampler");
 }
 
+// The layout mode (L1, P78, P95): eUnified when the extension's feature is
+// on; otherwise mode T until the measurement decides (P78). A forced eUnified
+// without the feature is unsupported.
+LayoutMode chooseLayoutMode(const DeviceSetup &setup, const DeviceFeatures &f, LayoutMode requested) {
+    bool unified = false;
+#ifdef VK_KHR_unified_image_layouts
+    unified = setup.unifiedLayouts && f.unifiedLayouts.unifiedImageLayouts == VK_TRUE;
+#else
+    (void)setup;
+    (void)f;
+#endif
+    if (requested == LayoutMode::eUnified && !unified) {
+        reportError(ErrorCategory::eUnsupported,
+                    "LayoutMode::eUnified needs VK_KHR_unified_image_layouts and its unifiedImageLayouts feature, "
+                    "which this GPU or your DeviceFeatures lack");
+    }
+    if (requested != LayoutMode::eAuto) {
+        return requested;
+    }
+    return unified ? LayoutMode::eUnified : LayoutMode::eTransitions;
+}
+
+// Timestamp ticks per second (P71 (3)). Differences of timestamps need no
+// masking by the queue's timestampValidBits; absolute values may wrap.
+void readTimestampFrequency(DeviceState &state, DeviceLimits &limits) {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(state.physicalDevice, &properties);
+    limits.timestampFrequency = static_cast<uint64>(std::llround(1e9 / double(properties.limits.timestampPeriod)));
+}
+
+// RI's own command pool and buffer, for texture resets at creation (R16).
+void createInternalCommands(DeviceState &state) {
+    const VkCommandPoolCreateInfo poolInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                                           .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+                                           .queueFamilyIndex = state.graphicsQueueFamily};
+    checkVk(state.functions.vkCreateCommandPool(state.device, &poolInfo, nullptr, &state.internalPool),
+            "vkCreateCommandPool");
+    const VkCommandBufferAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                                .commandPool = state.internalPool,
+                                                .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                                .commandBufferCount = 1};
+    checkVk(state.functions.vkAllocateCommandBuffers(state.device, &allocInfo, &state.internalCommands),
+            "vkAllocateCommandBuffers");
+}
+
 void createTimeline(DeviceState &state) {
     const VkSemaphoreTypeCreateInfo typeInfo{
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
@@ -405,6 +454,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     chain.f = additions.features != nullptr ? *additions.features : queryDefaultFeatures(state->physicalDevice, setup);
     resolveDependencies(state->physicalDevice, chain.f);
     requireFeatures(setup, chain.f);
+    state->layoutMode = chooseLayoutMode(setup, chain.f, additions.layoutMode);
 
     const float priority = 1.0f;
     const VkDeviceQueueCreateInfo queueInfo{
@@ -430,6 +480,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     chooseMemoryTypes(*state, device.limits);
     createHeapLayouts(*state, device.limits);
     createTimeline(*state);
+    createInternalCommands(*state);
+    readTimestampFrequency(*state, device.limits);
 
     device.graphicsQueue.internal.device = state;
     device.internal.state = state;
@@ -441,6 +493,7 @@ void destroyDevice(Device &device) {
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
+    state->functions.vkDestroyCommandPool(state->device, state->internalPool, nullptr);
     state->functions.vkDestroySemaphore(state->device, state->timeline, nullptr);
     state->functions.vkDestroyDescriptorSetLayout(state->device, state->resourceSetLayout, nullptr);
     state->functions.vkDestroyDescriptorSetLayout(state->device, state->samplerSetLayout, nullptr);
@@ -462,6 +515,7 @@ NativeDevice native(const Device &device) {
         .graphicsQueueFamily = state.graphicsQueueFamily,
         .graphicsQueue = state.graphicsQueue,
         .apiVersion = state.apiVersion,
+        .layoutMode = state.layoutMode,
     };
 }
 

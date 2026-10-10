@@ -60,6 +60,18 @@ VkBufferCreateInfo bufferInfo(const BufferDesc &desc) {
 
 } // namespace
 
+// Every memory kind whose native type is in `typeBits` (P58 (1)).
+uint32 kindsOf(const DeviceState &state, uint32 typeBits) {
+    uint32 kinds = 0;
+    for (uint32 kind = 0; kind < state.memoryTypes.size(); ++kind) {
+        const uint32 type = state.memoryTypes[kind];
+        if (type != UINT32_MAX && (typeBits & (1u << type)) != 0) {
+            kinds |= 1u << kind;
+        }
+    }
+    return kinds;
+}
+
 // ── Memory ───────────────────────────────────────────────────────────────────
 
 Memory allocateMemory(Device &device, MemoryKind kind, uint64 size) {
@@ -85,6 +97,7 @@ Memory allocateMemory(Device &device, MemoryKind kind, uint64 size) {
         checkVk(state.functions.vkMapMemory(state.device, memory, 0, VK_WHOLE_SIZE, 0, &result.mapped), "vkMapMemory");
     }
     result.internal.memory = reinterpret_cast<uint64>(memory);
+    result.internal.memoryType = type;
     result.internal.id = EQ_VK_TRACK(&state);
     return result;
 }
@@ -93,6 +106,9 @@ void freeMemory(Device &device, Memory &memory) {
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_VK_UNTRACK(&state, memory.internal.id);
+#if EQUINE_VALIDATION
+    Validation::forgetMemory(state.placements, memory.internal.id);
+#endif
     state.functions.vkFreeMemory(state.device, native(memory), nullptr);
     memory = {};
 }
@@ -106,7 +122,9 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
                                                 .pCreateInfo = &createInfo};
     VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
     state.functions.vkGetDeviceBufferMemoryRequirements(state.device, &info, &requirements);
-    return {.size = requirements.memoryRequirements.size, .alignment = requirements.memoryRequirements.alignment};
+    return {.size = requirements.memoryRequirements.size,
+            .alignment = requirements.memoryRequirements.alignment,
+            .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)};
 }
 
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
@@ -129,6 +147,10 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
     result.mapped = memory.mapped != nullptr ? static_cast<std::byte *>(memory.mapped) + offset : nullptr;
     result.internal.buffer = reinterpret_cast<uint64>(buffer);
     result.internal.id = EQ_VK_TRACK(&state);
+#if EQUINE_VALIDATION
+    Validation::placeResource(state.placements, memory.internal.id, offset, requirements.size, result.internal.id,
+                              false);
+#endif
     return result;
 }
 
@@ -224,13 +246,50 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
 
-    std::vector<VkDescriptorBufferInfo> infos(writes.size());
+    std::vector<VkDescriptorBufferInfo> bufferInfos(writes.size());
+    std::vector<VkDescriptorImageInfo> imageInfos(writes.size());
     std::vector<VkWriteDescriptorSet> natives(writes.size());
     for (size_t i = 0; i < writes.size(); ++i) {
         const DescriptorWrite &write = writes[i];
         EQ_VALIDATE(Validation::checkSlot(write.slot, heap.resourceCount, "resource"));
+        natives[i] = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = native(heap).resourceSet,
+            .dstBinding = 0,
+            .dstArrayElement = write.slot,
+            .descriptorCount = 1,
+        };
 
-        // All three views are buffer ranges; they differ in descriptor type.
+        // A read or read-write view names a texture when its texture view is set.
+        const TextureView *texture = std::visit(
+            [](const auto &view) -> const TextureView * {
+                using View = std::decay_t<decltype(view)>;
+                if constexpr (std::is_same_v<View, ConstantBufferView>) {
+                    return nullptr;
+                } else {
+                    return view.texture.internal.view != 0 ? &view.texture : nullptr;
+                }
+            },
+            write.descriptor);
+        if (texture != nullptr) {
+            EQ_VK_CHECK_ALIVE(&state, texture->internal.textureId, "texture");
+            const bool storage = std::holds_alternative<ReadWriteView>(write.descriptor);
+            constexpr uint32 kDepthStencil = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            if ((texture->internal.aspectMask & kDepthStencil) == kDepthStencil) {
+                reportError(ErrorCategory::eProgrammerError,
+                            "writeDescriptors: a view with both depth and stencil cannot be read by shaders; create "
+                            "a view with Aspect::eDepth or Aspect::eStencil (P73)");
+            }
+            // Shaders access textures in their resting layout (L1): GENERAL for storage.
+            imageInfos[i] = {.imageView = native(*texture),
+                             .imageLayout = storage ? VK_IMAGE_LAYOUT_GENERAL
+                                                    : static_cast<VkImageLayout>(texture->internal.restingLayout)};
+            natives[i].descriptorType = storage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            natives[i].pImageInfo = &imageInfos[i];
+            continue;
+        }
+
+        // Buffer views differ in descriptor type.
         const auto [buffer, offset, size, stride, type] = std::visit(
             [](const auto &view) {
                 using View = std::decay_t<decltype(view)>;
@@ -247,22 +306,50 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
         EQ_VALIDATE(Validation::checkBufferView(offset, resolved, buffer.size, stride, constant));
 
         // Constant views cover whole 256-byte blocks on both backends.
-        infos[i] = {.buffer = native(buffer),
-                    .offset = offset,
-                    .range = constant ? Validation::constantViewSize(resolved) : resolved};
-        natives[i] = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = native(heap).resourceSet,
-            .dstBinding = 0,
-            .dstArrayElement = write.slot,
-            .descriptorCount = 1,
-            .descriptorType = type,
-            .pBufferInfo = &infos[i],
-        };
+        bufferInfos[i] = {.buffer = native(buffer),
+                          .offset = offset,
+                          .range = constant ? Validation::constantViewSize(resolved) : resolved};
+        natives[i].descriptorType = type;
+        natives[i].pBufferInfo = &bufferInfos[i];
     }
     // One native call for the whole list (D1, P94).
     state.functions.vkUpdateDescriptorSets(state.device, static_cast<uint32>(natives.size()), natives.data(), 0,
                                            nullptr);
+}
+
+// ── Queries (P51, P71) ───────────────────────────────────────────────────────
+
+QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
+    DeviceState &state = *device.internal.state;
+    const VkQueryPoolCreateInfo info{
+        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, .queryType = VK_QUERY_TYPE_TIMESTAMP, .queryCount = desc.count};
+    VkQueryPool pool = VK_NULL_HANDLE;
+    checkVk(state.functions.vkCreateQueryPool(state.device, &info, nullptr, &pool), "vkCreateQueryPool");
+    // Created reset, on the CPU (P71 (1)).
+    state.functions.vkResetQueryPool(state.device, pool, 0, desc.count);
+
+    QueryPool out;
+    out.type = desc.type;
+    out.count = desc.count;
+    out.internal.device = &state;
+    out.internal.pool = reinterpret_cast<uint64>(pool);
+    out.internal.id = EQ_VK_TRACK(&state);
+    return out;
+}
+
+void destroyQueryPool(Device &device, QueryPool &pool) {
+    DeviceState &state = *device.internal.state;
+    EQ_VK_CHECK_ALIVE(&state, pool.internal.id, "query pool");
+    EQ_VK_UNTRACK(&state, pool.internal.id);
+    state.functions.vkDestroyQueryPool(state.device, native(pool), nullptr);
+    pool = {};
+}
+
+void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count) {
+    DeviceState &state = *device.internal.state;
+    EQ_VK_CHECK_ALIVE(&state, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "resetQueries: the query range"));
+    state.functions.vkResetQueryPool(state.device, native(pool), first, count);
 }
 
 } // namespace RI::Vk
