@@ -1,5 +1,5 @@
-// Scaffold translation unit: proves the backend target compiles against the
-// Vulkan SDK headers until real sources exist.
-#include <types.hpp>
+// Scaffold translation unit: proves the backend target compiles against volk,
+// the Vulkan SDK headers, and RI's umbrella header until real sources exist.
+#include <RI/RI.hpp>
 
-#include <vulkan/vulkan.h>
+#include <volk.h>

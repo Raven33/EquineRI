@@ -184,21 +184,26 @@ if (MSVC)
 endif()
 
 # ── Core library ──────────────────────────────────────────────────────────────
-# Backend-independent surface: portable types shared by every backend (P83).
-# Currently only the integer aliases; Milestone 2 of docs/Plan.md fills it.
-add_library(EquineRI INTERFACE)
-target_include_directories(EquineRI INTERFACE
+# Backend-independent part: portable types shared by every backend (P83) and the
+# central error channel (P57). User code includes <RI/RI.hpp>.
+add_library(EquineRI STATIC
+    src/types.hpp
+    src/RI/RI.hpp
+    src/RI/Error.hpp
+    src/RI/Error.cpp
+)
+target_include_directories(EquineRI PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
-target_link_libraries(EquineRI INTERFACE
+target_link_libraries(EquineRI PUBLIC
     rvl
 )
-target_compile_features(EquineRI INTERFACE cxx_std_20)
+target_compile_features(EquineRI PUBLIC cxx_std_20)
 
 # Compile-time validation switch (CONTEXT.md P21): native validation layers plus
 # Equine's own checks. Each preset sets it explicitly.
 option(EQUINE_VALIDATION "Enable native validation layers and Equine's own checks" OFF)
-target_compile_definitions(EquineRI INTERFACE "EQUINE_VALIDATION=$<BOOL:${EQUINE_VALIDATION}>")
+target_compile_definitions(EquineRI PUBLIC "EQUINE_VALIDATION=$<BOOL:${EQUINE_VALIDATION}>")
 message(STATUS "Equine validation: ${EQUINE_VALIDATION}")
 
 # ── Optional build features ───────────────────────────────────────────────────

@@ -9,6 +9,7 @@ include(EquineAgilitySDK)
 
 # ── Backend scaffold ──────────────────────────────────────────────────────────
 add_library(EquineD3D12Backend STATIC
+    RI/D3D12/Backend.hpp
     D3D12AgilityExports.hpp
     D3D12BackendHeaderCheck.cpp
 )
@@ -23,3 +24,5 @@ target_link_libraries(EquineD3D12Backend PUBLIC
     dxguid
 )
 target_compile_features(EquineD3D12Backend PUBLIC cxx_std_20)
+# Selects this backend for <RI/RI.hpp> in every target that links it (P83).
+target_compile_definitions(EquineD3D12Backend PUBLIC EQUINE_BACKEND_D3D12=1)
