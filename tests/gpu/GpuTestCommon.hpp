@@ -16,11 +16,22 @@ namespace gputest {
 // The GPU to test: EQUINE_GPU=<index> or nvidia/amd/intel, else the first listed.
 inline RI::Gpu pickGpu() {
     const std::vector<RI::Gpu> gpus = RI::listGpus();
-    const char *choice = std::getenv("EQUINE_GPU");
-    if (choice == nullptr || *choice == '\0') {
+    std::string want;
+#if defined(_WIN32)
+    char *value = nullptr;
+    size_t length = 0;
+    if (_dupenv_s(&value, &length, "EQUINE_GPU") == 0 && value != nullptr) {
+        want = value;
+        std::free(value);
+    }
+#else
+    if (const char *value = std::getenv("EQUINE_GPU"); value != nullptr) {
+        want = value;
+    }
+#endif
+    if (want.empty()) {
         return gpus[0];
     }
-    const std::string want(choice);
     for (const RI::Gpu &gpu : gpus) {
         if ((want == "nvidia" && gpu.vendor == RI::GpuVendor::eNvidia) ||
             (want == "amd" && gpu.vendor == RI::GpuVendor::eAMD) ||
@@ -28,7 +39,7 @@ inline RI::Gpu pickGpu() {
             return gpu;
         }
     }
-    const size_t index = std::strtoul(choice, nullptr, 10);
+    const size_t index = std::strtoul(want.c_str(), nullptr, 10);
     return gpus[index < gpus.size() ? index : 0];
 }
 
