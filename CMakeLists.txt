@@ -209,6 +209,8 @@ add_library(EquineRI STATIC
     src/RI/Textures.cpp
     src/RI/Validation/Checks.hpp
     src/RI/Validation/Checks.cpp
+    src/RI/Validation/Placement.hpp
+    src/RI/Validation/Placement.cpp
     src/RI/Validation/Validation.hpp
     src/RI/Validation/ObjectTracker.hpp
     src/RI/Validation/ObjectTracker.cpp
