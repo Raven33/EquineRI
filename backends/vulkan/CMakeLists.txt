@@ -23,6 +23,17 @@ target_link_libraries(volk PUBLIC
 )
 equine_mark_nonproject_dependency(volk)
 
+# SPIRV-Reflect (git submodule, pinned tag): reads root data size and bindings
+# from SPIR-V (P67). Built from its single source file.
+equine_require_submodule("${EQUINE_THIRD_PARTY_DIR}/SPIRV-Reflect/spirv_reflect.c" SPIRV-Reflect)
+add_library(spirv-reflect STATIC
+    "${EQUINE_THIRD_PARTY_DIR}/SPIRV-Reflect/spirv_reflect.c"
+)
+target_include_directories(spirv-reflect PUBLIC
+    "${EQUINE_THIRD_PARTY_DIR}/SPIRV-Reflect"
+)
+equine_mark_nonproject_dependency(spirv-reflect)
+
 # ── Backend library ──────────────────────────────────────────────────────────
 add_library(EquineVulkanBackend STATIC
     RI/Vk/Backend.hpp
@@ -33,6 +44,9 @@ add_library(EquineVulkanBackend STATIC
     Instance.cpp
     VkCheck.hpp
     VkCheck.cpp
+    Resources.cpp
+    Pipeline.cpp
+    Commands.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -40,6 +54,9 @@ target_include_directories(EquineVulkanBackend PUBLIC
 target_link_libraries(EquineVulkanBackend PUBLIC
     EquineRI
     volk
+)
+target_link_libraries(EquineVulkanBackend PRIVATE
+    spirv-reflect
 )
 target_compile_features(EquineVulkanBackend PUBLIC cxx_std_20)
 # Selects this backend for <RI/RI.hpp> in every target that links it (P83).

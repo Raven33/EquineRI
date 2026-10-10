@@ -61,25 +61,29 @@ function(equine_add_shaders target)
         message(FATAL_ERROR "equine_add_shaders(<target> PROFILE <profile> SOURCES <files...>)")
     endif()
     set(out_dir "${CMAKE_BINARY_DIR}/shaders")
-    set(outputs)
     foreach(source IN LISTS ARG_SOURCES)
         get_filename_component(source "${source}" ABSOLUTE)
         get_filename_component(name "${source}" NAME_WE)
-        set(common -T ${ARG_PROFILE} -E main -HV 2021 -I "${EQUINE_SHADER_INCLUDE_DIR}" -WX)
-        add_custom_command(
-            OUTPUT "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}"
-            COMMAND "${EQUINE_DXC_EXECUTABLE}" ${common} -spirv -fspv-target-env=vulkan1.3 -fvk-use-dx-layout
-                    -Fo "${out_dir}/${name}.spv" "${source}"
-            COMMAND "${EQUINE_DXC_EXECUTABLE}" ${common} -Qstrip_reflect -Qstrip_debug
-                    -Fo "${out_dir}/${name}.dxil" "${source}"
-            DEPENDS "${source}" "${EQUINE_SHADER_INCLUDE_DIR}/equine/root.hlsli"
-            COMMENT "Compiling ${name} (${ARG_PROFILE}) to SPIR-V and DXIL"
-            VERBATIM
-        )
-        list(APPEND outputs "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil")
+        # One rule per shader, shared by every target that uses it.
+        set(shader_target "equine_shader_${name}")
+        if (NOT TARGET "${shader_target}")
+            set(common -T ${ARG_PROFILE} -E main -HV 2021 -I "${EQUINE_SHADER_INCLUDE_DIR}" -WX)
+            # Samplers in their own set, so heaps of any size share one layout (P94).
+            set(spirv_rules -fvk-bind-sampler-heap 0 1)
+            add_custom_command(
+                OUTPUT "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}"
+                COMMAND "${EQUINE_DXC_EXECUTABLE}" ${common} -spirv -fspv-target-env=vulkan1.3 -fvk-use-dx-layout
+                        ${spirv_rules} -Fo "${out_dir}/${name}.spv" "${source}"
+                COMMAND "${EQUINE_DXC_EXECUTABLE}" ${common} -Qstrip_reflect -Qstrip_debug
+                        -Fo "${out_dir}/${name}.dxil" "${source}"
+                DEPENDS "${source}" "${EQUINE_SHADER_INCLUDE_DIR}/equine/root.hlsli"
+                COMMENT "Compiling ${name} (${ARG_PROFILE}) to SPIR-V and DXIL"
+                VERBATIM
+            )
+            add_custom_target("${shader_target}" DEPENDS "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil")
+        endif()
+        add_dependencies("${target}" "${shader_target}")
     endforeach()
-    add_custom_target("${target}_shaders_${ARG_PROFILE}" DEPENDS ${outputs})
-    add_dependencies("${target}" "${target}_shaders_${ARG_PROFILE}")
     target_compile_definitions("${target}" PRIVATE "EQUINE_SHADER_DIR=\"${out_dir}\"")
 endfunction()
