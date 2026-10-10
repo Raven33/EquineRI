@@ -28,6 +28,18 @@ inline ID3D12GraphicsCommandList7 *native(const CommandList &cmd) {
     return static_cast<ID3D12GraphicsCommandList7 *>(cmd.internal.list);
 }
 
+// The native resource and the layout it rests in (L1). Native code that leaves
+// a texture in another layout must return it to this one (P27).
+struct NativeTexture {
+    ID3D12Resource *resource = nullptr;
+    D3D12_BARRIER_LAYOUT restingLayout = D3D12_BARRIER_LAYOUT_UNDEFINED;
+};
+inline NativeTexture native(const Texture &texture) {
+    return {static_cast<ID3D12Resource *>(texture.internal.resource),
+            static_cast<D3D12_BARRIER_LAYOUT>(texture.internal.restingLayout)};
+}
+inline ID3D12QueryHeap *native(const QueryPool &pool) { return static_cast<ID3D12QueryHeap *>(pool.internal.heap); }
+
 struct NativeDescriptorHeap {
     ID3D12DescriptorHeap *resourceHeap = nullptr; // CBV_SRV_UAV, shader-visible
     ID3D12DescriptorHeap *samplerHeap = nullptr;  // SAMPLER, shader-visible

@@ -205,6 +205,8 @@ add_library(EquineRI STATIC
     src/RI/Resources.hpp
     src/RI/Commands.hpp
     src/RI/Window.hpp
+    src/RI/Textures.hpp
+    src/RI/Textures.cpp
     src/RI/Validation/Checks.hpp
     src/RI/Validation/Checks.cpp
     src/RI/Validation/Validation.hpp

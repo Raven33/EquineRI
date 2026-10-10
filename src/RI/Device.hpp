@@ -52,6 +52,7 @@ struct DeviceLimits {
     uint32 maxSamplerDescriptors = 0;  // per descriptor heap
     uint32 maxRootDataSize = 0;        // bytes of root data a pipeline may declare
     bool gpuUploadMemory = false;      // MemoryKind::eGPUUpload is available (P32)
+    uint64 timestampFrequency = 0;     // timestamp ticks per second (P71 (3))
 };
 
 } // namespace RI

@@ -3,6 +3,8 @@
 
 #include <TestHarness.hpp>
 
+#include "GpuTestCommon.hpp"
+
 #include <RI/RI.hpp>
 
 #include <csignal>
@@ -15,19 +17,8 @@
 
 namespace {
 
-// The shader compiled for this backend: SPIR-V for Vulkan, DXIL for D3D12.
-std::vector<std::byte> loadShader(const char *name) {
-#if EQUINE_BACKEND_VULKAN
-    const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".spv";
-#else
-    const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".dxil";
-#endif
-    std::ifstream file(path, std::ios::binary);
-    std::vector<char> bytes{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-    std::vector<std::byte> out(bytes.size());
-    std::memcpy(out.data(), bytes.data(), bytes.size());
-    return out;
-}
+using gputest::createTestDevice;
+using gputest::loadShader;
 
 // Mirrors FillRoot in tests/shaders/fill.hlsl.
 struct FillRoot {
@@ -37,8 +28,6 @@ struct FillRoot {
     float scale;
     uint32 count;
 };
-
-RI::Device createTestDevice() { return RI::createDevice({.gpu = RI::listGpus()[0]}); }
 
 } // namespace
 
