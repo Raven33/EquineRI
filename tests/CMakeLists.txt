@@ -3,16 +3,14 @@
 
 add_executable(EquineRITests
     "${CMAKE_CURRENT_SOURCE_DIR}/TestMain.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/HandleTests.cpp"
 )
 target_include_directories(EquineRITests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(EquineRITests PRIVATE EquineRI)
 equine_copy_sanitizer_runtime(EquineRITests)
 
 # One CTest entry per test case so failures are reported individually.
+# Empty until Milestone 2 (e.g. the DXIL reader and validation checks are GPU-free).
 set(EQUINE_RI_TEST_NAMES
-    handle.default_is_invalid
-    handle.nonzero_is_valid
 )
 
 foreach(test_name IN LISTS EQUINE_RI_TEST_NAMES)

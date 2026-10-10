@@ -157,7 +157,7 @@ Taken as-is into the scaffold, open to revision:
 - `.clang-format`, `.clang-tidy`, `.clangd`;
 - the compiler-runtime policy: exceptions on, ASan + UBSan on by default, a `bench`
   preset without sanitizers, clang-tidy in every build;
-- `types.hpp`, `handles.hpp` (now in `namespace RI`, without V2's unused lifetime parameter), `utils/macros.hpp` (without the print-and-return stub macros, see below), and vendored RavenLib (bitmask, slotmap);
+- `types.hpp` (integer aliases only) and RavenLib's `bitmask.hpp` (flag operators, P86). Removed on 2026-10-10 as stale for v1: `handles.hpp` (handles rejected by P81), `utils/macros.hpp`, RavenLib's slotmap, and glm (RI's API needs no math library; the user's choice, P15);
 - the dependency-free self-registering test harness with one CTest entry per case;
 - `FindDXC.cmake` and the single-DXC-for-both-targets rule.
 

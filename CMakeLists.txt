@@ -156,18 +156,7 @@ function(equine_mark_nonproject_dependency target)
     )
 endfunction()
 
-equine_require_submodule("${EQUINE_THIRD_PARTY_DIR}/glm/CMakeLists.txt" "glm")
-
-FetchContent_Declare(glm
-    SOURCE_DIR     "${EQUINE_THIRD_PARTY_DIR}/glm"
-)
-# Header-only use: skip glm's compiled explicit-instantiation library.
-set(GLM_BUILD_LIBRARY OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(glm)
-
-equine_mark_nonproject_dependency(glm-header-only)
-
-# RavenLib (header-only, vendored)
+# RavenLib (header-only, vendored): bitmask operators for RI flag enums (P86).
 add_library(rvl INTERFACE)
 target_include_directories(rvl INTERFACE
     "${EQUINE_THIRD_PARTY_DIR}/RavenLib"
@@ -195,15 +184,14 @@ if (MSVC)
 endif()
 
 # ── Core library ──────────────────────────────────────────────────────────────
-# Backend-independent surface. Empty of API until the design discussion settles
-# it; currently only the shared vocabulary types carried over from EquineEngineV2.
+# Backend-independent surface: portable types shared by every backend (P83).
+# Currently only the integer aliases; Milestone 2 of docs/Plan.md fills it.
 add_library(EquineRI INTERFACE)
 target_include_directories(EquineRI INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 target_link_libraries(EquineRI INTERFACE
     rvl
-    glm::glm-header-only
 )
 target_compile_features(EquineRI INTERFACE cxx_std_20)
 
