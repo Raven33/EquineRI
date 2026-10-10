@@ -51,7 +51,7 @@ headers (P84):
 - Compute pipelines (P38): Vulkan reflection with SPIRV-Reflect; D3D12 root signature
   built by RI's own DXIL reader (SFI0, PSV0, `dx.resources`; P67). Root data (P45).
 - Coarse stage → stage barriers (P36), buffer copies (P47).
-- Open implementation choice: the Vulkan loader (Vulkan::Vulkan vs volk).
+- Vulkan loader: volk, with per-device function tables (P89).
 
 Exit: the same sample (buffer → compute → readback) passes on both backends, with
 validation on and off.

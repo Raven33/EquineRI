@@ -1,13 +1,31 @@
 cmake_minimum_required(VERSION 3.25)
 
 # ── Vulkan ────────────────────────────────────────────────────────────────────
-# The loader strategy (Vulkan::Vulkan vs volk) is an open implementation task.
-# No allocator here: RI places resources in user memory (CONTEXT.md P31), and
-# automatic allocation is a helper (P41, P17).
+# Only the headers: functions are loaded at runtime by volk (CONTEXT.md P89),
+# so nothing links the system loader. No allocator here: RI places resources in
+# user memory (P31), and automatic allocation is a helper (P41, P17).
 find_package(Vulkan REQUIRED)
+
+# volk (git submodule, pinned tag): built here from its single source file rather
+# than through volk's own CMake. VK_NO_PROTOTYPES is public so no translation
+# unit sees the loader's prototypes.
+equine_require_submodule("${EQUINE_THIRD_PARTY_DIR}/volk/volk.c" volk)
+add_library(volk STATIC
+    "${EQUINE_THIRD_PARTY_DIR}/volk/volk.c"
+)
+target_include_directories(volk PUBLIC
+    "${EQUINE_THIRD_PARTY_DIR}/volk"
+)
+target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
+target_link_libraries(volk PUBLIC
+    Vulkan::Headers
+    ${CMAKE_DL_LIBS}
+)
+equine_mark_nonproject_dependency(volk)
 
 # ── Backend scaffold ──────────────────────────────────────────────────────────
 add_library(EquineVulkanBackend STATIC
+    RI/Vk/Backend.hpp
     VulkanBackendHeaderCheck.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
@@ -15,6 +33,8 @@ target_include_directories(EquineVulkanBackend PUBLIC
 )
 target_link_libraries(EquineVulkanBackend PUBLIC
     EquineRI
-    Vulkan::Vulkan
+    volk
 )
 target_compile_features(EquineVulkanBackend PUBLIC cxx_std_20)
+# Selects this backend for <RI/RI.hpp> in every target that links it (P83).
+target_compile_definitions(EquineVulkanBackend PUBLIC EQUINE_BACKEND_VULKAN=1)
