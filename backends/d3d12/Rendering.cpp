@@ -280,7 +280,7 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
     DeviceState &state = *cmd.internal.device;
     checkNotRendering(cmd, "cmdClearBuffer");
     auto *resource = static_cast<ID3D12Resource *>(buffer.internal.resource);
-    if ((resource->GetDesc1().Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == 0) {
+    if ((resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == 0) {
         reportError(ErrorCategory::eProgrammerError,
                     "cmdClearBuffer: the buffer needs BufferUsage::eCopyDst (or eReadWrite) and eGPU or eGPUUpload memory");
     }

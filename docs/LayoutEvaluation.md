@@ -150,6 +150,54 @@ the alternatives left if it fails are: choosing the other A' variant per driver 
 everywhere vs. around-pass transitions), accepting the cost, an opt-in per-texture
 simultaneous-access mode (C), or reopening L1 with the user.
 
+## Measurement harness (Milestone 3, fixed before measuring)
+
+`tools/layout_bench` (one source per backend, P83). Every workload runs in each **mode**
+and is compared with the **baseline**:
+
+| Backend | Modes measured | Baseline |
+|---|---|---|
+| Vulkan with `VK_KHR_unified_image_layouts` (NVIDIA) | `eUnified`; also `eTransitions` and `eGeneral` for information | hand-written optimal per-texture layouts |
+| Vulkan without it (RDNA2: RADV, AMD Windows) | `eTransitions` (T) and `eGeneral` (G) (P78) | hand-written optimal per-texture layouts |
+| D3D12 | RI's resting layouts (A', T) | hand-written optimal per-texture layouts |
+
+The RI side uses only RI calls. The baseline uses the same RI objects (memory, textures,
+pipelines, heaps) but records every barrier, layout and rendering call natively on the RI
+command list (`native(cmd)`), with the layouts a careful developer picks: attachment layouts
+while rendering, `SHADER_READ_ONLY_OPTIMAL` / `SHADER_RESOURCE` while sampled, `GENERAL` /
+`UNORDERED_ACCESS` while written by compute, `UNDEFINED` as the old layout when contents are
+cleared, and exact stage masks on both sides of each barrier.
+
+**Workloads** (1920×1080 and 3840×2160):
+1. *Render → sample* (item 2): a pass that clears and draws 8 overlapping full-screen
+   triangles with a position-dependent pattern into the target, then a compute pass that
+   reads every texel. Targets: RGBA8, RGBA16F, R11G11B10F, 4x MSAA RGBA16F, D32F, and
+   D24S8 where supported (D32FS8 on AMD Vulkan).
+2. *Storage write → sample* (item 3): a compute pass writes an RGBA16F storage texture, a
+   second compute pass reads it.
+3. *Depth write → sample* (item 4): a depth-only pass draws 8 overlapping triangles at
+   varying depth, then a compute pass builds the first HiZ level by reading the depth.
+4. *Realistic frame*: G-buffer pass (RGBA8 albedo, RGBA16F normal, D32F depth, 8 draws) →
+   lighting compute (reads the three, writes RGBA16F `lit`) → HiZ compute (reads depth,
+   writes R32F) → a full-screen pass reading `lit` into an RGBA8 output → a compute pass
+   reading the output (stands in for presentation, which v1 has no swapchain for yet).
+
+**Timing.** GPU timestamps (P71) before and after every pass, so RI's layout switches at
+`cmdEndRendering` count in the pass that caused them. Each configuration runs 30 warm-up
+frames and 300 measured frames, each frame submitted and waited on alone; the reported value
+per pass and per frame is the median. Frames run back to back in one command list per
+frame, so a full-scope transition that removes overlap between passes shows up in the frame
+time.
+
+**Applying P79.** For each GPU and backend, A' passes when the best A' mode allowed on that
+driver (`eUnified` where available; otherwise the faster of T and G, chosen per GPU as P78
+says) meets both conditions on every workload: frame time at most 2% above the baseline,
+and no pass more than 10% above it unless the difference is under 0.05 ms. Decompression
+checks in RGP / Nsight (item 2) are done by hand only if a pass fails.
+
+**Host barrier (P94 (6)).** The same harness measures one empty command list and the
+render → sample frame with and without Vulkan's automatic host barrier at `cmdEnd`.
+
 ## Research results (2026-10-03)
 
 ### D3D12 resting layout: resolved
