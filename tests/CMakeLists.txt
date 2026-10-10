@@ -71,8 +71,13 @@ if (TARGET EquineVulkanBackend)
             ENVIRONMENT "LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/vulkan/lsan.supp:print_suppressions=0"
         )
     endforeach()
+    # A driver manifest whose library does not exist. A bare file name with the
+    # platform's suffix: the Windows loader fails instance creation on a
+    # relative "./x.so" path instead of skipping the driver.
+    set(EQUINE_MISSING_VULKAN_DRIVER "equine_missing_vulkan_driver${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    configure_file(vulkan/broken_icd.json.in "${CMAKE_CURRENT_BINARY_DIR}/broken_icd.json" @ONLY)
     set_tests_properties(vk.loader_errors_do_not_abort PROPERTIES
-        ENVIRONMENT "VK_ADD_DRIVER_FILES=${CMAKE_CURRENT_SOURCE_DIR}/vulkan/broken_icd.json;LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/vulkan/lsan.supp:print_suppressions=0"
+        ENVIRONMENT "VK_ADD_DRIVER_FILES=${CMAKE_CURRENT_BINARY_DIR}/broken_icd.json;LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/vulkan/lsan.supp:print_suppressions=0"
     )
     set_tests_properties(vk.unknown_gpu_reports PROPERTIES
         PASS_REGULAR_EXPRESSION "\\[EquineRI\\] programmer error: the GPU 'Nonexistent GPU' is not available"
