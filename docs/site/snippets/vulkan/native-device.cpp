@@ -79,11 +79,73 @@ int main() {
     RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
     // --8<-- [end:native-command]
 
+    // --8<-- [start:native-texture]
+    // A texture's VkImage and the layout it rests in. Native code may move it
+    // to another layout, but must return it to restingLayout before RI uses it.
+    RI::Memory textureMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 16u << 20);
+    RI::Texture texture = RI::createTexture(device, textureMemory, 0,
+                                            {.width = 256,
+                                             .height = 256,
+                                             .format = RI::Format::eRGBA8Unorm,
+                                             .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopyDst});
+    const RI::Vk::NativeTexture image = RI::Vk::native(texture);
+    const VkImageView view = RI::Vk::native(texture.view); // views: VkImageView
+
+    const VkImageSubresourceRange whole{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    const auto layoutChange = [&](VkImageLayout from, VkImageLayout to) {
+        const VkImageMemoryBarrier2 barrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                                            .srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                            .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                                            .dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+                                            .oldLayout = from,
+                                            .newLayout = to,
+                                            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                            .image = image.image,
+                                            .subresourceRange = whole};
+        const VkDependencyInfo dependency{
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO, .imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &barrier};
+        n.functions->vkCmdPipelineBarrier2(RI::Vk::native(cmd), &dependency);
+    };
+    RI::resetCommandList(cmd);
+    RI::cmdBegin(cmd);
+    // Out of rest, a native clear, back to rest.
+    layoutChange(image.restingLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    const VkClearColorValue red{{1.0f, 0.0f, 0.0f, 1.0f}};
+    n.functions->vkCmdClearColorImage(RI::Vk::native(cmd), image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &red, 1,
+                                      &whole);
+    layoutChange(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image.restingLayout);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    std::printf("image view %p\n", static_cast<void *>(view));
+    // --8<-- [end:native-texture]
+
+    // --8<-- [start:native-query-pool]
+    RI::QueryPool pool = RI::createQueryPool(device, {.type = RI::QueryType::eTimestamp, .count = 2});
+    const VkQueryPool vkPool = RI::Vk::native(pool);
+    // E.g. read results on the CPU without a buffer (after the timeline point).
+    uint64_t results[2] = {};
+    n.functions->vkGetQueryPoolResults(n.device, vkPool, 0, 2, sizeof(results), results, sizeof(uint64_t),
+                                       VK_QUERY_RESULT_64_BIT);
+    // --8<-- [end:native-query-pool]
+
+    RI::destroyQueryPool(device, pool);
+    RI::destroyTexture(device, texture);
+    RI::freeMemory(device, textureMemory);
     RI::destroyCommandList(device, cmd);
     RI::destroyDescriptorHeap(device, heap);
     RI::destroyBuffer(device, buffer);
     RI::freeMemory(device, memory);
 
     RI::destroyDevice(device);
+
+    // --8<-- [start:layout-mode]
+    // Force a layout mode, to test or measure (P78). User code is the same in every mode.
+    RI::Device modeT = RI::Vk::createDevice({.gpu = gpus[0]}, {.layoutMode = RI::Vk::LayoutMode::eTransitions});
+    const RI::Vk::LayoutMode mode = RI::Vk::native(modeT).layoutMode; // the mode in use, never eAuto
+    std::printf("layout mode %u\n", static_cast<unsigned>(mode));
+    // --8<-- [end:layout-mode]
+    RI::destroyDevice(modeT);
     return 0;
 }

@@ -281,6 +281,14 @@ def parse_struct(lines: list[str], i: int, name: str) -> tuple[int, tuple[str, l
 def parse_enum(lines: list[str], i: int) -> tuple[int, tuple[str, list[Field]]]:
     code = [lines[i].strip()]
     values: list[Field] = []
+    one_line = re.match(r"^[^{]*\{(?P<body>[^}]*)\}\s*;", strip_comment(lines[i])[0].strip())
+    if one_line:  # `enum class LoadOp : uint8 { eLoad, eClear, eDontCare };`
+        for body in one_line.group("body").split(","):
+            body = body.strip()
+            if body:
+                name, _, value = body.partition("=")
+                values.append(Field(body, name.strip(), "", value.strip(), ""))
+        return i + 1, ("\n".join(code), values)
     i += 1
     while i < len(lines):
         raw = lines[i].rstrip()

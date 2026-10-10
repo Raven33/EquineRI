@@ -30,6 +30,10 @@ foreach(backend IN ITEMS Vulkan D3D12)
         # The examples' shader, with RI's compile rule (P93); defines EQUINE_SHADER_DIR.
         equine_add_shaders(EquineDocSnippetsRI${backend} PROFILE cs_6_6 SOURCES
             "${CMAKE_CURRENT_SOURCE_DIR}/hlsl/doc_compute.hlsl")
+        equine_add_shaders(EquineDocSnippetsRI${backend} PROFILE vs_6_6 SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/hlsl/doc_triangle_vs.hlsl")
+        equine_add_shaders(EquineDocSnippetsRI${backend} PROFILE ps_6_6 SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/hlsl/doc_triangle_ps.hlsl")
     endif()
 endforeach()
 

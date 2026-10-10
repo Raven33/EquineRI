@@ -1,5 +1,5 @@
 ---
-symbols: [RI::Vk::native, RI::Vk::NativeDescriptorHeap, RI::Vk::NativePipeline]
+symbols: [RI::Vk::native, RI::Vk::NativeDescriptorHeap, RI::Vk::NativePipeline, RI::Vk::NativeTexture]
 ---
 
 # Vulkan: native handles of RI objects
@@ -19,6 +19,9 @@ recording a native command.
 | `DescriptorHeap` | `NativeDescriptorHeap`: the descriptor pool and the two sets (set 0: views, set 1: samplers) |
 | `Pipeline` | `NativePipeline`: the `VkPipeline` and its `VkPipelineLayout` |
 | `CommandList` | `VkCommandBuffer` |
+| `Texture` | `NativeTexture`: the `VkImage` and the layout it rests in |
+| `TextureView` | `VkImageView` |
+| `QueryPool` | `VkQueryPool` |
 
 The handles are **borrowed**: RI destroys them when you destroy the RI object.
 
@@ -29,6 +32,8 @@ The handles are **borrowed**: RI destroys them when you destroy the RI object.
 --8<-- "generated/signatures/RI.Vk.NativeDescriptorHeap.md"
 
 --8<-- "generated/signatures/RI.Vk.NativePipeline.md"
+
+--8<-- "generated/signatures/RI.Vk.NativeTexture.md"
 
 ## Example: name a buffer
 
@@ -44,6 +49,24 @@ The handles are **borrowed**: RI destroys them when you destroy the RI object.
 
 Device-level functions such as `vkCmdFillBuffer` go through the device's function table,
 `RI::Vk::native(device).functions` ([P89](../../design-notes/decisions.md#p89)).
+
+## Example: a native command on an RI texture
+
+RI hides image layouts ([Image layouts are RI's business](../../concepts/layouts.md)), but a
+native command may need a specific one. `NativeTexture::restingLayout` is the layout the texture
+is in between RI's operations, which depends on its usage and on the device's
+[layout mode](device-creation.md#example-force-a-layout-mode). Move the texture out of it,
+record the native command, and move it back:
+
+```cpp
+--8<-- "snippets/vulkan/native-device.cpp:native-texture"
+```
+
+## Example: a query pool
+
+```cpp
+--8<-- "snippets/vulkan/native-device.cpp:native-query-pool"
+```
 
 ## The same in native code
 
@@ -71,6 +94,11 @@ Device-level functions such as `vkCmdFillBuffer` go through the device's functio
   that bind nothing (fills, copies, queries, debug labels) are safe. Native sections that save
   and restore RI's state are planned ([P27](../../design-notes/decisions.md#p27),
   [P70](../../design-notes/decisions.md#p70)).
+- **A texture must be in its resting layout whenever RI uses it**: return every texture you
+  moved before the next RI command that may touch it, and before the command list ends
+  ([P27](../../design-notes/decisions.md#p27)). Native sections that do this bookkeeping are
+  planned. Shader descriptors of RI's textures name the resting layout (`GENERAL` for storage
+  views).
 - Synchronize native work with barriers as usual; RI's [`cmdBarrier`](../../reference/cmdBarrier.md)
   covers native commands too, by stage.
 - A descriptor written natively into the heap's set must use a type from RI's mutable list:

@@ -26,16 +26,25 @@ Step by step, `createDevice`:
 5. prepares what the rest of RI needs: the queue's timeline (a Vulkan timeline semaphore or a
    D3D12 fence, see [Timeline points](../concepts/timeline.md)), the memory type behind each
    [memory kind](../concepts/memory.md), and on Vulkan the descriptor set layouts behind
-   [descriptor heaps](../concepts/descriptors.md);
+   [descriptor heaps](../concepts/descriptors.md), and on Vulkan the **layout mode** (below);
 6. fills in [`device.limits`](DeviceLimits.md) and `device.graphicsQueue`;
 7. in validation builds, turns on the native validation layer and routes its errors to the
    [error channel](../concepts/error-channel.md) (see [Validation](../concepts/validation.md)).
 
 On Vulkan, the GPU must also support what RI's own commands rely on, or `createDevice`
 reports an **unsupported** error naming what is missing: `VK_EXT_mutable_descriptor_type`,
-timeline semaphores, buffer device addresses, synchronization2, and descriptor indexing with
-partially bound, variable-count, update-after-bind descriptors of every buffer and image type.
-Every GPU at RI's hardware floor has them.
+timeline semaphores, buffer device addresses, synchronization2, descriptor indexing with
+partially bound, variable-count, update-after-bind descriptors of every buffer and image type,
+`dynamicRendering` (rendering sections without render pass objects),
+`separateDepthStencilLayouts` (depth-only views) and `hostQueryReset` (resetting queries from
+the CPU). Every GPU at RI's hardware floor has them.
+
+On Vulkan, `createDevice` also chooses how the backend hides image layouts, the **layout mode**
+([P78](../design-notes/decisions.md#p78)): `eUnified` when the driver has
+`VK_KHR_unified_image_layouts`, otherwise `eTransitions`. It changes nothing in your code; see
+[Image layouts are RI's business](../concepts/layouts.md). The mode in use is
+`RI::Vk::native(device).layoutMode`, and a native option forces one
+([Vulkan: device creation](../native/vulkan/device-creation.md)).
 
 The returned `device.gpu` is a fresh description of the GPU, read while creating the device.
 
@@ -168,3 +177,4 @@ runs just before the device is created: [D3D12 device creation](../native/d3d12/
 - [P89](../design-notes/decisions.md#p89): Vulkan device functions go through a per-device
   function table (volk).
 - [P21](../design-notes/decisions.md#p21): what validation builds add.
+- [P78](../design-notes/decisions.md#p78): the Vulkan layout modes.
