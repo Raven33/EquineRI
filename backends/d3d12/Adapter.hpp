@@ -16,7 +16,8 @@ inline constexpr D3D_FEATURE_LEVEL kMinFeatureLevel = D3D_FEATURE_LEVEL_12_0;
 IDXGIFactory6 *createFactory();
 
 // Fills `gpu` and returns true if the adapter can run RI: feature level 12_0,
-// shader model 6.6, resource binding tier 3, enhanced barriers. Creates a
+// shader model 6.6, resource binding tier 3, resource heap tier 2, enhanced
+// barriers. Creates a
 // short-lived device to check (D3D12 returns the existing device if one is
 // alive on this adapter).
 bool describeGpu(IDXGIAdapter1 *adapter, Gpu &gpu);

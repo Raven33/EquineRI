@@ -18,6 +18,9 @@ add_library(EquineD3D12Backend STATIC
     D3D12Check.cpp
     Device.cpp
     DeviceState.hpp
+    Resources.cpp
+    Pipeline.cpp
+    Commands.cpp
 )
 target_compile_definitions(EquineD3D12Backend PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(EquineD3D12Backend PUBLIC

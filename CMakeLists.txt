@@ -262,11 +262,14 @@ if (EQUINE_D3D12_BACKEND)
     add_subdirectory(backends/d3d12)
 endif()
 
+if (EQUINE_BUILD_TESTS)
+    enable_testing() # before samples: they register their own run as a test
+endif()
+
 if (EQUINE_BUILD_SAMPLES)
     add_subdirectory(samples)
 endif()
 
 if (EQUINE_BUILD_TESTS)
-    enable_testing()
     add_subdirectory(tests)
 endif()
