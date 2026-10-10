@@ -279,9 +279,9 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc) 
                                                .pCreateInfo = &image.info};
     VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
     state.functions.vkGetDeviceImageMemoryRequirements(state.device, &info, &requirements);
-    return {.size = requirements.memoryRequirements.size,
-            .alignment = requirements.memoryRequirements.alignment,
-            .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)};
+    return withGranularity(state, {.size = requirements.memoryRequirements.size,
+                                   .alignment = requirements.memoryRequirements.alignment,
+                                   .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)});
 }
 
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc) {
@@ -391,7 +391,8 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = format != texture.format ? &usageInfo : nullptr,
         .image = native(texture).image,
-        .viewType = layerCount == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        // Array or not follows the texture, as on D3D12 and in HLSL (Texture2DArray).
+        .viewType = texture.layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY,
         .format = toVkFormat(format),
         .subresourceRange = {.aspectMask = aspects,
                              .baseMipLevel = desc.baseMip,

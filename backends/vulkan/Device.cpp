@@ -298,6 +298,7 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
     vkGetPhysicalDeviceProperties2(state.physicalDevice, &properties);
     const VkPhysicalDeviceLimits &l = properties.properties.limits;
     state.storageOffsetAlignment = l.minStorageBufferOffsetAlignment;
+    state.bufferImageGranularity = l.bufferImageGranularity;
     state.uniformOffsetAlignment = l.minUniformBufferOffsetAlignment;
 
     // D3D12's resource binding tier 3 limits, or less if the GPU has less.

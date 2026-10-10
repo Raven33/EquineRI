@@ -53,8 +53,8 @@ def main():
             print("|---|---|---:|---:|---:|---:|:-:|")
             failures = []
             for (workload, pass_), b in sorted(base.items()):
-                if (workload, pass_) not in values:
-                    continue
+                if (workload, pass_) not in values or pass_ == "cpu_submit_wait":
+                    continue  # CPU wall time: reported separately, not a P79 pass
                 a = values[(workload, pass_)]
                 diff = a - b
                 pct = diff / b if b > 0 else 0.0

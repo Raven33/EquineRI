@@ -35,6 +35,7 @@ struct DeviceState {
     VkDescriptorSetLayout resourceSetLayout = VK_NULL_HANDLE; // set 0
     VkDescriptorSetLayout samplerSetLayout = VK_NULL_HANDLE;  // set 1
     VkDeviceSize storageOffsetAlignment = 0;
+    VkDeviceSize bufferImageGranularity = 1;
     VkDeviceSize uniformOffsetAlignment = 0;
 
     // The graphics queue's timeline (P20).
@@ -56,6 +57,15 @@ struct DeviceState {
 };
 
 inline uint32 kindIndex(MemoryKind kind) { return static_cast<uint32>(kind); }
+
+// Buffers and textures may be neighbours in one memory block (P31): starting
+// and ending each on bufferImageGranularity keeps them off each other's pages.
+inline MemoryRequirements withGranularity(const DeviceState &state, MemoryRequirements requirements) {
+    const uint64 granularity = state.bufferImageGranularity;
+    requirements.alignment = requirements.alignment > granularity ? requirements.alignment : granularity;
+    requirements.size = (requirements.size + granularity - 1) / granularity * granularity;
+    return requirements;
+}
 // Every memory kind whose native type is in `typeBits`, as MemoryRequirements::kinds.
 uint32 kindsOf(const DeviceState &state, uint32 typeBits);
 
