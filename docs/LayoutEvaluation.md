@@ -1,5 +1,9 @@
 # L1: Hiding Image Layouts — Evaluation
 
+> Status 2026-10-10: A' is the direction; RI's transitions use exact/full halves (P68);
+> RDNA2 Vulkan runs modes G and T (P78); the decision rule is fixed (P79). The measurement
+> runs in Milestone 3 of `docs/Plan.md`. Code sketches here predate the API style (P81–P88).
+
 > Status: **direction A'**, confirmed only after measurement (P18; round 5). This document shows what each remaining
 > candidate looks like to a user and to a backend, and what has to be measured before
 > choosing. API names in the sketches are placeholders, not proposals.
@@ -41,7 +45,7 @@ What the backend emits:
 | Backend | Emitted |
 |---------|---------|
 | Vulkan + `VK_KHR_unified_image_layouts` | Every image rests in `GENERAL`. User barriers are `VkMemoryBarrier2` only. The only layout transitions are base-owned and name one image each: (a) `UNDEFINED → GENERAL` once at creation/first use; (b) `UNDEFINED → GENERAL` on discard/aliasing (P35); (c) swapchain acquire → `GENERAL` (from `UNDEFINED` when contents are discarded, else from `PRESENT_SRC`); (d) `GENERAL → PRESENT_SRC` at present. |
-| Vulkan without it | Either `GENERAL` everywhere (legal, but attachment compression may suffer) or around-operation transitions as on D3D12. This is a per-driver fallback choice. |
+| Vulkan without it | Either `GENERAL` everywhere (mode G, legal, but attachment compression may suffer) or around-operation transitions as on D3D12 (mode T). Both are implemented; the measurement picks one per GPU and driver (P78). |
 | D3D12 (enhanced barriers) | `beginRendering`: albedo resting → `RENDER_TARGET`, depth resting → `DEPTH_STENCIL_WRITE`. `endRendering`: back to resting. The user barriers become global `D3D12_GLOBAL_BARRIER`s. The same base-owned initial and discard transitions as above apply (into `DIRECT_QUEUE_COMMON`), as they do on Vulkan without the extension. |
 
 Properties:
@@ -51,7 +55,7 @@ Properties:
   round-trips through the resting layout at every pass boundary. That can trigger
   decompression or metadata work the user cannot see or avoid.
 - Information lost: the base never learns that a previous texture's contents can be
-  discarded, unless `beginRendering` load ops carry it (they can: `eDontCare` / `eClear`).
+  discarded. Aliased textures need an explicit discard (P69); load ops do not count.
 - Native escape hatch (E1, settled by P27): `beginNative` gives each texture's native
   resting layout; at `endNative` the user lists the textures left in another layout, and
   Equine transitions them back. Every texture is at rest after `endNative`.

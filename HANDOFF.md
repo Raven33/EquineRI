@@ -1,27 +1,41 @@
 # Handoff
 
-State on 2026-10-10: design phase, run as a question-by-question "grill". All review
-findings and open questions have been handled. The inference review (`docs/Review-Inference-2026-10-10.md`) softened P36 and is applied (P36, P45, P62, P67, P68, P71; S4 settled). **No question is pending.**
+State on 2026-10-10: **the design phase is finished.** Next is implementation, starting
+with Milestone 1 of `docs/Plan.md` (the user's build check).
 
 ## Where to read
 
-- `CONTEXT.md`: the decision log (P1–P79) and the open questions (§5).
-- `docs/GrillLog.md`: every question and answer, in order.
-- `docs/LayoutEvaluation.md`: the image-layout problem (L1), the driver research, the measurement plan, and the decision rule (P79).
-- `docs/Review-2026-10-04.md`: the multi-agent review. Groups A, B and C are all done (B and C settled as P60–P71; R50 deferred with ray tracing).
+- `CONTEXT.md`: the decision log (P1–P88) and the open questions (§5). Start here.
+- `docs/Plan.md`: the implementation plan (milestones 1–4).
+- `docs/RIApiProposal.md`: the decided API style (P80–P88) with code sketches.
+- `docs/LayoutEvaluation.md`: the image-layout problem (L1), driver research, the
+  measurement plan, and the decision rule (P79). Run in Milestone 3.
+- `docs/GrillLog.md`: the full question-and-answer history, in order. Background only.
+- `docs/Review-2026-10-04.md`, `docs/Review-Inference-2026-10-10.md`: past reviews, fully
+  applied. Background only.
 
-## What remains
+## Still open (CONTEXT.md §5)
 
-- **L1:** the measurement itself (LayoutEvaluation), done together on real hardware. Rule fixed (P79); RDNA2 Vulkan runs both modes (P78).
-- **X1:** open by design. The user settles the error model by using the API; signature churn is fine (P57).
-- **U1:** the hello-world, waiting on colleagues.
-- **Build:** validation by the user.
-- Deferred features: ray tracing compaction (with ray tracing), sparse (F1), VRS rate image (F2), multi-queue texture hand-off (P37).
+- **L1:** confirmed only by the Milestone 3 measurement, done together on real hardware.
+- **D1:** the batching form of `writeDescriptors`, decided in Milestone 2 with the Vulkan
+  descriptor mechanism.
+- **X1:** the error policy; open by design, the user settles it by using the API.
+- Implementation choice: the Vulkan loader (Vulkan::Vulkan vs volk).
 
-## How the grill is run
+## Working with the user
 
-Plain, step-by-step explanations, one question at a time. Apply the "control in RI + convenience helper" pattern (P41) by default. Performance-affecting choices are measured together first (P18).
+- Plain, step-by-step explanations; one question at a time; details go in the docs, not
+  the chat.
+- No object-oriented style: plain structs with public fields, free functions, hidden state
+  in an unnamed struct field named `internal`, no `private`/`protected` (P82).
+- Default pattern: explicit control in RI, convenience as a replaceable helper (P41).
+  RI prefers not to infer (P36). Performance-affecting choices are measured together
+  first (P18).
+- The layer the user builds on top of RI must never shape RI's API (P80).
+- The user validates builds themselves. Commit or push only when asked.
 
 ## Build
 
-Not yet validated by the user. Presets: `clangcl-debug` (Windows, both backends) and `clang-debug` (Linux, Vulkan). Run `git submodule update --init --recursive` first. The D3D12 backend downloads the Agility SDK 1.619.6 at configure time.
+Presets: `clangcl-debug` (Windows, both backends) and `clang-debug` (Linux, Vulkan). Run
+`git submodule update --init --recursive` first. The D3D12 backend downloads the Agility
+SDK 1.619.6 at configure time. Not yet validated by the user (Milestone 1).
