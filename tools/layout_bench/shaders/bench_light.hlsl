@@ -8,7 +8,8 @@ struct LightRoot {
     uint litSlot;
     uint width;
     uint height;
-    uint pad[2];
+    uint pad0;
+    uint pad1;
 };
 EQ_ROOT_DATA(LightRoot, root);
 

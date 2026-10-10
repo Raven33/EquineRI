@@ -39,12 +39,9 @@ D3D12_BARRIER_SYNC syncOf(Stage stage) {
     if ((stage & Stage::ePixel) != Stage::eNone) {
         sync |= D3D12_BARRIER_SYNC_PIXEL_SHADING;
     }
-    if ((stage & Stage::eRenderTarget) != Stage::eNone) {
-        sync |= D3D12_BARRIER_SYNC_RENDER_TARGET;
-    }
-    if ((stage & Stage::eDepthStencil) != Stage::eNone) {
-        sync |= D3D12_BARRIER_SYNC_DEPTH_STENCIL;
-    }
+    // Attachment stages are not part of global barriers: under A' their writes
+    // are made visible by RI's own switch back to rest at cmdEndRendering, and
+    // D3D12 rejects sync bits that none of a global barrier's accesses use.
     return sync;
 }
 
@@ -66,9 +63,6 @@ D3D12_BARRIER_ACCESS accessOf(Stage stage) {
     if ((stage & (Stage::eCompute | Stage::eVertex | Stage::ePixel)) != Stage::eNone) {
         access |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_SHADER_RESOURCE |
                   D3D12_BARRIER_ACCESS_CONSTANT_BUFFER;
-    }
-    if ((stage & Stage::eVertex) != Stage::eNone) {
-        access |= D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_INDEX_BUFFER;
     }
     if ((stage & Stage::eIndirect) != Stage::eNone) {
         access |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
@@ -198,6 +192,9 @@ void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) { list(cmd)->Di
 
 // Coarse stage -> stage barrier (P36), as one global enhanced barrier.
 void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
+    if (syncOf(before) == D3D12_BARRIER_SYNC_NONE || syncOf(after) == D3D12_BARRIER_SYNC_NONE) {
+        return; // only attachment stages on one side: RI's own transitions cover them
+    }
     D3D12_GLOBAL_BARRIER barrier{
         .SyncBefore = syncOf(before),
         .SyncAfter = syncOf(after),

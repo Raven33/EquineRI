@@ -363,8 +363,13 @@ EQ_TEST(texture, discard_after_aliasing) {
     const uint64 offset = gputest::alignUp(f.gpu.used, RI::textureRequirements(f.device, desc).alignment);
     RI::Texture first = RI::createTexture(f.device, f.gpu.memory, offset, desc);
     RI::cmdClearTexture(f.cmd, first.view, {.color = {1.0f, 1.0f, 1.0f, 1.0f}});
-    RI::cmdBarrier(f.cmd, RI::Stage::eAll, RI::Stage::eAll);
+    // Destruction is immediate (P20): only after the GPU is done with `first`.
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
     RI::destroyTexture(f.device, first);
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
     RI::Texture second = RI::createTexture(f.device, f.gpu.memory, offset, desc);
     RI::cmdDiscard(f.cmd, second.view);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = second.view,

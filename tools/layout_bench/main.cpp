@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -67,7 +68,15 @@ Options parse(int argc, char **argv) {
             o.warmup = static_cast<uint32>(std::stoul(value));
         } else if (key == "--out") {
             o.out = value;
+        } else {
+            std::fprintf(stderr, "usage: layout_bench [--gpu nvidia|amd|<index>] [--mode <mode>] [--res 1080|2160] "
+                                 "[--frames N] [--warmup N] [--out file.csv]\n");
+            std::exit(1);
         }
+    }
+    if (argc % 2 == 0) {
+        std::fprintf(stderr, "layout_bench: every option takes a value\n");
+        std::exit(1);
     }
     return o;
 }
@@ -107,20 +116,21 @@ struct DrawRoot {
     uint32 seed;
     uint32 pad;
 };
+// No arrays: HLSL constant buffers pad each array element to 16 bytes.
 struct ReadRoot {
-    uint32 textureSlot, outputSlot, width, height, multisampled, pad[3];
+    uint32 textureSlot, outputSlot, width, height, multisampled, pad0, pad1, pad2;
 };
 struct WriteRoot {
     uint32 textureSlot, width, height, seed;
 };
 struct LightRoot {
-    uint32 albedoSlot, normalSlot, depthSlot, litSlot, width, height, pad[2];
+    uint32 albedoSlot, normalSlot, depthSlot, litSlot, width, height, pad0, pad1;
 };
 struct HizRoot {
     uint32 depthSlot, outputSlot, width, height;
 };
 struct PostRoot {
-    uint32 litSlot, pad[3];
+    uint32 litSlot, pad0, pad1, pad2;
 };
 
 // ── Shared objects ───────────────────────────────────────────────────────────
@@ -128,7 +138,7 @@ struct PostRoot {
 constexpr uint32 kOutputSlot = 0;
 
 struct Shaders {
-    std::vector<std::byte> vs, ps, postVs, postPs, read, write, light, hiz;
+    std::vector<std::byte> vs, ps, ps1, postVs, postPs, read, write, light, hiz;
 };
 
 struct Context {
@@ -188,8 +198,9 @@ void writeDescriptors(Context &c, Workload &w) {
 }
 
 RI::Pipeline drawPipeline(Context &c, std::vector<RI::Format> colors, RI::Format depth, uint32 samples) {
+    const std::vector<std::byte> &ps = colors.size() > 1 ? c.shaders.ps : c.shaders.ps1;
     RI::GraphicsPipelineDesc desc{.vertex = c.shaders.vs,
-                                  .pixel = colors.empty() ? RI::Bytecode{} : RI::Bytecode{c.shaders.ps},
+                                  .pixel = colors.empty() ? RI::Bytecode{} : RI::Bytecode{ps},
                                   .colorFormats = std::move(colors),
                                   .depthFormat = depth,
                                   .samples = samples};
@@ -205,7 +216,7 @@ Pass readPass(Context &c, const char *name, const Workload &w, uint32 t, uint32 
     const uint32 ms = tex.texture.samples > 1 ? 1u : 0u;
     return {name, PassKind::eCompute, {{t, Role::eSampled}}, [&c, slot, width, height, ms](RI::CommandList &cmd) {
                 RI::cmdSetPipeline(cmd, c.read);
-                RI::cmdSetRootData(cmd, ReadRoot{slot, kOutputSlot, width, height, ms, {}});
+                RI::cmdSetRootData(cmd, ReadRoot{slot, kOutputSlot, width, height, ms, 0, 0, 0});
                 RI::cmdDispatch(cmd, (width + 7) / 8, (height + 7) / 8, 1);
             }};
 }
@@ -306,7 +317,7 @@ Workload realisticFrame(Context &c, Owned &owned) {
                              RI::cmdDraw(cmd, 3, 8);
                          }});
     const LightRoot light{wl.textures[0].sampledSlot, wl.textures[1].sampledSlot, wl.textures[2].sampledSlot,
-                          wl.textures[3].storageSlot, w, h, {}};
+                          wl.textures[3].storageSlot, w, h, 0, 0};
     wl.passes.push_back({"lighting",
                          PassKind::eCompute,
                          {{0, Role::eSampled}, {1, Role::eSampled}, {2, Role::eSampled}, {3, Role::eStorage, true}},
@@ -326,7 +337,7 @@ Workload realisticFrame(Context &c, Owned &owned) {
     wl.passes.push_back({"post", PassKind::eRender, {{5, Role::eColorTarget, true}, {3, Role::eSampled}},
                          [post, litSlot](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, post);
-                             RI::cmdSetRootData(cmd, PostRoot{litSlot, {}});
+                             RI::cmdSetRootData(cmd, PostRoot{litSlot, 0, 0, 0});
                              RI::cmdDraw(cmd, 3);
                          }});
     wl.passes.push_back(readPass(c, "present", wl, 5, w, h));
@@ -386,7 +397,7 @@ Stats stats(std::vector<double> v) {
     return {at(0.5), at(0.1), at(0.9)};
 }
 
-void run(Context &c, Workload &w, FILE *out, const std::string &gpuName) {
+void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName) {
     if (c.useBaseline) {
         bench::baselineReset(*c.baseline, w);
     }
@@ -432,9 +443,10 @@ void run(Context &c, Workload &w, FILE *out, const std::string &gpuName) {
 #else
         const char *backend = "d3d12";
 #endif
-        std::fprintf(out, "%s,%s,%s,%u,%s,%s,%.4f,%.4f,%.4f\n", backend, gpuName.c_str(), c.options.mode.c_str(),
-                     c.options.height, w.name.c_str(), pass.c_str(), s.median, s.p10, s.p90);
-        std::fflush(out);
+        char text[512];
+        std::snprintf(text, sizeof(text), "%s,%s,%s,%u,%s,%s,%.4f,%.4f,%.4f\n", backend, gpuName.c_str(),
+                      c.options.mode.c_str(), c.options.height, w.name.c_str(), pass.c_str(), s.median, s.p10, s.p90);
+        out << text << std::flush;
     };
     for (uint32 i = 0; i < passCount; ++i) {
         line(w.passes[i].name, stats(times[i]));
@@ -475,7 +487,7 @@ int main(int argc, char **argv) {
     RI::writeDescriptors(c.device, c.heap,
                          {{.slot = kOutputSlot, .descriptor = RI::ReadWriteView{.buffer = c.output, .stride = 4}}});
 
-    c.shaders = {loadShader("bench_vs"),   loadShader("bench_ps"),    loadShader("bench_post_vs"),
+    c.shaders = {loadShader("bench_vs"),   loadShader("bench_ps"),    loadShader("bench_ps1"), loadShader("bench_post_vs"),
                  loadShader("bench_post_ps"), loadShader("bench_read"), loadShader("bench_write"),
                  loadShader("bench_light"), loadShader("bench_hiz")};
     c.read = RI::createComputePipeline(c.device, {.shader = c.shaders.read});
@@ -486,12 +498,11 @@ int main(int argc, char **argv) {
         c.baseline = bench::createBaseline(c.device, c.heap);
     }
 
-    FILE *out = stdout;
-    FILE *file = nullptr;
+    std::ofstream file;
     if (!c.options.out.empty()) {
-        file = std::fopen(c.options.out.c_str(), "a");
-        out = file != nullptr ? file : stdout;
+        file.open(c.options.out, std::ios::app);
     }
+    std::ostream &out = file.is_open() ? static_cast<std::ostream &>(file) : std::cout;
     std::fprintf(stderr, "layout_bench: %s, mode %s, %up, %u frames\n", c.device.gpu.name.c_str(), c.options.mode.c_str(),
                  c.options.height, c.options.frames);
 
@@ -550,8 +561,5 @@ int main(int argc, char **argv) {
     RI::freeMemory(c.device, c.gpuMemory);
     RI::freeMemory(c.device, c.readbackMemory);
     RI::destroyDevice(c.device);
-    if (file != nullptr) {
-        std::fclose(file);
-    }
     return 0;
 }

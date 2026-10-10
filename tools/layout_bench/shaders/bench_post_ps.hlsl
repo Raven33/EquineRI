@@ -3,7 +3,9 @@
 
 struct PostRoot {
     uint litSlot;
-    uint pad[3];
+    uint pad0;
+    uint pad1;
+    uint pad2;
 };
 EQ_ROOT_DATA(PostRoot, root);
 
