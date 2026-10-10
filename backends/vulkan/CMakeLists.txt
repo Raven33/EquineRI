@@ -23,10 +23,16 @@ target_link_libraries(volk PUBLIC
 )
 equine_mark_nonproject_dependency(volk)
 
-# ── Backend scaffold ──────────────────────────────────────────────────────────
+# ── Backend library ──────────────────────────────────────────────────────────
 add_library(EquineVulkanBackend STATIC
     RI/Vk/Backend.hpp
-    VulkanBackendHeaderCheck.cpp
+    RI/Vk/Native.hpp
+    DeviceState.hpp
+    Device.cpp
+    Instance.hpp
+    Instance.cpp
+    VkCheck.hpp
+    VkCheck.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
