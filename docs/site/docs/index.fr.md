@@ -7,8 +7,10 @@ contrôle qu'offre une API native ([P1](design-notes/decisions.md#p1)).
 
 !!! info "État d'avancement"
     La phase de conception est terminée et l'implémentation a commencé (jalon 2 du plan).
-    Aujourd'hui, RI liste les GPU, crée et détruit des devices, signale les erreurs par un
-    canal central unique, et possède le squelette de sa propre validation. Chaque
+    Aujourd'hui, RI exécute du calcul sur les deux backends : GPU et devices, mémoire et
+    buffers placés, tas de descripteurs bindless, pipelines de calcul avec données racine,
+    listes de commandes, barrières, et soumission avec points de timeline. Commencez par
+    [votre premier dispatch de calcul](getting-started/first-compute.md). Chaque
     fonctionnalité reçoit sa page ici au moment où elle est implémentée : une fonctionnalité
     n'est pas terminée tant que sa page n'existe pas.
 

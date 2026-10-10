@@ -94,7 +94,8 @@ A GPU is listed only if RI can run on it. Each backend checks with its own API:
 - **Vulkan**: the GPU reports Vulkan 1.3 or newer, and has a queue family that does both
   graphics and compute.
 - **D3D12**: a device can be created at feature level 12_0, and it supports shader model
-  6.6, resource binding tier 3 (full bindless), and enhanced barriers.
+  6.6, resource binding tier 3 (full bindless), resource heap tier 2 (any buffer in any
+  memory block), and enhanced barriers.
 
 Differences you may see between backends:
 

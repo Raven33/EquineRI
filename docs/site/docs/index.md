@@ -7,8 +7,10 @@ the GPU should be trivial, while you keep roughly 90% of the control a native AP
 
 !!! info "Status"
     The design phase is finished and the implementation has started (Milestone 2 of the
-    plan). Today RI lists GPUs, creates and destroys devices, reports errors through one
-    central channel, and has the skeleton of its own validation. Each feature gets its page
+    plan). Today RI runs compute work on both backends: GPUs and devices, memory and placed
+    buffers, bindless descriptor heaps, compute pipelines with root data, command lists,
+    barriers, and submission with timeline points. Start with
+    [your first compute dispatch](getting-started/first-compute.md). Each feature gets its page
     here as it is implemented: a feature is not done until its page exists.
 
 ## How this site is organised

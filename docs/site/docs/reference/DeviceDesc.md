@@ -11,9 +11,14 @@ Today it holds one field, the GPU to open. Descriptions in RI are plain structs 
 C++20 designated initializers; fields you leave out keep their defaults, so new fields can be
 added later without breaking your code ([P86](../design-notes/decisions.md#p86)).
 
-`RI::Device` is what `createDevice` returns: a small struct with one public field, `gpu` (the
-GPU it runs on), and an `internal` field that holds the backend's private state. You never
-touch `internal`.
+`RI::Device` is what `createDevice` returns: a small struct with three public fields and an
+`internal` field that holds the backend's private state (you never touch `internal`):
+
+- `gpu`: the GPU it runs on;
+- `limits`: what this device allows, see [`RI::DeviceLimits`](DeviceLimits.md);
+- `graphicsQueue`: the queue you submit command lists to, see
+  [`RI::submit`](submit.md). It is the only queue in this version
+  ([P37](../design-notes/decisions.md#p37)).
 
 A `Device` is a **thin value** ([P81](../design-notes/decisions.md#p81)): copying it is cheap
 and every copy refers to the same device. It owns nothing in the C++ sense (no destructor),

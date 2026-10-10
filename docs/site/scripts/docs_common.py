@@ -38,6 +38,7 @@ KIND_LABELS = {
     "ri": "RI",
     "vulkan": "Vulkan",
     "d3d12": "D3D12",
+    "hlsl": "HLSL",
     "signature": "Signature",
     "other": "Include",
 }
@@ -57,6 +58,8 @@ class SnippetRef:
             return "vulkan"
         if self.path.startswith("snippets/d3d12/"):
             return "d3d12"
+        if self.path.startswith("snippets/hlsl/"):
+            return "hlsl"
         if self.path.startswith("generated/signatures/"):
             return "signature"
         return "other"

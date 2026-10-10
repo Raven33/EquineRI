@@ -31,6 +31,7 @@ TITLES = {
     "ri": "RI example not written yet",
     "vulkan": "Vulkan example not written yet",
     "d3d12": "D3D12 example not written yet",
+    "hlsl": "Shader example not written yet",
     "signature": "Signature not generated yet",
     "other": "Include not written yet",
 }

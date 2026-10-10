@@ -180,20 +180,48 @@ def parse_header(path: Path) -> list[Decl]:
             i += 1
             continue
 
-        # A free-function declaration, possibly over several lines.
+        # A macro invocation without a semicolon, e.g. makeBitmask(Stage).
+        if re.match(r"^\w+\([\w:, ]*\)$", s):
+            comment = []
+            i += 1
+            continue
+
+        # A statement: a declaration (possibly over several lines), or an
+        # inline function with its body. Bodies are dropped from the signature.
         start = i
-        statement = []
+        statement: list[str] = []
+        depth = 0
         while i < len(lines):
-            statement.append(strip_comment(lines[i])[0].strip())
-            if lines[i].rstrip().endswith(";") or lines[i].rstrip().endswith("{"):
+            code = strip_comment(lines[i])[0]
+            statement.append(code.strip())
+            depth += code.count("{") - code.count("}")
+            stripped = code.rstrip()
+            if depth <= 0 and (stripped.endswith(";") or (stripped.endswith("}") and "{" in " ".join(statement))):
                 break
             i += 1
         i += 1
         text = " ".join(part for part in statement if part)
-        fm = re.match(r"^(?P<ret>(?:\[\[[^\]]*\]\]\s*)?[\w:<>,&*\s]+?[\s*&])(?P<name>\w+)\s*\((?P<params>.*)\)\s*;$", text)
+        template = ""
+        m = re.match(r"^(template\s*<[^>]*>)\s*(.*)$", text)
+        if m:
+            template, text = m.group(1), m.group(2)
+        head = text
+        fm = re.match(
+            r"^(?P<ret>(?:\[\[[^\]]*\]\]\s*)?(?:inline\s+)?[\w:<>,&*\s]+?[\s*&])(?P<name>\w+)\s*\((?P<params>[^{]*?)\)\s*(?:;|\{.*\})$",
+            text,
+        )
         if fm:
-            code = "\n".join(line.rstrip() for line in lines[start:i])
-            decls.append(Decl("function", fm.group("name"), ns(), rel, include, backend, native, " ".join(comment), dedent(code)))
+            head = f"{fm.group('ret').replace('inline ', '').strip()} {fm.group('name')}({fm.group('params').strip()});"
+            head = re.sub(r"\s+([*&])\s*(?=\w)", r" \1", head)
+            if "{" not in text:
+                # Keep the header's own line breaks for plain declarations.
+                head = dedent("\n".join(line.rstrip() for line in lines[start:i]))
+            code = (template + "\n" if template else "") + head
+            decls.append(Decl("function", fm.group("name"), ns(), rel, include, backend, native, " ".join(comment), code))
+        else:
+            cm = re.match(r"^(?:inline\s+)?(?:constexpr\s+)?(?:const\s+)?[\w:<>]+\s+(?P<name>\w+)\s*=.*;$", text)
+            if cm:
+                decls.append(Decl("constant", cm.group("name"), ns(), rel, include, backend, native, " ".join(comment), text))
         comment = []
     return decls
 
