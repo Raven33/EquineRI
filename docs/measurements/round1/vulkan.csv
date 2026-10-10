@@ -1,0 +1,1944 @@
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,render,0.1178,0.1178,0.1188
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,sample,0.0287,0.0287,0.0287
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,frame,0.1464,0.1464,0.1475
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,cpu_submit_wait,0.1912,0.1884,0.2082
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,render,0.2202,0.1915,0.2222
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,sample,0.0338,0.0307,0.0348
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,frame,0.2550,0.2222,0.2560
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,cpu_submit_wait,0.2982,0.2642,0.3154
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,sample,0.0246,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,frame,0.1280,0.1270,0.1280
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1721,0.1684,0.1857
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,render,0.1966,0.1966,0.1976
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0307,0.0317
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,frame,0.2284,0.2284,0.2294
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2716,0.2689,0.2901
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,render,0.0164,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,sample,0.0246,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,frame,0.0410,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,cpu_submit_wait,0.0851,0.0838,0.0996
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,render,0.0123,0.0113,0.0123
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,sample,0.0246,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,frame,0.0369,0.0369,0.0369
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,cpu_submit_wait,0.0813,0.0793,0.0942
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,render,0.0184,0.0174,0.0184
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,frame,0.0430,0.0430,0.0440
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.0876,0.0862,0.1012
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0257
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,sample,0.0328,0.0317,0.0328
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,frame,0.0573,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.0987,0.0968,0.1132
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,depth,0.0164,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,frame,0.0256,0.0256,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.0697,0.0682,0.0854
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,gbuffer,0.0471,0.0471,0.0471
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,lighting,0.0594,0.0594,0.0604
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,post,0.0389,0.0379,0.0389
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,present,0.0307,0.0297,0.0307
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,frame,0.1853,0.1853,0.1864
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,cpu_submit_wait,0.2328,0.2305,0.2502
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,render,0.1058,0.1055,0.1065
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,sample,0.0246,0.0246,0.0255
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,frame,0.1311,0.1300,0.1311
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,cpu_submit_wait,0.1727,0.1713,0.1886
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,render,0.1957,0.1956,0.1966
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,sample,0.0307,0.0304,0.0307
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,frame,0.2263,0.2263,0.2273
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,cpu_submit_wait,0.2779,0.2669,0.2895
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,render,0.1066,0.1065,0.1075
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,frame,0.1321,0.1311,0.1321
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1738,0.1683,0.1848
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,render,0.2017,0.2010,0.2022
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0313,0.0317
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,frame,0.2335,0.2324,0.2335
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2835,0.2745,0.2967
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,render,0.0195,0.0195,0.0197
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,sample,0.0251,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,frame,0.0440,0.0440,0.0451
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,cpu_submit_wait,0.0889,0.0875,0.1023
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,render,0.0154,0.0146,0.0154
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,frame,0.0399,0.0399,0.0410
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,cpu_submit_wait,0.0846,0.0832,0.0984
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,render,0.0215,0.0215,0.0219
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,sample,0.0253,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,frame,0.0471,0.0461,0.0471
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.0912,0.0898,0.1048
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0260
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,sample,0.0328,0.0317,0.0329
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.0996,0.0965,0.1130
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,depth,0.0195,0.0195,0.0198
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0100
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,frame,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.0790,0.0721,0.0910
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,gbuffer,0.0505,0.0502,0.0512
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,lighting,0.0594,0.0591,0.0601
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,post,0.0413,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,present,0.0307,0.0304,0.0307
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,frame,0.1925,0.1915,0.1935
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,cpu_submit_wait,0.2404,0.2374,0.2593
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,frame,0.1280,0.1280,0.1280
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,cpu_submit_wait,0.1705,0.1682,0.1861
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,render,0.1935,0.1925,0.1946
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,sample,0.0307,0.0307,0.0317
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,frame,0.2243,0.2232,0.2253
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,cpu_submit_wait,0.2670,0.2651,0.2844
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,frame,0.1280,0.1280,0.1280
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1705,0.1681,0.1867
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,render,0.1976,0.1976,0.1987
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0317,0.0317
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,frame,0.2294,0.2294,0.2304
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2723,0.2699,0.2903
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,render,0.0154,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,frame,0.0410,0.0399,0.0410
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,cpu_submit_wait,0.0852,0.0838,0.0992
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,render,0.0113,0.0113,0.0113
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,frame,0.0369,0.0358,0.0369
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,cpu_submit_wait,0.0802,0.0785,0.0935
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,render,0.0174,0.0174,0.0184
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,frame,0.0430,0.0430,0.0430
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,cpu_submit_wait,0.0920,0.0860,0.1052
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0257
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,sample,0.0328,0.0318,0.0329
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.0994,0.0980,0.1136
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,depth,0.0154,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,frame,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,cpu_submit_wait,0.0693,0.0680,0.0804
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,gbuffer,0.0471,0.0461,0.0471
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,lighting,0.0594,0.0594,0.0604
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,post,0.0389,0.0379,0.0389
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,present,0.0307,0.0307,0.0307
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,frame,0.1864,0.1853,0.1864
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,cpu_submit_wait,0.2332,0.2307,0.2518
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,render,0.1034,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,frame,0.1290,0.1280,0.1290
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,cpu_submit_wait,0.1761,0.1711,0.1913
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,render,0.1946,0.1935,0.1946
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,sample,0.0307,0.0307,0.0317
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,frame,0.2253,0.2243,0.2263
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,cpu_submit_wait,0.2742,0.2676,0.2909
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,render,0.1034,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,frame,0.1290,0.1280,0.1290
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1735,0.1696,0.1905
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,render,0.1987,0.1976,0.1997
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0317,0.0317
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,frame,0.2304,0.2294,0.2314
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2821,0.2720,0.2938
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,render,0.0164,0.0164,0.0164
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,frame,0.0420,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,cpu_submit_wait,0.0857,0.0838,0.0972
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,render,0.0123,0.0113,0.0123
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,frame,0.0369,0.0369,0.0379
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,cpu_submit_wait,0.0815,0.0798,0.0945
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,render,0.0184,0.0174,0.0184
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,frame,0.0440,0.0430,0.0440
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.0881,0.0865,0.1026
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0257
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,sample,0.0328,0.0319,0.0338
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.0993,0.0977,0.1171
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,depth,0.0164,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,frame,0.0256,0.0256,0.0266
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.0702,0.0686,0.0850
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,gbuffer,0.0471,0.0471,0.0481
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,lighting,0.0594,0.0594,0.0604
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,post,0.0389,0.0379,0.0389
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,present,0.0307,0.0307,0.0307
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,frame,0.1864,0.1853,0.1874
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,cpu_submit_wait,0.2335,0.2313,0.2499
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,render,0.1066,0.1065,0.1075
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,frame,0.1321,0.1311,0.1321
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,cpu_submit_wait,0.1740,0.1720,0.1905
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,render,0.1971,0.1966,0.1978
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,sample,0.0307,0.0306,0.0314
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,frame,0.2284,0.2273,0.2284
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,cpu_submit_wait,0.2706,0.2686,0.2894
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,render,0.1066,0.1065,0.1069
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,frame,0.1321,0.1311,0.1321
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1742,0.1725,0.1903
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,render,0.2017,0.2010,0.2021
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0313,0.0317
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,frame,0.2335,0.2324,0.2335
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2781,0.2741,0.2966
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,render,0.0195,0.0195,0.0197
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,frame,0.0451,0.0440,0.0451
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,cpu_submit_wait,0.0890,0.0876,0.1016
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,render,0.0154,0.0146,0.0154
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,sample,0.0251,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,frame,0.0399,0.0399,0.0410
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,cpu_submit_wait,0.0843,0.0832,0.0969
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,render,0.0215,0.0215,0.0219
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,sample,0.0253,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,frame,0.0471,0.0461,0.0471
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.0942,0.0891,0.1068
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0259
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,sample,0.0328,0.0317,0.0332
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.1026,0.0971,0.1138
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,depth,0.0195,0.0195,0.0197
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,hiz,0.0092,0.0091,0.0100
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,frame,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.0783,0.0745,0.0856
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,gbuffer,0.0504,0.0502,0.0512
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,lighting,0.0594,0.0591,0.0601
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,post,0.0413,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,present,0.0307,0.0304,0.0307
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,frame,0.1925,0.1915,0.1925
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,cpu_submit_wait,0.2392,0.2368,0.2567
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,frame,0.1280,0.1280,0.1280
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,cpu_submit_wait,0.1712,0.1688,0.1902
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,render,0.1935,0.1925,0.1935
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,sample,0.0307,0.0307,0.0317
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,frame,0.2243,0.2232,0.2253
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,cpu_submit_wait,0.2737,0.2646,0.2890
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,frame,0.1280,0.1280,0.1280
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1698,0.1682,0.1861
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,render,0.1976,0.1976,0.1987
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0317,0.0317
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,frame,0.2294,0.2284,0.2304
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2718,0.2699,0.2903
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,render,0.0154,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,frame,0.0410,0.0399,0.0410
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,cpu_submit_wait,0.0849,0.0834,0.0985
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,render,0.0113,0.0102,0.0113
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,frame,0.0369,0.0358,0.0369
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,cpu_submit_wait,0.0810,0.0794,0.0969
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,render,0.0174,0.0174,0.0184
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,frame,0.0430,0.0430,0.0430
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,cpu_submit_wait,0.0874,0.0858,0.1010
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0259
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,sample,0.0328,0.0318,0.0332
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.0991,0.0978,0.1115
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,depth,0.0154,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,frame,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,cpu_submit_wait,0.0693,0.0678,0.0825
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,gbuffer,0.0471,0.0461,0.0471
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,lighting,0.0594,0.0594,0.0604
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,post,0.0389,0.0379,0.0389
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,present,0.0307,0.0307,0.0307
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,frame,0.1864,0.1853,0.1864
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,cpu_submit_wait,0.2354,0.2310,0.2521
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,render,0.1034,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,frame,0.1290,0.1280,0.1290
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba8,cpu_submit_wait,0.1707,0.1693,0.1881
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,render,0.1935,0.1935,0.1946
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,sample,0.0307,0.0307,0.0317
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,frame,0.2253,0.2243,0.2263
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f,cpu_submit_wait,0.2676,0.2656,0.2862
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,render,0.1034,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,frame,0.1290,0.1280,0.1290
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1706,0.1691,0.1886
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,render,0.1987,0.1976,0.1987
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0317,0.0317
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,frame,0.2304,0.2294,0.2304
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2731,0.2707,0.2907
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,render,0.0164,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,frame,0.0420,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32f,cpu_submit_wait,0.0938,0.0851,0.1043
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,render,0.0123,0.0113,0.0123
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,frame,0.0369,0.0369,0.0379
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d24s8,cpu_submit_wait,0.0810,0.0774,0.0923
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,render,0.0184,0.0174,0.0184
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,frame,0.0440,0.0430,0.0440
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.0879,0.0865,0.1023
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0257
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,sample,0.0328,0.0318,0.0329
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.1001,0.0973,0.1160
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,depth,0.0164,0.0164,0.0164
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,frame,0.0256,0.0256,0.0266
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.0700,0.0688,0.0826
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,gbuffer,0.0471,0.0471,0.0481
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,lighting,0.0594,0.0594,0.0604
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,post,0.0389,0.0379,0.0389
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,present,0.0307,0.0307,0.0307
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,frame,0.1864,0.1853,0.1874
+vulkan,NVIDIA GeForce RTX 3080,baseline,1080,frame,cpu_submit_wait,0.2346,0.2313,0.2520
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,render,0.1066,0.1065,0.1075
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,frame,0.1321,0.1311,0.1321
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba8,cpu_submit_wait,0.1748,0.1724,0.1906
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,render,0.1976,0.1966,0.1979
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,sample,0.0307,0.0305,0.0314
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,frame,0.2284,0.2273,0.2294
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f,cpu_submit_wait,0.2709,0.2689,0.2891
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,render,0.1066,0.1065,0.1075
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,frame,0.1321,0.1311,0.1321
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1740,0.1722,0.1894
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,render,0.2017,0.2011,0.2022
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0313,0.0317
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,frame,0.2335,0.2324,0.2335
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2764,0.2742,0.2953
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,render,0.0195,0.0195,0.0198
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,frame,0.0440,0.0440,0.0451
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32f,cpu_submit_wait,0.0887,0.0871,0.1029
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,render,0.0154,0.0146,0.0154
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,frame,0.0399,0.0399,0.0410
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d24s8,cpu_submit_wait,0.0843,0.0829,0.0964
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,render,0.0215,0.0215,0.0218
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,sample,0.0252,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,frame,0.0471,0.0461,0.0471
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.0913,0.0896,0.1056
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0260
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,sample,0.0328,0.0317,0.0331
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.0993,0.0980,0.1123
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,depth,0.0195,0.0195,0.0197
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0100
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,frame,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.0730,0.0716,0.0865
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,gbuffer,0.0504,0.0502,0.0512
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,lighting,0.0594,0.0591,0.0601
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,post,0.0414,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,present,0.0307,0.0304,0.0307
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,frame,0.1925,0.1915,0.1935
+vulkan,NVIDIA GeForce RTX 3080,transitions,1080,frame,cpu_submit_wait,0.2394,0.2372,0.2585
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,frame,0.1280,0.1280,0.1280
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba8,cpu_submit_wait,0.1702,0.1687,0.1876
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,render,0.1935,0.1925,0.1935
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,sample,0.0307,0.0307,0.0317
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,frame,0.2243,0.2232,0.2253
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f,cpu_submit_wait,0.2672,0.2650,0.2861
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,render,0.1024,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,frame,0.1280,0.1280,0.1280
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_r11g11b10f,cpu_submit_wait,0.1715,0.1689,0.1885
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,render,0.1976,0.1976,0.1987
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,sample,0.0317,0.0317,0.0317
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,frame,0.2294,0.2284,0.2304
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,0.2722,0.2704,0.2907
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,render,0.0154,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,frame,0.0410,0.0399,0.0410
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32f,cpu_submit_wait,0.0850,0.0838,0.0990
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,render,0.0113,0.0102,0.0113
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,frame,0.0369,0.0358,0.0369
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d24s8,cpu_submit_wait,0.0810,0.0795,0.0954
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,render,0.0174,0.0174,0.0184
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,sample,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,frame,0.0430,0.0430,0.0430
+vulkan,NVIDIA GeForce RTX 3080,general,1080,render_sample_d32fs8,cpu_submit_wait,0.0875,0.0858,0.1022
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,write,0.0256,0.0246,0.0259
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,sample,0.0328,0.0317,0.0331
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,frame,0.0584,0.0573,0.0584
+vulkan,NVIDIA GeForce RTX 3080,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.0989,0.0971,0.1117
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,depth,0.0154,0.0154,0.0164
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,hiz,0.0092,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,frame,0.0256,0.0246,0.0256
+vulkan,NVIDIA GeForce RTX 3080,general,1080,depth_hiz_d32f,cpu_submit_wait,0.0697,0.0682,0.0849
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,gbuffer,0.0471,0.0461,0.0471
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,lighting,0.0594,0.0594,0.0604
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,hiz,0.0102,0.0092,0.0102
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,post,0.0389,0.0379,0.0389
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,present,0.0307,0.0307,0.0307
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,frame,0.1864,0.1853,0.1864
+vulkan,NVIDIA GeForce RTX 3080,general,1080,frame,cpu_submit_wait,0.2328,0.2308,0.2529
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,render,0.4004,0.4004,0.4014
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,sample,0.1075,0.1065,0.1075
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,frame,0.5079,0.5069,0.5089
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,cpu_submit_wait,0.5621,0.5526,0.5742
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,render,0.7782,0.7752,0.7813
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,sample,0.1085,0.1085,0.1085
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,frame,0.8868,0.8837,0.8899
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,cpu_submit_wait,0.9355,0.9274,0.9510
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,render,0.4035,0.4035,0.4045
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,frame,0.5120,0.5110,0.5130
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5605,0.5533,0.5786
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,render,0.7956,0.7926,0.7967
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,sample,0.1116,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,frame,0.9062,0.9042,0.9083
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9574,0.9477,0.9742
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,render,0.0676,0.0676,0.0686
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,sample,0.1034,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,frame,0.1710,0.1700,0.1720
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,cpu_submit_wait,0.2207,0.2185,0.2394
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,render,0.0420,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,sample,0.1044,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,frame,0.1464,0.1454,0.1464
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,cpu_submit_wait,0.1952,0.1935,0.2096
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,render,0.0932,0.0901,0.0952
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,sample,0.1024,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,frame,0.1946,0.1925,0.1966
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,cpu_submit_wait,0.2464,0.2416,0.2645
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0947
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,0.2485,0.2465,0.2668
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,depth,0.0696,0.0686,0.0696
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,hiz,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,frame,0.0983,0.0973,0.0983
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,cpu_submit_wait,0.1477,0.1458,0.1663
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,gbuffer,0.1751,0.1741,0.1761
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,lighting,0.2232,0.2222,0.2243
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,hiz,0.0297,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,post,0.1444,0.1444,0.1454
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,present,0.1075,0.1065,0.1075
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,frame,0.6799,0.6789,0.6810
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,cpu_submit_wait,0.7379,0.7306,0.7535
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,render,0.4045,0.4014,0.4047
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,sample,0.1075,0.1065,0.1091
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,frame,0.5120,0.5079,0.5130
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,cpu_submit_wait,0.5583,0.5531,0.5775
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,render,0.7793,0.7782,0.7826
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,sample,0.1084,0.1081,0.1085
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,frame,0.8878,0.8868,0.8909
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,cpu_submit_wait,0.9416,0.9301,0.9568
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,render,0.4079,0.4045,0.4089
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,sample,0.1082,0.1075,0.1084
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,frame,0.5161,0.5130,0.5171
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5627,0.5579,0.5825
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,render,0.7987,0.7961,0.7997
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,sample,0.1115,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,frame,0.9093,0.9073,0.9114
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9574,0.9511,0.9741
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,render,0.0709,0.0707,0.0717
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,sample,0.1031,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,frame,0.1741,0.1731,0.1751
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,cpu_submit_wait,0.2239,0.2220,0.2390
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,render,0.0451,0.0451,0.0454
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,sample,0.1041,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,frame,0.1495,0.1485,0.1495
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,cpu_submit_wait,0.1987,0.1969,0.2159
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,render,0.0963,0.0935,0.0983
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,sample,0.1020,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,frame,0.1976,0.1956,0.1997
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,cpu_submit_wait,0.2482,0.2447,0.2656
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0948
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,0.2514,0.2474,0.2682
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,depth,0.0727,0.0717,0.0731
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,hiz,0.0287,0.0284,0.0293
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,frame,0.1014,0.1004,0.1024
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,cpu_submit_wait,0.1501,0.1488,0.1644
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,gbuffer,0.1782,0.1774,0.1792
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,lighting,0.2232,0.2222,0.2241
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,hiz,0.0297,0.0297,0.0297
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,post,0.1478,0.1475,0.1486
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,present,0.1075,0.1071,0.1075
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,frame,0.6861,0.6851,0.6881
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,cpu_submit_wait,0.7438,0.7372,0.7602
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,render,0.4035,0.4004,0.4035
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,frame,0.5120,0.5079,0.5130
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,cpu_submit_wait,0.5566,0.5525,0.5776
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,render,0.7752,0.7741,0.7793
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,sample,0.1085,0.1085,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,frame,0.8837,0.8827,0.8868
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,cpu_submit_wait,0.9351,0.9261,0.9516
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,render,0.4035,0.4004,0.4035
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,frame,0.5120,0.5079,0.5130
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5571,0.5530,0.5772
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,render,0.7946,0.7926,0.7956
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,sample,0.1116,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,frame,0.9062,0.9032,0.9073
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9573,0.9475,0.9731
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,render,0.0717,0.0707,0.0717
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,sample,0.1034,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,frame,0.1741,0.1741,0.1751
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,cpu_submit_wait,0.2242,0.2224,0.2421
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,render,0.0440,0.0440,0.0451
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,sample,0.1044,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,frame,0.1485,0.1485,0.1485
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,cpu_submit_wait,0.1977,0.1961,0.2149
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,render,0.0973,0.0952,0.0993
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,sample,0.1024,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,frame,0.1987,0.1966,0.2007
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,cpu_submit_wait,0.2524,0.2472,0.2704
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0949
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,sample,0.1116,0.1114,0.1126
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,cpu_submit_wait,0.2481,0.2462,0.2660
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,depth,0.0727,0.0717,0.0737
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,hiz,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,frame,0.1014,0.1004,0.1024
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,cpu_submit_wait,0.1509,0.1489,0.1667
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,gbuffer,0.1792,0.1772,0.1802
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,lighting,0.2232,0.2232,0.2243
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,hiz,0.0297,0.0297,0.0307
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,post,0.1444,0.1444,0.1454
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,present,0.1075,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,frame,0.6851,0.6830,0.6871
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,cpu_submit_wait,0.7421,0.7346,0.7604
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,render,0.4045,0.4014,0.4045
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,frame,0.5130,0.5089,0.5140
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,cpu_submit_wait,0.5611,0.5537,0.5780
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,render,0.7762,0.7752,0.7793
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,sample,0.1085,0.1085,0.1085
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,frame,0.8847,0.8837,0.8878
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,cpu_submit_wait,0.9339,0.9255,0.9500
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,render,0.4045,0.4035,0.4045
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,sample,0.1085,0.1085,0.1096
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,frame,0.5130,0.5120,0.5140
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5589,0.5541,0.5776
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,render,0.7956,0.7926,0.7967
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,sample,0.1116,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,frame,0.9062,0.9042,0.9083
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9610,0.9483,0.9736
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,render,0.0676,0.0676,0.0686
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,sample,0.1034,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,frame,0.1710,0.1700,0.1720
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,cpu_submit_wait,0.2204,0.2184,0.2371
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,render,0.0420,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,sample,0.1044,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,frame,0.1464,0.1454,0.1464
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,cpu_submit_wait,0.2040,0.1944,0.2178
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,render,0.0932,0.0911,0.0952
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,sample,0.1024,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,frame,0.1946,0.1925,0.1966
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,cpu_submit_wait,0.2454,0.2419,0.2632
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0947
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,0.2481,0.2461,0.2668
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,depth,0.0696,0.0686,0.0696
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,hiz,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,frame,0.0983,0.0973,0.0983
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,cpu_submit_wait,0.1472,0.1455,0.1617
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,gbuffer,0.1761,0.1751,0.1772
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,lighting,0.2232,0.2222,0.2243
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,hiz,0.0297,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,post,0.1444,0.1444,0.1454
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,present,0.1075,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,frame,0.6820,0.6799,0.6840
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,cpu_submit_wait,0.7361,0.7316,0.7557
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,render,0.4079,0.4045,0.4089
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,sample,0.1082,0.1075,0.1084
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,frame,0.5161,0.5120,0.5171
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,cpu_submit_wait,0.5627,0.5576,0.5803
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,render,0.7793,0.7782,0.7825
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,sample,0.1085,0.1081,0.1085
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,frame,0.8878,0.8868,0.8909
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,cpu_submit_wait,0.9383,0.9298,0.9552
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,render,0.4086,0.4045,0.4090
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,sample,0.1082,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,frame,0.5171,0.5130,0.5171
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5613,0.5575,0.5813
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,render,0.7987,0.7960,0.7997
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,sample,0.1115,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,frame,0.9103,0.9073,0.9114
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9602,0.9514,0.9768
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,render,0.0709,0.0707,0.0717
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,sample,0.1031,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,frame,0.1741,0.1731,0.1751
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,cpu_submit_wait,0.2238,0.2214,0.2418
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,render,0.0451,0.0451,0.0453
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,sample,0.1040,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,frame,0.1485,0.1485,0.1495
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,cpu_submit_wait,0.1981,0.1969,0.2167
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,render,0.0963,0.0942,0.0977
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,sample,0.1020,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,frame,0.1976,0.1956,0.1997
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,cpu_submit_wait,0.2499,0.2449,0.2675
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0947
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,frame,0.2058,0.2048,0.2068
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,0.2477,0.2460,0.2675
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,depth,0.0727,0.0717,0.0732
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,hiz,0.0287,0.0284,0.0293
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,frame,0.1014,0.1004,0.1024
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,cpu_submit_wait,0.1570,0.1498,0.1673
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,gbuffer,0.1782,0.1773,0.1792
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,lighting,0.2232,0.2222,0.2242
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,hiz,0.0297,0.0297,0.0297
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,post,0.1478,0.1475,0.1488
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,present,0.1075,0.1071,0.1075
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,frame,0.6861,0.6851,0.6881
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,cpu_submit_wait,0.7513,0.7375,0.7629
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,render,0.4035,0.4035,0.4045
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,frame,0.5120,0.5110,0.5130
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,cpu_submit_wait,0.5595,0.5531,0.5771
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,render,0.7752,0.7741,0.7793
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,sample,0.1085,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,frame,0.8837,0.8827,0.8868
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,cpu_submit_wait,0.9329,0.9255,0.9498
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,render,0.4045,0.4004,0.4055
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,sample,0.1085,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,frame,0.5130,0.5079,0.5140
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5573,0.5523,0.5765
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,render,0.7946,0.7926,0.7956
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,sample,0.1116,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,frame,0.9062,0.9032,0.9073
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9639,0.9483,0.9761
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,render,0.0717,0.0707,0.0717
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,sample,0.1034,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,frame,0.1741,0.1741,0.1751
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,cpu_submit_wait,0.2313,0.2236,0.2465
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,render,0.0440,0.0440,0.0451
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,sample,0.1044,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,frame,0.1485,0.1485,0.1485
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,cpu_submit_wait,0.1990,0.1961,0.2149
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,render,0.0973,0.0952,0.0993
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,sample,0.1024,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,frame,0.1987,0.1966,0.2007
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,cpu_submit_wait,0.2490,0.2455,0.2678
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0947
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,cpu_submit_wait,0.2568,0.2477,0.2693
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,depth,0.0727,0.0717,0.0737
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,hiz,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,frame,0.1014,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,cpu_submit_wait,0.1515,0.1494,0.1684
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,gbuffer,0.1792,0.1782,0.1802
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,lighting,0.2232,0.2232,0.2243
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,hiz,0.0297,0.0297,0.0307
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,post,0.1444,0.1444,0.1454
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,present,0.1075,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,frame,0.6861,0.6840,0.6881
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,cpu_submit_wait,0.7408,0.7350,0.7597
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,render,0.4045,0.4014,0.4045
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,frame,0.5130,0.5089,0.5140
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba8,cpu_submit_wait,0.5650,0.5527,0.5798
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,render,0.7762,0.7752,0.7793
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,sample,0.1085,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,frame,0.8847,0.8837,0.8878
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f,cpu_submit_wait,0.9356,0.9265,0.9511
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,render,0.4045,0.4014,0.4045
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,frame,0.5130,0.5089,0.5140
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5609,0.5544,0.5786
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,render,0.7956,0.7926,0.7967
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,sample,0.1116,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,frame,0.9073,0.9042,0.9083
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9570,0.9482,0.9727
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,render,0.0676,0.0676,0.0686
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,sample,0.1034,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,frame,0.1710,0.1700,0.1720
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32f,cpu_submit_wait,0.2200,0.2184,0.2390
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,render,0.0420,0.0410,0.0420
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,sample,0.1044,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,frame,0.1464,0.1454,0.1464
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d24s8,cpu_submit_wait,0.1976,0.1935,0.2127
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,render,0.0922,0.0911,0.0942
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,sample,0.1024,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,frame,0.1946,0.1925,0.1966
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,render_sample_d32fs8,cpu_submit_wait,0.2455,0.2419,0.2648
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0945
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,0.2515,0.2466,0.2655
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,depth,0.0696,0.0686,0.0696
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,hiz,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,frame,0.0983,0.0973,0.0983
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,depth_hiz_d32f,cpu_submit_wait,0.1470,0.1456,0.1648
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,gbuffer,0.1761,0.1751,0.1772
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,lighting,0.2232,0.2222,0.2243
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,hiz,0.0297,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,post,0.1444,0.1444,0.1454
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,present,0.1075,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,frame,0.6820,0.6810,0.6840
+vulkan,NVIDIA GeForce RTX 3080,baseline,2160,frame,cpu_submit_wait,0.7390,0.7323,0.7569
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,render,0.4079,0.4045,0.4090
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,sample,0.1082,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,frame,0.5161,0.5120,0.5171
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba8,cpu_submit_wait,0.5595,0.5566,0.5794
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,render,0.7793,0.7782,0.7826
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,sample,0.1085,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,frame,0.8878,0.8868,0.8909
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f,cpu_submit_wait,0.9385,0.9295,0.9559
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,render,0.4079,0.4045,0.4090
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,sample,0.1082,0.1075,0.1084
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,frame,0.5161,0.5130,0.5171
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5600,0.5573,0.5788
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,render,0.7980,0.7958,0.7997
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,sample,0.1115,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,frame,0.9093,0.9073,0.9103
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9616,0.9514,0.9777
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,render,0.0709,0.0707,0.0717
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,sample,0.1031,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,frame,0.1741,0.1731,0.1751
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32f,cpu_submit_wait,0.2232,0.2215,0.2396
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,render,0.0451,0.0451,0.0454
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,sample,0.1041,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,frame,0.1495,0.1485,0.1495
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d24s8,cpu_submit_wait,0.1981,0.1966,0.2142
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,render,0.0963,0.0942,0.0983
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,sample,0.1020,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,frame,0.1976,0.1956,0.1997
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,render_sample_d32fs8,cpu_submit_wait,0.2516,0.2448,0.2671
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0947
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,sample,0.1116,0.1116,0.1126
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,0.2476,0.2453,0.2677
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,depth,0.0727,0.0717,0.0729
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,hiz,0.0287,0.0284,0.0292
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,frame,0.1014,0.1004,0.1014
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,depth_hiz_d32f,cpu_submit_wait,0.1505,0.1479,0.1654
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,gbuffer,0.1792,0.1782,0.1802
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,lighting,0.2232,0.2222,0.2242
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,hiz,0.0297,0.0297,0.0297
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,post,0.1478,0.1475,0.1486
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,present,0.1075,0.1071,0.1084
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,frame,0.6871,0.6851,0.6892
+vulkan,NVIDIA GeForce RTX 3080,transitions,2160,frame,cpu_submit_wait,0.7434,0.7370,0.7598
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,render,0.4035,0.4004,0.4035
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,frame,0.5110,0.5079,0.5130
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba8,cpu_submit_wait,0.5583,0.5529,0.5782
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,render,0.7752,0.7741,0.7782
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,sample,0.1085,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,frame,0.8837,0.8827,0.8868
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f,cpu_submit_wait,0.9374,0.9257,0.9536
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,render,0.4035,0.4004,0.4035
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,sample,0.1085,0.1075,0.1096
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,frame,0.5120,0.5089,0.5130
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_r11g11b10f,cpu_submit_wait,0.5565,0.5519,0.5749
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,render,0.7946,0.7926,0.7956
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,sample,0.1116,0.1106,0.1116
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,frame,0.9052,0.9032,0.9073
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,0.9597,0.9481,0.9739
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,render,0.0717,0.0707,0.0717
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,sample,0.1034,0.1024,0.1034
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,frame,0.1741,0.1741,0.1751
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32f,cpu_submit_wait,0.2243,0.2218,0.2424
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,render,0.0440,0.0440,0.0451
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,sample,0.1044,0.1034,0.1044
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,frame,0.1485,0.1485,0.1485
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d24s8,cpu_submit_wait,0.2045,0.1965,0.2178
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,render,0.0973,0.0952,0.0983
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,sample,0.1024,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,frame,0.1987,0.1966,0.2007
+vulkan,NVIDIA GeForce RTX 3080,general,2160,render_sample_d32fs8,cpu_submit_wait,0.2493,0.2458,0.2662
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,write,0.0942,0.0932,0.0947
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,sample,0.1116,0.1114,0.1126
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,frame,0.2058,0.2058,0.2068
+vulkan,NVIDIA GeForce RTX 3080,general,2160,storage_sample_rgba16f,cpu_submit_wait,0.2487,0.2461,0.2660
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,depth,0.0727,0.0717,0.0737
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,hiz,0.0287,0.0287,0.0297
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,frame,0.1014,0.1014,0.1024
+vulkan,NVIDIA GeForce RTX 3080,general,2160,depth_hiz_d32f,cpu_submit_wait,0.1508,0.1487,0.1667
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,gbuffer,0.1792,0.1782,0.1802
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,lighting,0.2232,0.2232,0.2243
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,hiz,0.0297,0.0297,0.0307
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,post,0.1444,0.1444,0.1454
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,present,0.1075,0.1075,0.1085
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,frame,0.6861,0.6840,0.6881
+vulkan,NVIDIA GeForce RTX 3080,general,2160,frame,cpu_submit_wait,0.7398,0.7355,0.7606
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,render,4.5258,4.5231,4.5292
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,sample,0.5263,0.5251,0.5286
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,frame,5.0524,5.0491,5.0562
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,cpu_submit_wait,5.1440,5.1353,5.1569
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,render,4.6633,4.6584,4.6677
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,sample,0.5377,0.5364,0.5402
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,frame,5.2012,5.1956,5.2069
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,cpu_submit_wait,5.2965,5.2850,5.3122
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,render,4.4686,4.4636,4.4725
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,sample,0.5264,0.5250,0.5283
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,frame,4.9949,4.9905,4.9993
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0874,5.0781,5.1022
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,render,4.5816,4.5634,4.5932
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,sample,3.4125,3.2976,3.4494
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,frame,7.9919,7.8946,8.0346
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0986,7.9993,8.1426
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,render,0.1705,0.1700,0.1711
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,sample,0.5261,0.5237,0.5288
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,frame,0.6965,0.6941,0.6991
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,cpu_submit_wait,0.7741,0.7588,0.7958
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,render,0.1764,0.1760,0.1768
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,sample,0.5256,0.5237,0.5281
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,frame,0.7020,0.7002,0.7048
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.7782,0.7700,0.7979
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,write,0.2616,0.2606,0.2625
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,sample,0.5376,0.5361,0.5430
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,frame,0.7993,0.7976,0.8044
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.8707,0.8574,0.8933
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,depth,0.1704,0.1698,0.1710
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,hiz,0.1017,0.1005,0.1034
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,frame,0.2722,0.2707,0.2740
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.3347,0.3283,0.3562
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,gbuffer,1.1808,1.1744,1.1878
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,lighting,0.6718,0.6643,0.6837
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,hiz,0.1539,0.1427,0.1643
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,post,0.5980,0.5884,0.6141
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,present,0.5498,0.5428,0.5558
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,frame,3.1571,3.1330,3.1842
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,cpu_submit_wait,3.2497,3.2267,3.2871
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,render,4.5296,4.5251,4.5335
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,sample,0.5260,0.5246,0.5287
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,frame,5.0560,5.0514,5.0600
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,cpu_submit_wait,5.1542,5.1438,5.1679
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,render,4.6665,4.6606,4.6724
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,sample,0.5369,0.5354,0.5401
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,frame,5.2033,5.1979,5.2114
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,cpu_submit_wait,5.3039,5.2918,5.3225
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,render,4.4717,4.4665,4.5214
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,sample,0.5263,0.5246,0.5415
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,frame,4.9982,4.9924,5.0665
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0968,5.0855,5.1851
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,render,7.3708,7.3023,7.4302
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,sample,0.6143,0.6038,0.6204
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,frame,7.9838,7.9032,8.0408
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0864,8.0101,8.1512
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,render,0.1754,0.1750,0.1758
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,sample,0.5284,0.5262,0.5301
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,frame,0.7037,0.7016,0.7055
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,cpu_submit_wait,0.7741,0.7676,0.7987
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,render,0.1816,0.1811,0.1823
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,sample,0.5276,0.5260,0.5301
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,frame,0.7093,0.7076,0.7118
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.7809,0.7714,0.8022
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,write,0.2616,0.2610,0.2624
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,sample,0.5388,0.5377,0.5404
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,frame,0.8005,0.7992,0.8021
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.8692,0.8598,0.8928
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,depth,0.1754,0.1750,0.1758
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,hiz,0.1017,0.1004,0.1040
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,frame,0.2771,0.2758,0.2794
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.3395,0.3319,0.3624
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,gbuffer,1.1870,1.1798,1.1952
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,lighting,0.6454,0.6410,0.6674
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,hiz,0.1588,0.1498,0.1717
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,post,0.6002,0.5916,0.6104
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,present,0.5551,0.5471,0.5623
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,frame,3.1486,3.1280,3.1892
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,cpu_submit_wait,3.2449,3.2201,3.2905
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,render,4.5256,4.5202,4.5292
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,sample,0.5284,0.5271,0.5305
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,frame,5.0541,5.0488,5.0584
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,cpu_submit_wait,5.1476,5.1369,5.1616
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,render,4.6618,4.6563,4.6672
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,sample,0.5390,0.5377,0.5410
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,frame,5.2010,5.1948,5.2072
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,cpu_submit_wait,5.2955,5.2855,5.3145
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,render,4.4672,4.4628,4.4709
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,sample,0.5284,0.5271,0.5304
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,frame,4.9959,4.9909,5.0000
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0897,5.0800,5.1039
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,render,11.6559,11.3824,11.8458
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,sample,0.6138,0.6008,0.6251
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,frame,12.2659,11.9984,12.4656
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,12.3855,12.1134,12.5764
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,render,1.1331,1.1314,1.1363
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,sample,0.5374,0.5348,0.5414
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,frame,1.6703,1.6668,1.6758
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,cpu_submit_wait,1.7514,1.7332,1.7730
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,render,1.1623,1.1602,1.1642
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,sample,0.5369,0.5348,0.5386
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,frame,1.6991,1.6960,1.7026
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,cpu_submit_wait,1.7763,1.7613,1.7914
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,write,0.2618,0.2607,0.2626
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,sample,0.5391,0.5377,0.5404
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,frame,0.8008,0.7991,0.8023
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.8692,0.8601,0.8931
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,depth,1.1330,1.1311,1.1358
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,hiz,0.1573,0.1562,0.1599
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,frame,1.2906,1.2879,1.2945
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,cpu_submit_wait,1.3667,1.3524,1.3888
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,gbuffer,1.9783,1.9666,2.0019
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,lighting,0.7194,0.7156,0.7338
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,hiz,0.3818,0.2734,0.4130
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,post,0.5974,0.5887,0.6055
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,present,0.5488,0.5412,0.5522
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,frame,4.2232,4.1159,4.2740
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,cpu_submit_wait,4.3240,4.2297,4.3799
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,render,4.5260,4.5210,4.5301
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,sample,0.5264,0.5249,0.5289
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,frame,5.0526,5.0468,5.0571
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,cpu_submit_wait,5.1482,5.1371,5.1641
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,render,4.6620,4.6569,4.6668
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,sample,0.5374,0.5361,0.5398
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,frame,5.1997,5.1945,5.2054
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,cpu_submit_wait,5.2958,5.2839,5.3125
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,render,4.4684,4.4633,4.4718
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,sample,0.5264,0.5250,0.5286
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,frame,4.9948,4.9888,4.9994
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0900,5.0790,5.1006
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,render,4.5807,4.5570,4.5925
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,sample,3.3993,3.3114,3.4586
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,frame,7.9790,7.8885,8.0391
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0878,7.9965,8.1489
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,render,0.1702,0.1698,0.1706
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,sample,0.5287,0.5270,0.5304
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,frame,0.6988,0.6970,0.7007
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,cpu_submit_wait,0.7707,0.7588,0.7947
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,render,0.1763,0.1759,0.1767
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,sample,0.5284,0.5266,0.5301
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,frame,0.7046,0.7029,0.7064
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.7783,0.7677,0.8002
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,write,0.2622,0.2615,0.2627
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,sample,0.5373,0.5359,0.5390
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,frame,0.7995,0.7979,0.8013
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.8691,0.8581,0.8925
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,depth,0.1701,0.1697,0.1706
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,hiz,0.1023,0.1007,0.1056
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,frame,0.2724,0.2708,0.2756
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.3412,0.3305,0.3635
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,gbuffer,1.1824,1.1737,1.1931
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,lighting,0.6448,0.6413,0.6574
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,hiz,0.1568,0.1473,0.1663
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,post,0.5946,0.5885,0.6086
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,present,0.5488,0.5415,0.5525
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,frame,3.1303,3.1125,3.1542
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,cpu_submit_wait,3.2251,3.2026,3.2575
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,render,4.5297,4.5247,4.5332
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,sample,0.5259,0.5245,0.5286
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,frame,5.0558,5.0507,5.0602
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,cpu_submit_wait,5.1520,5.1421,5.1637
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,render,4.6684,4.6616,4.6971
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,sample,0.5372,0.5353,0.5561
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,frame,5.2054,5.1983,5.2538
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,cpu_submit_wait,5.3053,5.2902,5.3598
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,render,4.4719,4.4663,4.4763
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,sample,0.5259,0.5244,0.5286
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,frame,4.9980,4.9925,5.0031
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0955,5.0847,5.1088
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,render,7.3722,7.2853,7.4469
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,sample,0.6152,0.6022,0.6389
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,frame,7.9852,7.8981,8.0836
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0918,8.0029,8.2006
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,render,0.1753,0.1748,0.1758
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,sample,0.5279,0.5258,0.5290
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,frame,0.7030,0.7010,0.7046
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,cpu_submit_wait,0.7742,0.7618,0.7964
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,render,0.1813,0.1809,0.1817
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,sample,0.5275,0.5259,0.5290
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,frame,0.7086,0.7074,0.7104
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.7778,0.7677,0.8009
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,write,0.2624,0.2614,0.2647
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,sample,0.5400,0.5376,0.5495
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,frame,0.8024,0.7997,0.8154
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.8828,0.8645,0.9127
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,depth,0.1754,0.1749,0.1759
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,hiz,0.1027,0.1010,0.1061
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,frame,0.2781,0.2761,0.2814
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.3527,0.3346,0.3768
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,gbuffer,1.1958,1.1833,1.2088
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,lighting,0.6426,0.6392,0.6555
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,hiz,0.1570,0.1470,0.1668
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,post,0.5995,0.5935,0.6059
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,present,0.5488,0.5414,0.5531
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,frame,3.1448,3.1255,3.1684
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,cpu_submit_wait,3.2410,3.2163,3.2699
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,render,4.5237,4.5001,4.5287
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,sample,0.5280,0.5255,0.5302
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,frame,5.0519,5.0266,5.0575
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,cpu_submit_wait,5.1428,5.1217,5.1605
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,render,4.6632,4.6571,4.6681
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,sample,0.5394,0.5380,0.5415
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,frame,5.2026,5.1968,5.2083
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,cpu_submit_wait,5.2969,5.2836,5.3108
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,render,4.4678,4.4633,4.4717
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,sample,0.5284,0.5270,0.5306
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,frame,4.9966,4.9916,5.0005
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0901,5.0791,5.1039
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,render,11.6316,11.3925,11.7692
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,sample,0.6091,0.5986,0.6229
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,frame,12.2370,12.0038,12.3885
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,12.3540,12.1142,12.5121
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,render,1.1332,1.1316,1.1362
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,sample,0.5365,0.5347,0.5387
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,frame,1.6699,1.6670,1.6740
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,cpu_submit_wait,1.7439,1.7310,1.7655
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,render,1.1626,1.1602,1.1656
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,sample,0.5370,0.5347,0.5394
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,frame,1.6994,1.6961,1.7034
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,cpu_submit_wait,1.7825,1.7630,1.7984
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,write,0.2626,0.2620,0.2632
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,sample,0.5392,0.5380,0.5415
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,frame,0.8019,0.8004,0.8044
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.8754,0.8611,0.8938
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,depth,1.1334,1.1315,1.1359
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,hiz,0.1567,0.1554,0.1586
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,frame,1.2902,1.2877,1.2934
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,cpu_submit_wait,1.3660,1.3514,1.3876
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,gbuffer,1.9914,1.9734,2.0076
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,lighting,0.7185,0.7156,0.7341
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,hiz,0.3872,0.2962,0.4149
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,post,0.5929,0.5864,0.5988
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,present,0.5489,0.5414,0.5515
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,frame,4.2365,4.1588,4.2762
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,cpu_submit_wait,4.3353,4.2577,4.3759
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,render,4.5236,4.5006,4.5291
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,sample,0.5256,0.5229,0.5274
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,frame,5.0498,5.0246,5.0554
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,cpu_submit_wait,5.1411,5.1160,5.1585
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,render,4.6624,4.6568,4.6676
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,sample,0.5373,0.5360,0.5389
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,frame,5.2000,5.1944,5.2065
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,cpu_submit_wait,5.2964,5.2838,5.3114
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,render,4.4689,4.4648,4.4725
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,sample,0.5264,0.5250,0.5284
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,frame,4.9954,4.9913,4.9991
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0903,5.0798,5.1046
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,render,4.5797,4.5571,4.5908
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,sample,3.3977,3.3242,3.4606
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,frame,7.9738,7.9002,8.0478
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0809,8.0050,8.1618
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,render,0.1701,0.1697,0.1706
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,sample,0.5274,0.5257,0.5288
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,frame,0.6975,0.6960,0.6990
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,cpu_submit_wait,0.7652,0.7566,0.7904
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,render,0.1761,0.1757,0.1766
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,sample,0.5272,0.5256,0.5289
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,frame,0.7035,0.7015,0.7053
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.7739,0.7619,0.8002
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,write,0.2618,0.2613,0.2622
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,sample,0.5373,0.5361,0.5390
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,frame,0.7990,0.7976,0.8011
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.8660,0.8582,0.8925
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,depth,0.1701,0.1696,0.1705
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,hiz,0.1020,0.1006,0.1036
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,frame,0.2720,0.2706,0.2738
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.3322,0.3255,0.3574
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,gbuffer,1.1836,1.1748,1.1929
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,lighting,0.6744,0.6657,0.6889
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,hiz,0.1533,0.1419,0.1628
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,post,0.5938,0.5891,0.6031
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,present,0.5492,0.5418,0.5525
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,frame,3.1531,3.1330,3.1773
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,cpu_submit_wait,3.2509,3.2253,3.2833
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,render,4.5298,4.5243,4.5339
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,sample,0.5260,0.5247,0.5284
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,frame,5.0561,5.0504,5.0613
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,cpu_submit_wait,5.1561,5.1459,5.1700
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,render,4.6663,4.6611,4.6711
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,sample,0.5368,0.5354,0.5393
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,frame,5.2030,5.1977,5.2090
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,cpu_submit_wait,5.3038,5.2909,5.3192
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,render,4.4724,4.4675,4.4764
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,sample,0.5258,0.5246,0.5276
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,frame,4.9986,4.9928,5.0030
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0977,5.0851,5.1101
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,render,7.3522,7.2869,7.4062
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,sample,0.6160,0.6049,0.6240
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,frame,7.9664,7.8953,8.0235
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0766,8.0043,8.1381
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,render,0.1752,0.1748,0.1758
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,sample,0.5291,0.5269,0.5308
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,frame,0.7042,0.7019,0.7064
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,cpu_submit_wait,0.7924,0.7706,0.8053
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,render,0.1815,0.1809,0.1820
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,sample,0.5298,0.5274,0.5318
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,frame,0.7114,0.7088,0.7135
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.7999,0.7806,0.8122
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,write,0.2619,0.2614,0.2625
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,sample,0.5391,0.5378,0.5406
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,frame,0.8011,0.7996,0.8027
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.8693,0.8597,0.8935
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,depth,0.1752,0.1748,0.1756
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,hiz,0.1012,0.0998,0.1028
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,frame,0.2764,0.2749,0.2781
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.3367,0.3302,0.3645
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,gbuffer,1.1846,1.1800,1.1897
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,lighting,0.6435,0.6404,0.6573
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,hiz,0.1568,0.1470,0.1659
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,post,0.6031,0.5955,0.6105
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,present,0.5550,0.5471,0.5622
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,frame,3.1446,3.1297,3.1661
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,cpu_submit_wait,3.2382,3.2156,3.2666
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,render,4.5258,4.5209,4.5298
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,sample,0.5283,0.5270,0.5308
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,frame,5.0545,5.0488,5.0590
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,cpu_submit_wait,5.1474,5.1372,5.1597
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,render,4.6615,4.6554,4.6675
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,sample,0.5394,0.5380,0.5415
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,frame,5.2017,5.1941,5.2080
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,cpu_submit_wait,5.2967,5.2847,5.3100
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,render,4.4682,4.4628,4.4721
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,sample,0.5284,0.5269,0.5302
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,frame,4.9964,4.9903,5.0009
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0888,5.0786,5.1011
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,render,11.6521,11.3538,11.7802
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,sample,0.6172,0.6046,0.6355
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,frame,12.2664,11.9797,12.4016
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,12.3788,12.0993,12.5200
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,render,1.1328,1.1312,1.1358
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,sample,0.5360,0.5345,0.5386
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,frame,1.6694,1.6662,1.6734
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,cpu_submit_wait,1.7487,1.7326,1.7690
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,render,1.1614,1.1588,1.1629
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,sample,0.5368,0.5352,0.5388
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,frame,1.6978,1.6949,1.7013
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,cpu_submit_wait,1.7753,1.7609,1.7924
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,write,0.2624,0.2617,0.2630
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,sample,0.5393,0.5379,0.5411
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,frame,0.8017,0.8002,0.8034
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.8718,0.8608,0.8935
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,depth,1.1326,1.1311,1.1358
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,hiz,0.1577,0.1561,0.1611
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,frame,1.2906,1.2878,1.2962
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,cpu_submit_wait,1.3687,1.3529,1.3896
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,gbuffer,1.9776,1.9665,1.9979
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,lighting,0.7176,0.7152,0.7294
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,hiz,0.3823,0.2773,0.4178
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,post,0.5962,0.5902,0.6042
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,present,0.5490,0.5418,0.5520
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,frame,4.2249,4.1270,4.2675
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,cpu_submit_wait,4.3257,4.2300,4.3697
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,render,4.5261,4.5205,4.5297
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,sample,0.5263,0.5248,0.5284
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,frame,5.0522,5.0470,5.0566
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,cpu_submit_wait,5.1458,5.1362,5.1583
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,render,4.6630,4.6578,4.6679
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,sample,0.5374,0.5360,0.5393
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,frame,5.2006,5.1949,5.2060
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,cpu_submit_wait,5.2958,5.2845,5.3104
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,render,4.4682,4.4632,4.4720
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,sample,0.5265,0.5249,0.5291
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,frame,4.9950,4.9894,4.9994
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0892,5.0792,5.1051
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,render,4.5882,4.5660,4.5996
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,sample,3.3901,3.3154,3.5295
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,frame,7.9744,7.8966,8.1235
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0815,7.9986,8.2429
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,render,0.1702,0.1697,0.1711
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,sample,0.5287,0.5256,0.5321
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,frame,0.6989,0.6956,0.7026
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,cpu_submit_wait,0.7797,0.7635,0.7984
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,render,0.1760,0.1757,0.1765
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,sample,0.5282,0.5260,0.5300
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,frame,0.7041,0.7020,0.7060
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.7769,0.7652,0.7990
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,write,0.2621,0.2615,0.2628
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,sample,0.5374,0.5360,0.5398
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,frame,0.7995,0.7982,0.8021
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.8730,0.8592,0.8957
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,depth,0.1701,0.1698,0.1705
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,hiz,0.1023,0.1010,0.1044
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,frame,0.2725,0.2711,0.2746
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.3374,0.3279,0.3599
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,gbuffer,1.1725,1.1688,1.1835
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,lighting,0.6446,0.6416,0.6555
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,hiz,0.1573,0.1487,0.1669
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,post,0.5949,0.5888,0.5998
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,present,0.5490,0.5412,0.5511
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,frame,3.1211,3.1053,3.1392
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,cpu_submit_wait,3.2185,3.1963,3.2432
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,render,4.5271,4.5031,4.5332
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,sample,0.5253,0.5226,0.5276
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,frame,5.0528,5.0260,5.0598
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,cpu_submit_wait,5.1488,5.1228,5.1662
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,render,4.6666,4.6610,4.6723
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,sample,0.5365,0.5352,0.5391
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,frame,5.2036,5.1977,5.2098
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,cpu_submit_wait,5.3037,5.2907,5.3188
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,render,4.4724,4.4666,4.4764
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,sample,0.5259,0.5245,0.5282
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,frame,4.9982,4.9928,5.0030
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0952,5.0857,5.1105
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,render,7.3455,7.2507,7.3994
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,sample,0.6146,0.6029,0.6194
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,frame,7.9586,7.8639,8.0110
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0635,7.9716,8.1193
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,render,0.1752,0.1744,0.1807
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,sample,0.5284,0.5243,0.5481
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,frame,0.7037,0.6991,0.7271
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,cpu_submit_wait,0.7891,0.7685,0.8267
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,render,0.1814,0.1805,0.1866
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,sample,0.5286,0.5250,0.5474
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,frame,0.7103,0.7060,0.7344
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.7945,0.7758,0.8324
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,write,0.2627,0.2614,0.3346
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,sample,0.5414,0.5362,0.5922
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,frame,0.8048,0.7982,0.9224
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.8936,0.8653,1.0054
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,depth,0.1751,0.1744,0.1799
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,hiz,0.1042,0.1007,0.1422
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,frame,0.2791,0.2754,0.3206
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.3572,0.3389,0.4047
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,gbuffer,1.2093,1.1775,1.3744
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,lighting,0.6846,0.6470,0.8726
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,hiz,0.1679,0.1535,0.2398
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,post,0.6167,0.6002,0.7456
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,present,0.5514,0.5404,0.5814
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,frame,3.3072,3.1392,3.7468
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,cpu_submit_wait,3.4319,3.2371,3.8659
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,render,4.5130,4.5025,4.5690
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,sample,0.5312,0.5258,0.5566
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,frame,5.0529,5.0301,5.1064
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,cpu_submit_wait,5.1572,5.1306,5.2121
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,render,4.6658,4.6402,4.7925
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,sample,0.5417,0.5366,0.5968
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,frame,5.2308,5.1792,5.3612
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,cpu_submit_wait,5.3340,5.2793,5.4655
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,render,4.4581,4.4444,4.5222
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,sample,0.5294,0.5256,0.5536
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,frame,4.9948,4.9718,5.0548
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0994,5.0710,5.1715
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,render,12.2920,11.8138,13.3946
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,sample,0.6210,0.6035,0.6629
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,frame,12.9240,12.4322,14.0157
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,13.0480,12.5459,14.1389
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,render,1.1375,1.1316,1.2242
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,sample,0.5398,0.5346,0.5747
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,frame,1.6870,1.6671,1.7840
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,cpu_submit_wait,1.7818,1.7436,1.8763
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,render,1.1690,1.1600,1.2704
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,sample,0.5393,0.5334,0.5707
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,frame,1.7184,1.6944,1.8275
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,cpu_submit_wait,1.8085,1.7691,1.9255
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,write,0.2624,0.2612,0.3266
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,sample,0.5396,0.5363,0.5905
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,frame,0.8028,0.7982,0.9109
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.8957,0.8648,0.9881
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,depth,1.1385,1.1315,1.2329
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,hiz,0.1620,0.1574,0.2396
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,frame,1.3107,1.2896,1.4472
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,cpu_submit_wait,1.3973,1.3641,1.5306
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,gbuffer,2.1109,1.9810,2.5006
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,lighting,0.7587,0.7218,0.9541
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,hiz,0.4002,0.2907,0.4662
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,post,0.6100,0.5942,0.7361
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,present,0.5510,0.5422,0.5794
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,frame,4.4974,4.2299,5.1949
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,cpu_submit_wait,4.6054,4.3316,5.3068
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,render,4.5171,4.5038,4.5695
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,sample,0.5292,0.5239,0.5562
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,frame,5.0543,5.0290,5.1088
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba8,cpu_submit_wait,5.1585,5.1299,5.2231
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,render,4.6832,4.6457,4.7912
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,sample,0.5543,0.5356,0.5993
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,frame,5.2451,5.1860,5.3646
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f,cpu_submit_wait,5.3543,5.2880,5.4849
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,render,4.4607,4.4457,4.4959
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,sample,0.5299,0.5242,0.5562
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,frame,4.9957,4.9726,5.0542
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0994,5.0733,5.1643
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,render,4.5642,4.5474,4.5809
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,sample,3.7006,3.3785,4.2798
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,frame,8.2639,7.9307,8.8431
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.3810,8.0475,8.9614
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,render,0.1698,0.1692,0.1733
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,sample,0.5275,0.5240,0.5485
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,frame,0.6972,0.6933,0.7216
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32f,cpu_submit_wait,0.7844,0.7622,0.8178
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,render,0.1762,0.1757,0.1767
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,sample,0.5268,0.5249,0.5295
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,frame,0.7032,0.7007,0.7059
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,render_sample_d32fs8,cpu_submit_wait,0.7790,0.7654,0.7979
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,write,0.2622,0.2616,0.2628
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,sample,0.5371,0.5358,0.5386
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,frame,0.7992,0.7979,0.8010
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,storage_sample_rgba16f,cpu_submit_wait,0.8689,0.8564,0.8878
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,depth,0.1701,0.1697,0.1705
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,hiz,0.1020,0.1004,0.1041
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,frame,0.2720,0.2705,0.2744
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,depth_hiz_d32f,cpu_submit_wait,0.3350,0.3271,0.3596
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,gbuffer,1.1775,1.1718,1.1867
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,lighting,0.6478,0.6417,0.6705
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,hiz,0.1556,0.1451,0.1667
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,post,0.5970,0.5897,0.6105
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,present,0.5490,0.5418,0.5518
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,frame,3.1274,3.1090,3.1741
+vulkan,AMD Radeon(TM) Graphics,baseline,1080,frame,cpu_submit_wait,3.2232,3.2022,3.2759
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,render,4.5298,4.5253,4.5341
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,sample,0.5258,0.5244,0.5276
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,frame,5.0556,5.0504,5.0600
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba8,cpu_submit_wait,5.1530,5.1418,5.1637
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,render,4.6665,4.6622,4.6705
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,sample,0.5368,0.5355,0.5388
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,frame,5.2034,5.1991,5.2084
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f,cpu_submit_wait,5.3022,5.2915,5.3176
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,render,4.4714,4.4667,4.4756
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,sample,0.5260,0.5244,0.5286
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,frame,4.9974,4.9919,5.0022
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0952,5.0863,5.1083
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,render,7.3531,7.2797,7.4542
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,sample,0.6167,0.6052,0.6454
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,frame,7.9664,7.8930,8.0696
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,8.0729,8.0003,8.2202
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,render,0.1753,0.1747,0.1758
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,sample,0.5278,0.5259,0.5299
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,frame,0.7031,0.7011,0.7054
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32f,cpu_submit_wait,0.7707,0.7579,0.7979
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,render,0.1815,0.1811,0.1819
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,sample,0.5278,0.5252,0.5295
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,frame,0.7092,0.7066,0.7110
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,render_sample_d32fs8,cpu_submit_wait,0.7789,0.7650,0.8003
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,write,0.2621,0.2615,0.2628
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,sample,0.5386,0.5374,0.5401
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,frame,0.8007,0.7994,0.8027
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,storage_sample_rgba16f,cpu_submit_wait,0.8710,0.8570,0.8929
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,depth,0.1753,0.1748,0.1758
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,hiz,0.1008,0.0995,0.1026
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,frame,0.2762,0.2746,0.2779
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,depth_hiz_d32f,cpu_submit_wait,0.3356,0.3254,0.3563
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,gbuffer,1.1849,1.1784,1.1953
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,lighting,0.6472,0.6410,0.6644
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,hiz,0.1571,0.1476,0.1671
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,post,0.5988,0.5924,0.6096
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,present,0.5488,0.5417,0.5524
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,frame,3.1386,3.1207,3.1718
+vulkan,AMD Radeon(TM) Graphics,transitions,1080,frame,cpu_submit_wait,3.2349,3.2072,3.2790
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,render,4.5257,4.5206,4.5295
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,sample,0.5282,0.5268,0.5305
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,frame,5.0540,5.0487,5.0587
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba8,cpu_submit_wait,5.1474,5.1386,5.1617
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,render,4.6623,4.6571,4.6670
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,sample,0.5390,0.5378,0.5410
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,frame,5.2013,5.1961,5.2064
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f,cpu_submit_wait,5.2970,5.2865,5.3147
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,render,4.4674,4.4634,4.4714
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,sample,0.5283,0.5268,0.5300
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,frame,4.9958,4.9915,5.0000
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_r11g11b10f,cpu_submit_wait,5.0889,5.0796,5.1014
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,render,11.3758,11.1606,11.6005
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,sample,0.6106,0.6001,0.6209
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,frame,11.9832,11.7620,12.2140
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_rgba16f_msaa4,cpu_submit_wait,12.0919,11.8724,12.3398
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,render,1.1338,1.1320,1.1369
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,sample,0.5371,0.5362,0.5404
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,frame,1.6714,1.6687,1.6767
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32f,cpu_submit_wait,1.7496,1.7323,1.7680
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,render,1.1622,1.1596,1.1638
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,sample,0.5370,0.5360,0.5392
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,frame,1.6991,1.6965,1.7023
+vulkan,AMD Radeon(TM) Graphics,general,1080,render_sample_d32fs8,cpu_submit_wait,1.7758,1.7607,1.7936
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,write,0.2619,0.2610,0.2626
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,sample,0.5384,0.5372,0.5402
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,frame,0.8002,0.7990,0.8020
+vulkan,AMD Radeon(TM) Graphics,general,1080,storage_sample_rgba16f,cpu_submit_wait,0.8682,0.8559,0.8892
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,depth,1.1331,1.1314,1.1362
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,hiz,0.1567,0.1556,0.1588
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,frame,1.2900,1.2880,1.2941
+vulkan,AMD Radeon(TM) Graphics,general,1080,depth_hiz_d32f,cpu_submit_wait,1.3649,1.3507,1.3864
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,gbuffer,1.9824,1.9676,2.0170
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,lighting,0.7189,0.7154,0.7437
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,hiz,0.3876,0.2855,0.4225
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,post,0.5972,0.5903,0.6117
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,present,0.5494,0.5445,0.5553
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,frame,4.2355,4.1372,4.3074
+vulkan,AMD Radeon(TM) Graphics,general,1080,frame,cpu_submit_wait,4.3348,4.2414,4.4177
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,render,18.1278,18.1074,18.1402
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,sample,2.1032,2.0988,2.1160
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,frame,20.2322,20.2154,20.2475
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,cpu_submit_wait,20.3595,20.3437,20.3882
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,render,18.7844,18.7649,18.8003
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,sample,2.2642,2.2494,2.2797
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,frame,21.0486,21.0258,21.0717
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,cpu_submit_wait,21.1752,21.1512,21.2020
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,render,17.8966,17.8829,17.9110
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,sample,2.1023,2.0980,2.1098
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,frame,20.0004,19.9855,20.0148
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1279,20.1116,20.1497
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,render,19.0962,18.9071,19.1343
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,sample,17.2693,16.9031,17.4970
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,frame,36.3216,35.9355,36.5859
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.4845,36.0864,36.7640
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,render,0.8974,0.7823,1.1955
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,sample,2.3858,2.3056,2.5172
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,frame,3.2742,3.0948,3.6931
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,cpu_submit_wait,3.3661,3.1763,3.7750
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,render,0.8736,0.7847,1.1556
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,sample,2.3308,2.2509,2.4825
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,frame,3.2084,3.0438,3.6087
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,cpu_submit_wait,3.2864,3.1201,3.6973
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,write,1.1019,1.0786,1.1164
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,sample,2.2946,2.2756,2.3119
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,frame,3.3953,3.3615,3.4219
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,3.4867,3.4489,3.5185
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,depth,1.3418,0.8937,1.5440
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,hiz,0.6080,0.5809,0.6372
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,frame,1.9525,1.5410,2.1466
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,cpu_submit_wait,2.0392,1.6325,2.2270
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,gbuffer,4.9050,4.8648,4.9452
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,lighting,3.8338,3.7781,3.9040
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,hiz,0.5945,0.5813,0.6082
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,post,4.2428,3.8160,4.4134
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,present,2.9349,2.5644,3.1250
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,frame,16.4748,15.8190,16.8369
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,cpu_submit_wait,16.6036,15.9357,16.9641
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,render,18.1414,18.1254,18.1540
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,sample,2.1303,2.1248,2.1406
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,frame,20.2726,20.2587,20.2872
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,cpu_submit_wait,20.4084,20.3961,20.4315
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,render,18.7844,18.7615,18.7978
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,sample,2.2642,2.2517,2.2810
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,frame,21.0483,21.0216,21.0692
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,cpu_submit_wait,21.1791,21.1534,21.2046
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,render,17.9119,17.8966,18.0336
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,sample,2.1315,2.1256,2.1734
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,frame,20.0432,20.0264,20.2241
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1803,20.1611,20.3893
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,render,33.3184,32.9373,33.5264
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,sample,3.0677,2.9605,3.1037
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,frame,36.3654,35.9272,36.5853
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.5330,36.0870,36.7513
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,render,0.7700,0.7142,0.9645
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,sample,2.2532,2.2182,2.4329
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,frame,3.0190,2.9316,3.3978
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,cpu_submit_wait,3.0973,3.0087,3.4664
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,render,0.9292,0.7685,1.2341
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,sample,2.3534,2.2448,2.5101
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,frame,3.2594,3.0135,3.7090
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,cpu_submit_wait,3.3486,3.0897,3.7933
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,write,1.0885,1.0729,1.1121
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,sample,2.2821,2.2633,2.3090
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,frame,3.3700,3.3392,3.4180
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,3.4555,3.4216,3.5086
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,depth,1.1171,0.9380,1.2734
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,hiz,0.6048,0.5104,0.6246
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,frame,1.7236,1.4807,1.8736
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,cpu_submit_wait,1.7986,1.5530,1.9519
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,gbuffer,4.9108,4.8623,4.9549
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,lighting,3.8415,3.7913,3.8997
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,hiz,0.5932,0.5799,0.6090
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,post,4.2186,3.8602,4.3849
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,present,2.9618,2.5838,3.1376
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,frame,16.5059,15.9808,16.8035
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,cpu_submit_wait,16.6287,16.1047,16.9330
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,render,18.1393,18.1258,18.1504
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,sample,2.1334,2.1277,2.1442
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,frame,20.2739,20.2592,20.2860
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,cpu_submit_wait,20.4071,20.3904,20.4245
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,render,18.7764,18.7549,18.7923
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,sample,2.2603,2.2476,2.2754
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,frame,21.0373,21.0085,21.0598
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,cpu_submit_wait,21.1645,21.1382,21.1916
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,render,17.9082,17.8929,17.9190
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,sample,2.1330,2.1279,2.1426
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,frame,20.0414,20.0260,20.0557
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1737,20.1566,20.1965
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,render,47.1150,46.9214,47.4983
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,sample,3.0770,2.9764,3.1136
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,frame,50.1701,49.9756,50.5395
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,50.3520,50.1602,50.7373
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,render,4.8384,4.7620,5.2026
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,sample,2.3022,2.2532,2.4781
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,frame,7.1408,7.0200,7.7081
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,cpu_submit_wait,7.2245,7.1155,7.8027
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,render,5.2540,5.1076,5.6198
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,sample,2.3023,2.2694,2.4121
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,frame,7.5530,7.3890,8.0202
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,cpu_submit_wait,7.6502,7.4859,8.1139
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,write,1.0806,1.0696,1.0930
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,sample,2.2696,2.2532,2.2870
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,frame,3.3487,3.3274,3.3752
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,cpu_submit_wait,3.4312,3.4079,3.4605
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,depth,4.9764,4.9070,5.1578
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,hiz,0.9148,0.8464,0.9449
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,frame,5.8888,5.7840,6.0361
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,cpu_submit_wait,5.9778,5.8753,6.1422
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,gbuffer,16.0407,13.7384,16.3440
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,lighting,4.0908,4.0276,4.1792
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,hiz,1.6994,1.2209,1.7980
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,post,4.2453,3.8384,4.4264
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,present,3.0002,2.5836,3.2036
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,frame,28.9250,26.5354,29.4541
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,cpu_submit_wait,29.0747,26.6705,29.5973
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,render,18.1423,18.1278,18.1551
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,sample,2.1313,2.1254,2.1404
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,frame,20.2742,20.2591,20.2894
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,cpu_submit_wait,20.4094,20.3920,20.4301
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,render,18.7956,18.7764,18.8129
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,sample,2.2641,2.2508,2.2788
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,frame,21.0611,21.0346,21.0824
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,cpu_submit_wait,21.1892,21.1586,21.2170
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,render,17.9019,17.8832,17.9156
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,sample,2.1028,2.0984,2.1111
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,frame,20.0049,19.9868,20.0209
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1361,20.1128,20.1568
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,render,19.0995,18.9176,19.1357
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,sample,17.2911,16.9398,17.5522
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,frame,36.3529,36.0238,36.6144
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.5165,36.1785,36.7985
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,render,0.8454,0.7701,0.9648
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,sample,2.2827,2.2465,2.3920
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,frame,3.1295,3.0170,3.3402
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,cpu_submit_wait,3.2104,3.1058,3.4433
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,render,0.7899,0.7423,1.0579
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,sample,2.2332,2.2082,2.4999
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,frame,3.0175,2.9554,3.5635
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,cpu_submit_wait,3.1029,3.0358,3.6436
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,write,1.0962,1.0789,1.1271
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,sample,2.2846,2.2631,2.3134
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,frame,3.3812,3.3476,3.4339
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,3.4704,3.4340,3.5258
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,depth,1.1255,0.9282,1.4130
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,hiz,0.5923,0.5466,0.6057
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,frame,1.7178,1.4756,2.0052
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,cpu_submit_wait,1.7858,1.5583,2.0712
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,gbuffer,4.9180,4.8742,4.9582
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,lighting,3.8329,3.7853,3.8836
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,hiz,0.5894,0.5754,0.6048
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,post,4.1794,3.7490,4.3872
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,present,2.9209,2.5897,3.0969
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,frame,16.4280,15.8027,16.7257
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,cpu_submit_wait,16.5500,15.9300,16.8465
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,render,18.1459,18.1284,18.1640
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,sample,2.1310,2.1251,2.1418
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,frame,20.2788,20.2594,20.2980
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,cpu_submit_wait,20.4177,20.3968,20.4407
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,render,18.7917,18.7724,18.8092
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,sample,2.2633,2.2483,2.2803
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,frame,21.0548,21.0306,21.0827
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,cpu_submit_wait,21.1872,21.1600,21.2163
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,render,17.9072,17.8939,17.9202
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,sample,2.1302,2.1254,2.1390
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,frame,20.0381,20.0246,20.0517
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1734,20.1592,20.1926
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,render,33.2883,32.8951,33.4818
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,sample,3.0576,2.9502,3.1045
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,frame,36.3117,35.8788,36.5624
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.4773,36.0466,36.7261
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,render,0.7937,0.7158,1.0146
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,sample,2.2856,2.2164,2.4647
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,frame,3.0783,2.9346,3.4789
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,cpu_submit_wait,3.1679,3.0251,3.5752
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,render,0.9034,0.7974,1.2299
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,sample,2.3364,2.2540,2.5735
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,frame,3.2293,3.0528,3.7952
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,cpu_submit_wait,3.3167,3.1367,3.8901
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,write,1.0916,1.0752,1.1867
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,sample,2.2872,2.2621,2.3695
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,frame,3.3779,3.3438,3.5597
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,3.4650,3.4230,3.6567
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,depth,1.3242,0.8960,1.4923
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,hiz,0.6035,0.5530,0.6238
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,frame,1.9208,1.5144,2.1064
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,cpu_submit_wait,2.0035,1.6232,2.1756
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,gbuffer,4.9239,4.8772,4.9641
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,lighting,3.8328,3.7810,3.8934
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,hiz,0.5934,0.5806,0.6063
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,post,4.2124,3.8050,4.3985
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,present,3.0092,2.6038,3.2127
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,frame,16.5720,15.8920,16.9030
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,cpu_submit_wait,16.6934,16.0094,17.0250
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,render,18.1347,18.1212,18.1472
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,sample,2.1222,2.1004,2.1363
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,frame,20.2523,20.2287,20.2778
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,cpu_submit_wait,20.3836,20.3537,20.4143
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,render,18.7834,18.7631,18.7979
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,sample,2.2723,2.2586,2.2875
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,frame,21.0552,21.0328,21.0760
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,cpu_submit_wait,21.1839,21.1586,21.2071
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,render,17.9008,17.8859,17.9106
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,sample,2.1050,2.1007,2.1164
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,frame,20.0063,19.9910,20.0205
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1307,20.1146,20.1530
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,render,47.1610,46.9856,47.5304
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,sample,3.0716,2.9735,3.1078
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,frame,50.2100,50.0338,50.5925
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,50.3941,50.2123,50.7806
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,render,4.8985,4.7578,5.0133
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,sample,2.3160,2.2525,2.3934
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,frame,7.2217,7.0160,7.3955
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,cpu_submit_wait,7.3172,7.1094,7.4992
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,render,5.2068,5.0586,5.4190
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,sample,2.3021,2.2463,2.4164
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,frame,7.5044,7.3166,7.8448
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,cpu_submit_wait,7.5998,7.4115,7.9577
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,write,1.1084,1.0865,1.1320
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,sample,2.3108,2.2839,2.3332
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,frame,3.4191,3.3781,3.4579
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,cpu_submit_wait,3.5088,3.4675,3.5496
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,depth,4.9864,4.8956,5.2037
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,hiz,0.8538,0.7910,0.9456
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,frame,5.8312,5.7037,6.1367
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,cpu_submit_wait,5.9229,5.7983,6.2313
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,gbuffer,16.0182,13.7273,16.3118
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,lighting,4.0758,4.0026,4.1342
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,hiz,1.6852,1.2594,1.8000
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,post,4.1900,3.7677,4.3623
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,present,2.9491,2.6105,3.1292
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,frame,28.7974,25.9144,29.3594
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,cpu_submit_wait,28.9533,26.0754,29.5341
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,render,18.1351,18.1180,18.1492
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,sample,2.1223,2.0994,2.1335
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,frame,20.2499,20.2242,20.2780
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,cpu_submit_wait,20.3830,20.3507,20.4135
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,render,18.7848,18.7599,18.7982
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,sample,2.2627,2.2469,2.2740
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,frame,21.0463,21.0131,21.0692
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,cpu_submit_wait,21.1703,21.1405,21.1964
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,render,17.9104,17.8946,17.9231
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,sample,2.1315,2.1251,2.1404
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,frame,20.0439,20.0247,20.0600
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1792,20.1588,20.2004
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,render,19.0994,18.9160,19.1384
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,sample,17.2748,16.8136,17.4588
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,frame,36.3450,35.9004,36.5549
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.5084,36.0583,36.7126
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,render,0.7440,0.7086,0.9368
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,sample,2.2444,2.2025,2.4269
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,frame,2.9889,2.9161,3.3775
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,cpu_submit_wait,3.0692,3.0019,3.4463
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,render,0.9414,0.8180,1.1638
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,sample,2.3683,2.2784,2.4941
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,frame,3.3032,3.1018,3.6706
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,cpu_submit_wait,3.3885,3.1861,3.7571
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,write,1.0901,1.0730,1.1135
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,sample,2.2774,2.2556,2.3006
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,frame,3.3680,3.3316,3.4055
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,3.4535,3.4191,3.4946
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,depth,1.2231,0.9379,1.4846
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,hiz,0.6192,0.5750,0.6611
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,frame,1.8521,1.5256,2.1017
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,cpu_submit_wait,1.9337,1.6439,2.1803
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,gbuffer,4.9128,4.8694,4.9482
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,lighting,3.8286,3.7819,3.8870
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,hiz,0.5903,0.5772,0.6034
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,post,4.1851,3.7921,4.3684
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,present,2.9868,2.6471,3.1832
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,frame,16.4807,15.7982,16.7904
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,cpu_submit_wait,16.6073,15.9192,16.9126
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,render,18.1316,18.1167,18.1432
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,sample,2.1023,2.0977,2.1102
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,frame,20.2351,20.2204,20.2491
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,cpu_submit_wait,20.3667,20.3513,20.3860
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,render,18.7860,18.7636,18.8058
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,sample,2.2641,2.2470,2.2808
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,frame,21.0498,21.0228,21.0770
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,cpu_submit_wait,21.1814,21.1514,21.2122
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,render,17.9084,17.8974,17.9231
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,sample,2.1310,2.1262,2.1405
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,frame,20.0402,20.0265,20.0569
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1777,20.1620,20.1971
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,render,33.2792,32.9853,33.5450
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,sample,3.0746,2.9591,3.1101
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,frame,36.3314,35.9682,36.5932
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.4972,36.1363,36.7633
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,render,0.7979,0.7379,1.0515
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,sample,2.2624,2.2140,2.4411
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,frame,3.0596,2.9599,3.4960
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,cpu_submit_wait,3.1463,3.0458,3.5788
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,render,0.8330,0.7756,1.0638
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,sample,2.2679,2.2350,2.4282
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,frame,3.0970,3.0126,3.4770
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,cpu_submit_wait,3.1778,3.1000,3.5548
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,write,1.0905,1.0741,1.1072
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,sample,2.2868,2.2606,2.3176
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,frame,3.3788,3.3379,3.4146
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,3.4655,3.4200,3.5075
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,depth,1.2053,0.9023,1.4778
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,hiz,0.6050,0.5618,0.6293
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,frame,1.8214,1.5011,2.0852
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,cpu_submit_wait,1.8964,1.5815,2.1575
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,gbuffer,4.9128,4.8689,4.9705
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,lighting,3.8460,3.7922,3.9275
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,hiz,0.5954,0.5800,0.6136
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,post,4.1942,3.8110,4.4456
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,present,3.0106,2.6264,3.1807
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,frame,16.5436,15.9141,16.9295
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,cpu_submit_wait,16.6656,16.0287,17.0732
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,render,18.1388,18.1262,18.1485
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,sample,2.1329,2.1282,2.1430
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,frame,20.2728,20.2583,20.2863
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,cpu_submit_wait,20.4044,20.3896,20.4222
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,render,18.7899,18.7689,18.8072
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,sample,2.2766,2.2598,2.2899
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,frame,21.0665,21.0395,21.0871
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,cpu_submit_wait,21.1936,21.1663,21.2206
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,render,17.9136,17.8996,17.9252
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,sample,2.1324,2.1276,2.1423
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,frame,20.0473,20.0324,20.0615
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1841,20.1674,20.2034
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,render,47.2036,47.0180,47.5769
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,sample,3.0717,2.9683,3.1131
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,frame,50.2631,50.0547,50.6858
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,50.4562,50.2445,50.8703
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,render,4.8651,4.8064,5.0430
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,sample,2.3531,2.3092,2.4704
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,frame,7.2148,7.1240,7.5225
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,cpu_submit_wait,7.3194,7.2226,7.6213
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,render,5.1615,5.0644,5.5636
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,sample,2.3264,2.2766,2.4723
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,frame,7.4848,7.3607,8.0140
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,cpu_submit_wait,7.5807,7.4612,8.1175
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,write,1.1078,1.0841,1.1940
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,sample,2.3166,2.2870,2.3824
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,frame,3.4256,3.3800,3.5837
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,cpu_submit_wait,3.5166,3.4683,3.6756
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,depth,5.1304,4.9960,5.3234
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,hiz,0.8863,0.8237,0.9344
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,frame,6.0076,5.8529,6.2313
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,cpu_submit_wait,6.1024,5.9477,6.3292
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,gbuffer,16.0736,14.1189,16.3509
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,lighting,4.0760,4.0009,4.1371
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,hiz,1.6956,1.1387,1.7941
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,post,4.2402,3.6958,4.4227
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,present,2.9529,2.6062,3.1388
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,frame,28.9089,26.3357,29.4019
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,cpu_submit_wait,29.0650,26.4722,29.5496
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,render,18.1433,18.1297,18.1558
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,sample,2.1310,2.1263,2.1400
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,frame,20.2765,20.2606,20.2885
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,cpu_submit_wait,20.4086,20.3913,20.4280
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,render,18.7867,18.7612,18.9227
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,sample,2.2596,2.2479,2.4433
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,frame,21.0459,21.0162,21.3193
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,cpu_submit_wait,21.1754,21.1442,21.4762
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,render,17.9113,17.8968,17.9251
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,sample,2.1307,2.1255,2.1403
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,frame,20.0433,20.0273,20.0579
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1796,20.1601,20.1987
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,render,19.1027,18.9151,19.1380
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,sample,17.2849,16.7328,17.4628
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,frame,36.3404,35.8571,36.5686
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.5005,36.0134,36.7346
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,render,0.8111,0.7598,1.0458
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,sample,2.3061,2.2616,2.4581
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,frame,3.1094,3.0222,3.5060
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,cpu_submit_wait,3.1926,3.1117,3.5937
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,render,0.9954,0.8394,1.2589
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,sample,2.4162,2.3083,2.5537
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,frame,3.4255,3.1665,3.7771
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,cpu_submit_wait,3.5101,3.2502,3.8664
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,write,1.0845,1.0729,1.1075
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,sample,2.2663,2.2516,2.2898
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,frame,3.3504,3.3284,3.3961
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,3.4336,3.4102,3.4883
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,depth,1.2864,0.9528,1.5076
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,hiz,0.5993,0.5550,0.6314
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,frame,1.8878,1.5402,2.1122
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,cpu_submit_wait,1.9587,1.6206,2.1773
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,gbuffer,4.9090,4.8707,4.9547
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,lighting,3.8373,3.7878,3.9081
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,hiz,0.5907,0.5809,0.6018
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,post,4.1948,3.7993,4.4127
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,present,2.9529,2.6366,3.1658
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,frame,16.4840,15.7104,16.8308
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,cpu_submit_wait,16.6105,15.8255,16.9567
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,render,18.1323,18.1215,18.1436
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,sample,2.1018,2.0973,2.1103
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,frame,20.2348,20.2225,20.2468
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,cpu_submit_wait,20.3666,20.3504,20.3847
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,render,18.7868,18.7669,18.8043
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,sample,2.2625,2.2496,2.2754
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,frame,21.0488,21.0216,21.0731
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,cpu_submit_wait,21.1796,21.1520,21.2074
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,render,17.9084,17.8914,17.9220
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,sample,2.1328,2.1252,2.1421
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,frame,20.0413,20.0234,20.0565
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1799,20.1625,20.2015
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,render,33.3150,32.8857,33.5537
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,sample,3.0703,2.9476,3.1071
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,frame,36.3640,35.9657,36.6031
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.5232,36.1198,36.7711
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,render,0.9646,0.8269,1.1803
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,sample,2.3930,2.3231,2.5304
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,frame,3.3540,3.1700,3.6925
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,cpu_submit_wait,3.4322,3.2610,3.7743
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,render,0.7768,0.7230,1.0362
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,sample,2.2433,2.1966,2.4224
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,frame,3.0186,2.9182,3.4519
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,cpu_submit_wait,3.1029,2.9928,3.5345
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,write,1.0842,1.0712,1.1081
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,sample,2.2696,2.2560,2.2942
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,frame,3.3531,3.3307,3.4056
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,3.4405,3.4129,3.4944
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,depth,1.2357,0.9571,1.4837
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,hiz,0.6125,0.5372,0.6574
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,frame,1.8634,1.5206,2.0881
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,cpu_submit_wait,1.9380,1.6013,2.1549
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,gbuffer,4.9111,4.8700,4.9465
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,lighting,3.8357,3.7835,3.8946
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,hiz,0.5936,0.5806,0.6052
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,post,4.2400,3.7555,4.4345
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,present,2.9815,2.6252,3.1836
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,frame,16.5268,15.7963,16.8895
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,cpu_submit_wait,16.6472,15.9196,17.0119
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,render,18.1403,18.1267,18.1507
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,sample,2.1338,2.1278,2.1425
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,frame,20.2742,20.2589,20.2877
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,cpu_submit_wait,20.4085,20.3939,20.4264
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,render,18.7750,18.7526,18.8445
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,sample,2.2620,2.2484,2.2864
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,frame,21.0357,21.0101,21.1154
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,cpu_submit_wait,21.1631,21.1381,21.3127
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,render,17.8986,17.8858,17.9083
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,sample,2.1046,2.1006,2.1122
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,frame,20.0033,19.9900,20.0156
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1314,20.1171,20.1482
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,render,47.1298,46.9290,47.4414
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,sample,3.0719,2.9627,3.1088
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,frame,50.1899,49.9765,50.4776
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,50.3738,50.1546,50.6635
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,render,4.9629,4.7883,5.5675
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,sample,2.3583,2.2715,2.5768
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,frame,7.3371,7.0615,8.1818
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,cpu_submit_wait,7.4346,7.1506,8.2780
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,render,5.6798,5.3420,6.3348
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,sample,2.4899,2.3702,2.5955
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,frame,8.1905,7.7315,8.8934
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,cpu_submit_wait,8.2883,7.8355,8.9966
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,write,1.0937,1.0786,1.1770
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,sample,2.2913,2.2666,2.3702
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,frame,3.3839,3.3512,3.5458
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,cpu_submit_wait,3.4699,3.4376,3.6408
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,depth,5.0042,4.8717,5.0920
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,hiz,0.8886,0.8063,0.9377
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,frame,5.8928,5.6897,6.0194
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,cpu_submit_wait,5.9876,5.7776,6.1267
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,gbuffer,16.0422,13.9360,16.3064
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,lighting,4.0850,4.0095,4.1504
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,hiz,1.6871,1.2575,1.7828
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,post,4.2246,3.5876,4.3748
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,present,2.9565,2.6334,3.1468
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,frame,28.8081,26.5685,29.3418
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,cpu_submit_wait,28.9496,26.7077,29.4820
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,render,18.1391,18.1252,18.1505
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,sample,2.1307,2.1261,2.1399
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,frame,20.2708,20.2564,20.2848
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba8,cpu_submit_wait,20.4047,20.3900,20.4236
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,render,18.7820,18.7614,18.7990
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,sample,2.2653,2.2496,2.2826
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,frame,21.0470,21.0205,21.0712
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f,cpu_submit_wait,21.1753,21.1512,21.2059
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,render,17.8952,17.8836,17.9068
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,sample,2.1029,2.0982,2.1104
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,frame,19.9995,19.9854,20.0112
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1275,20.1114,20.1493
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,render,19.0962,18.9155,19.1431
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,sample,17.2340,16.8086,17.4507
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,frame,36.3041,35.8572,36.5499
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.4677,36.0218,36.7082
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,render,0.9956,0.8251,1.1783
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,sample,2.4364,2.3560,2.5236
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,frame,3.4361,3.1986,3.6834
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32f,cpu_submit_wait,3.5188,3.2853,3.7650
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,render,0.7626,0.7188,1.0565
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,sample,2.2496,2.2018,2.4762
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,frame,3.0100,2.9264,3.5296
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,render_sample_d32fs8,cpu_submit_wait,3.0973,3.0006,3.6090
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,write,1.0886,1.0724,1.3236
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,sample,2.2723,2.2547,2.5058
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,frame,3.3598,3.3311,3.8712
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,storage_sample_rgba16f,cpu_submit_wait,3.4498,3.4141,3.9574
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,depth,1.1346,0.9456,1.5064
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,hiz,0.6184,0.5394,0.6441
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,frame,1.7614,1.4684,2.0972
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,depth_hiz_d32f,cpu_submit_wait,1.8333,1.5575,2.1798
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,gbuffer,4.8991,4.8594,4.9379
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,lighting,3.8361,3.7819,3.8939
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,hiz,0.5900,0.5785,0.6038
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,post,4.1958,3.7675,4.3649
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,present,3.0034,2.5996,3.1736
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,frame,16.4758,15.8412,16.8205
+vulkan,AMD Radeon(TM) Graphics,baseline,2160,frame,cpu_submit_wait,16.6000,15.9622,16.9444
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,render,18.1356,18.1210,18.1494
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,sample,2.1026,2.0980,2.1118
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,frame,20.2381,20.2241,20.2550
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba8,cpu_submit_wait,20.3700,20.3544,20.3917
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,render,18.7614,18.7462,18.7734
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,sample,2.2584,2.2446,2.2736
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,frame,21.0208,20.9979,21.0405
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f,cpu_submit_wait,21.1509,21.1260,21.1757
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,render,17.9046,17.8884,17.9843
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,sample,2.1037,2.0982,2.1531
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,frame,20.0073,19.9906,20.1254
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1342,20.1156,20.3541
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,render,33.2960,32.9013,33.4831
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,sample,3.0649,2.9537,3.1025
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,frame,36.3458,35.9004,36.5467
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,36.5035,36.0555,36.7100
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,render,0.8241,0.7508,1.0146
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,sample,2.3146,2.2458,2.4903
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,frame,3.1316,3.0019,3.4777
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32f,cpu_submit_wait,3.2219,3.0876,3.5629
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,render,0.8419,0.7904,1.0084
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,sample,2.2681,2.2367,2.3773
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,frame,3.1086,3.0296,3.3837
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,render_sample_d32fs8,cpu_submit_wait,3.1852,3.1165,3.4776
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,write,1.0904,1.0753,1.1078
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,sample,2.2931,2.2700,2.3147
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,frame,3.3840,3.3508,3.4146
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,storage_sample_rgba16f,cpu_submit_wait,3.4722,3.4399,3.5145
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,depth,1.0892,0.9518,1.3099
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,hiz,0.6218,0.5470,0.6517
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,frame,1.7135,1.4440,1.9102
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,depth_hiz_d32f,cpu_submit_wait,1.7884,1.5109,2.0004
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,gbuffer,4.9068,4.8627,4.9551
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,lighting,3.8412,3.7831,3.9051
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,hiz,0.5968,0.5817,0.6124
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,post,4.2661,3.8482,4.4249
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,present,2.9726,2.5755,3.1598
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,frame,16.5339,15.9358,16.8436
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,cpu_submit_wait,16.6500,16.0411,16.9740
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,render,18.1400,18.1176,18.2094
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,sample,2.1359,2.1290,2.1691
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,frame,20.2751,20.2537,20.3912
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba8,cpu_submit_wait,20.4100,20.3900,20.6134
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,render,18.7897,18.7714,18.8060
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,sample,2.2730,2.2535,2.2895
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,frame,21.0624,21.0366,21.0862
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f,cpu_submit_wait,21.1918,21.1650,21.2179
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,render,17.9081,17.8911,17.9246
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,sample,2.1338,2.1286,2.1443
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,frame,20.0434,20.0249,20.0603
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_r11g11b10f,cpu_submit_wait,20.1794,20.1620,20.2017
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,render,47.1816,47.0120,47.6110
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,sample,3.0797,2.9744,3.1155
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,frame,50.2485,50.0460,50.6837
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_rgba16f_msaa4,cpu_submit_wait,50.4355,50.2303,50.8908
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,render,5.0284,4.8584,5.5975
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,sample,2.4346,2.2996,2.5732
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,frame,7.4598,7.1600,8.1394
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32f,cpu_submit_wait,7.5555,7.2471,8.2498
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,render,5.2318,5.0844,5.5070
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,sample,2.2926,2.2564,2.4588
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,frame,7.5399,7.3516,7.9448
+vulkan,AMD Radeon(TM) Graphics,general,2160,render_sample_d32fs8,cpu_submit_wait,7.6343,7.4475,8.0395
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,write,1.0950,1.0764,1.1205
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,sample,2.2859,2.2635,2.3230
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,frame,3.3815,3.3476,3.4386
+vulkan,AMD Radeon(TM) Graphics,general,2160,storage_sample_rgba16f,cpu_submit_wait,3.4707,3.4339,3.5340
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,depth,5.0123,4.9070,5.2883
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,hiz,0.9103,0.8286,0.9555
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,frame,5.9225,5.7701,6.1881
+vulkan,AMD Radeon(TM) Graphics,general,2160,depth_hiz_d32f,cpu_submit_wait,6.0144,5.8644,6.2890
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,gbuffer,16.0357,13.6738,16.3331
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,lighting,4.0723,4.0085,4.1355
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,hiz,1.6948,1.2470,1.7947
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,post,4.2127,3.7071,4.3791
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,present,2.9900,2.5180,3.1765
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,frame,28.8571,26.2862,29.3918
+vulkan,AMD Radeon(TM) Graphics,general,2160,frame,cpu_submit_wait,29.0049,26.4325,29.5337
