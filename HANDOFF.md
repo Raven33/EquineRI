@@ -4,9 +4,11 @@ State on 2026-10-10: **Milestone 1 (build check) is done.** `clangcl-debug` (Win
 `clang-debug` (Linux) configure, build and pass `ctest` with no fixes needed; the Agility SDK
 download was verified; P21's preset values are confirmed. Milestone 2 of `docs/Plan.md`
 (minimal core, both backends) has started: the Vulkan loader is volk (P89); the `RI::`
-alias and the error channel exist (P90). The validation skeleton exists (P91). Vulkan GPU listing and device creation
-work and are tested on an RDNA2 680M with RADV (P92). Next: the same on D3D12, then
-memory and buffers. Owed: docs
+alias and the error channel exist (P90). The validation skeleton exists (P91). GPU listing and device creation exist on both
+backends (P92): Vulkan tested on an RDNA2 680M (RADV, Linux) and an RTX 3080 (Windows);
+D3D12 tested on Windows. A conformance file keeps the backends' portable surface equal
+(P83). Next: memory and buffers. A Windows assistant session (`windows-equineri`, Remote
+Control) builds and tests pushed commits on request. Owed: docs
 pages for the error channel and validation, once the docs site scaffold exists.
 
 ## Where to read

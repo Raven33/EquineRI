@@ -79,6 +79,11 @@ endif()
 target_compile_definitions(EquineAgilitySDK INTERFACE
     "EQUINE_AGILITY_SDK_VERSION_MINOR=${CMAKE_MATCH_1}"
 )
+# The runtime folder travels with the target: this file's variables exist only
+# in the directory that include()s it, while executables deploy from anywhere.
+set_target_properties(EquineAgilitySDK PROPERTIES
+    EQUINE_AGILITY_SDK_BIN_DIR "${EQUINE_AGILITY_SDK_BIN_DIR}"
+)
 
 # Copy the Agility runtime into <exe dir>/D3D12/, matching the D3D12SDKPath
 # exported by D3D12AgilityExports.hpp.
@@ -87,11 +92,16 @@ function(equine_deploy_agility_sdk target)
         message(FATAL_ERROR "Cannot deploy the Agility SDK for missing target '${target}'.")
     endif()
 
+    get_target_property(EQUINE_AGILITY_SDK_DEPLOY_DIR EquineAgilitySDK EQUINE_AGILITY_SDK_BIN_DIR)
+    if (NOT EQUINE_AGILITY_SDK_DEPLOY_DIR)
+        message(FATAL_ERROR "The EquineAgilitySDK target carries no runtime folder.")
+    endif()
+
     add_custom_command(TARGET "${target}" POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:${target}>/D3D12"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${EQUINE_AGILITY_SDK_BIN_DIR}/D3D12Core.dll"
-            "${EQUINE_AGILITY_SDK_BIN_DIR}/d3d12SDKLayers.dll"
+            "${EQUINE_AGILITY_SDK_DEPLOY_DIR}/D3D12Core.dll"
+            "${EQUINE_AGILITY_SDK_DEPLOY_DIR}/d3d12SDKLayers.dll"
             "$<TARGET_FILE_DIR:${target}>/D3D12"
         COMMENT "Copying the D3D12 Agility SDK runtime to ${target}'s output directory"
     )
