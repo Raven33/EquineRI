@@ -244,6 +244,11 @@ if (EQUINE_BUILD_SHADER_COMPILER)
     endif()
 endif()
 
+# Build-time shader compilation for tests and samples (P93): one pinned DXC.
+if (EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES)
+    include(EquineDXC)
+endif()
+
 if (EQUINE_VULKAN_BACKEND)
     add_subdirectory(backends/vulkan)
 endif()
