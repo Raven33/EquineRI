@@ -125,16 +125,24 @@ is two models to document and validate.
 2. **Render → sample.** Formats RGBA8, RGBA16F, R11G11B10F, D32F, D24S8 (D3D12 and NVIDIA Vulkan only; AMD Vulkan has no D24S8, use D32F_S8 there), plus 4x MSAA
    color, at 1080p and 4K. Compare (i) B optimal layouts, (ii) `GENERAL` everywhere
    without the extension, (iii) A' with unified layouts, (iv) the D3D12 resting
-   round-trip. Measure GPU timestamps around the barrier and the consuming pass. Confirm
+   round-trip, whose base-emitted transitions use the full scope (P68). Measure GPU
+   timestamps around the barrier and the consuming pass, and check whether the full-scope
+   transitions remove overlap between independent passes. Confirm
    in RGP / Nsight whether a decompression actually ran.
 3. **Storage write → sample** for compute-written textures in each mode, explicitly including a texture resting in `GENERAL` on RDNA2 Vulkan without the extension.
 4. **Depth write → sample** (HiZ / depth pyramid), the case most sensitive to metadata.
 5. **D3D12 resting-layout validity.** Determine which enhanced-barrier layout, if any,
    permits SRV + UAV access on a compressed texture without per-use transitions.
+6. **Optional, multi-queue (P37, review C4).** The cost of a resting layout valid on all
+   queues (D3D12 `COMMON`, Vulkan `CONCURRENT` sharing) compared with per-texture hand-off
+   between queues. v1 has one queue, so A' does not wait on this, but the resting layout
+   may need revisiting when queues are added.
 
-Decision rule: agreed together before measuring, for example "A' if its worst case on the
-hardware floor costs at most X% per affected pass." B and H are rejected (P26), so the
-alternatives left if it fails are: choosing the other A' variant per driver (`GENERAL`
+Decision rule (P79, agreed 2026-10-10 before measuring): the baseline is hand-written
+optimal per-texture transitions (B, used only as a speed reference). A' passes if, on every
+tested GPU, a realistic frame is at most 2% slower than the baseline, and no single pass is
+more than 10% slower unless the difference is under 0.05 ms. B and H are rejected (P26), so
+the alternatives left if it fails are: choosing the other A' variant per driver (`GENERAL`
 everywhere vs. around-pass transitions), accepting the cost, an opt-in per-texture
 simultaneous-access mode (C), or reopening L1 with the user.
 

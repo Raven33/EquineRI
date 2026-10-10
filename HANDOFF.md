@@ -1,33 +1,22 @@
 # Handoff
 
-State on 2026-10-05: design phase, run as a question-by-question "grill".
+State on 2026-10-10: design phase, run as a question-by-question "grill". All review
+findings and open questions have been handled. The inference review (`docs/Review-Inference-2026-10-10.md`) softened P36 and is applied (P36, P45, P62, P67, P68, P71; S4 settled). **No question is pending.**
 
 ## Where to read
 
-- `CONTEXT.md`: the decision log (P1–P59) and the open questions (§5).
+- `CONTEXT.md`: the decision log (P1–P79) and the open questions (§5).
 - `docs/GrillLog.md`: every question and answer, in order.
-- `docs/LayoutEvaluation.md`: the image-layout problem (L1), the driver research, and the measurement plan.
-- `docs/Review-2026-10-04.md`: the multi-agent review. Group A is applied. Group B (new topics) is in progress. Group C (details of decided mechanisms) has not started.
+- `docs/LayoutEvaluation.md`: the image-layout problem (L1), the driver research, the measurement plan, and the decision rule (P79).
+- `docs/Review-2026-10-04.md`: the multi-agent review. Groups A, B and C are all done (B and C settled as P60–P71; R50 deferred with ray tracing).
 
-## Pending question (review group B, topic 5: device creation)
+## What remains
 
-Proposal awaiting a yes/no:
-
-1. **GPU choice.** RI lists the GPUs (name, vendor, memory) and the user picks one. A helper picks the dedicated GPU.
-2. **Features.** The user lists the features they need, and device creation fails clearly if one is missing (P11). A "which features exist?" query is available first. A helper enables everything supported.
-3. **Native extras at creation.** Device creation accepts extra Vulkan extension names and feature structures, plus a D3D12 pre-device hook (for example experimental features). This way "a missing feature never blocks you" (P22) also covers creation-time features.
-
-## Remaining review group B topics
-
-- GPU addresses: TLAS instances need BLAS addresses (P49); work graphs and virtual-memory systems need GPU addresses too.
-- Work-graph details: GPU-side inputs, and root signatures for library shaders.
-- Present/submit: present operation and acquire-semaphore wiring (P43, P20).
-- Swapchain format / color space / HDR.
-- Clears outside rendering sections.
-- Memory budget query.
-- Runtime reflection library on each backend (P23).
-
-Then group C, the open items Y4, F1–F3, R10, X1, L1 (the measurement), and U1 (the hello-world, waiting on colleagues).
+- **L1:** the measurement itself (LayoutEvaluation), done together on real hardware. Rule fixed (P79); RDNA2 Vulkan runs both modes (P78).
+- **X1:** open by design. The user settles the error model by using the API; signature churn is fine (P57).
+- **U1:** the hello-world, waiting on colleagues.
+- **Build:** validation by the user.
+- Deferred features: ray tracing compaction (with ray tracing), sparse (F1), VRS rate image (F2), multi-queue texture hand-off (P37).
 
 ## How the grill is run
 
