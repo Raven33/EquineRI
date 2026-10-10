@@ -184,13 +184,16 @@ if (MSVC)
 endif()
 
 # ── Core library ──────────────────────────────────────────────────────────────
-# Backend-independent part: portable types shared by every backend (P83) and the
-# central error channel (P57). User code includes <RI/RI.hpp>.
+# Backend-independent part: portable types shared by every backend (P83), the
+# central error channel (P57), and RI's shared validation checks (P88). User code includes <RI/RI.hpp>.
 add_library(EquineRI STATIC
     src/types.hpp
     src/RI/RI.hpp
     src/RI/Error.hpp
     src/RI/Error.cpp
+    src/RI/Validation/Validation.hpp
+    src/RI/Validation/ObjectTracker.hpp
+    src/RI/Validation/ObjectTracker.cpp
 )
 target_include_directories(EquineRI PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
