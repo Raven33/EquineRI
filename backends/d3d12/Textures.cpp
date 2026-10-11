@@ -10,6 +10,7 @@
 #include <RI/Validation/Checks.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <bit>
 #include <format>
 #include <vector>
@@ -84,6 +85,7 @@ TextureView makeView(DeviceState &state, const Texture &texture, const TextureVi
     in.textureMips = texture.mips;
     in.textureLayers = texture.layers;
     in.restingLayout = texture.internal.restingLayout;
+    in.textureUsage = texture.usage;
     in.textureId = texture.internal.id;
     in.planes = planeMask(format, desc.aspect);
     in.dxgiFormat = isDepthFormat(format) ? depthSrvFormat(format, desc.aspect == Aspect::eStencil) : dxgiFormat(format);
@@ -323,7 +325,13 @@ void destroyView(Device &device, TextureView &view) {
 
 QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     DeviceState &state = *device.internal.state;
-    const D3D12_QUERY_HEAP_DESC heapDesc{.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP, .Count = std::max(desc.count, 1u)};
+    D3D12_QUERY_HEAP_TYPE type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+    if (desc.type == QueryType::eOcclusion) {
+        type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
+    } else if (desc.type == QueryType::ePipelineStatistics) {
+        type = D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS;
+    }
+    const D3D12_QUERY_HEAP_DESC heapDesc{.Type = type, .Count = std::max(desc.count, 1u)};
     ID3D12QueryHeap *heap = nullptr;
     checkHr(state.device->CreateQueryHeap(&heapDesc, IID_PPV_ARGS(&heap)), "CreateQueryHeap");
     QueryPool pool;
@@ -346,5 +354,17 @@ void destroyQueryPool(Device &device, QueryPool &pool) {
 
 // D3D12 query heaps need no reset (P71 (1)).
 void resetQueries(Device &, QueryPool &, uint32, uint32) {}
+
+// D3D12_QUERY_DATA_PIPELINE_STATISTICS, as D3D12 writes it (P71 (2)).
+PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
+    return {.size = sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS),
+            .inputVertices = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, IAVertices),
+            .inputPrimitives = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, IAPrimitives),
+            .vertexShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, VSInvocations),
+            .clippingInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CInvocations),
+            .clippingPrimitives = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CPrimitives),
+            .pixelShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, PSInvocations),
+            .computeShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CSInvocations)};
+}
 
 } // namespace RI::D3D12

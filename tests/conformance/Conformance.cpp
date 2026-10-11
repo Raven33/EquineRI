@@ -141,6 +141,15 @@ EQ_SIGNATURE(cmdResetQueries, void (*)(RI::CommandList &, const RI::QueryPool &,
 EQ_SIGNATURE(cmdResolveQueries,
              void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32, const RI::Buffer &, uint64));
 
+// Copies (P47) and queries (P71)
+EQ_SIGNATURE(copyLayout, RI::CopyLayout (*)(RI::Device &, const RI::TextureView &));
+EQ_SIGNATURE(cmdCopyBufferToTexture, void (*)(RI::CommandList &, const RI::Buffer &, uint64, const RI::TextureView &));
+EQ_SIGNATURE(cmdCopyTextureToBuffer, void (*)(RI::CommandList &, const RI::TextureView &, const RI::Buffer &, uint64));
+EQ_SIGNATURE(cmdCopyTexture, void (*)(RI::CommandList &, const RI::TextureView &, const RI::TextureView &));
+EQ_SIGNATURE(pipelineStatisticsLayout, RI::PipelineStatisticsLayout (*)(RI::Device &));
+EQ_SIGNATURE(cmdBeginQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
+EQ_SIGNATURE(cmdEndQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
+
 // Debugging (P53)
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Memory &, std::string_view));
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Buffer &, std::string_view));

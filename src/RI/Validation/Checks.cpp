@@ -125,4 +125,48 @@ CheckResult checkMarkersClosed(uint32 depth) {
     return {};
 }
 
+CheckResult checkCopyView(uint32 mipCount, uint32 samples, bool bufferCopy, uint32 bytesPerTexel, bool hasUsage,
+                          std::string_view usage, std::string_view call) {
+    if (mipCount != 1) {
+        return std::format("{}: the view covers {} mips; copies take a view of one mip (P47)", call, mipCount);
+    }
+    if (bufferCopy && samples != 1) {
+        return std::format("{}: a multisampled texture cannot be copied to or from a buffer", call);
+    }
+    if (bytesPerTexel == 0) {
+        return std::format("{}: the view has both depth and stencil; copy one aspect "
+                           "(a view with Aspect::eDepth or Aspect::eStencil)", call);
+    }
+    if (!hasUsage) {
+        return std::format("{}: the texture needs TextureUsage::{}", call, usage);
+    }
+    return {};
+}
+
+CheckResult checkCopyTextureMatch(uint32 srcWidth, uint32 srcHeight, uint32 srcLayers, uint32 srcSamples,
+                                  uint32 srcBytes, uint32 dstWidth, uint32 dstHeight, uint32 dstLayers,
+                                  uint32 dstSamples, uint32 dstBytes) {
+    if (srcWidth != dstWidth || srcHeight != dstHeight || srcLayers != dstLayers) {
+        return std::format("cmdCopyTexture: the source is {}x{} with {} layer(s), the destination {}x{} with {}; "
+                           "they must match",
+                           srcWidth, srcHeight, srcLayers, dstWidth, dstHeight, dstLayers);
+    }
+    if (srcSamples != dstSamples) {
+        return std::string("cmdCopyTexture: the source and destination sample counts differ");
+    }
+    if (srcBytes != dstBytes) {
+        return std::format("cmdCopyTexture: texels of {} and {} bytes cannot be copied into each other", srcBytes,
+                           dstBytes);
+    }
+    return {};
+}
+
+CheckResult checkQueryKind(bool ok, std::string_view call) {
+    if (!ok) {
+        return std::format("{}: wrong query pool type (timestamps use cmdWriteTimestamp; occlusion and "
+                           "pipeline statistics use cmdBeginQuery/cmdEndQuery)", call);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

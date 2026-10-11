@@ -524,10 +524,11 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
     fn(cmd).vkCmdFillBuffer(native(cmd), native(buffer), 0, VK_WHOLE_SIZE, value);
 }
 
-// ── Timestamps (P51, P71) ────────────────────────────────────────────────────
+// ── Queries (P51, P71) ───────────────────────────────────────────────────────
 
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkQueryKind(pool.type == QueryType::eTimestamp, "cmdWriteTimestamp"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdWriteTimestamp: the query"));
     fn(cmd).vkCmdWriteTimestamp2(native(cmd), VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, native(pool), index);
 }
@@ -545,14 +546,233 @@ void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, ui
     EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolveQueries"));
     EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "cmdResolveQueries: the query range"));
-    EQ_VALIDATE(Validation::checkRange(offset, uint64{count} * 8, buffer.size, 8,
+    const uint64 stride = queryResultSize(*cmd.internal.device, pool.type);
+    EQ_VALIDATE(Validation::checkRange(offset, uint64{count} * stride, buffer.size, 8,
                                        "cmdResolveQueries: the results in the buffer"));
     if ((buffer.usage & BufferUsage::eCopyDst) == BufferUsage::eNone) {
         reportError(ErrorCategory::eProgrammerError, "cmdResolveQueries: the buffer needs BufferUsage::eCopyDst");
     }
     // 64-bit values, waiting for each query (P71 (1)); never resets them.
-    fn(cmd).vkCmdCopyQueryPoolResults(native(cmd), native(pool), first, count, native(buffer), offset, 8,
+    fn(cmd).vkCmdCopyQueryPoolResults(native(cmd), native(pool), first, count, native(buffer), offset, stride,
                                       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+}
+
+void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdBeginQuery"));
+    EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdBeginQuery: the query"));
+    // Occlusion counts are exact (occlusionQueryPrecise), as on D3D12.
+    const VkQueryControlFlags flags = pool.type == QueryType::eOcclusion ? VK_QUERY_CONTROL_PRECISE_BIT : 0;
+    fn(cmd).vkCmdBeginQuery(native(cmd), native(pool), index, flags);
+}
+
+void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdEndQuery"));
+    EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdEndQuery: the query"));
+    fn(cmd).vkCmdEndQuery(native(cmd), native(pool), index);
+}
+
+// ── Copies (P47) ─────────────────────────────────────────────────────────────
+
+namespace {
+
+uint32 copyBytesOf(const TextureView &view) {
+    const uint32 aspects = view.internal.aspectMask;
+    if (aspects == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
+        return 0; // one aspect at a time
+    }
+    return copyBytesPerTexel(view.format, aspects == VK_IMAGE_ASPECT_STENCIL_BIT ? Aspect::eStencil : Aspect::eDefault);
+}
+
+uint64 roundUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
+
+void checkCopy(const TextureView &view, bool bufferCopy, TextureUsage usage, std::string_view usageName,
+               std::string_view call) {
+    EQ_VALIDATE(Validation::checkCopyView(view.internal.mipCount, view.samples, bufferCopy, copyBytesOf(view),
+                                          (view.internal.textureUsage & usage) != TextureUsage::eNone, usageName,
+                                          call));
+}
+
+// The image subresource of a one-mip view.
+VkImageSubresourceLayers layersOf(const TextureView &view) {
+    return {.aspectMask = view.internal.aspectMask,
+            .mipLevel = view.internal.baseMip,
+            .baseArrayLayer = view.internal.baseLayer,
+            .layerCount = view.internal.layerCount};
+}
+
+// The layout a copy uses: in place for textures resting in GENERAL, else the
+// transfer layout (mode T), with RI's exact/full switches around it (P68).
+VkImageLayout copyLayoutFor(const TextureView &view, bool destination) {
+    const auto resting = static_cast<VkImageLayout>(view.internal.restingLayout);
+    if (resting == VK_IMAGE_LAYOUT_GENERAL) {
+        return resting;
+    }
+    return destination ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+}
+
+void switchForCopy(std::vector<VkImageMemoryBarrier2> &barriers, const TextureView &view, bool destination,
+                   bool back) {
+    const auto resting = static_cast<VkImageLayout>(view.internal.restingLayout);
+    const VkImageLayout layout = copyLayoutFor(view, destination);
+    if (layout == resting) {
+        return;
+    }
+    const VkAccessFlags2 copyAccess = destination ? VK_ACCESS_2_TRANSFER_WRITE_BIT : VK_ACCESS_2_TRANSFER_READ_BIT;
+    if (!back) {
+        // A copy destination's old contents are kept: the copy may cover only
+        // part of what other views see.
+        barriers.push_back(imageBarrier(view, {.srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                               .srcAccess = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                                               .dstStage = VK_PIPELINE_STAGE_2_COPY_BIT,
+                                               .dstAccess = copyAccess,
+                                               .oldLayout = resting,
+                                               .newLayout = layout}));
+    } else {
+        barriers.push_back(imageBarrier(view, {.srcStage = VK_PIPELINE_STAGE_2_COPY_BIT,
+                                               .srcAccess = destination ? copyAccess : VK_ACCESS_2_NONE,
+                                               .dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                               .dstAccess = kAllAccess,
+                                               .oldLayout = layout,
+                                               .newLayout = resting}));
+    }
+}
+
+void checkBufferCopyRange(const Buffer &buffer, uint64 offset, const CopyLayout &layout, BufferUsage usage,
+                          std::string_view call) {
+    EQ_VALIDATE(Validation::checkRange(offset, layout.size, buffer.size, layout.alignment,
+                                       std::format("{}: the texels in the buffer", call)));
+    if ((buffer.usage & usage) == BufferUsage::eNone) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("{}: the buffer needs BufferUsage::{}", call,
+                                usage == BufferUsage::eCopySrc ? "eCopySrc" : "eCopyDst"));
+    }
+}
+
+VkBufferImageCopy2 regionOf(const TextureView &view, uint64 offset, const CopyLayout &layout) {
+    return {.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .bufferOffset = offset,
+            .bufferRowLength = static_cast<uint32>(layout.rowPitch / layout.bytesPerTexel),
+            .bufferImageHeight = static_cast<uint32>(layout.layerPitch / layout.rowPitch),
+            .imageSubresource = layersOf(view),
+            .imageExtent = {view.width, view.height, 1}};
+}
+
+} // namespace
+
+CopyLayout copyLayout(Device &device, const TextureView &view) {
+    const DeviceState &state = *device.internal.state;
+    CopyLayout layout;
+    layout.width = view.width;
+    layout.height = view.height;
+    layout.layers = view.internal.layerCount;
+    layout.bytesPerTexel = copyBytesOf(view);
+    if (layout.bytesPerTexel == 0) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "copyLayout: the view has both depth and stencil; copies take one aspect (P47)");
+    }
+    // Row pitch: whole texels, on the driver's optimal pitch; layers on the
+    // optimal offset alignment, so every layer starts aligned.
+    const uint64 texel = layout.bytesPerTexel;
+    layout.alignment = std::max<uint64>({state.copyOffsetAlignment, texel, 4});
+    layout.rowPitch = roundUp(roundUp(uint64{layout.width} * texel, state.copyRowPitchAlignment), texel);
+    const uint64 layerBytes = layout.rowPitch * layout.height;
+    layout.layerPitch = roundUp(layerBytes, layout.alignment);
+    // layerPitch must be whole rows for bufferImageHeight.
+    while (layout.layerPitch % layout.rowPitch != 0) {
+        layout.layerPitch += layout.alignment;
+    }
+    layout.size = layout.layerPitch * (layout.layers - 1) + layerBytes;
+    return layout;
+}
+
+void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_VK_CHECK_ALIVE(&state, src.internal.id, "buffer");
+    EQ_VK_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyBufferToTexture"));
+#if EQUINE_VALIDATION
+    EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdCopyBufferToTexture"));
+#endif
+    checkCopy(dst, true, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyBufferToTexture");
+    Device device{.internal = {.state = &state}};
+    const CopyLayout layout = copyLayout(device, dst);
+    checkBufferCopyRange(src, srcOffset, layout, BufferUsage::eCopySrc, "cmdCopyBufferToTexture");
+    std::vector<VkImageMemoryBarrier2> barriers;
+    switchForCopy(barriers, dst, true, false);
+    pipelineBarrier(cmd, barriers);
+    const VkBufferImageCopy2 region = regionOf(dst, srcOffset, layout);
+    const VkCopyBufferToImageInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
+                                        .srcBuffer = native(src),
+                                        .dstImage = reinterpret_cast<VkImage>(dst.internal.image),
+                                        .dstImageLayout = copyLayoutFor(dst, true),
+                                        .regionCount = 1,
+                                        .pRegions = &region};
+    fn(cmd).vkCmdCopyBufferToImage2(native(cmd), &info);
+    barriers.clear();
+    switchForCopy(barriers, dst, true, true);
+    pipelineBarrier(cmd, barriers);
+}
+
+void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
+    EQ_VK_CHECK_ALIVE(&state, dst.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTextureToBuffer"));
+    checkCopy(src, true, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTextureToBuffer");
+    Device device{.internal = {.state = &state}};
+    const CopyLayout layout = copyLayout(device, src);
+    checkBufferCopyRange(dst, dstOffset, layout, BufferUsage::eCopyDst, "cmdCopyTextureToBuffer");
+    std::vector<VkImageMemoryBarrier2> barriers;
+    switchForCopy(barriers, src, false, false);
+    pipelineBarrier(cmd, barriers);
+    const VkBufferImageCopy2 region = regionOf(src, dstOffset, layout);
+    const VkCopyImageToBufferInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
+                                        .srcImage = reinterpret_cast<VkImage>(src.internal.image),
+                                        .srcImageLayout = copyLayoutFor(src, false),
+                                        .dstBuffer = native(dst),
+                                        .regionCount = 1,
+                                        .pRegions = &region};
+    fn(cmd).vkCmdCopyImageToBuffer2(native(cmd), &info);
+    barriers.clear();
+    switchForCopy(barriers, src, false, true);
+    pipelineBarrier(cmd, barriers);
+}
+
+void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
+    EQ_VK_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTexture"));
+#if EQUINE_VALIDATION
+    EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdCopyTexture"));
+#endif
+    checkCopy(src, false, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTexture");
+    checkCopy(dst, false, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyTexture");
+    EQ_VALIDATE(Validation::checkCopyTextureMatch(src.width, src.height, src.internal.layerCount, src.samples,
+                                                  copyBytesOf(src), dst.width, dst.height, dst.internal.layerCount,
+                                                  dst.samples, copyBytesOf(dst)));
+    std::vector<VkImageMemoryBarrier2> barriers;
+    switchForCopy(barriers, src, false, false);
+    switchForCopy(barriers, dst, true, false);
+    pipelineBarrier(cmd, barriers);
+    const VkImageCopy2 region{.sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+                              .srcSubresource = layersOf(src),
+                              .dstSubresource = layersOf(dst),
+                              .extent = {src.width, src.height, 1}};
+    const VkCopyImageInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+                                .srcImage = reinterpret_cast<VkImage>(src.internal.image),
+                                .srcImageLayout = copyLayoutFor(src, false),
+                                .dstImage = reinterpret_cast<VkImage>(dst.internal.image),
+                                .dstImageLayout = copyLayoutFor(dst, true),
+                                .regionCount = 1,
+                                .pRegions = &region};
+    fn(cmd).vkCmdCopyImage2(native(cmd), &info);
+    barriers.clear();
+    switchForCopy(barriers, src, false, true);
+    switchForCopy(barriers, dst, true, true);
+    pipelineBarrier(cmd, barriers);
 }
 
 // ── Submission (P20) ─────────────────────────────────────────────────────────

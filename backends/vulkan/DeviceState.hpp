@@ -43,6 +43,9 @@ struct DeviceState {
     VkDeviceSize storageOffsetAlignment = 0;
     VkDeviceSize bufferImageGranularity = 1;
     VkDeviceSize uniformOffsetAlignment = 0;
+    // Buffer-texture copies (P47): optimal offset and row-pitch alignments.
+    VkDeviceSize copyOffsetAlignment = 1;
+    VkDeviceSize copyRowPitchAlignment = 1;
 
     // The graphics queue's timeline (P20).
     VkSemaphore timeline = VK_NULL_HANDLE;
@@ -74,6 +77,17 @@ inline MemoryRequirements withGranularity(const DeviceState &state, MemoryRequir
 }
 // Every memory kind whose native type is in `typeBits`, as MemoryRequirements::kinds.
 uint32 kindsOf(const DeviceState &state, uint32 typeBits);
+
+// Queries (Resources.cpp, P71): the statistics RI asks for, and the bytes of
+// one query's result.
+inline constexpr VkQueryPipelineStatisticFlags kPipelineStatistics =
+    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT | VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
+    VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT | VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
+    VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+inline uint64 queryResultSize(const DeviceState & /*state*/, QueryType type) {
+    return type == QueryType::ePipelineStatistics ? 7 * 8 : 8;
+}
 
 // Debugging (Debug.cpp, P53).
 void loadDebugFunctions(DeviceState &state);

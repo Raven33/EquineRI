@@ -188,6 +188,7 @@ nav:
           - RI::cmdDispatch: reference/cmdDispatch.md
           - RI::cmdBarrier: reference/cmdBarrier.md
           - RI::cmdCopyBuffer: reference/cmdCopyBuffer.md
+          - RI::copyLayout and texture copies: reference/copies.md
           - RI::cmdBeginRendering, RI::cmdEndRendering: reference/cmdBeginRendering.md
           - RI::cmdDraw: reference/cmdDraw.md
           - RI::cmdDiscard: reference/cmdDiscard.md
@@ -195,6 +196,7 @@ nav:
           - RI::cmdWriteTimestamp, RI::cmdResolveQueries, RI::cmdResetQueries: reference/timestamps.md
       - Queries:
           - RI::createQueryPool, RI::resetQueries: reference/queryPool.md
+          - RI::cmdBeginQuery, RI::pipelineStatisticsLayout: reference/queries.md
       - Submission:
           - RI::submit, RI::wait, RI::isReached: reference/submit.md
       - Debugging:

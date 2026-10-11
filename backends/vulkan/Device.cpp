@@ -219,6 +219,8 @@ void requireFeatures(const DeviceSetup &setup, const DeviceFeatures &f) {
     need(f.v13.dynamicRendering, "dynamicRendering");                     // P40
     need(f.v12.separateDepthStencilLayouts, "separateDepthStencilLayouts"); // depth-only views (P73)
     need(f.v12.hostQueryReset, "hostQueryReset");                           // P71 (1)
+    need(f.core.occlusionQueryPrecise, "occlusionQueryPrecise");            // P71: exact sample counts
+    need(f.core.pipelineStatisticsQuery, "pipelineStatisticsQuery");        // P71 (2)
     if (!missing.empty()) {
         reportError(ErrorCategory::eUnsupported,
                     std::format("this GPU or your DeviceFeatures lack what RI needs: {}", missing));
@@ -478,6 +480,12 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     // Device-level functions go through this device's own table (P89).
     volkLoadDeviceTable(&state->functions, state->device);
     loadDebugFunctions(*state);
+    {
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(state->physicalDevice, &properties);
+        state->copyOffsetAlignment = std::max<VkDeviceSize>(properties.limits.optimalBufferCopyOffsetAlignment, 1);
+        state->copyRowPitchAlignment = std::max<VkDeviceSize>(properties.limits.optimalBufferCopyRowPitchAlignment, 1);
+    }
     state->faultEnabled = setup.fault && chain.f.fault.deviceFault == VK_TRUE;
     state->functions.vkGetDeviceQueue(state->device, state->graphicsQueueFamily, 0, &state->graphicsQueue);
 

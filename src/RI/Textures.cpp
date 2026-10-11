@@ -39,4 +39,14 @@ uint32 bytesPerTexel(Format format) {
     }
 }
 
+uint32 copyBytesPerTexel(Format format, Aspect aspect) {
+    if (!isDepthFormat(format)) {
+        return bytesPerTexel(format);
+    }
+    if (aspect == Aspect::eStencil) {
+        return hasStencil(format) ? 1 : 0;
+    }
+    return format == Format::eD16Unorm ? 2 : 4;
+}
+
 } // namespace RI

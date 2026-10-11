@@ -321,8 +321,15 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
 
 QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     DeviceState &state = *device.internal.state;
-    const VkQueryPoolCreateInfo info{
-        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, .queryType = VK_QUERY_TYPE_TIMESTAMP, .queryCount = desc.count};
+    VkQueryPoolCreateInfo info{.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, .queryCount = desc.count};
+    switch (desc.type) {
+    case QueryType::eTimestamp: info.queryType = VK_QUERY_TYPE_TIMESTAMP; break;
+    case QueryType::eOcclusion: info.queryType = VK_QUERY_TYPE_OCCLUSION; break;
+    case QueryType::ePipelineStatistics:
+        info.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+        info.pipelineStatistics = kPipelineStatistics;
+        break;
+    }
     VkQueryPool pool = VK_NULL_HANDLE;
     checkVk(state.functions.vkCreateQueryPool(state.device, &info, nullptr, &pool), "vkCreateQueryPool");
     // Created reset, on the CPU (P71 (1)).
@@ -343,6 +350,18 @@ void destroyQueryPool(Device &device, QueryPool &pool) {
     EQ_VK_UNTRACK(&state, pool.internal.id);
     state.functions.vkDestroyQueryPool(state.device, native(pool), nullptr);
     pool = {};
+}
+
+// Vulkan writes only the enabled counters, in bit order (P71 (2)).
+PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
+    return {.size = 7 * 8,
+            .inputVertices = 0,
+            .inputPrimitives = 8,
+            .vertexShaderInvocations = 16,
+            .clippingInvocations = 24,
+            .clippingPrimitives = 32,
+            .pixelShaderInvocations = 40,
+            .computeShaderInvocations = 48};
 }
 
 void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count) {
