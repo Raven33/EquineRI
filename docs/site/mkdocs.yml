@@ -211,6 +211,8 @@ nav:
       - "Vulkan: native handles": native/vulkan/objects.md
       - "D3D12: device creation": native/d3d12/device-creation.md
       - "D3D12: native objects": native/d3d12/objects.md
+      - Native sections: native/sections.md
+      - Importing native objects: native/import.md
   - Helpers:
       - helpers/index.md
       - GLFW window: helpers/glfw-window.md
