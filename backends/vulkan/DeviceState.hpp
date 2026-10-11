@@ -73,7 +73,7 @@ uint32 kindsOf(const DeviceState &state, uint32 typeBits);
 VkFormat toVkFormat(Format format);
 const char *formatName(Format format);
 // The layout `usage` rests in under `mode` (L1, P95).
-VkImageLayout restingLayoutOf(LayoutMode mode, TextureUsage usage);
+VkImageLayout restingLayoutOf(LayoutMode mode, Format format, TextureUsage usage);
 
 // Image barriers (Commands.cpp and Textures.cpp).
 struct ImageTransition {

@@ -99,8 +99,9 @@ VkAttachmentStoreOp storeOf(StoreOp op, bool readOnly) {
 
 // The layout of a depth attachment during a rendering section (P75). GENERAL
 // in unified and G modes. Mode T uses sync2's generic layouts where they apply,
-// so a sampled depth texture (resting in READ_ONLY_OPTIMAL) needs no switch in
-// a read-only section.
+// so a texture with eReadOnlyDepthSampling (resting in READ_ONLY_OPTIMAL) needs
+// no switch in a read-only section; other sampled depth (resting in
+// SHADER_READ_ONLY_OPTIMAL, P97) switches in and out.
 VkImageLayout depthSectionLayout(LayoutMode mode, bool depthReadOnly, bool stencilReadOnly, bool stencil) {
     if (mode != LayoutMode::eTransitions) {
         return VK_IMAGE_LAYOUT_GENERAL;

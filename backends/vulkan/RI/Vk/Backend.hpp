@@ -218,7 +218,7 @@ struct DepthAttachment {
     LoadOp stencilLoad = LoadOp::eLoad;
     StoreOp stencilStore = StoreOp::eStore;
     ClearValue clear; // depth and stencil
-    bool depthReadOnly = false;   // the depth texture may be sampled during the section (P75)
+    bool depthReadOnly = false;   // shaders may sample it during the section if it has eReadOnlyDepthSampling (P75, P97)
     bool stencilReadOnly = false;
 };
 

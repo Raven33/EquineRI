@@ -264,10 +264,12 @@ EQ_TEST(texture, depth_write_then_sample) {
     RI::destroyDevice(device);
 }
 
-// Read-only depth: the depth texture is sampled while it is the depth attachment (P75).
-EQ_TEST(texture, read_only_depth_section) {
+// Read-only depth (P75): a section keeps the depth contents, with and without
+// eReadOnlyDepthSampling (P97: without it, Vulkan mode T switches the texture
+// in and out of the section).
+void readOnlyDepthSection(RI::TextureUsage extra) {
     Fixture f;
-    const RI::TextureUsage usage = RI::TextureUsage::eSampled | RI::TextureUsage::eDepthStencil;
+    const RI::TextureUsage usage = RI::TextureUsage::eSampled | RI::TextureUsage::eDepthStencil | extra;
     RI::Texture depth =
         placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = RI::Format::eD32Float, .usage = usage});
     RI::cmdBeginRendering(f.cmd, {.depth = RI::DepthAttachment{.view = depth.view, .load = RI::LoadOp::eClear,
@@ -279,6 +281,12 @@ EQ_TEST(texture, read_only_depth_section) {
     const std::vector<float> texels = f.readBack(depth.view);
     EQ_CHECK(all(texels, 0, 0.75f));
     RI::destroyTexture(f.device, depth);
+}
+
+EQ_TEST(texture, read_only_depth_section) { readOnlyDepthSection(RI::TextureUsage::eNone); }
+
+EQ_TEST(texture, read_only_depth_section_sampling) {
+    readOnlyDepthSection(RI::TextureUsage::eReadOnlyDepthSampling);
 }
 
 // 4x MSAA render -> sample one sample (L1 item 2, MSAA).
@@ -452,6 +460,17 @@ EQ_TEST(texture, unlisted_view_format_reports) {
 }
 
 #if EQUINE_VALIDATION
+// eReadOnlyDepthSampling on a color texture (P97).
+EQ_TEST(texture, read_only_depth_sampling_on_color_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    Fixture f;
+    placeTexture(f.device, f.gpu,
+                 {.width = kSize,
+                  .height = kSize,
+                  .format = RI::Format::eRGBA8Unorm,
+                  .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eReadOnlyDepthSampling});
+}
+
 // A depth-writing pipeline in a read-only depth section (P75).
 EQ_TEST(texture, depth_write_in_read_only_section_reports) {
     std::signal(SIGABRT, [](int) { std::_Exit(0); });

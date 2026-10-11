@@ -101,4 +101,14 @@ CheckResult checkViewRange(uint32 baseMip, uint32 mipCount, uint32 mips, uint32 
     return {};
 }
 
+CheckResult checkTextureUsage(Format format, TextureUsage usage) {
+    const auto has = [&](TextureUsage bit) { return (usage & bit) != TextureUsage::eNone; };
+    if (has(TextureUsage::eReadOnlyDepthSampling) &&
+        (!has(TextureUsage::eSampled) || !has(TextureUsage::eDepthStencil) || !isDepthFormat(format))) {
+        return std::string("createTexture: eReadOnlyDepthSampling needs a depth format with eSampled and "
+                           "eDepthStencil (P97)");
+    }
+    return {};
+}
+
 } // namespace RI::Validation

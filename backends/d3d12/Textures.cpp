@@ -232,6 +232,7 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc) 
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc) {
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
+    EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
     const MemoryRequirements requirements = textureRequirements(device, desc);
     if (!fits(requirements, memory.kind)) {
         reportError(ErrorCategory::eUnsupported, "createTexture: textures need eGPU memory on D3D12");
