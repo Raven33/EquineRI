@@ -48,6 +48,7 @@ struct Options {
     bool hostBarrier = true; // Vulkan: --host-barrier off measures P94 (6)
     bool interleave = false; // --interleave on: the mode and the baseline, frame by frame
     std::string only;        // --only <workload>: run one workload
+    bool swap = false;       // --swap on: with --interleave, the baseline gets the first texture copy
 };
 
 Options parse(int argc, char **argv) {
@@ -81,6 +82,8 @@ Options parse(int argc, char **argv) {
             o.interleave = value == "on";
         } else if (key == "--host-barrier") {
             o.hostBarrier = value != "off";
+        } else if (key == "--swap") {
+            o.swap = value == "on";
         } else if (key == "--only") {
             o.only = value;
         } else if (key == "--baseline-variant") {
@@ -634,8 +637,14 @@ int main(int argc, char **argv) {
         }
         std::vector<Path> paths;
         if (c.options.interleave) {
-            paths.push_back({&instances[0], false, c.options.mode, {}});
-            paths.push_back({&instances[1], true, "baseline:" + c.options.mode, {}});
+            // --swap: each path on the other texture copy (placement check).
+            const size_t ri = c.options.swap ? 1 : 0;
+            std::string label = "baseline:" + c.options.mode;
+            if (!bench::baselineVariant.empty()) {
+                label += "[" + bench::baselineVariant + "]";
+            }
+            paths.push_back({&instances[ri], false, c.options.mode + (c.options.swap ? "[swap]" : ""), {}});
+            paths.push_back({&instances[1 - ri], true, label + (c.options.swap ? "[swap]" : ""), {}});
         } else {
             paths.push_back({&instances[0], c.useBaseline, c.options.mode, {}});
         }
