@@ -4,6 +4,7 @@
 #include <RI/RI.hpp>
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iterator>
@@ -44,9 +45,36 @@ struct Root {
 } // namespace
 
 int main() {
-    // 1. Pick a GPU and create the device (P60).
+    // 1. Pick a GPU and create the device (P60): EQUINE_GPU=<index> or nvidia/amd/intel, else
+    //    the first listed (the same rule as the tests).
     const std::vector<RI::Gpu> gpus = RI::listGpus();
-    RI::Device device = RI::createDevice({.gpu = gpus[0]});
+    std::string want;
+#if defined(_WIN32)
+    char *value = nullptr;
+    size_t length = 0;
+    if (_dupenv_s(&value, &length, "EQUINE_GPU") == 0 && value != nullptr) {
+        want = value;
+        std::free(value);
+    }
+#else
+    if (const char *value = std::getenv("EQUINE_GPU"); value != nullptr) {
+        want = value;
+    }
+#endif
+    RI::Gpu gpu = gpus[0];
+    if (!want.empty()) {
+        const size_t index = std::strtoul(want.c_str(), nullptr, 10);
+        gpu = gpus[index < gpus.size() ? index : 0];
+        for (const RI::Gpu &g : gpus) {
+            if ((want == "nvidia" && g.vendor == RI::GpuVendor::eNvidia) ||
+                (want == "amd" && g.vendor == RI::GpuVendor::eAMD) ||
+                (want == "intel" && g.vendor == RI::GpuVendor::eIntel)) {
+                gpu = g;
+                break;
+            }
+        }
+    }
+    RI::Device device = RI::createDevice({.gpu = gpu});
     std::printf("GPU: %s\n", device.gpu.name.c_str());
 
     // 2. Memory blocks, and buffers placed in them (P31, P32).
@@ -55,18 +83,25 @@ int main() {
     const RI::BufferDesc dataDesc{.size = kBytes,
                                   .usage = RI::BufferUsage::eRead | RI::BufferUsage::eReadWrite |
                                            RI::BufferUsage::eCopySrc | RI::BufferUsage::eCopyDst};
+    const RI::BufferDesc stagingDesc{.size = kBytes, .usage = RI::BufferUsage::eCopySrc};
+    const RI::BufferDesc paramsDesc{.size = 256, .usage = RI::BufferUsage::eConstant};
+    const RI::BufferDesc resultDesc{.size = kBytes, .usage = RI::BufferUsage::eCopyDst};
+    // Every placement follows its own buffer's requirements (size and alignment
+    // differ per usage and per GPU).
     const RI::MemoryRequirements dataReq = RI::bufferRequirements(device, dataDesc);
+    const RI::MemoryRequirements stagingReq = RI::bufferRequirements(device, stagingDesc);
+    const RI::MemoryRequirements paramsReq = RI::bufferRequirements(device, paramsDesc);
+    const RI::MemoryRequirements resultReq = RI::bufferRequirements(device, resultDesc);
     const uint64 outputOffset = alignUp(dataReq.size, dataReq.alignment);
-    const uint64 paramsOffset = alignUp(kBytes, dataReq.alignment);
+    const uint64 paramsOffset = alignUp(stagingReq.size, paramsReq.alignment);
     RI::Memory gpuMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, outputOffset + dataReq.size);
-    RI::Memory uploadMemory = RI::allocateMemory(device, RI::MemoryKind::eUpload, paramsOffset + 256);
-    RI::Memory readbackMemory = RI::allocateMemory(device, RI::MemoryKind::eReadback, kBytes);
+    RI::Memory uploadMemory = RI::allocateMemory(device, RI::MemoryKind::eUpload, paramsOffset + paramsReq.size);
+    RI::Memory readbackMemory = RI::allocateMemory(device, RI::MemoryKind::eReadback, resultReq.size);
     RI::Buffer input = RI::createBuffer(device, gpuMemory, 0, dataDesc);
     RI::Buffer output = RI::createBuffer(device, gpuMemory, outputOffset, dataDesc);
-    RI::Buffer staging = RI::createBuffer(device, uploadMemory, 0, {.size = kBytes, .usage = RI::BufferUsage::eCopySrc});
-    RI::Buffer params =
-        RI::createBuffer(device, uploadMemory, paramsOffset, {.size = 256, .usage = RI::BufferUsage::eConstant});
-    RI::Buffer result = RI::createBuffer(device, readbackMemory, 0, {.size = kBytes, .usage = RI::BufferUsage::eCopyDst});
+    RI::Buffer staging = RI::createBuffer(device, uploadMemory, 0, stagingDesc);
+    RI::Buffer params = RI::createBuffer(device, uploadMemory, paramsOffset, paramsDesc);
+    RI::Buffer result = RI::createBuffer(device, readbackMemory, 0, resultDesc);
 
     // 3. Fill the upload memory: CPU-visible kinds stay mapped (P33).
     auto *values = static_cast<float *>(staging.mapped);
