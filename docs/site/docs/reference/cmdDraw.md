@@ -1,8 +1,8 @@
 ---
-symbols: [RI::cmdDraw]
+symbols: [RI::cmdDraw, RI::cmdSetIndexBuffer, RI::cmdDrawIndexed, RI::IndexFormat]
 ---
 
-# RI::cmdDraw
+# RI::cmdDraw, RI::cmdDrawIndexed
 
 ## What it does
 
@@ -21,9 +21,20 @@ pulling**. A full-screen triangle needs no data at all:
 --8<-- "snippets/hlsl/doc_triangle_vs.hlsl:main"
 ```
 
+**Indexed draws**: `RI::cmdSetIndexBuffer(cmd, buffer, offset, format)` sets a buffer of 16- or
+32-bit indices (`IndexFormat::eUint16`, `eUint32`; the buffer needs `BufferUsage::eIndex`, the
+offset a multiple of the index size), and `RI::cmdDrawIndexed(cmd, indexCount, instanceCount,
+firstIndex, vertexOffset, firstInstance)` draws with it. `SV_VertexID` is then the index value
+plus `vertexOffset`: the vertex shader still pulls its data, the indices only say which
+vertices make each primitive (and let the GPU reuse shaded vertices).
+
 ## Signature
 
 --8<-- "generated/signatures/RI.cmdDraw.md"
+
+--8<-- "generated/signatures/RI.cmdSetIndexBuffer.md"
+
+--8<-- "generated/signatures/RI.cmdDrawIndexed.md"
 
 ## Example
 

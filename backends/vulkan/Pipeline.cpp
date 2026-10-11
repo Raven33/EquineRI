@@ -6,6 +6,7 @@
 #include "VkCheck.hpp"
 
 #include <RI/Error.hpp>
+#include <RI/Validation/Checks.hpp>
 #include <RI/Vk/Native.hpp>
 
 #include <spirv_reflect.h>
@@ -110,6 +111,59 @@ VkShaderModule createModule(DeviceState &state, Bytecode bytecode) {
     return module;
 }
 
+VkStencilOp stencilOpOf(StencilOp op) {
+    switch (op) {
+    case StencilOp::eKeep: return VK_STENCIL_OP_KEEP;
+    case StencilOp::eZero: return VK_STENCIL_OP_ZERO;
+    case StencilOp::eReplace: return VK_STENCIL_OP_REPLACE;
+    case StencilOp::eIncrementClamp: return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+    case StencilOp::eDecrementClamp: return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+    case StencilOp::eInvert: return VK_STENCIL_OP_INVERT;
+    case StencilOp::eIncrementWrap: return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+    case StencilOp::eDecrementWrap: return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+    }
+    return VK_STENCIL_OP_KEEP;
+}
+
+VkBlendFactor blendFactorOf(BlendFactor factor) {
+    switch (factor) {
+    case BlendFactor::eZero: return VK_BLEND_FACTOR_ZERO;
+    case BlendFactor::eOne: return VK_BLEND_FACTOR_ONE;
+    case BlendFactor::eSrcColor: return VK_BLEND_FACTOR_SRC_COLOR;
+    case BlendFactor::eOneMinusSrcColor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    case BlendFactor::eDstColor: return VK_BLEND_FACTOR_DST_COLOR;
+    case BlendFactor::eOneMinusDstColor: return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+    case BlendFactor::eSrcAlpha: return VK_BLEND_FACTOR_SRC_ALPHA;
+    case BlendFactor::eOneMinusSrcAlpha: return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    case BlendFactor::eDstAlpha: return VK_BLEND_FACTOR_DST_ALPHA;
+    case BlendFactor::eOneMinusDstAlpha: return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+    }
+    return VK_BLEND_FACTOR_ONE;
+}
+
+VkBlendOp blendOpOf(BlendOp op) {
+    switch (op) {
+    case BlendOp::eAdd: return VK_BLEND_OP_ADD;
+    case BlendOp::eSubtract: return VK_BLEND_OP_SUBTRACT;
+    case BlendOp::eReverseSubtract: return VK_BLEND_OP_REVERSE_SUBTRACT;
+    case BlendOp::eMin: return VK_BLEND_OP_MIN;
+    case BlendOp::eMax: return VK_BLEND_OP_MAX;
+    }
+    return VK_BLEND_OP_ADD;
+}
+
+VkCompareOp compareOf(CompareOp op);
+
+VkStencilOpState stencilFaceOf(const StencilState &stencil, const StencilFace &face) {
+    return {.failOp = stencilOpOf(face.fail),
+            .passOp = stencilOpOf(face.pass),
+            .depthFailOp = stencilOpOf(face.depthFail),
+            .compareOp = compareOf(face.compare),
+            .compareMask = stencil.readMask,
+            .writeMask = stencil.writeMask,
+            .reference = stencil.reference};
+}
+
 VkCompareOp compareOf(CompareOp op) {
     switch (op) {
     case CompareOp::eNever: return VK_COMPARE_OP_NEVER;
@@ -190,6 +244,8 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
                                 kCall, vertex.rootDataSize, pixel.rootDataSize));
     }
     const uint32 rootDataSize = vertex.hasRootData ? vertex.rootDataSize : pixel.rootDataSize;
+    EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
+                                               hasStencil(desc.depthFormat)));
     const VkPipelineLayout layout = createLayout(state, device.limits, rootDataSize, kCall);
 
     VkShaderModule modules[2] = {createModule(state, desc.vertex), VK_NULL_HANDLE};
@@ -246,11 +302,25 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         .depthTestEnable = desc.depth.test || desc.depth.write ? VK_TRUE : VK_FALSE,
         .depthWriteEnable = desc.depth.write ? VK_TRUE : VK_FALSE,
         .depthCompareOp = desc.depth.test ? compareOf(desc.depth.compare) : VK_COMPARE_OP_ALWAYS,
+        .stencilTestEnable = desc.stencil.test ? VK_TRUE : VK_FALSE,
+        .front = stencilFaceOf(desc.stencil, desc.stencil.front),
+        .back = stencilFaceOf(desc.stencil, desc.stencil.back),
     };
-    // No blending yet: every color target is written as is.
-    const std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(
+    // One blend state per color target; none given: written as is.
+    std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(
         colorFormats.size(), {.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT});
+    for (size_t i = 0; i < desc.blend.size() && i < blendAttachments.size(); ++i) {
+        const BlendState &b = desc.blend[i];
+        blendAttachments[i] = {.blendEnable = b.enable ? VK_TRUE : VK_FALSE,
+                               .srcColorBlendFactor = blendFactorOf(b.srcColor),
+                               .dstColorBlendFactor = blendFactorOf(b.dstColor),
+                               .colorBlendOp = blendOpOf(b.colorOp),
+                               .srcAlphaBlendFactor = blendFactorOf(b.srcAlpha),
+                               .dstAlphaBlendFactor = blendFactorOf(b.dstAlpha),
+                               .alphaBlendOp = blendOpOf(b.alphaOp),
+                               .colorWriteMask = static_cast<VkColorComponentFlags>(b.writeMask)};
+    }
     const VkPipelineColorBlendStateCreateInfo blend{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .attachmentCount = static_cast<uint32>(blendAttachments.size()),

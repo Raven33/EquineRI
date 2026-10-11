@@ -1,5 +1,5 @@
 ---
-symbols: [RI::createGraphicsPipeline, RI::GraphicsPipelineDesc, RI::DepthState, RI::CompareOp, RI::CullMode, RI::Topology]
+symbols: [RI::createGraphicsPipeline, RI::GraphicsPipelineDesc, RI::DepthState, RI::CompareOp, RI::CullMode, RI::Topology, RI::StencilState, RI::StencilFace, RI::StencilOp, RI::BlendState, RI::BlendFactor, RI::BlendOp, RI::ColorMask]
 ---
 
 # RI::createGraphicsPipeline
@@ -23,11 +23,18 @@ a [rendering section](../concepts/rendering.md), and destroy it with
 - `cull`: `eNone` (default), `eFront`, `eBack`; `frontCounterClockwise`: which winding faces
   the camera (clockwise by default, the same on both backends);
 - `depth`: `test` (compare against the depth attachment), `write` (store the new depth),
-  `compare` (`eLess` by default).
+  `compare` (`eLess` by default);
+- `stencil`: `test`, one `readMask` and one `writeMask` for both faces (as D3D12 has), the
+  `reference` value, and per face (`front`, `back`) the operations on `fail`, `depthFail` and
+  `pass` and the `compare` function. The reference value is part of the pipeline: a different
+  reference is a different pipeline;
+- `blend`: one `BlendState` per color format, or none (every target written as is). Each has
+  `enable`, the color and alpha factors and operations (`result = src * srcFactor (op)
+  dst * dstFactor`; `eMin` and `eMax` ignore the factors) and a `writeMask` of channels.
 
 There is **no vertex input** ([P39](../design-notes/decisions.md#p39)): vertex shaders pull
-their data from buffers by `SV_VertexID`. Blending comes later: every color target is written
-as is.
+their data from buffers by `SV_VertexID` (indexed draws give the index as `SV_VertexID`, see
+[`cmdDrawIndexed`](cmdDraw.md)).
 
 The root data is the one `EQ_ROOT_DATA` block both stages declare; `pipeline.rootDataSize`
 reports its size ([P44](../design-notes/decisions.md#p44)).
@@ -45,6 +52,12 @@ reports its size ([P44](../design-notes/decisions.md#p44)).
 --8<-- "generated/signatures/RI.CullMode.md"
 
 --8<-- "generated/signatures/RI.Topology.md"
+
+--8<-- "generated/signatures/RI.StencilState.md"
+
+--8<-- "generated/signatures/RI.StencilFace.md"
+
+--8<-- "generated/signatures/RI.BlendState.md"
 
 ## Example
 
@@ -107,6 +120,10 @@ The shaders:
 - To write depth, set both `test` and `write`; to write depth unconditionally, compare with
   `CompareOp::eAlways`. (Vulkan writes depth only when the test is on.)
 - A pipeline with `depth.write` set is refused in a read-only depth section (validation builds).
+- `blend` holds no states or one per color format; the stencil test needs a `depthFormat` with
+  stencil (**programmer error** in validation builds).
+- Alpha blend factors that name a color (`eSrcColor`, ...) are read as the matching alpha
+  factor, as D3D12 requires.
 - `samples` must be supported for every attachment format ([`formatSupported`](formatSupported.md)).
 
 ## Related decisions

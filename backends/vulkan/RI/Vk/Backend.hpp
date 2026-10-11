@@ -300,6 +300,12 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc);
 void cmdEndRendering(CommandList &cmd);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
+// Indexed draws (P39): indices come from an index buffer; vertices are still
+// pulled by the shader (SV_VertexID is the index value plus vertexOffset).
+void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format);
+void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0,
+                    int32 vertexOffset = 0, uint32 firstInstance = 0);
+
 
 // Copies (P47). A texture view covers one mip (and one aspect of a depth
 // format); the buffer side follows copyLayout(). Copies count as Stage::eCopy.

@@ -10,6 +10,7 @@
 #include <RI/RI.hpp>
 
 #include <cmath>
+#include <cstring>
 #include <cstdio>
 #include <csignal>
 #include <cstdlib>
@@ -622,15 +623,17 @@ EQ_TEST(texture, occlusion_and_statistics) {
     RI::Buffer results =
         placeBuffer(f.device, f.readback, {.size = 8 + 2 * uint64{stats.size}, .usage = RI::BufferUsage::eCopyDst});
 
-    RI::cmdBeginQuery(f.cmd, statistics, 0);
+    // Inside the section: the clear at cmdBeginRendering is GPU work that
+    // drivers may run as compute, which statistics would count.
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdBeginQuery(f.cmd, statistics, 0);
     RI::cmdBeginQuery(f.cmd, occlusion, 0);
     RI::cmdSetPipeline(f.cmd, pipeline);
     RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndQuery(f.cmd, occlusion, 0);
-    RI::cmdEndRendering(f.cmd);
     RI::cmdEndQuery(f.cmd, statistics, 0);
+    RI::cmdEndRendering(f.cmd);
 
     RI::writeDescriptors(f.device, f.heap, {{.slot = kTextureSlot, .descriptor = RI::ReadView{.texture = target.view}}});
     RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCompute);
@@ -681,3 +684,88 @@ EQ_TEST(texture, copy_without_usage_reports) {
     RI::cmdCopyTextureToBuffer(f.cmd, texture.view, back, 0);
 }
 #endif
+
+// Indexed draws (P39) with additive blending: two instances of the same
+// full-screen triangle, each adding 0.25, give 0.5.
+EQ_TEST(texture, indexed_draw_with_blending) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
+    const uint16 values[] = {0, 1, 2, 0};
+    std::memcpy(indices.mapped, values, sizeof(values));
+
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const RI::BlendState additive{.enable = true,
+                                  .srcColor = RI::BlendFactor::eOne,
+                                  .dstColor = RI::BlendFactor::eOne,
+                                  .srcAlpha = RI::BlendFactor::eOne,
+                                  .dstAlpha = RI::BlendFactor::eOne};
+    RI::Pipeline pipeline = RI::createGraphicsPipeline(
+        f.device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA16Float}, .blend = {additive}});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
+    RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
+    RI::cmdDrawIndexed(f.cmd, 3, 2);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.5f) && all(texels, 3, 0.5f));
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyBuffer(f.device, indices);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyTexture(f.device, target);
+}
+
+// The stencil test (P38): pass 1 writes 1 everywhere; a draw testing for 2 is
+// stopped, one testing for 1 (writing only green) goes through.
+EQ_TEST(texture, stencil_test) {
+    Fixture f;
+    const RI::Format depthFormat = RI::Format::eD32FloatS8Uint;
+    if (!RI::formatSupported(f.device, depthFormat, RI::TextureUsage::eDepthStencil)) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    RI::Texture depth = placeTexture(f.device, f.gpu,
+                                     {.width = kSize, .height = kSize, .format = depthFormat,
+                                      .usage = RI::TextureUsage::eDepthStencil});
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const auto pipelineWith = [&](RI::CompareOp compare, RI::StencilOp pass, uint8 reference, RI::ColorMask mask) {
+        const RI::StencilFace face{.pass = pass, .compare = compare};
+        return RI::createGraphicsPipeline(
+            f.device, {.vertex = vs,
+                       .pixel = ps,
+                       .colorFormats = {RI::Format::eRGBA8Unorm},
+                       .depthFormat = depthFormat,
+                       .stencil = {.test = true, .reference = reference, .front = face, .back = face},
+                       .blend = {{.writeMask = mask}}});
+    };
+    RI::Pipeline write = pipelineWith(RI::CompareOp::eAlways, RI::StencilOp::eReplace, 1, RI::ColorMask::eNone);
+    RI::Pipeline red = pipelineWith(RI::CompareOp::eEqual, RI::StencilOp::eKeep, 2, RI::ColorMask::eAll);
+    RI::Pipeline green = pipelineWith(RI::CompareOp::eEqual, RI::StencilOp::eKeep, 1, RI::ColorMask::eG);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}},
+                                  .depth = RI::DepthAttachment{.view = depth.view,
+                                                               .load = RI::LoadOp::eClear,
+                                                               .stencilLoad = RI::LoadOp::eClear}});
+    RI::cmdSetPipeline(f.cmd, write);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 0.0f, 0.0f, 0.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdSetPipeline(f.cmd, red);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdSetPipeline(f.cmd, green);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.0f) && all(texels, 1, 1.0f) && all(texels, 3, 0.0f));
+    RI::destroyPipeline(f.device, write);
+    RI::destroyPipeline(f.device, red);
+    RI::destroyPipeline(f.device, green);
+    RI::destroyTexture(f.device, depth);
+    RI::destroyTexture(f.device, target);
+}

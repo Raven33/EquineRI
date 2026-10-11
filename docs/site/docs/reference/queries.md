@@ -53,6 +53,10 @@ takes `size` bytes), read them after the submission's timeline point, and reset 
 - A timestamp pool takes `cmdWriteTimestamp`; occlusion and statistics pools take
   `cmdBeginQuery` / `cmdEndQuery` (**programmer error** in validation builds otherwise).
 - A query that begins inside a rendering section ends in it.
+- Statistics count all GPU work between begin and end, including the work of RI's own
+  operations and of the driver: a clear (`LoadOp::eClear`, `cmdClearTexture`) or a layout
+  switch may run as a compute shader on some GPUs. To measure only your draws, begin the
+  query inside the rendering section, after `cmdBeginRendering`.
 - **How counters count is up to the GPU.** AMD counts pixel-shader invocations per 2x2 quad,
   so 1024 covered pixels may read 256; helper invocations may be counted elsewhere. Compare
   counts on one GPU, not across GPUs.

@@ -46,6 +46,9 @@ VkBufferUsageFlags usageOf(BufferUsage usage) {
     if ((usage & BufferUsage::eIndirect) != BufferUsage::eNone) {
         flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     }
+    if ((usage & BufferUsage::eIndex) != BufferUsage::eNone) {
+        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    }
     return flags;
 }
 

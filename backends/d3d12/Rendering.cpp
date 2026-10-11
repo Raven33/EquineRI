@@ -194,6 +194,23 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.depthReadOnly = false;
 }
 
+void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format) {
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkIndexBuffer((buffer.usage & BufferUsage::eIndex) != BufferUsage::eNone, offset,
+                                             format == IndexFormat::eUint16 ? 2 : 4, buffer.size));
+    const D3D12_INDEX_BUFFER_VIEW view{
+        .BufferLocation = buffer.gpuAddress + offset,
+        .SizeInBytes = static_cast<UINT>(buffer.size - offset),
+        .Format = format == IndexFormat::eUint16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT,
+    };
+    list(cmd)->IASetIndexBuffer(&view);
+}
+
+void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 vertexOffset,
+                    uint32 firstInstance) {
+    list(cmd)->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
     list(cmd)->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 }

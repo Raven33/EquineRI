@@ -126,8 +126,75 @@ struct DepthState {
     CompareOp compare = CompareOp::eLess;
 };
 
+enum class StencilOp : uint8 {
+    eKeep,
+    eZero,
+    eReplace, // the reference value
+    eIncrementClamp,
+    eDecrementClamp,
+    eInvert,
+    eIncrementWrap,
+    eDecrementWrap,
+};
+
+struct StencilFace {
+    StencilOp fail = StencilOp::eKeep;      // the stencil test fails
+    StencilOp depthFail = StencilOp::eKeep; // stencil passes, depth fails
+    StencilOp pass = StencilOp::eKeep;      // both pass
+    CompareOp compare = CompareOp::eAlways;
+};
+
+// The stencil test (one read and one write mask for both faces, as D3D12
+// has). The reference value is part of the pipeline (P38).
+struct StencilState {
+    bool test = false;
+    uint8 readMask = 0xff;
+    uint8 writeMask = 0xff;
+    uint8 reference = 0;
+    StencilFace front;
+    StencilFace back;
+};
+
+enum class BlendFactor : uint8 {
+    eZero,
+    eOne,
+    eSrcColor,
+    eOneMinusSrcColor,
+    eDstColor,
+    eOneMinusDstColor,
+    eSrcAlpha,
+    eOneMinusSrcAlpha,
+    eDstAlpha,
+    eOneMinusDstAlpha,
+};
+
+enum class BlendOp : uint8 { eAdd, eSubtract, eReverseSubtract, eMin, eMax };
+
+enum class ColorMask : uint8 {
+    eNone = 0,
+    eR = rvl::eBit(0),
+    eG = rvl::eBit(1),
+    eB = rvl::eBit(2),
+    eA = rvl::eBit(3),
+    eAll = 0xf,
+};
+makeBitmask(ColorMask)
+
+// Blending of one color target: result = src * srcFactor (op) dst * dstFactor,
+// for color and alpha separately. eMin and eMax ignore the factors.
+struct BlendState {
+    bool enable = false;
+    BlendFactor srcColor = BlendFactor::eOne;
+    BlendFactor dstColor = BlendFactor::eZero;
+    BlendOp colorOp = BlendOp::eAdd;
+    BlendFactor srcAlpha = BlendFactor::eOne;
+    BlendFactor dstAlpha = BlendFactor::eZero;
+    BlendOp alphaOp = BlendOp::eAdd;
+    ColorMask writeMask = ColorMask::eAll;
+};
+
 // Complete state up front (P38). No vertex input: vertices are pulled from
-// buffers in the shader (P39). Blending comes later.
+// buffers in the shader (P39), or produced by mesh shaders.
 struct GraphicsPipelineDesc {
     Bytecode vertex; // entry point "main"
     Bytecode pixel;  // entry point "main"; may be empty for depth-only pipelines
@@ -138,7 +205,13 @@ struct GraphicsPipelineDesc {
     CullMode cull = CullMode::eNone;
     bool frontCounterClockwise = false;
     DepthState depth;
+    StencilState stencil; // needs a depth format with stencil
+    // One per color format, or empty: every target written as is.
+    std::vector<BlendState> blend;
 };
+
+// Index buffers (P39): 16- or 32-bit indices.
+enum class IndexFormat : uint8 { eUint16, eUint32 };
 
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────
 
