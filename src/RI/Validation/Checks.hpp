@@ -106,6 +106,9 @@ CheckResult checkIndirect(const IndirectCheck &c, std::string_view call);
 // with allocateMemory(kind, size, &requirements) when the kind's default type
 // does not fit).
 CheckResult checkMemoryType(bool allowed, std::string_view call);
+// A sampler description: anisotropy 1 to 16, minLod <= maxLod, min/max
+// reduction only where supported and not with a comparison.
+CheckResult checkSampler(const SamplerDesc &desc, bool minMaxSupported);
 // The scratch range of cmdExecuteIndirectWithRootData (P48).
 struct IndirectScratchCheck {
     uint64 requiredSize, requiredAlignment;

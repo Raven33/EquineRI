@@ -197,6 +197,11 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5))) &&
         options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
     // Work graphs (P50): tier 1.0 (Ampere, RDNA3 and newer).
+    // Min/max sampler reduction comes with tiled resources tier 2.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS options{};
+    state->samplerMinMax =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))) &&
+        options.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_2;
     D3D12_FEATURE_DATA_D3D12_OPTIONS21 options21{};
     const bool workGraphs =
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &options21, sizeof(options21))) &&
@@ -222,6 +227,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
         .rayTracing = state->rayTracing,
         .workGraphs = workGraphs,
+        .samplerMinMax = state->samplerMinMax,
         .accelerationStructureScratchAlignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT,
         .depthResolveModes = state->depthResolveModes,
         .stencilResolveModes = state->stencilResolveModes,

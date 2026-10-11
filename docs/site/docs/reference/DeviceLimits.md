@@ -20,6 +20,7 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `meshShaders` | task and mesh shaders, [`cmdDrawMesh`](cmdDraw.md) | `VK_EXT_mesh_shader` with `taskShader` and `meshShader` | `D3D12_OPTIONS7::MeshShaderTier` at least tier 1 |
 | `indirectRootData` | indirect Level 2, [`cmdExecuteIndirectWithRootData`](indirect.md) | `VK_EXT_device_generated_commands` (Vulkan 1.4 devices) | always |
 | `rayTracing`, `accelerationStructureScratchAlignment` | [inline ray tracing](raytracing.md) and the scratch address alignment | `VK_KHR_acceleration_structure` + `VK_KHR_ray_query`, and acceleration structures accepted as a mutable descriptor type; `minAccelerationStructureScratchOffsetAlignment` | raytracing tier 1.1; 256 bytes |
+| `samplerMinMax` | [`Reduction::eMin` / `eMax` samplers](writeSamplers.md) | `samplerFilterMinmax` (Vulkan 1.2) | `D3D12_OPTIONS::TiledResourcesTier` at least 2 |
 | `workGraphs` | [work graphs](workgraphs.md) | never (D3D12 only) | `D3D12_OPTIONS21::WorkGraphsTier` at least 1.0 |
 | `depthResolveModes`, `stencilResolveModes` | the depth and stencil [resolve](resolve.md) modes, `resolveModeBit(mode)` each | `VkPhysicalDeviceDepthStencilResolveProperties` | programmable sample positions tier 2: depth average/min/max, stencil min/max |
 

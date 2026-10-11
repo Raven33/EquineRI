@@ -10,6 +10,7 @@
 #include <types.hpp>
 
 #include <array>
+#include <optional>
 #include <vector>
 
 namespace RI {
@@ -124,6 +125,35 @@ struct ClearValue {
 // ── Graphics pipelines (P38, P39) ────────────────────────────────────────────
 
 enum class CompareOp : uint8 { eNever, eLess, eEqual, eLessEqual, eGreater, eNotEqual, eGreaterEqual, eAlways };
+
+// Samplers (P87): descriptions written straight into the sampler heap with
+// writeSamplers; shaders read them as SamplerDescriptorHeap[slot].
+enum class Filter : uint8 { eNearest, eLinear };
+enum class AddressMode : uint8 { eRepeat, eMirror, eClamp, eBorder };
+enum class BorderColor : uint8 { eTransparentBlack, eOpaqueBlack, eOpaqueWhite };
+// How the filtered texels combine: eMin and eMax need DeviceLimits::samplerMinMax.
+enum class Reduction : uint8 { eAverage, eMin, eMax };
+
+struct SamplerDesc {
+    Filter minFilter = Filter::eLinear;
+    Filter magFilter = Filter::eLinear;
+    Filter mipFilter = Filter::eLinear;
+    AddressMode addressU = AddressMode::eRepeat;
+    AddressMode addressV = AddressMode::eRepeat;
+    AddressMode addressW = AddressMode::eRepeat;
+    float mipLodBias = 0.0f;
+    float minLod = 0.0f;
+    float maxLod = 1000.0f;           // all mips
+    uint32 maxAnisotropy = 1;         // 1: off, up to 16; on, filtering is linear (mips too)
+    std::optional<CompareOp> compare; // a comparison sampler (SamplerComparisonState)
+    BorderColor border = BorderColor::eTransparentBlack;
+    Reduction reduction = Reduction::eAverage;
+};
+
+struct SamplerWrite {
+    uint32 slot = 0; // in the sampler heap
+    SamplerDesc sampler;
+};
 enum class CullMode : uint8 { eNone, eFront, eBack };
 enum class Topology : uint8 { eTriangleList, eTriangleStrip, eLineList, ePointList };
 

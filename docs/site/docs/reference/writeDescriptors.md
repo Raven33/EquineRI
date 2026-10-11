@@ -141,7 +141,7 @@ Also:
 
 - Never overwrite a slot that GPU work still in flight may read; wait for its
   [timeline point](../concepts/timeline.md) ([P59](../design-notes/decisions.md#p59)).
-- Only the views heap is written today; samplers come later.
+- Samplers go to the sampler heap with [`writeSamplers`](writeSamplers.md).
 
 ## Related decisions
 

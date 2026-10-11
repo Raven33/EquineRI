@@ -177,6 +177,7 @@ nav:
       - Descriptors:
           - RI::createDescriptorHeap, RI::destroyDescriptorHeap: reference/descriptorHeap.md
           - RI::writeDescriptors: reference/writeDescriptors.md
+          - RI::writeSamplers: reference/writeSamplers.md
       - Pipelines:
           - RI::createComputePipeline, RI::destroyPipeline: reference/pipeline.md
           - RI::createGraphicsPipeline: reference/graphicsPipeline.md

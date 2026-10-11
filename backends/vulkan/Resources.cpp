@@ -5,7 +5,8 @@
 // Owns: allocateMemory (picking among a kind's types when given a resource's
 // requirements), buffers placed in user memory (every buffer has a GPU
 // address), descriptor heaps as descriptor sets from one pool each, descriptor
-// writes, query pools.
+// writes, samplers (one VkSampler per distinct description, cached in
+// DeviceState until the device is destroyed, P99), query pools.
 //
 // Watch out: eIndirectScratch buffers need VkBufferUsageFlags2 (the preprocess
 // usage has no legacy bit). Placing a resource in a type it does not allow is
@@ -21,6 +22,7 @@
 #include <RI/Vk/Native.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <format>
 #include <tuple>
 #include <type_traits>
@@ -387,6 +389,109 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
         natives[i].pBufferInfo = &bufferInfos[i];
     }
     // One native call for the whole list (D1, P94).
+    state.functions.vkUpdateDescriptorSets(state.device, static_cast<uint32>(natives.size()), natives.data(), 0,
+                                           nullptr);
+}
+
+// ── Samplers (P87) ───────────────────────────────────────────────────────────
+
+namespace {
+
+std::array<uint32, 13> samplerKey(const SamplerDesc &d) {
+    return {static_cast<uint32>(d.minFilter),  static_cast<uint32>(d.magFilter),
+            static_cast<uint32>(d.mipFilter),  static_cast<uint32>(d.addressU),
+            static_cast<uint32>(d.addressV),   static_cast<uint32>(d.addressW),
+            std::bit_cast<uint32>(d.mipLodBias), std::bit_cast<uint32>(d.minLod),
+            std::bit_cast<uint32>(d.maxLod),   d.maxAnisotropy,
+            d.compare.has_value() ? 1u + static_cast<uint32>(*d.compare) : 0u,
+            static_cast<uint32>(d.border),     static_cast<uint32>(d.reduction)};
+}
+
+VkSamplerAddressMode addressOf(AddressMode mode) {
+    switch (mode) {
+    case AddressMode::eRepeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case AddressMode::eMirror: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    case AddressMode::eClamp: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    case AddressMode::eBorder: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    }
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+}
+
+VkBorderColor borderOf(BorderColor color) {
+    switch (color) {
+    case BorderColor::eTransparentBlack: return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    case BorderColor::eOpaqueBlack: return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    case BorderColor::eOpaqueWhite: return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    }
+    return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+}
+
+// The device's sampler for `desc`, created on first use.
+VkSampler samplerFor(DeviceState &state, const SamplerDesc &desc) {
+    const std::array<uint32, 13> key = samplerKey(desc);
+    if (const auto found = state.samplers.find(key); found != state.samplers.end()) {
+        return found->second;
+    }
+    if (state.samplers.size() >= state.maxSamplers) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("writeSamplers: the driver allows {} distinct samplers (maxSamplerAllocationCount)",
+                                state.maxSamplers));
+    }
+    const VkSamplerReductionModeCreateInfo reduction{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO,
+        .reductionMode = desc.reduction == Reduction::eMin ? VK_SAMPLER_REDUCTION_MODE_MIN
+                                                           : VK_SAMPLER_REDUCTION_MODE_MAX};
+    // Anisotropy filters linearly, mips included, as D3D12's anisotropic filter does.
+    const bool anisotropic = desc.maxAnisotropy > 1 && state.maxAnisotropy > 1.0f;
+    const auto filter = [&](Filter f) { return f == Filter::eLinear || anisotropic ? VK_FILTER_LINEAR : VK_FILTER_NEAREST; };
+    const VkSamplerCreateInfo info{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext = desc.reduction != Reduction::eAverage ? &reduction : nullptr,
+        .magFilter = filter(desc.magFilter),
+        .minFilter = filter(desc.minFilter),
+        .mipmapMode = desc.mipFilter == Filter::eLinear || anisotropic ? VK_SAMPLER_MIPMAP_MODE_LINEAR
+                                                                       : VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        .addressModeU = addressOf(desc.addressU),
+        .addressModeV = addressOf(desc.addressV),
+        .addressModeW = addressOf(desc.addressW),
+        .mipLodBias = desc.mipLodBias,
+        .anisotropyEnable = anisotropic ? VK_TRUE : VK_FALSE,
+        .maxAnisotropy = std::min(static_cast<float>(desc.maxAnisotropy), state.maxAnisotropy),
+        .compareEnable = desc.compare.has_value() ? VK_TRUE : VK_FALSE,
+        .compareOp = desc.compare.has_value() ? static_cast<VkCompareOp>(*desc.compare) : VK_COMPARE_OP_NEVER,
+        .minLod = desc.minLod,
+        .maxLod = desc.maxLod,
+        .borderColor = borderOf(desc.border),
+    };
+    VkSampler sampler = VK_NULL_HANDLE;
+    checkVk(state.functions.vkCreateSampler(state.device, &info, nullptr, &sampler), "vkCreateSampler");
+    state.samplers.emplace(key, sampler);
+    return sampler;
+}
+
+} // namespace
+
+void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes) {
+    writeSamplers(device, heap, std::span<const SamplerWrite>(writes.begin(), writes.size()));
+}
+
+void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes) {
+    DeviceState &state = *device.internal.state;
+    EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
+    std::vector<VkDescriptorImageInfo> infos(writes.size());
+    std::vector<VkWriteDescriptorSet> natives(writes.size());
+    for (size_t i = 0; i < writes.size(); ++i) {
+        EQ_VALIDATE(Validation::checkSlot(writes[i].slot, heap.samplerCount, "sampler"));
+        EQ_VALIDATE(Validation::checkSampler(writes[i].sampler, state.samplerMinMax));
+        infos[i] = {.sampler = samplerFor(state, writes[i].sampler)};
+        natives[i] = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                      .dstSet = reinterpret_cast<VkDescriptorSet>(heap.internal.samplerSet),
+                      .dstBinding = 0,
+                      .dstArrayElement = writes[i].slot,
+                      .descriptorCount = 1,
+                      .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+                      .pImageInfo = &infos[i]};
+    }
     state.functions.vkUpdateDescriptorSets(state.device, static_cast<uint32>(natives.size()), natives.data(), 0,
                                            nullptr);
 }

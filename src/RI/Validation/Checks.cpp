@@ -250,6 +250,22 @@ CheckResult checkIndirect(const IndirectCheck &c, std::string_view call) {
     return {};
 }
 
+CheckResult checkSampler(const SamplerDesc &desc, bool minMaxSupported) {
+    if (desc.maxAnisotropy < 1 || desc.maxAnisotropy > 16) {
+        return std::format("writeSamplers: maxAnisotropy is {}; it goes from 1 (off) to 16", desc.maxAnisotropy);
+    }
+    if (desc.minLod > desc.maxLod) {
+        return std::format("writeSamplers: minLod {} is above maxLod {}", desc.minLod, desc.maxLod);
+    }
+    if (desc.reduction != Reduction::eAverage && desc.compare.has_value()) {
+        return std::string("writeSamplers: a comparison sampler cannot also use a min or max reduction");
+    }
+    if (desc.reduction != Reduction::eAverage && !minMaxSupported) {
+        return std::string("writeSamplers: Reduction::eMin and eMax need DeviceLimits::samplerMinMax");
+    }
+    return {};
+}
+
 CheckResult checkMemoryType(bool allowed, std::string_view call) {
     if (!allowed) {
         return std::format("{}: this memory's type cannot hold the resource; allocate the memory with "

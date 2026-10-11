@@ -3,7 +3,8 @@
 //
 // Owns: allocateMemory (one heap type per kind; resource heap tier 2, so
 // `forResource` changes nothing), placed buffers, shader-visible descriptor
-// heaps, descriptor writes, writeNativeDescriptor.
+// heaps, descriptor writes, samplers (CreateSampler into the sampler heap,
+// P99), writeNativeDescriptor.
 //
 // Watch out: D3D12 maps resources, not heaps: CPU-visible memory is mapped
 // through one buffer spanning the whole heap, and buffers placed later share
@@ -295,6 +296,70 @@ void destroyDescriptorHeap(Device &device, DescriptorHeap &heap) {
     release(resources);
     release(samplers);
     heap = {};
+}
+
+// ── Samplers (P87) ───────────────────────────────────────────────────────────
+
+namespace {
+
+D3D12_TEXTURE_ADDRESS_MODE addressOf(AddressMode mode) {
+    switch (mode) {
+    case AddressMode::eRepeat: return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    case AddressMode::eMirror: return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+    case AddressMode::eClamp: return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    case AddressMode::eBorder: return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+    }
+    return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+}
+
+D3D12_SAMPLER_DESC samplerDescOf(const SamplerDesc &desc) {
+    const D3D12_FILTER_REDUCTION_TYPE reduction = desc.compare.has_value()          ? D3D12_FILTER_REDUCTION_TYPE_COMPARISON
+                                                  : desc.reduction == Reduction::eMin ? D3D12_FILTER_REDUCTION_TYPE_MINIMUM
+                                                  : desc.reduction == Reduction::eMax ? D3D12_FILTER_REDUCTION_TYPE_MAXIMUM
+                                                                                      : D3D12_FILTER_REDUCTION_TYPE_STANDARD;
+    const auto type = [](Filter f) { return f == Filter::eLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT; };
+    const D3D12_FILTER filter =
+        desc.maxAnisotropy > 1
+            ? D3D12_ENCODE_ANISOTROPIC_FILTER(reduction)
+            : D3D12_ENCODE_BASIC_FILTER(type(desc.minFilter), type(desc.magFilter), type(desc.mipFilter), reduction);
+    D3D12_SAMPLER_DESC out{
+        .Filter = filter,
+        .AddressU = addressOf(desc.addressU),
+        .AddressV = addressOf(desc.addressV),
+        .AddressW = addressOf(desc.addressW),
+        .MipLODBias = desc.mipLodBias,
+        .MaxAnisotropy = desc.maxAnisotropy,
+        // RI's CompareOp follows D3D12's order, one below it (NEVER is 1).
+        .ComparisonFunc = desc.compare.has_value() ? static_cast<D3D12_COMPARISON_FUNC>(static_cast<int>(*desc.compare) + 1)
+                                                   : D3D12_COMPARISON_FUNC_NEVER,
+        .MinLOD = desc.minLod,
+        .MaxLOD = desc.maxLod,
+    };
+    if (desc.border == BorderColor::eOpaqueBlack || desc.border == BorderColor::eOpaqueWhite) {
+        const float value = desc.border == BorderColor::eOpaqueWhite ? 1.0f : 0.0f;
+        out.BorderColor[0] = out.BorderColor[1] = out.BorderColor[2] = value;
+        out.BorderColor[3] = 1.0f;
+    }
+    return out;
+}
+
+} // namespace
+
+void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes) {
+    writeSamplers(device, heap, std::span<const SamplerWrite>(writes.begin(), writes.size()));
+}
+
+void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes) {
+    DeviceState &state = *device.internal.state;
+    EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
+    const D3D12_CPU_DESCRIPTOR_HANDLE start =
+        static_cast<ID3D12DescriptorHeap *>(heap.internal.samplerHeap)->GetCPUDescriptorHandleForHeapStart();
+    for (const SamplerWrite &write : writes) {
+        EQ_VALIDATE(Validation::checkSlot(write.slot, heap.samplerCount, "sampler"));
+        EQ_VALIDATE(Validation::checkSampler(write.sampler, state.samplerMinMax));
+        const D3D12_SAMPLER_DESC desc = samplerDescOf(write.sampler);
+        state.device->CreateSampler(&desc, {start.ptr + static_cast<SIZE_T>(write.slot) * state.samplerDescriptorSize});
+    }
 }
 
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes) {
