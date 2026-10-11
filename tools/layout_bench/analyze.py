@@ -22,7 +22,29 @@ PASS_LIMIT = 0.10
 NOISE_MS = 0.05
 
 
+def by_copy(mode):
+    """Placement-balanced runs (--swap, harness v5): the RI path uses texture copy 0
+    and the baseline copy 1, or the reverse with [swap]. On the AMD iGPU the copy's
+    place in memory alone moved passes by up to 18%, so each path is compared with the
+    other on the same copy: "transitions" and "baseline:transitions[swap]" become
+    "transitions@copy0" and its baseline; the other pair "@copy1". A mode passes
+    when it passes on both copies."""
+    swapped = mode.endswith("[swap]")
+    mode = mode.removesuffix("[swap]")
+    baseline = mode.startswith("baseline:")
+    copy = (1 if not swapped else 0) if baseline else (1 if swapped else 0)
+    return f"{mode}@copy{copy}" if SWAP_SEEN else mode
+
+
+SWAP_SEEN = False
+
+
 def load(paths):
+    global SWAP_SEEN
+    for path in paths:
+        with open(path, newline="") as f:
+            if any(len(r) == 9 and r[2].endswith("[swap]") for r in csv.reader(f)):
+                SWAP_SEEN = True
     runs = defaultdict(list)  # (backend, gpu, mode, res, workload, pass) -> [median, ...]
     for path in paths:
         with open(path, newline="") as f:
@@ -30,7 +52,7 @@ def load(paths):
                 if len(row) != 9 or row[0] == "backend":
                     continue
                 backend, gpu, mode, res, workload, pass_, median, _p10, _p90 = row
-                runs[(backend, gpu, mode, res, workload, pass_)].append(float(median))
+                runs[(backend, gpu, by_copy(mode), res, workload, pass_)].append(float(median))
     return {k: statistics.median(v) for k, v in runs.items()}, {k: v for k, v in runs.items()}
 
 
