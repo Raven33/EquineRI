@@ -780,12 +780,13 @@ EQ_TEST(texture, mesh_shaders) {
     RI::Texture target = placeTexture(f.device, f.gpu,
                                       {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
                                        .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    // D3D12 requires a mesh shader's input payload to match its task shader's output.
     std::vector<std::byte> as = loadShader("fullscreen_as"), ms = loadShader("fullscreen_ms"),
-                           ps = loadShader("solid_ps");
+                           payloadMs = loadShader("fullscreen_payload_ms"), ps = loadShader("solid_ps");
     RI::Pipeline meshOnly = RI::createGraphicsPipeline(
         f.device, {.pixel = ps, .mesh = ms, .colorFormats = {RI::Format::eRGBA8Unorm}});
     RI::Pipeline taskMesh = RI::createGraphicsPipeline(
-        f.device, {.pixel = ps, .task = as, .mesh = ms, .colorFormats = {RI::Format::eRGBA8Unorm},
+        f.device, {.pixel = ps, .task = as, .mesh = payloadMs, .colorFormats = {RI::Format::eRGBA8Unorm},
                    .blend = {{.writeMask = RI::ColorMask::eG}}});
     EQ_CHECK(meshOnly.rootDataSize == sizeof(DrawRoot) && taskMesh.rootDataSize == sizeof(DrawRoot));
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
@@ -801,4 +802,92 @@ EQ_TEST(texture, mesh_shaders) {
     RI::destroyPipeline(f.device, meshOnly);
     RI::destroyPipeline(f.device, taskMesh);
     RI::destroyTexture(f.device, target);
+}
+
+// Color resolves (P52): at cmdEndRendering through resolveTo, and with
+// cmdResolve outside a section.
+EQ_TEST(texture, resolve_color) {
+    Fixture f;
+    const RI::Format format = RI::Format::eRGBA16Float;
+    if (!RI::formatSupported(f.device, format, RI::TextureUsage::eRenderTarget, 4)) {
+        return;
+    }
+    RI::Texture msaa = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .samples = 4,
+                                                      .format = format, .usage = RI::TextureUsage::eRenderTarget});
+    RI::Texture resolved = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = format,
+                                                          .usage = RI::TextureUsage::eRenderTarget |
+                                                                   RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs, ps;
+    RI::Pipeline pipeline = drawPipeline(f.device, format, RI::Format::eUndefined, 4, false, vs, ps);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = msaa.view, .load = RI::LoadOp::eClear,
+                                              .resolveTo = resolved.view}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.5f, 0.5f, 0.5f, 0.5f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    std::vector<float> texels = f.readBack(resolved.view);
+    EQ_CHECK(all(texels, 0, 0.5f) && all(texels, 3, 0.5f));
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = msaa.view, .load = RI::LoadOp::eClear,
+                                              .clear = {.color = {0.25f, 0.25f, 0.25f, 0.25f}}}}});
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eRenderTarget);
+    RI::cmdResolve(f.cmd, msaa.view, resolved.view, RI::ResolveMode::eAverage);
+    texels = f.readBack(resolved.view);
+    EQ_CHECK(all(texels, 0, 0.25f) && all(texels, 3, 0.25f));
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, resolved);
+    RI::destroyTexture(f.device, msaa);
+}
+
+// Depth resolves (P76) with a mode the device reports, at cmdEndRendering and
+// with cmdResolve.
+EQ_TEST(texture, resolve_depth) {
+    Fixture f;
+    const RI::Format format = RI::Format::eD32Float;
+    RI::ResolveMode mode = RI::ResolveMode::eMin;
+    if ((f.device.limits.depthResolveModes & RI::resolveModeBit(mode)) == 0) {
+        mode = RI::ResolveMode::eMax;
+    }
+    if ((f.device.limits.depthResolveModes & RI::resolveModeBit(mode)) == 0 ||
+        !RI::formatSupported(f.device, format, RI::TextureUsage::eDepthStencil, 4)) {
+        return;
+    }
+    RI::Texture msaa = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .samples = 4,
+                                                      .format = format, .usage = RI::TextureUsage::eDepthStencil});
+    RI::Texture resolved = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = format,
+                                                          .usage = RI::TextureUsage::eDepthStencil |
+                                                                   RI::TextureUsage::eSampled});
+    RI::cmdBeginRendering(f.cmd, {.depth = RI::DepthAttachment{.view = msaa.view,
+                                                                .load = RI::LoadOp::eClear,
+                                                                .clear = {.depth = 0.75f},
+                                                                .resolveTo = resolved.view,
+                                                                .resolveMode = mode}});
+    RI::cmdEndRendering(f.cmd);
+    std::vector<float> texels = f.readBack(resolved.view);
+    EQ_CHECK(all(texels, 0, 0.75f));
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::cmdBeginRendering(f.cmd, {.depth = RI::DepthAttachment{.view = msaa.view, .load = RI::LoadOp::eClear,
+                                                                .clear = {.depth = 0.25f}}});
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBarrier(f.cmd, RI::Stage::eDepthStencil, RI::Stage::eDepthStencil);
+    RI::cmdResolve(f.cmd, msaa.view, resolved.view, mode);
+    texels = f.readBack(resolved.view);
+    EQ_CHECK(all(texels, 0, 0.25f));
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyTexture(f.device, resolved);
+    RI::destroyTexture(f.device, msaa);
 }

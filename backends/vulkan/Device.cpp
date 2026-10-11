@@ -489,6 +489,28 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     }
     state->faultEnabled = setup.fault && chain.f.fault.deviceFault == VK_TRUE;
     device.limits.meshShaders = setup.mesh && chain.f.mesh.meshShader == VK_TRUE && chain.f.mesh.taskShader == VK_TRUE;
+    {
+        // Depth and stencil resolve modes (P76).
+        VkPhysicalDeviceDepthStencilResolveProperties resolve{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES};
+        VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                                               .pNext = &resolve};
+        vkGetPhysicalDeviceProperties2(state->physicalDevice, &properties);
+        const auto modes = [](VkResolveModeFlags flags) {
+            uint32 bits = 0;
+            bits |= (flags & VK_RESOLVE_MODE_AVERAGE_BIT) != 0 ? resolveModeBit(ResolveMode::eAverage) : 0;
+            bits |= (flags & VK_RESOLVE_MODE_MIN_BIT) != 0 ? resolveModeBit(ResolveMode::eMin) : 0;
+            bits |= (flags & VK_RESOLVE_MODE_MAX_BIT) != 0 ? resolveModeBit(ResolveMode::eMax) : 0;
+            bits |= (flags & VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) != 0 ? resolveModeBit(ResolveMode::eSampleZero) : 0;
+            return bits;
+        };
+        device.limits.depthResolveModes = modes(resolve.supportedDepthResolveModes);
+        // One mode for both aspects (P76): without independent resolve, Vulkan
+        // needs them equal, which RI's single mode guarantees.
+        device.limits.stencilResolveModes = modes(resolve.supportedStencilResolveModes);
+        state->depthResolveModes = device.limits.depthResolveModes;
+        state->stencilResolveModes = device.limits.stencilResolveModes;
+    }
     state->functions.vkGetDeviceQueue(state->device, state->graphicsQueueFamily, 0, &state->graphicsQueue);
 
     chooseMemoryTypes(*state, device.limits);

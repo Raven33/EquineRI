@@ -54,6 +54,9 @@ struct DeviceLimits {
     bool gpuUploadMemory = false;      // MemoryKind::eGPUUpload is available (P32)
     uint64 timestampFrequency = 0;     // timestamp ticks per second (P71 (3))
     bool meshShaders = false;          // task and mesh shaders, cmdDrawMesh (P39)
+    // Depth and stencil resolve modes (P76): resolveModeBit(mode) per mode.
+    uint32 depthResolveModes = 0;
+    uint32 stencilResolveModes = 0;
 };
 
 } // namespace RI

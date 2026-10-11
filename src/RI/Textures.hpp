@@ -103,6 +103,13 @@ struct TextureViewDesc {
     Aspect aspect = Aspect::eDefault;
 };
 
+// MSAA resolve (P52, P76): how the samples of a pixel become one value.
+// Color resolves average; depth and stencil take the modes the device reports
+// in DeviceLimits::depthResolveModes / stencilResolveModes. No emulation.
+enum class ResolveMode : uint8 { eAverage, eMin, eMax, eSampleZero };
+// The bit of `mode` in DeviceLimits::depthResolveModes and stencilResolveModes.
+constexpr uint32 resolveModeBit(ResolveMode mode) { return 1u << static_cast<uint32>(mode); }
+
 // Load and store operations of rendering attachments (P40).
 enum class LoadOp : uint8 { eLoad, eClear, eDontCare };
 enum class StoreOp : uint8 { eStore, eDontCare };

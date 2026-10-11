@@ -89,6 +89,55 @@ void checkNotRendering(const CommandList &cmd, const char *call) {
     }
 }
 
+[[maybe_unused]] Validation::ResolveCheck resolveCheckOf(const DeviceState &state, const TextureView &src,
+                                                         const TextureView &dst, ResolveMode mode) {
+    const TextureUsage attachment = isDepthFormat(dst.format) ? TextureUsage::eDepthStencil : TextureUsage::eRenderTarget;
+    return {.srcSamples = src.samples,
+            .dstSamples = dst.samples,
+            .srcWidth = src.width,
+            .srcHeight = src.height,
+            .srcLayers = src.internal.layerCount,
+            .dstWidth = dst.width,
+            .dstHeight = dst.height,
+            .dstLayers = dst.internal.layerCount,
+            .srcFormat = src.format,
+            .dstFormat = dst.format,
+            .dstHasAttachmentUsage = (dst.internal.textureUsage & attachment) != TextureUsage::eNone,
+            .mode = mode,
+            .depthModes = state.depthResolveModes,
+            .stencilModes = state.stencilResolveModes};
+}
+
+UINT planeSubresource(const TextureView &view, uint32 layer, uint32 plane) {
+    return view.internal.baseMip + (view.internal.baseLayer + layer) * view.internal.textureMips +
+           plane * view.internal.textureMips * view.internal.textureLayers;
+}
+
+// A resolve (P52, P76): both views switch to the resolve layouts and back
+// (exact/full halves, P68); one ResolveSubresourceRegion per layer and plane.
+void resolveInto(ID3D12GraphicsCommandList7 *l, const TextureView &src, const TextureView &dst, ResolveMode mode) {
+    enter(l, src, D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE, D3D12_BARRIER_SYNC_RESOLVE,
+          D3D12_BARRIER_ACCESS_RESOLVE_SOURCE, false);
+    enter(l, dst, D3D12_BARRIER_LAYOUT_RESOLVE_DEST, D3D12_BARRIER_SYNC_RESOLVE, D3D12_BARRIER_ACCESS_RESOLVE_DEST,
+          true);
+    const D3D12_RESOLVE_MODE d3dMode = mode == ResolveMode::eMin   ? D3D12_RESOLVE_MODE_MIN
+                                       : mode == ResolveMode::eMax ? D3D12_RESOLVE_MODE_MAX
+                                                                   : D3D12_RESOLVE_MODE_AVERAGE;
+    const uint32 planes = hasStencil(src.format) ? 2 : 1;
+    auto *srcResource = static_cast<ID3D12Resource *>(src.internal.resource);
+    auto *dstResource = static_cast<ID3D12Resource *>(dst.internal.resource);
+    for (uint32 layer = 0; layer < src.internal.layerCount; ++layer) {
+        for (uint32 plane = 0; plane < planes; ++plane) {
+            l->ResolveSubresourceRegion(dstResource, planeSubresource(dst, layer, plane), 0, 0, srcResource,
+                                        planeSubresource(src, layer, plane), nullptr,
+                                        static_cast<DXGI_FORMAT>(dxgiFormat(src.format)), d3dMode);
+        }
+    }
+    leave(l, src, D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE, D3D12_BARRIER_SYNC_RESOLVE,
+          D3D12_BARRIER_ACCESS_RESOLVE_SOURCE);
+    leave(l, dst, D3D12_BARRIER_LAYOUT_RESOLVE_DEST, D3D12_BARRIER_SYNC_RESOLVE, D3D12_BARRIER_ACCESS_RESOLVE_DEST);
+}
+
 } // namespace
 
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
@@ -118,6 +167,14 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
             l->ClearRenderTargetView(rtvs[i], a.clear.color.data(), 0, nullptr);
         }
         cmd.internal.colors[i] = a.view;
+        cmd.internal.resolves[i] = {};
+        if (a.resolveTo.format != Format::eUndefined) {
+            EQ_DX_CHECK_ALIVE(&state, a.resolveTo.internal.textureId, "texture");
+            EQ_VALIDATE(Validation::checkResolve(resolveCheckOf(state, a.view, a.resolveTo, a.resolveMode),
+                                                 "cmdBeginRendering"));
+            cmd.internal.resolves[i] = a.resolveTo;
+            cmd.internal.resolveModes[i] = a.resolveMode;
+        }
         width = std::min(width, a.view.width);
         height = std::min(height, a.view.height);
     }
@@ -155,6 +212,14 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
             l->ClearDepthStencilView(dsv, clear, d.clear.depth, d.clear.stencil, 0, nullptr);
         }
         cmd.internal.depth = d.view;
+        cmd.internal.depthResolve = {};
+        if (d.resolveTo.format != Format::eUndefined) {
+            EQ_DX_CHECK_ALIVE(&state, d.resolveTo.internal.textureId, "texture");
+            EQ_VALIDATE(Validation::checkResolve(resolveCheckOf(state, d.view, d.resolveTo, d.resolveMode),
+                                                 "cmdBeginRendering"));
+            cmd.internal.depthResolve = d.resolveTo;
+            cmd.internal.depthResolveMode = d.resolveMode;
+        }
         cmd.internal.depthLayout = static_cast<uint32>(layout);
         cmd.internal.depthReadOnly = d.depthReadOnly;
         width = std::min(width, d.view.width);
@@ -180,15 +245,27 @@ void cmdEndRendering(CommandList &cmd) {
     for (uint32 i = 0; i < cmd.internal.colorCount; ++i) {
         leave(l, cmd.internal.colors[i], D3D12_BARRIER_LAYOUT_RENDER_TARGET, D3D12_BARRIER_SYNC_RENDER_TARGET,
               D3D12_BARRIER_ACCESS_RENDER_TARGET);
-        cmd.internal.colors[i] = {};
     }
     if (cmd.internal.depth.internal.resource != nullptr) {
         const auto layout = static_cast<D3D12_BARRIER_LAYOUT>(cmd.internal.depthLayout);
         leave(l, cmd.internal.depth, layout, D3D12_BARRIER_SYNC_DEPTH_STENCIL,
               layout == D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ ? D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ
                                                                 : D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE);
-        cmd.internal.depth = {};
     }
+    // Resolves after the section (P52): D3D12 has no resolve attachments
+    // outside render passes, so RI resolves each attachment that asked.
+    for (uint32 i = 0; i < cmd.internal.colorCount; ++i) {
+        if (cmd.internal.resolves[i].internal.resource != nullptr) {
+            resolveInto(l, cmd.internal.colors[i], cmd.internal.resolves[i], cmd.internal.resolveModes[i]);
+        }
+        cmd.internal.colors[i] = {};
+        cmd.internal.resolves[i] = {};
+    }
+    if (cmd.internal.depthResolve.internal.resource != nullptr) {
+        resolveInto(l, cmd.internal.depth, cmd.internal.depthResolve, cmd.internal.depthResolveMode);
+    }
+    cmd.internal.depth = {};
+    cmd.internal.depthResolve = {};
     cmd.internal.colorCount = 0;
     cmd.internal.rendering = false;
     cmd.internal.depthReadOnly = false;
@@ -323,6 +400,20 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
     const UINT values[4] = {value, value, value, value};
     list(cmd)->ClearUnorderedAccessViewUint(gpu, cpu, resource, values, 0, nullptr);
     restoreUserState(cmd);
+}
+
+// ── Resolve (P52, P76) ───────────────────────────────────────────────────────
+
+void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode) {
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
+    checkNotRendering(cmd, "cmdResolve");
+    EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
+    EQ_DX_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
+#if EQUINE_VALIDATION
+    EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdResolve"));
+#endif
+    EQ_VALIDATE(Validation::checkResolve(resolveCheckOf(state, src, dst, mode), "cmdResolve"));
+    resolveInto(list(cmd), src, dst, mode);
 }
 
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────

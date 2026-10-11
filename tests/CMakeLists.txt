@@ -91,6 +91,8 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.indexed_draw_with_blending
     texture.stencil_test
     texture.mesh_shaders
+    texture.resolve_color
+    texture.resolve_depth
     texture.unlisted_view_format_reports
 )
 set(EQUINE_GPU_SHARED_ABORT_TESTS
@@ -127,7 +129,7 @@ function(equine_add_gpu_test_shaders exe)
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl")
     equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl")
     equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl")
-    equine_add_shaders(${exe} PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl")
+    equine_add_shaders(${exe} PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl" "${dir}/fullscreen_payload_ms.hlsl")
     equine_add_shaders(${exe} PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
 endfunction()
 

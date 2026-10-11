@@ -30,6 +30,8 @@ struct DeviceState {
     UINT resourceDescriptorSize = 0;
     UINT samplerDescriptorSize = 0;
     bool gpuUploadHeap = false;
+    uint32 depthResolveModes = 0; // DeviceLimits copies (P76), for checks while recording
+    uint32 stencilResolveModes = 0;
 
     // The graphics queue's timeline (P20).
     ID3D12Fence *fence = nullptr;
