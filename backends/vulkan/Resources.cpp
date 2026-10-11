@@ -112,7 +112,9 @@ void freeMemory(Device &device, Memory &memory) {
 #if EQUINE_VALIDATION
     Validation::forgetMemory(state.placements, memory.internal.id);
 #endif
-    state.functions.vkFreeMemory(state.device, native(memory), nullptr);
+    if (!memory.internal.imported) { // P77: imported memory stays the user's
+        state.functions.vkFreeMemory(state.device, native(memory), nullptr);
+    }
     memory = {};
 }
 
@@ -161,7 +163,9 @@ void destroyBuffer(Device &device, Buffer &buffer) {
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
     EQ_VK_UNTRACK(&state, buffer.internal.id);
-    state.functions.vkDestroyBuffer(state.device, native(buffer), nullptr);
+    if (!buffer.internal.imported) { // P77: an imported buffer stays the user's
+        state.functions.vkDestroyBuffer(state.device, native(buffer), nullptr);
+    }
     buffer = {};
 }
 
@@ -372,6 +376,51 @@ void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count) {
     EQ_VK_CHECK_ALIVE(&state, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "resetQueries: the query range"));
     state.functions.vkResetQueryPool(state.device, native(pool), first, count);
+}
+
+// ── Import (P77) ─────────────────────────────────────────────────────────────
+
+Memory importMemory(Device &device, VkDeviceMemory memory, MemoryKind kind, uint64 size, void *mapped) {
+    DeviceState &state = *device.internal.state;
+    Memory result;
+    result.kind = kind;
+    result.size = size;
+    result.mapped = mapped;
+    result.internal.memory = reinterpret_cast<uint64>(memory);
+    result.internal.memoryType = state.memoryTypes[kindIndex(kind)];
+    result.internal.imported = true;
+    result.internal.id = EQ_VK_TRACK(&state);
+    return result;
+}
+
+Buffer importBuffer(Device &device, VkBuffer buffer, const BufferDesc &desc, void *mapped) {
+    DeviceState &state = *device.internal.state;
+    const VkBufferDeviceAddressInfo addressInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = buffer};
+    Buffer result;
+    result.size = desc.size;
+    result.usage = desc.usage;
+    result.gpuAddress = state.functions.vkGetBufferDeviceAddress(state.device, &addressInfo);
+    result.mapped = mapped;
+    result.internal.buffer = reinterpret_cast<uint64>(buffer);
+    result.internal.imported = true;
+    result.internal.id = EQ_VK_TRACK(&state);
+    return result;
+}
+
+void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, VkDescriptorType type,
+                           const VkDescriptorImageInfo *image, const VkDescriptorBufferInfo *buffer) {
+    DeviceState &state = *device.internal.state;
+    EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
+    EQ_VALIDATE(Validation::checkSlot(slot, heap.resourceCount, "resource"));
+    const VkWriteDescriptorSet write{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                     .dstSet = native(heap).resourceSet,
+                                     .dstBinding = 0,
+                                     .dstArrayElement = slot,
+                                     .descriptorCount = 1,
+                                     .descriptorType = type,
+                                     .pImageInfo = image,
+                                     .pBufferInfo = buffer};
+    state.functions.vkUpdateDescriptorSets(state.device, 1, &write, 0, nullptr);
 }
 
 } // namespace RI::Vk

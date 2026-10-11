@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 namespace RI {
 
@@ -28,6 +29,23 @@ void reportError(ErrorCategory category, std::string_view message, std::source_l
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
     std::abort();
+}
+
+bool gpuValidationEnabled() {
+    std::string value;
+#if defined(_WIN32)
+    char *text = nullptr;
+    size_t length = 0;
+    if (_dupenv_s(&text, &length, "EQUINE_GPU_VALIDATION") == 0 && text != nullptr) {
+        value = text;
+        std::free(text);
+    }
+#else
+    if (const char *text = std::getenv("EQUINE_GPU_VALIDATION"); text != nullptr) {
+        value = text;
+    }
+#endif
+    return value != "0";
 }
 
 } // namespace RI

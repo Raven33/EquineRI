@@ -9,6 +9,7 @@
 #include <RI/Vk/Native.hpp>
 
 #include <algorithm>
+#include <cstring>
 #include <format>
 #include <iterator>
 #include <span>
@@ -234,6 +235,11 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.graphics = false;
     cmd.internal.rendering = false;
     cmd.internal.markerDepth = 0;
+    cmd.internal.pipeline = 0;
+    cmd.internal.boundPipeline[0] = 0;
+    cmd.internal.boundPipeline[1] = 0;
+    cmd.internal.rootDataBytes = 0;
+    cmd.internal.native = false;
     cmd.internal.depthReadOnly = false;
     cmd.internal.heapResourceSet = 0;
     cmd.internal.heapSamplerSet = 0;
@@ -278,6 +284,7 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
     cmd.internal.pipeline = pipeline.internal.pipeline;
+    cmd.internal.boundPipeline[bindIndex(pipeline.internal.graphics)] = pipeline.internal.pipeline;
     if (cmd.internal.boundLayout[index] != pipeline.internal.layout) {
         cmd.internal.boundLayout[index] = pipeline.internal.layout;
         bindHeap(cmd, index);
@@ -286,6 +293,9 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
     EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
+    // Kept for endNative (P70).
+    std::memcpy(cmd.internal.rootData, data, std::min<size_t>(size, sizeof(cmd.internal.rootData)));
+    cmd.internal.rootDataBytes = size;
     fn(cmd).vkCmdPushConstants(native(cmd),
                                reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[bindIndex(cmd.internal.graphics)]),
                                VK_SHADER_STAGE_ALL, 0, size, data);
@@ -491,6 +501,8 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
                               .maxDepth = 1.0f};
     const VkRect2D scissor{.offset = {0, 0}, .extent = {width, height}};
     fn(cmd).vkCmdSetViewport(native(cmd), 0, 1, &viewport);
+    cmd.internal.renderWidth = width;
+    cmd.internal.renderHeight = height;
     fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
     cmd.internal.rendering = true;
 }
@@ -906,6 +918,68 @@ void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst
     }
     cmdBeginRendering(cmd, desc);
     cmdEndRendering(cmd);
+}
+
+// ── Native sections (P27, P70) ───────────────────────────────────────────────
+
+NativeCommands beginNative(CommandList &cmd) {
+    if (cmd.internal.native) {
+        reportError(ErrorCategory::eProgrammerError, "beginNative: a native section is already open");
+    }
+    cmd.internal.native = true;
+    return {.commandBuffer = native(cmd), .functions = &fn(cmd)};
+}
+
+void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
+    if (!cmd.internal.native) {
+        reportError(ErrorCategory::eProgrammerError, "endNative: no native section is open");
+    }
+    if (cmd.internal.rendering && !changed.empty()) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "endNative: layouts cannot change inside a rendering section (P70 (2)); the list must be empty");
+    }
+    cmd.internal.native = false;
+    // The textures native code left elsewhere go back to rest, full on both halves.
+    std::vector<VkImageMemoryBarrier2> barriers;
+    for (const NativeLayoutChange &c : changed) {
+        const auto resting = static_cast<VkImageLayout>(c.view.internal.restingLayout);
+        if (c.layout != resting) {
+            barriers.push_back(imageBarrier(c.view, {.srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                     .srcAccess = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                                                     .dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                     .dstAccess = kAllAccess,
+                                                     .oldLayout = c.layout,
+                                                     .newLayout = resting}));
+        }
+    }
+    pipelineBarrier(cmd, barriers);
+    // Everything RI set comes back (P70 (1)): heap sets, pipeline, root data, viewport.
+    for (uint32 index = 0; index < 2; ++index) {
+        if (cmd.internal.boundLayout[index] != 0) {
+            bindHeap(cmd, index);
+        }
+    }
+    for (uint32 index = 0; index < 2; ++index) {
+        if (cmd.internal.boundPipeline[index] != 0) {
+            fn(cmd).vkCmdBindPipeline(native(cmd), bindPointOf(index),
+                                      reinterpret_cast<VkPipeline>(cmd.internal.boundPipeline[index]));
+        }
+    }
+    if (cmd.internal.pipeline != 0) {
+        const uint32 index = bindIndex(cmd.internal.graphics);
+        if (cmd.internal.rootDataBytes > 0) {
+            fn(cmd).vkCmdPushConstants(native(cmd), reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[index]),
+                                       VK_SHADER_STAGE_ALL, 0, cmd.internal.rootDataBytes, cmd.internal.rootData);
+        }
+    }
+    if (cmd.internal.rendering) {
+        const auto width = static_cast<float>(cmd.internal.renderWidth);
+        const auto height = static_cast<float>(cmd.internal.renderHeight);
+        const VkViewport viewport{.x = 0.0f, .y = height, .width = width, .height = -height, .minDepth = 0.0f, .maxDepth = 1.0f};
+        const VkRect2D scissor{.offset = {0, 0}, .extent = {cmd.internal.renderWidth, cmd.internal.renderHeight}};
+        fn(cmd).vkCmdSetViewport(native(cmd), 0, 1, &viewport);
+        fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
+    }
 }
 
 // ── Submission (P20) ─────────────────────────────────────────────────────────

@@ -152,6 +152,7 @@ function(equine_add_gpu_tests exe prefix)
         add_test(NAME "${test}" COMMAND ${exe} "${name}")
         set_tests_properties("${test}" PROPERTIES
             LABELS gpu
+            TIMEOUT 120 # a GPU hang fails the test instead of blocking the run
             # Driver leaks only; see the file.
             ENVIRONMENT "LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/vulkan/lsan.supp:print_suppressions=0"
         )
@@ -192,6 +193,8 @@ if (TARGET EquineVulkanBackend)
         vk.unknown_gpu_reports
         vk.layout_modes
         vk.sampled_depth_resting_layout
+        vk.native_section
+        vk.import_objects
     )
     # The Windows loader (1.4.321) fails the whole instance with
     # VK_ERROR_OUT_OF_HOST_MEMORY when a VK_ADD_DRIVER_FILES driver cannot be

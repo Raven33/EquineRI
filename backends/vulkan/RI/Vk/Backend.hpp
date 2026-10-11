@@ -58,6 +58,7 @@ struct Memory {
     struct {
         uint64 memory = 0;     // VkDeviceMemory
         uint32 memoryType = 0; // its memory type index
+        bool imported = false; // P77: RI does not free it
         uint64 id = 0;         // validation builds: use-after-free tracking (P91)
     } internal;
 };
@@ -75,6 +76,7 @@ struct Buffer {
     void *mapped = nullptr; // memory.mapped + offset, or nullptr for eGPU memory
     struct {
         uint64 buffer = 0; // VkBuffer
+        bool imported = false; // P77: RI does not destroy it
         uint64 id = 0;
     } internal;
 };
@@ -117,6 +119,7 @@ struct Texture {
         uint64 image = 0; // VkImage
         uint32 restingLayout = 0;
         uint32 viewFormats = 0; // bit per RI::Format views may use besides `format` (P74)
+        bool imported = false;  // P77: RI does not destroy the image
         uint64 id = 0;
     } internal;
 };
@@ -250,6 +253,7 @@ struct Pipeline {
         uint64 layout = 0;   // VkPipelineLayout
         bool graphics = false;
         bool depthWrite = false; // checked against read-only depth sections (P75)
+        bool imported = false;   // P77: RI does not destroy it
         uint64 id = 0;
     } internal;
 };
@@ -272,7 +276,12 @@ struct CommandList {
         uint64 heapResourceSet = 0;     // heap set by cmdSetHeap, 0 if none
         uint64 heapSamplerSet = 0;
         uint32 rootDataSize = 0;        // of the pipeline set by cmdSetPipeline
-        uint64 pipeline = 0;            // VkPipeline set by cmdSetPipeline (indirect Level 2)
+        uint64 pipeline = 0;            // VkPipeline set by cmdSetPipeline (indirect Level 2, P70)
+        uint64 boundPipeline[2] = {0, 0}; // per bind point (compute, graphics), restored by endNative
+        uint8 rootData[256] = {};       // the last root data set, restored after native sections (P70)
+        uint32 rootDataBytes = 0;
+        uint32 renderWidth = 0, renderHeight = 0; // the open section's viewport (P70)
+        bool native = false;            // inside beginNative/endNative
         uint64 lastSubmitted = 0;       // timeline value of its last submission
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
         bool rendering = false;

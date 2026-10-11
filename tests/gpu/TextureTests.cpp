@@ -692,7 +692,7 @@ EQ_TEST(texture, indexed_draw_with_blending) {
     RI::Texture target = placeTexture(f.device, f.gpu,
                                       {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float,
                                        .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)}; // D3D12: 64 KiB per buffer
     RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
     const uint16 values[] = {0, 1, 2, 0};
     std::memcpy(indices.mapped, values, sizeof(values));
@@ -927,7 +927,7 @@ struct AdditiveTarget {
 EQ_TEST(texture, indirect_level1) {
     Fixture f;
     AdditiveTarget t(f);
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)}; // D3D12: 64 KiB per buffer
     RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
     const uint16 indexValues[] = {0, 1, 2, 0};
     std::memcpy(indices.mapped, indexValues, sizeof(indexValues));
@@ -990,7 +990,7 @@ EQ_TEST(texture, indirect_level2) {
         return;
     }
     AdditiveTarget t(f);
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)}; // D3D12: 64 KiB per buffer
     RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
     const uint16 indexValues[] = {0, 1, 2, 0};
     std::memcpy(indices.mapped, indexValues, sizeof(indexValues));
