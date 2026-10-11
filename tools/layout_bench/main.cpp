@@ -47,6 +47,7 @@ struct Options {
     std::string out;
     bool hostBarrier = true; // Vulkan: --host-barrier off measures P94 (6)
     bool interleave = false; // --interleave on: the mode and the baseline, frame by frame
+    std::string only;        // --only <workload>: run one workload
 };
 
 Options parse(int argc, char **argv) {
@@ -80,6 +81,10 @@ Options parse(int argc, char **argv) {
             o.interleave = value == "on";
         } else if (key == "--host-barrier") {
             o.hostBarrier = value != "off";
+        } else if (key == "--only") {
+            o.only = value;
+        } else if (key == "--baseline-variant") {
+            bench::baselineVariant = value;
         } else {
             std::fprintf(stderr, "usage: layout_bench [--gpu nvidia|amd|<index>] [--mode <mode>] [--res 1080|2160] "
                                  "[--frames N] [--warmup N] [--out file.csv]\n");
@@ -634,7 +639,9 @@ int main(int argc, char **argv) {
         } else {
             paths.push_back({&instances[0], c.useBaseline, c.options.mode, {}});
         }
-        run(c, paths, out, c.device.gpu.name);
+        if (c.options.only.empty() || instances[0].name == c.options.only) {
+            run(c, paths, out, c.device.gpu.name);
+        }
         for (Workload &w : instances) {
             for (bench::Texture &t : w.textures) {
                 if (t.sampledView.internal.textureId != 0 && RI::isDepthFormat(t.texture.format)) {

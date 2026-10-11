@@ -54,6 +54,17 @@ VkImageAspectFlags aspectOf(RI::Format format) {
     return RI::hasStencil(format) ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
 }
 
+// The layout a sampled texture is read in, with the diagnosis variants.
+VkImageLayout sampledLayout(const RI::Texture &texture) {
+    if (hasVariant("general") && (texture.usage & RI::TextureUsage::eStorage) != RI::TextureUsage::eNone) {
+        return VK_IMAGE_LAYOUT_GENERAL;
+    }
+    if (hasVariant("ro") && !RI::isDepthFormat(texture.format)) {
+        return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+    }
+    return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
 } // namespace
 
 struct Baseline {
@@ -77,7 +88,7 @@ void baselineWriteDescriptors(Baseline &b, Workload &w) {
     const VkDescriptorSet set = RI::Vk::native(*b.heap).resourceSet;
     for (Texture &t : w.textures) {
         if ((t.texture.usage & RI::TextureUsage::eSampled) != RI::TextureUsage::eNone) {
-            infos.push_back({.imageView = RI::Vk::native(t.sampledView), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+            infos.push_back({.imageView = RI::Vk::native(t.sampledView), .imageLayout = sampledLayout(t.texture)});
             writes.push_back({.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                               .dstSet = set,
                               .dstArrayElement = t.sampledSlot,
@@ -115,6 +126,9 @@ void baselineBeforePass(Baseline &b, RI::CommandList &cmd, Workload &w, const Pa
         if (use.role == Role::eDepthTarget && RI::hasStencil(format)) {
             t.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
+        if (use.role == Role::eSampled) {
+            t.layout = sampledLayout(w.textures[use.texture].texture);
+        }
         constexpr VkAccessFlags2 kWrites = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
                                            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
                                            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
@@ -123,12 +137,13 @@ void baselineBeforePass(Baseline &b, RI::CommandList &cmd, Workload &w, const Pa
             continue;
         }
         const RI::Texture &tex = w.textures[use.texture].texture;
+        const bool full = hasVariant("full");
         barriers.push_back({
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .srcStageMask = s.stages,
-            .srcAccessMask = use.discard ? VK_ACCESS_2_NONE : (s.access & kWrites),
-            .dstStageMask = t.stages,
-            .dstAccessMask = t.access,
+            .srcStageMask = full ? VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT : s.stages,
+            .srcAccessMask = full ? VK_ACCESS_2_MEMORY_WRITE_BIT : use.discard ? VK_ACCESS_2_NONE : (s.access & kWrites),
+            .dstStageMask = full ? VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT : t.stages,
+            .dstAccessMask = full ? VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT : t.access,
             .oldLayout = use.discard ? VK_IMAGE_LAYOUT_UNDEFINED : s.layout,
             .newLayout = t.layout,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
