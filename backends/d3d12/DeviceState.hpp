@@ -77,6 +77,10 @@ struct DeviceState {
 // Debugging (Debug.cpp, P53): a removed device is reported with DRED's
 // breadcrumbs and page-fault details (validation builds).
 void reportDeviceRemoved(DeviceState &state);
+// Views (Textures.cpp): a view with RI's RTV/DSV descriptors, and their release.
+TextureView makeTextureView(DeviceState &state, const Texture &texture, const TextureViewDesc &desc);
+void releaseTextureView(DeviceState &state, TextureView &view);
+
 // Indirect (Indirect.cpp, P48): releases the command signatures made for
 // `rootSignature` (a pipeline being destroyed), or all of them (nullptr).
 void forgetCommandSignatures(DeviceState &state, void *rootSignature);

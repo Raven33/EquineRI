@@ -8,8 +8,8 @@ symbols: [RI::Window, RI::WindowSystem]
 
 `RI::Window` describes a window as the operating system knows it: plain OS handles, never a
 native graphics object. RI creates no windows ([P43](../design-notes/decisions.md#p43)). You
-create the window yourself (or with a window helper such as GLFW) and fill in this struct;
-the swapchain, which comes in a later milestone, takes it to present to the window.
+create the window yourself (or with the [GLFW window helper](../helpers/glfw-window.md)) and
+fill in this struct; [`createSwapchain`](swapchain.md) takes it to present to the window.
 
 | `system` | `display` | `handle` | `id` |
 |---|---|---|---|

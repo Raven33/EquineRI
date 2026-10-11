@@ -7,3 +7,21 @@
 # with a bare volk program (create instance, enumerate GPUs, destroy) and Mesa
 # 26.2.2: no RI code involved. RI does not call pthread_once/std::call_once.
 leak:__pthread_once
+
+# Window-system libraries used by GLFW in the swapchain tests (window.*):
+# keyboard maps (xkbcommon) and window decorations (libdecor with its GTK
+# plugin, fonts through pango and fontconfig) keep process-lifetime caches.
+# Seen 2026-10-11 on Hyprland (Wayland) and XWayland; no RI frames.
+leak:libxkbcommon
+leak:libdecor
+leak:libfontconfig
+leak:libpango
+leak:libgtk
+leak:libglib
+leak:libgobject
+leak:libwayland-client
+leak:libX11
+# GLFW loads xkbcommon with dlopen and unloads it at glfwTerminate, so its
+# frames lose their library name: match GLFW's keymap handler instead (the
+# keymap and compose table xkbcommon caches).
+leak:keyboardHandleKeymap

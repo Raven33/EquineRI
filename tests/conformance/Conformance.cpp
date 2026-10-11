@@ -160,6 +160,18 @@ EQ_SIGNATURE(cmdExecuteIndirectWithRootData, void (*)(RI::CommandList &, RI::Ind
                                                       uint32, const RI::Buffer *, uint64));
 EQ_SIGNATURE(cmdDrawIndexed, void (*)(RI::CommandList &, uint32, uint32, uint32, int32, uint32));
 
+// Swapchains (P43, P63, P64)
+EQ_SIGNATURE(surfaceFormats, std::vector<RI::SurfaceFormat> (*)(RI::Device &, const RI::Window &));
+EQ_SIGNATURE(presentModeSupported, bool (*)(RI::Device &, const RI::Window &, RI::PresentMode));
+EQ_SIGNATURE(screenStorageSupported, bool (*)(RI::Device &, const RI::Window &, RI::Format));
+EQ_SIGNATURE(createSwapchain, RI::Swapchain (*)(RI::Device &, const RI::SwapchainDesc &));
+EQ_SIGNATURE(resizeSwapchain, void (*)(RI::Device &, RI::Swapchain &, uint32, uint32));
+EQ_SIGNATURE(destroySwapchain, void (*)(RI::Device &, RI::Swapchain &));
+EQ_SIGNATURE(acquire, RI::Texture (*)(RI::Device &, RI::Swapchain &));
+EQ_SIGNATURE(present, void (*)(RI::Queue &, RI::Swapchain &));
+EQ_FIELD(Swapchain, width, uint32);
+EQ_FIELD(Swapchain, format, RI::SurfaceFormat);
+
 // Debugging (P53)
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Memory &, std::string_view));
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Buffer &, std::string_view));

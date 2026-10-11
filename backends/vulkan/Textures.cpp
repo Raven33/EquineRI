@@ -154,6 +154,8 @@ VkImageAspectFlags aspectsOf(Format format, Aspect aspect) {
 
 } // namespace
 
+VkImageUsageFlags imageUsageOf(TextureUsage usage) { return usageOf(usage); }
+
 // ── Formats and layouts ──────────────────────────────────────────────────────
 
 VkFormat toVkFormat(Format format) { return infoOf(format).native; }

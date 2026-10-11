@@ -21,7 +21,7 @@ constexpr const char *kValidationLayer = "VK_LAYER_KHRONOS_validation";
 // Enabled when the loader offers them; the swapchain (P43) needs them.
 constexpr const char *kSurfaceExtensions[] = {
     "VK_KHR_surface",       "VK_KHR_win32_surface",   "VK_KHR_xlib_surface",
-    "VK_KHR_xcb_surface",   "VK_KHR_wayland_surface",
+    "VK_KHR_xcb_surface",   "VK_KHR_wayland_surface", "VK_EXT_swapchain_colorspace", // HDR10, scRGB (P64)
 };
 
 void loadLoader() {

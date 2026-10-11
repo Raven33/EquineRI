@@ -68,6 +68,7 @@ add_test(NAME ri.registry_matches COMMAND EquineRITests --expect-count ${EQUINE_
 set(EQUINE_GPU_SHARED_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ComputeTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/TextureTests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/gpu/SwapchainTests.cpp"
 )
 set(EQUINE_GPU_SHARED_TEST_NAMES
     compute.buffer_compute_readback
@@ -97,6 +98,11 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.indirect_level2
     texture.unlisted_view_format_reports
 )
+if (WIN32)
+    list(APPEND EQUINE_GPU_SHARED_TEST_NAMES window.swapchain)
+else()
+    list(APPEND EQUINE_GPU_SHARED_TEST_NAMES window.swapchain_x11 window.swapchain_wayland)
+endif()
 set(EQUINE_GPU_SHARED_ABORT_TESTS
     "texture.unlisted_view_format_reports|programmer error: createView: format"
 )
@@ -173,7 +179,7 @@ if (TARGET EquineVulkanBackend)
     equine_add_gpu_test_shaders(EquineRIVulkanTests)
     equine_add_shaders(EquineRIVulkanTests PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/printf.hlsl")
     target_include_directories(EquineRIVulkanTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_link_libraries(EquineRIVulkanTests PRIVATE EquineVulkanBackend)
+    target_link_libraries(EquineRIVulkanTests PRIVATE EquineVulkanBackend EquineGlfwWindow)
     equine_copy_sanitizer_runtime(EquineRIVulkanTests)
 
     set(EQUINE_VK_TEST_NAMES
@@ -223,7 +229,7 @@ if (TARGET EquineD3D12Backend)
     )
     equine_add_gpu_test_shaders(EquineRID3D12Tests)
     target_include_directories(EquineRID3D12Tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_link_libraries(EquineRID3D12Tests PRIVATE EquineD3D12Backend)
+    target_link_libraries(EquineRID3D12Tests PRIVATE EquineD3D12Backend EquineGlfwWindow)
     equine_copy_sanitizer_runtime(EquineRID3D12Tests)
     equine_deploy_agility_sdk(EquineRID3D12Tests)
 

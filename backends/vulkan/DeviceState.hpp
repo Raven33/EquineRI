@@ -121,6 +121,7 @@ void loadDebugFunctions(DeviceState &state);
 void checkQueueVk(DeviceState &state, VkResult result, std::string_view call);
 
 // Formats and layouts (Textures.cpp), shared by the backend's sources.
+VkImageUsageFlags imageUsageOf(TextureUsage usage);
 VkFormat toVkFormat(Format format);
 const char *formatName(Format format);
 // The layout `usage` rests in under `mode` (L1, P95).

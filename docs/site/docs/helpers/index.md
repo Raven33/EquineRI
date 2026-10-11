@@ -9,7 +9,6 @@ Because a helper uses nothing private, you can always replace it with your own. 
 page will therefore end with **"How to roll your own"**: the RI calls the helper makes, so you
 can write a version that fits your project.
 
-!!! note "No helpers yet"
-    Helpers come after the core (Milestone 4 of the plan). Until then, see the reference
-    pages: for example, choosing a GPU yourself is three lines on
-    [`RI::listGpus`](../reference/listGpus.md).
+Helpers:
+
+- [GLFW window](glfw-window.md): the `RI::Window` of a GLFW window, for swapchains.

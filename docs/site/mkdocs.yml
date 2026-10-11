@@ -201,6 +201,8 @@ nav:
           - RI::cmdBeginQuery, RI::pipelineStatisticsLayout: reference/queries.md
       - Submission:
           - RI::submit, RI::wait, RI::isReached: reference/submit.md
+      - Swapchains:
+          - RI::createSwapchain, RI::acquire, RI::present: reference/swapchain.md
       - Debugging:
           - RI::setName, RI::cmdBeginMarker, RI::cmdEndMarker: reference/debugging.md
   - Native access:
@@ -209,7 +211,9 @@ nav:
       - "Vulkan: native handles": native/vulkan/objects.md
       - "D3D12: device creation": native/d3d12/device-creation.md
       - "D3D12: native objects": native/d3d12/objects.md
-  - Helpers: helpers/index.md
+  - Helpers:
+      - helpers/index.md
+      - GLFW window: helpers/glfw-window.md
   - Design notes:
       - design-notes/index.md
       - Decision log: design-notes/decisions.md
