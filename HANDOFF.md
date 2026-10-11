@@ -1,21 +1,23 @@
 # Handoff
 
-State on 2026-10-11: **Milestones 1–3 are done** (`docs/Plan.md`). Milestone 3 added textures,
-views, rendering sections, minimal graphics pipelines, discard, clears and timestamps on both
-backends (P95), and measured L1 (P96, P97, `docs/LayoutEvaluation.md` "Results"). Outcome:
-**L1 confirmed, with P16 and P36** (P97): A' passes P79 on every tested GPU, with the opt-in
-`TextureUsage::eReadOnlyDepthSampling` (sampled depth otherwise rests ready for fast sampling)
-and placement-balanced measurement (`--swap`). Next: Milestone 4. Pending review: P94 (partly
-reviewed), P95, P97.
+State on 2026-10-11: **Milestones 1–4 are implemented** (`docs/Plan.md`). Milestone 3 measured
+L1 and confirmed it with P16 and P36 (P97). Milestone 4 added the rest of v1 (P98): debugging,
+copies and queries, graphics completion, indirect execution, swapchain, native sections and
+import, inline ray tracing, work graphs (D3D12) and the helpers. All Linux tests pass.
+Still to run on Windows: the AMD Vulkan heap clamp, `d3d12.work_graph`, the helpers on both
+backends. Pending review: P94 (partly reviewed), P95, P97, P98 (frame graph shape, the DGC
+exception to P31, DGC off on NVIDIA under GPU-AV, work-graph initialization).
 
 A Windows assistant session (`windows-equineri`, Remote Control) builds and tests pushed
 commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
-(`mkdocs build --strict -f docs/site/mkdocs.yml`); every Milestone 2 feature has a page.
+(`mkdocs build --strict -f docs/site/mkdocs.yml`); every feature and helper has a page.
 
 ## Where to read
 
-- `CONTEXT.md`: the decision log (P1–P97) and the open questions (§5). Start here.
+- `CONTEXT.md`: the decision log (P1–P98) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
+- Environment: `EQUINE_GPU=nvidia|amd|<index>` picks the test GPU; `EQUINE_GPU_VALIDATION=0`
+  turns GPU-AV / GBV off in validation builds.
 - `docs/RIApiProposal.md`: the decided API style (P80–P88) with code sketches.
 - `docs/DocsProposal.md`: the user-facing documentation site (MkDocs + Material as a
   test; also a teaching resource with canonical Vulkan/D3D12 equivalents). A feature is

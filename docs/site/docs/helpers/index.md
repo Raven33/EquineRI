@@ -12,3 +12,12 @@ can write a version that fits your project.
 Helpers:
 
 - [GLFW window](glfw-window.md): the `RI::Window` of a GLFW window, for swapchains.
+- [Memory and slot allocators](allocators.md): placement in blocks, slots, deferred frees.
+- [Transfers](transfers.md): one-call uploads and readbacks.
+- [Frame ring](frame-ring.md): frames in flight.
+- [GPU profiler](profiler.md): nested timestamp scopes.
+- [Frame graph](frame-graph.md): aliasing, discards and barriers planned from declarations.
+- [Shader compiler](shader-compiler.md): HLSL at run time with RI's compile rule.
+
+Every helper except the GLFW window is in the library `EquineHelpersVulkan` or
+`EquineHelpersD3D12`, matching the backend you build.
