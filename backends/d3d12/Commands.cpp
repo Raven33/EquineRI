@@ -74,7 +74,7 @@ uint64 completedValue(DeviceState &state) {
     const uint64 value = state.fence->GetCompletedValue();
     if (value == UINT64_MAX) {
         // A removed device reports UINT64_MAX on every fence.
-        checkHr(state.device->GetDeviceRemovedReason(), "the D3D12 device was removed");
+        reportDeviceRemoved(state);
     }
     return value;
 }
@@ -131,12 +131,16 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.rootSignature[1] = nullptr;
     cmd.internal.graphics = false;
     cmd.internal.heapSet = false;
+    cmd.internal.markerDepth = 0;
     cmd.internal.rootDataSize = 0;
     cmd.internal.rendering = false;
 }
 
 // Writes are visible to the CPU once the fence value is reached: no barrier needed.
-void cmdEnd(CommandList &cmd) { checkHr(list(cmd)->Close(), "ID3D12GraphicsCommandList::Close"); }
+void cmdEnd(CommandList &cmd) {
+    EQ_VALIDATE(Validation::checkMarkersClosed(cmd.internal.markerDepth));
+    checkHr(list(cmd)->Close(), "ID3D12GraphicsCommandList::Close");
+}
 
 void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
     EQ_DX_CHECK_ALIVE(cmd.internal.device, heap.internal.id, "descriptor heap");
@@ -221,7 +225,7 @@ TimelinePoint submit(Queue &queue, CommandList &cmd) {
     ID3D12CommandList *lists[] = {list(cmd)};
     state.graphicsQueue->ExecuteCommandLists(1, lists);
     const uint64 value = state.lastSignaled + 1;
-    checkHr(state.graphicsQueue->Signal(state.fence, value), "ID3D12CommandQueue::Signal");
+    checkQueueHr(state, state.graphicsQueue->Signal(state.fence, value), "ID3D12CommandQueue::Signal");
     state.lastSignaled = value;
     cmd.internal.lastSubmitted = value;
     return {value};
@@ -233,7 +237,7 @@ void wait(Queue &queue, TimelinePoint point) {
         return;
     }
     // A null event makes the call block until the fence reaches the value.
-    checkHr(state.fence->SetEventOnCompletion(point.value, nullptr), "ID3D12Fence::SetEventOnCompletion");
+    checkQueueHr(state, state.fence->SetEventOnCompletion(point.value, nullptr), "ID3D12Fence::SetEventOnCompletion");
     completedValue(state);
 }
 

@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <optional>
 #include <span>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -273,6 +274,7 @@ struct CommandList {
         TextureView colors[8];
         TextureView depth;
         uint32 depthLayout = 0; // D3D12_BARRIER_LAYOUT used during the section
+        uint32 markerDepth = 0; // open cmdBeginMarker regions
         uint64 id = 0;
     } internal;
 };
@@ -316,6 +318,24 @@ void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint
 // Copies `count` 64-bit results to `buffer` at `offset` (a multiple of 8).
 void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
                        uint64 offset);
+
+// ── Debugging (P53) ──────────────────────────────────────────────────────────
+
+// Names shown by debuggers, captures (RenderDoc, PIX, Nsight) and validation
+// messages. Always on, in every build.
+void setName(Device &device, const Memory &memory, std::string_view name);
+void setName(Device &device, const Buffer &buffer, std::string_view name);
+void setName(Device &device, const Texture &texture, std::string_view name);
+void setName(Device &device, const TextureView &view, std::string_view name);
+void setName(Device &device, const DescriptorHeap &heap, std::string_view name);
+void setName(Device &device, const QueryPool &pool, std::string_view name);
+void setName(Device &device, const Pipeline &pipeline, std::string_view name);
+void setName(Device &device, const CommandList &cmd, std::string_view name);
+
+// A named region of commands in captures; regions nest and close in the same
+// command list.
+void cmdBeginMarker(CommandList &cmd, std::string_view name);
+void cmdEndMarker(CommandList &cmd);
 
 TimelinePoint submit(Queue &queue, CommandList &cmd);
 void wait(Queue &queue, TimelinePoint point);

@@ -111,4 +111,18 @@ CheckResult checkTextureUsage(Format format, TextureUsage usage) {
     return {};
 }
 
+CheckResult checkMarkerEnd(uint32 depth) {
+    if (depth == 0) {
+        return std::string("cmdEndMarker: no marker region is open (P53)");
+    }
+    return {};
+}
+
+CheckResult checkMarkersClosed(uint32 depth) {
+    if (depth != 0) {
+        return std::format("cmdEnd: {} marker region(s) left open; close each with cmdEndMarker (P53)", depth);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

@@ -54,6 +54,11 @@ CheckResult checkViewFormatCompatible(Format texture, Format view);
 CheckResult checkViewRange(uint32 baseMip, uint32 mipCount, uint32 mips, uint32 baseLayer, uint32 layerCount,
                            uint32 layers);
 
+// cmdEndMarker closes an open marker region (P53); `depth` is the open count.
+CheckResult checkMarkerEnd(uint32 depth);
+// cmdEnd: every marker region opened in the command list is closed.
+CheckResult checkMarkersClosed(uint32 depth);
+
 // eReadOnlyDepthSampling (P97) goes with eSampled, eDepthStencil and a depth format.
 CheckResult checkTextureUsage(Format format, TextureUsage usage);
 

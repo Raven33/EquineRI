@@ -154,6 +154,7 @@ nav:
       - Image layouts are RI's business: concepts/layouts.md
       - Rendering sections: concepts/rendering.md
       - Timestamps: concepts/timestamps.md
+      - Debugging: concepts/debugging.md
   - Reference:
       - reference/index.md
       - Device:
@@ -196,6 +197,8 @@ nav:
           - RI::createQueryPool, RI::resetQueries: reference/queryPool.md
       - Submission:
           - RI::submit, RI::wait, RI::isReached: reference/submit.md
+      - Debugging:
+          - RI::setName, RI::cmdBeginMarker, RI::cmdEndMarker: reference/debugging.md
   - Native access:
       - native/index.md
       - "Vulkan: device creation": native/vulkan/device-creation.md

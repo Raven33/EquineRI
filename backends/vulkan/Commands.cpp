@@ -123,8 +123,8 @@ constexpr VkAccessFlags2 kAllAccess = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_
 
 uint64 completedValue(DeviceState &state) {
     uint64 value = 0;
-    checkVk(state.functions.vkGetSemaphoreCounterValue(state.device, state.timeline, &value),
-            "vkGetSemaphoreCounterValue");
+    checkQueueVk(state, state.functions.vkGetSemaphoreCounterValue(state.device, state.timeline, &value),
+                 "vkGetSemaphoreCounterValue");
     return value;
 }
 
@@ -182,6 +182,7 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.boundLayout[1] = 0;
     cmd.internal.graphics = false;
     cmd.internal.rendering = false;
+    cmd.internal.markerDepth = 0;
     cmd.internal.depthReadOnly = false;
     cmd.internal.heapResourceSet = 0;
     cmd.internal.heapSamplerSet = 0;
@@ -190,6 +191,7 @@ void cmdBegin(CommandList &cmd) {
 
 void cmdEnd(CommandList &cmd) {
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdEnd"));
+    EQ_VALIDATE(Validation::checkMarkersClosed(cmd.internal.markerDepth));
     // Writes become visible to the CPU once the submission's timeline point is
     // reached, as on D3D12 (Vulkan needs an explicit host barrier for this).
     const VkMemoryBarrier2 toHost{
@@ -570,7 +572,8 @@ TimelinePoint submit(Queue &queue, CommandList &cmd) {
                                    .pCommandBufferInfos = &commandInfo,
                                    .signalSemaphoreInfoCount = 1,
                                    .pSignalSemaphoreInfos = &signal};
-    checkVk(state.functions.vkQueueSubmit2(state.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "vkQueueSubmit2");
+    checkQueueVk(state, state.functions.vkQueueSubmit2(state.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE),
+                 "vkQueueSubmit2");
     state.lastSignaled = value;
     cmd.internal.lastSubmitted = value;
     return {value};
@@ -582,7 +585,7 @@ void wait(Queue &queue, TimelinePoint point) {
                                    .semaphoreCount = 1,
                                    .pSemaphores = &state.timeline,
                                    .pValues = &point.value};
-    checkVk(state.functions.vkWaitSemaphores(state.device, &info, UINT64_MAX), "vkWaitSemaphores");
+    checkQueueVk(state, state.functions.vkWaitSemaphores(state.device, &info, UINT64_MAX), "vkWaitSemaphores");
 }
 
 bool isReached(Queue &queue, TimelinePoint point) { return completedValue(*queue.internal.device) >= point.value; }
