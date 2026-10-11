@@ -42,11 +42,13 @@ def main():
 
     verdicts = []
     for (backend, gpu, res), modes in sorted(groups.items()):
-        if "baseline" not in modes:
-            continue
-        base = modes["baseline"]
         for mode, values in sorted(modes.items()):
-            if mode == "baseline":
+            if mode.startswith("baseline"):
+                continue
+            # Interleaved runs (--interleave on) carry their own baseline,
+            # "baseline:<mode>", measured frame by frame alongside the mode.
+            base = modes.get("baseline:" + mode, modes.get("baseline"))
+            if base is None:
                 continue
             print(f"\n### {backend}, {gpu}, {res}p: `{mode}` vs baseline\n")
             print("| Workload | Pass | Baseline ms | A' ms | Diff ms | Diff % | OK |")
@@ -74,7 +76,7 @@ def main():
     print("| Backend | GPU | Res | Workload | Pass | Spread ms |")
     print("|---|---|---|---|---|---:|")
     for (backend, gpu, mode, res, workload, pass_), values in sorted(raw.items()):
-        if mode == "baseline" and len(values) > 1 and pass_ == "frame":
+        if mode.startswith("baseline") and len(values) > 1 and pass_ == "frame":
             print(f"| {backend} | {gpu} | {res} | {workload} | {pass_} | {max(values) - min(values):.4f} |")
 
     print("\n## Verdicts (P79)\n")
