@@ -17,3 +17,28 @@ target_compile_options(glfw PRIVATE $<IF:$<STREQUAL:${CMAKE_C_COMPILER_FRONTEND_
 add_library(EquineGlfwWindow STATIC glfw/GlfwWindow.cpp)
 target_include_directories(EquineGlfwWindow PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glfw")
 target_link_libraries(EquineGlfwWindow PUBLIC EquineRI glfw)
+
+# ── RI helpers (P41) ───────────────────────────────────────────────────────────
+# Built only on RI's public surface, so compiled once per backend (P83), like
+# user code: EquineHelpersVulkan, EquineHelpersD3D12.
+set(EQUINE_HELPER_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/MemoryAllocator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/SlotAllocator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Transfers.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/FrameRing.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Profiler.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/FrameGraph.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ShaderCompiler.cpp"
+)
+foreach(backend IN ITEMS Vulkan D3D12)
+    if (TARGET Equine${backend}Backend)
+        add_library(EquineHelpers${backend} STATIC ${EQUINE_HELPER_SOURCES})
+        target_include_directories(EquineHelpers${backend} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/core")
+        target_link_libraries(EquineHelpers${backend} PUBLIC Equine${backend}Backend PRIVATE ${CMAKE_DL_LIBS})
+        # The runtime shader compiler loads the pinned DXC library (P29, P93).
+        target_include_directories(EquineHelpers${backend} SYSTEM PRIVATE "${EQUINE_DXC_INCLUDE_DIR}")
+        target_compile_definitions(EquineHelpers${backend} PRIVATE
+            "EQUINE_DXC_LIBRARY=\"${EQUINE_DXC_LIBRARY}\""
+            "EQUINE_SHADER_INCLUDE_DIR=\"${EQUINE_SHADER_INCLUDE_DIR}\"")
+    endif()
+endforeach()

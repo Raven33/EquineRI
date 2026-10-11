@@ -381,6 +381,38 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
                 "vkCreateDescriptorSetLayout");
         return layout;
     };
+    // The largest heap the driver accepts: the property limits are an upper
+    // bound, but drivers may refuse less for mutable descriptors (AMD Windows
+    // with acceleration structures among the types refuses 1M slots).
+    const auto supported = [&](uint32 count) {
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            .pNext = &mutableInfo,
+            .bindingCount = 1,
+            .pBindingFlags = &kBindingFlags,
+        };
+        const VkDescriptorSetLayoutBinding binding{.binding = 0,
+                                                   .descriptorType = VK_DESCRIPTOR_TYPE_MUTABLE_EXT,
+                                                   .descriptorCount = count,
+                                                   .stageFlags = VK_SHADER_STAGE_ALL};
+        const VkDescriptorSetLayoutCreateInfo info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                                                   .pNext = &flagsInfo,
+                                                   .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+                                                   .bindingCount = 1,
+                                                   .pBindings = &binding};
+        VkDescriptorSetLayoutSupport support{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT};
+        state.functions.vkGetDescriptorSetLayoutSupport(state.device, &info, &support);
+        return support.supported == VK_TRUE;
+    };
+    if (!supported(limits.maxResourceDescriptors)) {
+        uint32 low = 0;
+        uint32 high = limits.maxResourceDescriptors;
+        while (high - low > 1024) {
+            const uint32 middle = low + (high - low) / 2;
+            (supported(middle) ? low : high) = middle;
+        }
+        limits.maxResourceDescriptors = low;
+    }
     state.resourceSetLayout =
         create(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, limits.maxResourceDescriptors, &mutableInfo, "resource");
     state.samplerSetLayout = create(VK_DESCRIPTOR_TYPE_SAMPLER, limits.maxSamplerDescriptors, nullptr, "sampler");
