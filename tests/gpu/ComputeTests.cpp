@@ -205,3 +205,44 @@ EQ_TEST(compute, buffer_used_after_destroy_reports) {
     RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadView{.buffer = copy}}});
 }
 #endif
+
+// Names and markers (P53): always on; nested regions close in the same list.
+EQ_TEST(compute, names_and_markers) {
+    RI::Device device = createTestDevice();
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 16);
+    RI::Buffer buffer = RI::createBuffer(device, memory, 0, {.size = 256, .usage = RI::BufferUsage::eCopyDst});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
+    RI::QueryPool pool = RI::createQueryPool(device, {.type = RI::QueryType::eTimestamp, .count = 2});
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::setName(device, memory, "test memory");
+    RI::setName(device, buffer, "test buffer");
+    RI::setName(device, heap, "test heap");
+    RI::setName(device, pool, "test queries");
+    RI::setName(device, cmd, "test commands");
+    RI::cmdBegin(cmd);
+    RI::cmdBeginMarker(cmd, "outer");
+    RI::cmdBeginMarker(cmd, "inner \u00e9");
+    RI::cmdClearBuffer(cmd, buffer, 0);
+    RI::cmdEndMarker(cmd);
+    RI::cmdEndMarker(cmd);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    RI::destroyCommandList(device, cmd);
+    RI::destroyQueryPool(device, pool);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, buffer);
+    RI::freeMemory(device, memory);
+    RI::destroyDevice(device);
+}
+
+#if EQUINE_VALIDATION
+// A marker region left open at cmdEnd (P53).
+EQ_TEST(compute, unclosed_marker_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdBeginMarker(cmd, "left open");
+    RI::cmdEnd(cmd);
+}
+#endif

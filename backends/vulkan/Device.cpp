@@ -477,6 +477,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
 
     // Device-level functions go through this device's own table (P89).
     volkLoadDeviceTable(&state->functions, state->device);
+    loadDebugFunctions(*state);
+    state->faultEnabled = setup.fault && chain.f.fault.deviceFault == VK_TRUE;
     state->functions.vkGetDeviceQueue(state->device, state->graphicsQueueFamily, 0, &state->graphicsQueue);
 
     chooseMemoryTypes(*state, device.limits);

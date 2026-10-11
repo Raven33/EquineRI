@@ -155,3 +155,30 @@ EQ_TEST(vk, layout_modes) {
         RI::destroyDevice(device);
     }
 }
+
+#if EQUINE_VALIDATION
+// Shader printf (P53 (3)): the validation layer prints it to stdout; ctest
+// checks the text.
+EQ_TEST(vk, shader_printf) {
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
+    const std::vector<std::byte> shader = gputest::loadShader("printf");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = shader});
+    RI::setName(device, pipeline, "printf pipeline");
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::setName(device, cmd, "printf commands");
+    RI::cmdBegin(cmd);
+    RI::cmdBeginMarker(cmd, "printf");
+    RI::cmdSetHeap(cmd, heap);
+    RI::cmdSetPipeline(cmd, pipeline);
+    RI::cmdDispatch(cmd, 1, 1, 1);
+    RI::cmdEndMarker(cmd);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    RI::destroyCommandList(device, cmd);
+    RI::destroyPipeline(device, pipeline);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyDevice(device);
+}
+
+#endif

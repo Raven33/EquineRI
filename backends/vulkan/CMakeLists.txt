@@ -52,6 +52,7 @@ add_library(EquineVulkanBackend STATIC
     Textures.cpp
     Pipeline.cpp
     Commands.cpp
+    Debug.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"

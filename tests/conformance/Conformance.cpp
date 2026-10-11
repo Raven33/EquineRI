@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <optional>
 #include <span>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -139,6 +140,18 @@ EQ_SIGNATURE(cmdWriteTimestamp, void (*)(RI::CommandList &, const RI::QueryPool 
 EQ_SIGNATURE(cmdResetQueries, void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32));
 EQ_SIGNATURE(cmdResolveQueries,
              void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32, const RI::Buffer &, uint64));
+
+// Debugging (P53)
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Memory &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Buffer &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Texture &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::TextureView &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::DescriptorHeap &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::QueryPool &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Pipeline &, std::string_view));
+EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::CommandList &, std::string_view));
+EQ_SIGNATURE(cmdBeginMarker, void (*)(RI::CommandList &, std::string_view));
+EQ_SIGNATURE(cmdEndMarker, void (*)(RI::CommandList &));
 
 // Thin values (P81).
 static_assert(std::is_copy_constructible_v<RI::Device> && std::is_copy_constructible_v<RI::Buffer> &&

@@ -42,6 +42,8 @@ target that links RI.
       on your system) are printed, not treated as your mistake.
     - `VK_EXT_device_fault` is enabled when the GPU has it, for GPU crash diagnostics
       ([P53](../design-notes/decisions.md#p53)).
+    - Layer settings turn on GPU-assisted validation (`gpuav_enable`) and shader `printf`
+      (`printf_enable`, printed to standard output): see [Debugging](debugging.md).
     - `listGpus` never loads the layer: it uses a short-lived instance without layers.
 
     Canonical Vulkan: enable the layer when you create the instance.
@@ -52,8 +54,9 @@ target that links RI.
 
 === "D3D12"
 
-    - The D3D12 debug layer and DRED (GPU crash breadcrumbs and page-fault reports) are
-      turned on once per process, before the first device. If the debug layer is missing,
+    - The D3D12 debug layer, GPU-based validation and DRED (GPU crash breadcrumbs and
+      page-fault reports, see [Debugging](debugging.md)) are turned on once per process,
+      before the first device. If the debug layer is missing,
       `createDevice` reports an *unsupported* error: check that the Agility SDK runtime
       (`D3D12\d3d12SDKLayers.dll`) is next to the executable.
     - Debug-layer errors and corruption messages go to the error channel through

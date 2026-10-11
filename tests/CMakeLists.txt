@@ -73,6 +73,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     compute.buffer_compute_readback
     compute.command_list_reuse_and_timeline
     compute.memory_kinds
+    compute.names_and_markers
     texture.create_and_views
     texture.render_then_sample
     texture.clear_load_op
@@ -95,6 +96,7 @@ if (EQUINE_VALIDATION)
         compute.pipeline_before_heap_reports
         compute.descriptor_slot_out_of_range_reports
         compute.buffer_used_after_destroy_reports
+        compute.unclosed_marker_reports
         texture.depth_write_in_read_only_section_reports
         texture.missing_discard_reports
         texture.read_only_depth_sampling_on_color_reports
@@ -104,6 +106,7 @@ if (EQUINE_VALIDATION)
         "compute.pipeline_before_heap_reports|programmer error: cmdSetPipeline: set a descriptor heap with cmdSetHeap first"
         "compute.descriptor_slot_out_of_range_reports|programmer error: slot 8 is outside the resource heap"
         "compute.buffer_used_after_destroy_reports|programmer error: this buffer was destroyed"
+        "compute.unclosed_marker_reports|programmer error: cmdEnd: 1 marker region(s) left open"
         "texture.depth_write_in_read_only_section_reports|programmer error: cmdSetPipeline: the pipeline writes depth"
         "texture.missing_discard_reports|programmer error: cmdBeginRendering: the texture was placed over memory"
         "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
@@ -154,6 +157,7 @@ if (TARGET EquineVulkanBackend)
         ${EQUINE_GPU_SHARED_SOURCES}
     )
     equine_add_gpu_test_shaders(EquineRIVulkanTests)
+    equine_add_shaders(EquineRIVulkanTests PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/printf.hlsl")
     target_include_directories(EquineRIVulkanTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     target_link_libraries(EquineRIVulkanTests PRIVATE EquineVulkanBackend)
     equine_copy_sanitizer_runtime(EquineRIVulkanTests)
@@ -176,7 +180,13 @@ if (TARGET EquineVulkanBackend)
     if (NOT WIN32)
         list(APPEND EQUINE_VK_TEST_NAMES vk.loader_errors_do_not_abort)
     endif()
+    if (EQUINE_VALIDATION)
+        list(APPEND EQUINE_VK_TEST_NAMES vk.shader_printf)
+    endif()
     equine_add_gpu_tests(EquineRIVulkanTests vk ${EQUINE_VK_TEST_NAMES})
+    if (EQUINE_VALIDATION)
+        set_tests_properties(vk.shader_printf PROPERTIES PASS_REGULAR_EXPRESSION "EquineRI printf 42 0")
+    endif()
     set_tests_properties(vk.unknown_gpu_reports PROPERTIES
         PASS_REGULAR_EXPRESSION "\\[EquineRI\\] programmer error: the GPU 'Nonexistent GPU' is not available"
     )

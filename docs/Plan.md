@@ -92,6 +92,12 @@ Exit: L1 confirmed (or reopened together), and P36 / P16 confirmed with it. (Tak
 
 ## Milestone 4: the rest of v1 (order chosen together)
 
+**Order taken** (chosen by the assistant under the user's "implement milestone 4" goal, 2026-10-11, by
+dependency; open to review): debugging (P53) → copies and queries (P47, P71) → graphics
+completion (index buffers, blending, mesh shaders, resolve: P39, P52, P76) → indirect (P48) →
+swapchain and present (P43, P63, P64) → native sections and import (P27, P70, P77) → ray
+tracing (P49) → work graphs (P50, P62) → helpers (P41). Progress is recorded in P98.
+
 Candidates:
 - Swapchain and present (P43, P63, P64).
 - Graphics pipelines, mesh shaders, vertex pulling (P38, P39); MSAA resolve (P52, P76).

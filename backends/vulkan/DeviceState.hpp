@@ -12,6 +12,7 @@
 #include <volk.h>
 
 #include <array>
+#include <string_view>
 
 namespace RI::Vk {
 
@@ -23,6 +24,11 @@ struct DeviceState {
     uint32 apiVersion = 0;
     VkDevice device = VK_NULL_HANDLE;
     VolkDeviceTable functions{};
+    // VK_EXT_debug_utils (P53), instance-level functions used on this device.
+    PFN_vkSetDebugUtilsObjectNameEXT setObjectName = nullptr;
+    PFN_vkCmdBeginDebugUtilsLabelEXT beginLabel = nullptr;
+    PFN_vkCmdEndDebugUtilsLabelEXT endLabel = nullptr;
+    bool faultEnabled = false; // VK_EXT_device_fault (validation builds, P53 (2))
     uint32 graphicsQueueFamily = 0;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
 
@@ -68,6 +74,12 @@ inline MemoryRequirements withGranularity(const DeviceState &state, MemoryRequir
 }
 // Every memory kind whose native type is in `typeBits`, as MemoryRequirements::kinds.
 uint32 kindsOf(const DeviceState &state, uint32 typeBits);
+
+// Debugging (Debug.cpp, P53).
+void loadDebugFunctions(DeviceState &state);
+// checkVk for queue submission and waits: a lost device reports the device
+// fault details when VK_EXT_device_fault is on.
+void checkQueueVk(DeviceState &state, VkResult result, std::string_view call);
 
 // Formats and layouts (Textures.cpp), shared by the backend's sources.
 VkFormat toVkFormat(Format format);

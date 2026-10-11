@@ -9,6 +9,7 @@
 #include <RI/Validation/Placement.hpp>
 #endif
 
+#include <string_view>
 #include <vector>
 
 #include <d3d12.h>
@@ -59,6 +60,12 @@ struct DeviceState {
     Validation::PlacementTracker placements;
 #endif
 };
+
+// Debugging (Debug.cpp, P53): a removed device is reported with DRED's
+// breadcrumbs and page-fault details (validation builds).
+void reportDeviceRemoved(DeviceState &state);
+// checkHr for queue submission and waits.
+void checkQueueHr(DeviceState &state, HRESULT result, std::string_view call);
 
 inline constexpr uint32 kRtvHeapSize = 4096;
 inline constexpr uint32 kDsvHeapSize = 1024;

@@ -79,6 +79,18 @@ InstanceHandles createInstance(InstancePurpose purpose) {
         .pfnUserCallback = &onValidationMessage,
     };
     const bool validation = EQUINE_VALIDATION && purpose == InstancePurpose::eDevice;
+    // Validation builds (P53 (3), (4)): shader printf (DXC printf, printed to
+    // stdout) and GPU-assisted validation (bindless indices, buffer addresses).
+    const VkBool32 on = VK_TRUE;
+    const VkLayerSettingEXT settings[] = {
+        {kValidationLayer, "printf_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &on},
+        {kValidationLayer, "printf_to_stdout", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &on},
+        {kValidationLayer, "gpuav_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &on},
+    };
+    const VkLayerSettingsCreateInfoEXT layerSettings{.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT,
+                                                     .settingCount = static_cast<uint32>(std::size(settings)),
+                                                     .pSettings = settings};
+    messengerInfo.pNext = &layerSettings;
 
     if (purpose == InstancePurpose::eDevice) {
         uint32 count = 0;
