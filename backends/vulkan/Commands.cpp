@@ -452,6 +452,19 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.depthReadOnly = false;
 }
 
+void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format) {
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkIndexBuffer((buffer.usage & BufferUsage::eIndex) != BufferUsage::eNone, offset,
+                                             format == IndexFormat::eUint16 ? 2 : 4, buffer.size));
+    fn(cmd).vkCmdBindIndexBuffer(native(cmd), native(buffer), offset,
+                                 format == IndexFormat::eUint16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+}
+
+void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 vertexOffset,
+                    uint32 firstInstance) {
+    fn(cmd).vkCmdDrawIndexed(native(cmd), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
     // No RI section check: native rendering sections (escape hatch) may hold RI draws;
     // the validation layer reports a draw outside any section.

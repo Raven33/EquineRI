@@ -67,6 +67,13 @@ CheckResult checkCopyTextureMatch(uint32 srcWidth, uint32 srcHeight, uint32 srcL
 // the pool's type fits `call`.
 CheckResult checkQueryKind(bool ok, std::string_view call);
 
+// Graphics pipeline state (P38): `blend` is empty or one per color format,
+// and the stencil test needs a depth format with stencil.
+CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stencilTest, bool depthHasStencil);
+// cmdSetIndexBuffer: the buffer has eIndex usage and the offset is a multiple
+// of the index size.
+CheckResult checkIndexBuffer(bool hasUsage, uint64 offset, uint32 indexSize, uint64 bufferSize);
+
 // cmdEndMarker closes an open marker region (P53); `depth` is the open count.
 CheckResult checkMarkerEnd(uint32 depth);
 // cmdEnd: every marker region opened in the command list is closed.

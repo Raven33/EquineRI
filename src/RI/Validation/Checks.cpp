@@ -169,4 +169,28 @@ CheckResult checkQueryKind(bool ok, std::string_view call) {
     return {};
 }
 
+CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stencilTest, bool depthHasStencil) {
+    if (blendCount != 0 && blendCount != colorCount) {
+        return std::format("createGraphicsPipeline: {} blend states for {} color formats; give one per color "
+                           "format, or none",
+                           blendCount, colorCount);
+    }
+    if (stencilTest && !depthHasStencil) {
+        return std::string("createGraphicsPipeline: the stencil test needs a depth format with stencil");
+    }
+    return {};
+}
+
+CheckResult checkIndexBuffer(bool hasUsage, uint64 offset, uint32 indexSize, uint64 bufferSize) {
+    if (!hasUsage) {
+        return std::string("cmdSetIndexBuffer: the buffer needs BufferUsage::eIndex");
+    }
+    if (offset % indexSize != 0 || offset >= bufferSize) {
+        return std::format("cmdSetIndexBuffer: offset {} must be a multiple of the index size ({} bytes) and inside "
+                           "the buffer ({} bytes)",
+                           offset, indexSize, bufferSize);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

@@ -88,6 +88,8 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.copy_round_trip
     texture.copy_depth_upload
     texture.occlusion_and_statistics
+    texture.indexed_draw_with_blending
+    texture.stencil_test
     texture.unlisted_view_format_reports
 )
 set(EQUINE_GPU_SHARED_ABORT_TESTS

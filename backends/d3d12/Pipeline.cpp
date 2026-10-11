@@ -7,6 +7,7 @@
 
 #include <RI/D3D12/Native.hpp>
 #include <RI/Error.hpp>
+#include <RI/Validation/Checks.hpp>
 #include <RI/Reflection/Dxil.hpp>
 
 #include "Formats.hpp"
@@ -77,6 +78,59 @@ void checkRootDataSize(const Device &device, uint32 size, const char *call) {
     }
 }
 
+D3D12_STENCIL_OP stencilOpOf(StencilOp op) {
+    switch (op) {
+    case StencilOp::eKeep: return D3D12_STENCIL_OP_KEEP;
+    case StencilOp::eZero: return D3D12_STENCIL_OP_ZERO;
+    case StencilOp::eReplace: return D3D12_STENCIL_OP_REPLACE;
+    case StencilOp::eIncrementClamp: return D3D12_STENCIL_OP_INCR_SAT;
+    case StencilOp::eDecrementClamp: return D3D12_STENCIL_OP_DECR_SAT;
+    case StencilOp::eInvert: return D3D12_STENCIL_OP_INVERT;
+    case StencilOp::eIncrementWrap: return D3D12_STENCIL_OP_INCR;
+    case StencilOp::eDecrementWrap: return D3D12_STENCIL_OP_DECR;
+    }
+    return D3D12_STENCIL_OP_KEEP;
+}
+
+D3D12_BLEND blendOf(BlendFactor factor) {
+    switch (factor) {
+    case BlendFactor::eZero: return D3D12_BLEND_ZERO;
+    case BlendFactor::eOne: return D3D12_BLEND_ONE;
+    case BlendFactor::eSrcColor: return D3D12_BLEND_SRC_COLOR;
+    case BlendFactor::eOneMinusSrcColor: return D3D12_BLEND_INV_SRC_COLOR;
+    case BlendFactor::eDstColor: return D3D12_BLEND_DEST_COLOR;
+    case BlendFactor::eOneMinusDstColor: return D3D12_BLEND_INV_DEST_COLOR;
+    case BlendFactor::eSrcAlpha: return D3D12_BLEND_SRC_ALPHA;
+    case BlendFactor::eOneMinusSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
+    case BlendFactor::eDstAlpha: return D3D12_BLEND_DEST_ALPHA;
+    case BlendFactor::eOneMinusDstAlpha: return D3D12_BLEND_INV_DEST_ALPHA;
+    }
+    return D3D12_BLEND_ONE;
+}
+
+// Alpha factors must not name a color: D3D12 rejects *_COLOR in alpha slots,
+// and for alpha they mean the same as the *_ALPHA factors.
+D3D12_BLEND alphaBlendOf(BlendFactor factor) {
+    switch (factor) {
+    case BlendFactor::eSrcColor: return D3D12_BLEND_SRC_ALPHA;
+    case BlendFactor::eOneMinusSrcColor: return D3D12_BLEND_INV_SRC_ALPHA;
+    case BlendFactor::eDstColor: return D3D12_BLEND_DEST_ALPHA;
+    case BlendFactor::eOneMinusDstColor: return D3D12_BLEND_INV_DEST_ALPHA;
+    default: return blendOf(factor);
+    }
+}
+
+D3D12_BLEND_OP blendOpOf(BlendOp op) {
+    switch (op) {
+    case BlendOp::eAdd: return D3D12_BLEND_OP_ADD;
+    case BlendOp::eSubtract: return D3D12_BLEND_OP_SUBTRACT;
+    case BlendOp::eReverseSubtract: return D3D12_BLEND_OP_REV_SUBTRACT;
+    case BlendOp::eMin: return D3D12_BLEND_OP_MIN;
+    case BlendOp::eMax: return D3D12_BLEND_OP_MAX;
+    }
+    return D3D12_BLEND_OP_ADD;
+}
+
 D3D12_COMPARISON_FUNC compareOf(CompareOp op) {
     switch (op) {
     case CompareOp::eNever: return D3D12_COMPARISON_FUNC_NEVER;
@@ -133,6 +187,8 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         }
     }
     checkRootDataSize(device, info.rootDataSize, call);
+    EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
+                                               hasStencil(desc.depthFormat)));
     if (desc.colorFormats.size() > 8) {
         reportError(ErrorCategory::eProgrammerError, std::format("{}: at most 8 color formats", call));
     }
@@ -156,6 +212,20 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
               .LogicOp = D3D12_LOGIC_OP_NOOP,
               .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL};
     }
+    pso.BlendState.IndependentBlendEnable = desc.blend.size() > 1 ? TRUE : FALSE;
+    for (size_t i = 0; i < desc.blend.size() && i < 8; ++i) {
+        const BlendState &b = desc.blend[i];
+        pso.BlendState.RenderTarget[i] = {.BlendEnable = b.enable ? TRUE : FALSE,
+                                          .LogicOpEnable = FALSE,
+                                          .SrcBlend = blendOf(b.srcColor),
+                                          .DestBlend = blendOf(b.dstColor),
+                                          .BlendOp = blendOpOf(b.colorOp),
+                                          .SrcBlendAlpha = alphaBlendOf(b.srcAlpha),
+                                          .DestBlendAlpha = alphaBlendOf(b.dstAlpha),
+                                          .BlendOpAlpha = blendOpOf(b.alphaOp),
+                                          .LogicOp = D3D12_LOGIC_OP_NOOP,
+                                          .RenderTargetWriteMask = static_cast<UINT8>(b.writeMask)};
+    }
     pso.SampleMask = UINT_MAX;
     pso.RasterizerState = {.FillMode = D3D12_FILL_MODE_SOLID,
                            .CullMode = desc.cull == CullMode::eFront  ? D3D12_CULL_MODE_FRONT
@@ -168,6 +238,17 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     pso.DepthStencilState.DepthEnable = depthEnable ? TRUE : FALSE;
     pso.DepthStencilState.DepthWriteMask = desc.depth.write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     pso.DepthStencilState.DepthFunc = desc.depth.test ? compareOf(desc.depth.compare) : D3D12_COMPARISON_FUNC_ALWAYS;
+    const auto face = [](const StencilFace &f) {
+        return D3D12_DEPTH_STENCILOP_DESC{.StencilFailOp = stencilOpOf(f.fail),
+                                          .StencilDepthFailOp = stencilOpOf(f.depthFail),
+                                          .StencilPassOp = stencilOpOf(f.pass),
+                                          .StencilFunc = compareOf(f.compare)};
+    };
+    pso.DepthStencilState.StencilEnable = desc.stencil.test ? TRUE : FALSE;
+    pso.DepthStencilState.StencilReadMask = desc.stencil.readMask;
+    pso.DepthStencilState.StencilWriteMask = desc.stencil.writeMask;
+    pso.DepthStencilState.FrontFace = face(desc.stencil.front);
+    pso.DepthStencilState.BackFace = face(desc.stencil.back);
     pso.PrimitiveTopologyType = desc.topology == Topology::eLineList   ? D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE
                                 : desc.topology == Topology::ePointList ? D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT
                                                                         : D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -186,6 +267,8 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.rootSignature = rootSignature;
     out.internal.graphics = true;
     out.internal.depthWrite = desc.depth.write;
+    out.internal.stencil = desc.stencil.test;
+    out.internal.stencilReference = desc.stencil.reference;
     out.internal.topology = desc.topology == Topology::eTriangleStrip ? D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
                             : desc.topology == Topology::eLineList    ? D3D_PRIMITIVE_TOPOLOGY_LINELIST
                             : desc.topology == Topology::ePointList   ? D3D_PRIMITIVE_TOPOLOGY_POINTLIST
