@@ -769,3 +769,36 @@ EQ_TEST(texture, stencil_test) {
     RI::destroyTexture(f.device, depth);
     RI::destroyTexture(f.device, target);
 }
+
+// Mesh pipelines (P39): a mesh shader alone, then a task shader launching it,
+// each drawing the full-screen triangle.
+EQ_TEST(texture, mesh_shaders) {
+    Fixture f;
+    if (!f.device.limits.meshShaders) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> as = loadShader("fullscreen_as"), ms = loadShader("fullscreen_ms"),
+                           ps = loadShader("solid_ps");
+    RI::Pipeline meshOnly = RI::createGraphicsPipeline(
+        f.device, {.pixel = ps, .mesh = ms, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    RI::Pipeline taskMesh = RI::createGraphicsPipeline(
+        f.device, {.pixel = ps, .task = as, .mesh = ms, .colorFormats = {RI::Format::eRGBA8Unorm},
+                   .blend = {{.writeMask = RI::ColorMask::eG}}});
+    EQ_CHECK(meshOnly.rootDataSize == sizeof(DrawRoot) && taskMesh.rootDataSize == sizeof(DrawRoot));
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, meshOnly);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDrawMesh(f.cmd, 1, 1, 1);
+    RI::cmdSetPipeline(f.cmd, taskMesh);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDrawMesh(f.cmd, 1, 1, 1);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 1.0f) && all(texels, 1, 1.0f) && all(texels, 3, 1.0f));
+    RI::destroyPipeline(f.device, meshOnly);
+    RI::destroyPipeline(f.device, taskMesh);
+    RI::destroyTexture(f.device, target);
+}

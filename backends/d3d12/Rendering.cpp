@@ -194,6 +194,8 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.depthReadOnly = false;
 }
 
+void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) { list(cmd)->DispatchMesh(x, y, z); }
+
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format) {
     EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkIndexBuffer((buffer.usage & BufferUsage::eIndex) != BufferUsage::eNone, offset,

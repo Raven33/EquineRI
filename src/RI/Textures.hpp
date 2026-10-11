@@ -196,8 +196,13 @@ struct BlendState {
 // Complete state up front (P38). No vertex input: vertices are pulled from
 // buffers in the shader (P39), or produced by mesh shaders.
 struct GraphicsPipelineDesc {
-    Bytecode vertex; // entry point "main"
+    Bytecode vertex; // entry point "main"; empty for mesh pipelines
     Bytecode pixel;  // entry point "main"; may be empty for depth-only pipelines
+    // Mesh pipelines (P39, DeviceLimits::meshShaders): a mesh shader instead
+    // of `vertex`, and an optional task (amplification) shader before it.
+    // Drawn with cmdDrawMesh; `topology` is the mesh shader's.
+    Bytecode task;
+    Bytecode mesh;
     std::vector<Format> colorFormats;
     Format depthFormat = Format::eUndefined;
     uint32 samples = 1;
