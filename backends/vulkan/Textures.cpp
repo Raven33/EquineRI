@@ -411,8 +411,15 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
                              .baseArrayLayer = desc.baseLayer,
                              .layerCount = layerCount},
     };
+    // Copy-only textures have no view usage: Vulkan allows no image view, and
+    // copies need none (they use the image and the range below).
+    constexpr VkImageUsageFlags kViewUsages = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT |
+                                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     VkImageView view = VK_NULL_HANDLE;
-    checkVk(state.functions.vkCreateImageView(state.device, &info, nullptr, &view), "vkCreateImageView");
+    if ((usageOf(texture.usage) & kViewUsages) != 0) {
+        checkVk(state.functions.vkCreateImageView(state.device, &info, nullptr, &view), "vkCreateImageView");
+    }
 
     TextureView out;
     out.format = format;
