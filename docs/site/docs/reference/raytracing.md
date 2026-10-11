@@ -9,7 +9,10 @@ symbols: [RI::AccelerationStructure, RI::blasSizes, RI::tlasSizes, RI::accelerat
 **Inline ray tracing** lets any shader cast rays with HLSL `RayQuery` against an
 **acceleration structure** ([P49](../design-notes/decisions.md#p49)). Available when
 `device.limits.rayTracing` is set (Vulkan `VK_KHR_acceleration_structure` + `VK_KHR_ray_query`,
-D3D12 raytracing tier 1.1).
+D3D12 raytracing tier 1.1). On Vulkan the driver must also accept acceleration structures among
+the heap's mutable descriptor types, since shaders read them from the same binding as every
+other heap descriptor; the AMD Windows driver does not, so ray tracing is off there on Vulkan
+(D3D12 is unaffected).
 
 The explicit form, as everywhere in RI:
 

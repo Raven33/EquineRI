@@ -100,8 +100,9 @@ tracing (P49) → work graphs (P50, P62) → helpers (P41). Progress is recorded
 
 **Status (2026-10-11): implemented** (P98), every step with a docs page and GPU tests. All
 Linux tests pass (RADV 680M, Vulkan). Windows: RTX 3080 passed every test up to ray tracing
-(`e1221b8`); still to run there: the AMD Vulkan heap clamp (P98 (8)), `d3d12.work_graph`, and
-the helpers on both backends. Awaiting the user's review: the frame graph's shape (P35), the
+(`e1221b8`) and all 138 at `3f13bfb`, including `d3d12.work_graph`; AMD D3D12 passes all.
+AMD Vulkan failed at `3f13bfb` (no mutable heap with acceleration structures, P98 (8)); the
+fix, ray tracing off there, awaits a Windows run. Awaiting the user's review: the frame graph's shape (P35), the
 DGC preprocess-buffer exception to P31, the NVIDIA GPU-AV rule for DGC, and the work-graph
 initialization inference (P98).
 
