@@ -203,6 +203,8 @@ nav:
           - RI::submit, RI::wait, RI::isReached: reference/submit.md
       - Ray tracing:
           - Acceleration structures: reference/raytracing.md
+      - Work graphs:
+          - RI::createWorkGraph, RI::cmdDispatchGraph: reference/workgraphs.md
       - Swapchains:
           - RI::createSwapchain, RI::acquire, RI::present: reference/swapchain.md
       - Debugging:

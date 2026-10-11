@@ -198,6 +198,7 @@ if (TARGET EquineVulkanBackend)
         vk.sampled_depth_resting_layout
         vk.native_section
         vk.import_objects
+        vk.work_graph_unsupported_reports
     )
     # The Windows loader (1.4.321) fails the whole instance with
     # VK_ERROR_OUT_OF_HOST_MEMORY when a VK_ADD_DRIVER_FILES driver cannot be
@@ -213,6 +214,9 @@ if (TARGET EquineVulkanBackend)
     if (EQUINE_VALIDATION)
         set_tests_properties(vk.shader_printf PROPERTIES PASS_REGULAR_EXPRESSION "EquineRI printf 42 0")
     endif()
+    set_tests_properties(vk.work_graph_unsupported_reports PROPERTIES
+        PASS_REGULAR_EXPRESSION "\\[EquineRI\\] unsupported: createWorkGraph: work graphs are D3D12 only"
+    )
     set_tests_properties(vk.unknown_gpu_reports PROPERTIES
         PASS_REGULAR_EXPRESSION "\\[EquineRI\\] programmer error: the GPU 'Nonexistent GPU' is not available"
     )
@@ -234,6 +238,7 @@ if (TARGET EquineD3D12Backend)
         ${EQUINE_GPU_SHARED_SOURCES}
     )
     equine_add_gpu_test_shaders(EquineRID3D12Tests)
+    equine_add_shaders(EquineRID3D12Tests PROFILE lib_6_8 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/work_graph.hlsl")
     target_include_directories(EquineRID3D12Tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     target_link_libraries(EquineRID3D12Tests PRIVATE EquineD3D12Backend EquineGlfwWindow)
     equine_copy_sanitizer_runtime(EquineRID3D12Tests)
@@ -249,6 +254,7 @@ if (TARGET EquineD3D12Backend)
         d3d12.unknown_gpu_reports
         d3d12.native_section
         d3d12.import_objects
+        d3d12.work_graph
     )
     equine_add_gpu_tests(EquineRID3D12Tests d3d12 ${EQUINE_D3D12_TEST_NAMES})
     set_tests_properties(d3d12.unknown_gpu_reports PROPERTIES

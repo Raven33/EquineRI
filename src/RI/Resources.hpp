@@ -68,4 +68,27 @@ struct ComputePipelineDesc {
     Bytecode shader; // entry point "main"
 };
 
+// Work graphs (P50, P62), D3D12 only: a DXIL library (lib_6_8) whose node
+// shaders form the graph. RI does not read root data from libraries (P62), so
+// give the size of the EQ_ROOT_DATA block the nodes declare (0: none).
+struct WorkGraphDesc {
+    Bytecode library;
+    uint32 rootDataSize = 0;
+};
+
+// Backing memory a work graph needs (P50): a range of a buffer with
+// eReadWrite, between minSize and maxSize bytes (larger can be faster).
+struct WorkGraphMemory {
+    uint64 minSize = 0;
+    uint64 maxSize = 0;
+};
+
+// CPU input records of one entry node (P62).
+struct GraphInput {
+    uint32 entry = 0; // workGraphEntry(graph, nodeName)
+    const void *records = nullptr;
+    uint32 recordCount = 0;
+    uint32 recordStride = 0;
+};
+
 } // namespace RI

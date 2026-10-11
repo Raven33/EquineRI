@@ -56,6 +56,7 @@ struct DeviceLimits {
     bool meshShaders = false;          // task and mesh shaders, cmdDrawMesh (P39)
     bool indirectRootData = false;     // indirect Level 2: cmdExecuteIndirectWithRootData (P48)
     bool rayTracing = false;           // acceleration structures and RayQuery (P49)
+    bool workGraphs = false;           // work graphs, D3D12 only (P50)
     uint32 accelerationStructureScratchAlignment = 0; // scratch buffer offsets (P49)
     // Depth and stencil resolve modes (P76): resolveModeBit(mode) per mode.
     uint32 depthResolveModes = 0;

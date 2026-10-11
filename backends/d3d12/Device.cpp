@@ -187,6 +187,11 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     state->rayTracing =
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5))) &&
         options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
+    // Work graphs (P50): tier 1.0 (Ampere, RDNA3 and newer).
+    D3D12_FEATURE_DATA_D3D12_OPTIONS21 options21{};
+    const bool workGraphs =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &options21, sizeof(options21))) &&
+        options21.WorkGraphsTier >= D3D12_WORK_GRAPHS_TIER_1_0;
     D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2{};
     const bool depthResolve =
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))) &&
@@ -207,6 +212,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .meshShaders = meshShaders,
         .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
         .rayTracing = state->rayTracing,
+        .workGraphs = workGraphs,
         .accelerationStructureScratchAlignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT,
         .depthResolveModes = state->depthResolveModes,
         .stencilResolveModes = state->stencilResolveModes,

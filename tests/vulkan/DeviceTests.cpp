@@ -401,3 +401,11 @@ EQ_TEST(vk, import_objects) {
     RI::freeMemory(device, gpuMemory);
     RI::destroyDevice(device);
 }
+
+// Work graphs are D3D12 only (P50): a readable unsupported error on Vulkan.
+EQ_TEST(vk, work_graph_unsupported_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    EQ_CHECK(!device.limits.workGraphs);
+    RI::createWorkGraph(device, {});
+}
