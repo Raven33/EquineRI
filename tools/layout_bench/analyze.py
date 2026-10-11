@@ -13,6 +13,7 @@ A mode passes on a GPU when both hold. Prints Markdown.
 """
 
 import csv
+import math
 import statistics
 import sys
 from collections import defaultdict
@@ -22,29 +23,7 @@ PASS_LIMIT = 0.10
 NOISE_MS = 0.05
 
 
-def by_copy(mode):
-    """Placement-balanced runs (--swap, harness v5): the RI path uses texture copy 0
-    and the baseline copy 1, or the reverse with [swap]. On the AMD iGPU the copy's
-    place in memory alone moved passes by up to 18%, so each path is compared with the
-    other on the same copy: "transitions" and "baseline:transitions[swap]" become
-    "transitions@copy0" and its baseline; the other pair "@copy1". A mode passes
-    when it passes on both copies."""
-    swapped = mode.endswith("[swap]")
-    mode = mode.removesuffix("[swap]")
-    baseline = mode.startswith("baseline:")
-    copy = (1 if not swapped else 0) if baseline else (1 if swapped else 0)
-    return f"{mode}@copy{copy}" if SWAP_SEEN else mode
-
-
-SWAP_SEEN = False
-
-
 def load(paths):
-    global SWAP_SEEN
-    for path in paths:
-        with open(path, newline="") as f:
-            if any(len(r) == 9 and r[2].endswith("[swap]") for r in csv.reader(f)):
-                SWAP_SEEN = True
     runs = defaultdict(list)  # (backend, gpu, mode, res, workload, pass) -> [median, ...]
     for path in paths:
         with open(path, newline="") as f:
@@ -52,8 +31,35 @@ def load(paths):
                 if len(row) != 9 or row[0] == "backend":
                     continue
                 backend, gpu, mode, res, workload, pass_, median, _p10, _p90 = row
-                runs[(backend, gpu, by_copy(mode), res, workload, pass_)].append(float(median))
+                runs[(backend, gpu, mode, res, workload, pass_)].append(float(median))
     return {k: statistics.median(v) for k, v in runs.items()}, {k: v for k, v in runs.items()}
+
+
+def balance(groups):
+    """Placement-balanced runs (--swap, harness v5). On the AMD iGPU the place of a
+    texture copy in memory alone moved passes by up to 18%, whichever path used it.
+    Each interleaved run compares RI on one copy with the baseline on the other;
+    --swap on reverses the copies. With a placement factor p0, p1:
+        off: RI/baseline = (a p0)/(b p1),  on: RI/baseline = (a p1)/(b p0),
+    so the geometric mean of the two ratios is a/b, free of placement, and each ratio
+    comes from one interleaved run (same clock state). The balanced mode
+    "<mode>[balanced]" carries baseline = geometric mean of the two baselines and
+    A' = baseline x ratio; the separate off/on modes are not judged."""
+    for modes in groups.values():
+        for mode in [m for m in modes if not m.startswith("baseline") and not m.endswith("[swap]")]:
+            needed = [mode + "[swap]", "baseline:" + mode, "baseline:" + mode + "[swap]"]
+            if not all(n in modes for n in needed):
+                continue
+            off, on = modes.pop(mode), modes.pop(mode + "[swap]")
+            base_off, base_on = modes.pop("baseline:" + mode), modes.pop("baseline:" + mode + "[swap]")
+            base, values = {}, {}
+            for key in base_off:
+                if key in base_on and key in off and key in on and base_off[key] > 0 and base_on[key] > 0:
+                    ratio = math.sqrt((off[key] / base_off[key]) * (on[key] / base_on[key]))
+                    base[key] = math.sqrt(base_off[key] * base_on[key])
+                    values[key] = base[key] * ratio
+            modes[mode + "[balanced]"] = values
+            modes["baseline:" + mode + "[balanced]"] = base
 
 
 def main():
@@ -61,6 +67,7 @@ def main():
     groups = defaultdict(lambda: defaultdict(dict))  # (backend,gpu,res) -> mode -> {(workload,pass): ms}
     for (backend, gpu, mode, res, workload, pass_), ms in medians.items():
         groups[(backend, gpu, res)][mode][(workload, pass_)] = ms
+    balance(groups)
 
     verdicts = []
     for (backend, gpu, res), modes in sorted(groups.items()):
