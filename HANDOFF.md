@@ -4,7 +4,10 @@ State on 2026-10-11: **Milestones 1–4 are implemented** (`docs/Plan.md`). Mile
 L1 and confirmed it with P16 and P36 (P97). Milestone 4 added the rest of v1 (P98): debugging,
 copies and queries, graphics completion, indirect execution, swapchain, native sections and
 import, inline ray tracing, work graphs (D3D12) and the helpers. All Linux tests pass.
-Windows at `f63f7cd`: 136/136 on AMD and NVIDIA (work graphs included, on NVIDIA D3D12);
+Since then: samplers (P99) and RI as a subproject (P100, `getting-started/use-in-your-project.md`),
+verified at `b82cab1` on Windows (138/138 on AMD and NVIDIA; an outside project builds and runs in
+Debug and Release) and Linux (86/86). Next: the sample ports, in a separate repository, by fresh
+agents (`docs/Plan.md`, "After v1"). Earlier, at `f63f7cd`: 136/136 on AMD and NVIDIA (work graphs included, on NVIDIA D3D12);
 ray tracing is off on AMD Windows Vulkan (P98 (8)). Pending review: P94 (partly reviewed), P95, P97, P98 reviewed 2026-10-11 (DGC off on
 NVIDIA under GPU-AV until the user's own investigation).
 
