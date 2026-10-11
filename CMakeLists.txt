@@ -41,7 +41,11 @@ function(equine_strip_conflicting_compiler_flags)
     endforeach()
 endfunction()
 
-equine_strip_conflicting_compiler_flags()
+# Rewrites cached global flags: only when RI is the project being built, never
+# inside a parent project that pulls RI in with add_subdirectory.
+if (PROJECT_IS_TOP_LEVEL)
+    equine_strip_conflicting_compiler_flags()
+endif()
 
 if (MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
@@ -55,7 +59,9 @@ message(STATUS "Equine C++ exceptions: enabled")
 # optimized measurement builds only (the benchmark presets; see
 # CMakePresets.json); sanitizer configurations remain the correctness
 # coverage.
-option(EQUINE_SANITIZERS "Build with AddressSanitizer + UndefinedBehaviorSanitizer" ON)
+# As a subproject (add_subdirectory), off by default: sanitized libraries do not
+# link into a program built without them.
+option(EQUINE_SANITIZERS "Build with AddressSanitizer + UndefinedBehaviorSanitizer" ${PROJECT_IS_TOP_LEVEL})
 
 if (NOT EQUINE_SANITIZERS)
     message(STATUS "Equine sanitizers: disabled (EQUINE_SANITIZERS=OFF)")
@@ -163,21 +169,25 @@ target_include_directories(rvl INTERFACE
 )
 
 # ── Tooling / diagnostics ─────────────────────────────────────────────────────
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}" EQUINE_SOURCE_DIR_FOR_TOOLS)
-find_program(EQUINE_CLANG_TIDY_EXECUTABLE NAMES clang-tidy REQUIRED)
-if (MSVC)
-    set(EQUINE_CLANG_TIDY_EXCEPTION_ARG /EHsc)
-else()
-    set(EQUINE_CLANG_TIDY_EXCEPTION_ARG -fexceptions)
+# clang-tidy runs on RI's own sources when RI is the top-level project.
+option(EQUINE_CLANG_TIDY "Run clang-tidy on RI's sources" ${PROJECT_IS_TOP_LEVEL})
+if (EQUINE_CLANG_TIDY)
+    file(TO_CMAKE_PATH "${PROJECT_SOURCE_DIR}" EQUINE_SOURCE_DIR_FOR_TOOLS)
+    find_program(EQUINE_CLANG_TIDY_EXECUTABLE NAMES clang-tidy REQUIRED)
+    if (MSVC)
+        set(EQUINE_CLANG_TIDY_EXCEPTION_ARG /EHsc)
+    else()
+        set(EQUINE_CLANG_TIDY_EXCEPTION_ARG -fexceptions)
+    endif()
+    # clang on Windows joins include directories and header names with '\', so every
+    # path separator in the filter must accept both '/' and '\'.
+    set(EQUINE_TIDY_SEP "[/\\\\]")
+    string(REPLACE "/" "${EQUINE_TIDY_SEP}" EQUINE_TIDY_SOURCE_DIR "${EQUINE_SOURCE_DIR_FOR_TOOLS}")
+    set(CMAKE_CXX_CLANG_TIDY
+        "${EQUINE_CLANG_TIDY_EXECUTABLE};--header-filter=^${EQUINE_TIDY_SOURCE_DIR}${EQUINE_TIDY_SEP}(src|backends|third_party${EQUINE_TIDY_SEP}RavenLib)${EQUINE_TIDY_SEP};--extra-arg=${EQUINE_CLANG_TIDY_EXCEPTION_ARG}"
+    )
+    message(STATUS "Equine clang-tidy: ${CMAKE_CXX_CLANG_TIDY}")
 endif()
-# clang on Windows joins include directories and header names with '\', so every
-# path separator in the filter must accept both '/' and '\'.
-set(EQUINE_TIDY_SEP "[/\\\\]")
-string(REPLACE "/" "${EQUINE_TIDY_SEP}" EQUINE_TIDY_SOURCE_DIR "${EQUINE_SOURCE_DIR_FOR_TOOLS}")
-set(CMAKE_CXX_CLANG_TIDY
-    "${EQUINE_CLANG_TIDY_EXECUTABLE};--header-filter=^${EQUINE_TIDY_SOURCE_DIR}${EQUINE_TIDY_SEP}(src|backends|third_party${EQUINE_TIDY_SEP}RavenLib)${EQUINE_TIDY_SEP};--extra-arg=${EQUINE_CLANG_TIDY_EXCEPTION_ARG}"
-)
-message(STATUS "Equine clang-tidy: ${CMAKE_CXX_CLANG_TIDY}")
 
 if (MSVC)
     add_compile_options(/W4)
@@ -246,27 +256,9 @@ if (EQUINE_D3D12_BACKEND AND NOT WIN32)
     message(FATAL_ERROR "EQUINE_D3D12_BACKEND is supported only on Windows.")
 endif()
 
-# ── HLSL compiler (helper only) ───────────────────────────────────────────────
-# The base consumes SPIR-V/DXIL bytecode only; compilation is a helper concern
-# (CONTEXT.md P29). One SPIR-V-enabled DXC serves both targets. No target uses it
-# yet: the dynamic-compilation helper will.
-option(EQUINE_BUILD_SHADER_COMPILER "Locate DXC for the shader-compilation helper" OFF)
-if (EQUINE_BUILD_SHADER_COMPILER)
-    find_package(DXC REQUIRED)
-    if (NOT DXC_SPIRV_FOUND)
-        message(FATAL_ERROR
-            "The selected DXC does not support SPIR-V code generation: ${DXC_EXECUTABLE}\n"
-            "${DXC_SPIRV_ERROR}\n"
-            "All backends must use one SPIR-V-enabled DXC installation. "
-            "The Vulkan SDK ships one; set DXC_ROOT if needed."
-        )
-    endif()
-endif()
-
-# Build-time shader compilation for tests and samples (P93): one pinned DXC.
-if (EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES OR EQUINE_BUILD_DOC_SNIPPETS)
-    include(EquineDXC)
-endif()
+# The pinned DXC (P93): RI's shader rule (equine_add_shaders, callable from a
+# parent project too) and the shader-compiler helper.
+include(EquineDXC)
 
 if (EQUINE_VULKAN_BACKEND)
     add_subdirectory(backends/vulkan)
@@ -280,8 +272,9 @@ if (EQUINE_BUILD_TESTS)
     enable_testing() # before samples: they register their own run as a test
 endif()
 
-# Helpers (P41): built for tests, samples and doc snippets, which use them.
-if (EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES OR EQUINE_BUILD_DOC_SNIPPETS)
+# Helpers (P41): EquineHelpersVulkan / EquineHelpersD3D12, EquineGlfwWindow.
+option(EQUINE_BUILD_HELPERS "Build the helper libraries" ON)
+if (EQUINE_BUILD_HELPERS OR EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES OR EQUINE_BUILD_DOC_SNIPPETS)
     add_subdirectory(helpers)
 endif()
 

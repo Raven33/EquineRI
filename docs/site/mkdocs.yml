@@ -141,6 +141,7 @@ nav:
   - Getting started:
       - Build and test: getting-started/build.md
       - Your first compute dispatch: getting-started/first-compute.md
+      - Use RI in your project: getting-started/use-in-your-project.md
   - Concepts:
       - The error channel: concepts/error-channel.md
       - Validation: concepts/validation.md

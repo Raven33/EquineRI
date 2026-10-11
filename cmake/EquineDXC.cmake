@@ -58,11 +58,17 @@ endif()
 message(STATUS "Equine DXC: ${EQUINE_DXC_VERSION} at ${EQUINE_DXC_EXECUTABLE}")
 
 set(EQUINE_SHADER_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../shaders")
+# Variables exist only in the directory that include()s this file; the rule
+# below may be called from anywhere (a parent project too), so it reads these.
+set_property(GLOBAL PROPERTY EQUINE_DXC_EXECUTABLE "${EQUINE_DXC_EXECUTABLE}")
+set_property(GLOBAL PROPERTY EQUINE_SHADER_INCLUDE_DIR "${EQUINE_SHADER_INCLUDE_DIR}")
 
 # One rule for both backends (P54): DX buffer layout on SPIR-V too, so one C++
 # mirror of root data fits both. Reflection is stripped from DXIL to prove RI
 # does not need it (P67).
 function(equine_add_shaders target)
+    get_property(EQUINE_DXC_EXECUTABLE GLOBAL PROPERTY EQUINE_DXC_EXECUTABLE)
+    get_property(EQUINE_SHADER_INCLUDE_DIR GLOBAL PROPERTY EQUINE_SHADER_INCLUDE_DIR)
     cmake_parse_arguments(ARG "" "PROFILE" "SOURCES" ${ARGN})
     if (NOT ARG_PROFILE OR NOT ARG_SOURCES)
         message(FATAL_ERROR "equine_add_shaders(<target> PROFILE <profile> SOURCES <files...>)")
