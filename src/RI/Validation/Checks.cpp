@@ -247,4 +247,31 @@ CheckResult checkIndirect(const IndirectCheck &c, std::string_view call) {
     return {};
 }
 
+CheckResult checkMemoryType(bool allowed, std::string_view call) {
+    if (!allowed) {
+        return std::format("{}: this memory's type cannot hold the resource; allocate the memory with "
+                           "allocateMemory(device, kind, size, &requirements)",
+                           call);
+    }
+    return {};
+}
+
+CheckResult checkIndirectScratch(const IndirectScratchCheck &c, std::string_view call) {
+    if (c.requiredSize == 0) {
+        return {};
+    }
+    if (!c.hasScratch) {
+        return std::format("{}: this call needs {} bytes of scratch (indirectScratchRequirements)", call,
+                           c.requiredSize);
+    }
+    if (!c.usage) {
+        return std::format("{}: the scratch buffer needs BufferUsage::eIndirectScratch", call);
+    }
+    if (c.address % c.requiredAlignment != 0 || c.offset + c.requiredSize > c.scratchSize) {
+        return std::format("{}: {} bytes of scratch at offset {} (aligned to {}) do not fit in the {}-byte buffer", call,
+                           c.requiredSize, c.offset, c.requiredAlignment, c.scratchSize);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

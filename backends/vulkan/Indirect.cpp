@@ -109,83 +109,22 @@ VkIndirectCommandsLayoutEXT indirectLayout(DeviceState &state, IndirectKind kind
     return layout;
 }
 
-// A preprocess buffer of at least `size` bytes for this command list.
-// `typeBits`: the memory types vkGetGeneratedCommandsMemoryRequirementsEXT allows.
-const PreprocessBuffer &preprocessBuffer(DeviceState &state, CommandList &cmd, VkDeviceSize size, uint32 typeBits) {
-    auto *extras = static_cast<CommandListExtras *>(cmd.internal.extras);
-    if (extras == nullptr) {
-        extras = new CommandListExtras;
-        cmd.internal.extras = extras;
-    }
-    if (!extras->preprocess.empty() && extras->preprocess.back().size >= size) {
-        return extras->preprocess.back();
-    }
-    // Earlier buffers stay alive: commands already recorded use them.
-    PreprocessBuffer p;
-    p.size = std::max<VkDeviceSize>(size, 64 * 1024);
-    const VkBufferUsageFlags2CreateInfo usage{.sType = VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO,
-                                              .usage = VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT |
-                                                       VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT};
-    const VkBufferCreateInfo bufferInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = &usage, .size = p.size};
-    checkVk(state.functions.vkCreateBuffer(state.device, &bufferInfo, nullptr, &p.buffer), "vkCreateBuffer (preprocess)");
-    VkMemoryRequirements requirements{};
-    state.functions.vkGetBufferMemoryRequirements(state.device, p.buffer, &requirements);
-    // RI's GPU type when allowed, else the first device-local type allowed,
-    // else any allowed type.
-    const uint32 allowed = requirements.memoryTypeBits & typeBits;
-    uint32 type = state.memoryTypes[kindIndex(MemoryKind::eGPU)];
-    if ((allowed & (1u << type)) == 0) {
-        VkPhysicalDeviceMemoryProperties memory{};
-        vkGetPhysicalDeviceMemoryProperties(state.physicalDevice, &memory);
-        type = UINT32_MAX;
-        for (uint32 i = 0; i < memory.memoryTypeCount && type == UINT32_MAX; ++i) {
-            if ((allowed & (1u << i)) != 0 &&
-                (memory.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0) {
-                type = i;
-            }
-        }
-        for (uint32 i = 0; i < memory.memoryTypeCount && type == UINT32_MAX; ++i) {
-            if ((allowed & (1u << i)) != 0) {
-                type = i;
-            }
-        }
-    }
-    if (type == UINT32_MAX) {
-        reportError(ErrorCategory::eUnsupported, "indirect Level 2: no memory type fits the preprocess buffer");
-    }
-    const VkMemoryAllocateFlagsInfo flags{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-                                          .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT};
-    const VkMemoryAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                         .pNext = &flags,
-                                         .allocationSize = requirements.size,
-                                         .memoryTypeIndex = type};
-    checkVk(state.functions.vkAllocateMemory(state.device, &allocInfo, nullptr, &p.memory),
-            "vkAllocateMemory (preprocess)");
-    checkVk(state.functions.vkBindBufferMemory(state.device, p.buffer, p.memory, 0), "vkBindBufferMemory (preprocess)");
-    const VkBufferDeviceAddressInfo addressInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = p.buffer};
-    p.address = state.functions.vkGetBufferDeviceAddress(state.device, &addressInfo);
-    extras->preprocess.push_back(p);
-    return extras->preprocess.back();
+// What vkGetGeneratedCommandsMemoryRequirementsEXT reports for `pipeline`.
+VkMemoryRequirements generatedCommandsRequirements(DeviceState &state, VkPipeline pipeline, IndirectKind kind,
+                                                   uint32 rootDataSize, uint32 maxCount) {
+    const VkGeneratedCommandsPipelineInfoEXT pipelineInfo{.sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT,
+                                                          .pipeline = pipeline};
+    const VkGeneratedCommandsMemoryRequirementsInfoEXT info{
+        .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_EXT,
+        .pNext = &pipelineInfo,
+        .indirectCommandsLayout = indirectLayout(state, kind, rootDataSize),
+        .maxSequenceCount = maxCount};
+    VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    state.functions.vkGetGeneratedCommandsMemoryRequirementsEXT(state.device, &info, &requirements);
+    return requirements.memoryRequirements;
 }
 
 } // namespace
-
-void releaseCommandListExtras(DeviceState &state, CommandListExtras *&extras, bool keepLargest) {
-    if (extras == nullptr) {
-        return;
-    }
-    const size_t keep = keepLargest && !extras->preprocess.empty() ? 1 : 0;
-    while (extras->preprocess.size() > keep) {
-        const PreprocessBuffer &p = extras->preprocess.front();
-        state.functions.vkDestroyBuffer(state.device, p.buffer, nullptr);
-        state.functions.vkFreeMemory(state.device, p.memory, nullptr);
-        extras->preprocess.erase(extras->preprocess.begin());
-    }
-    if (!keepLargest) {
-        delete extras;
-        extras = nullptr;
-    }
-}
 
 void destroyIndirectLayouts(DeviceState &state) {
     for (const auto &[key, layout] : state.indirectLayouts) {
@@ -231,8 +170,30 @@ void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args,
     }
 }
 
+MemoryRequirements indirectScratchRequirements(Device &device, const Pipeline &pipeline, IndirectKind kind,
+                                               uint32 maxCount) {
+    DeviceState &state = *device.internal.state;
+    if (!state.generatedCommands) {
+        reportError(ErrorCategory::eUnsupported,
+                    "indirectScratchRequirements: this GPU has no indirect Level 2 (DeviceLimits::indirectRootData)");
+    }
+    EQ_VK_CHECK_ALIVE(&state, pipeline.internal.id, "pipeline");
+    const VkMemoryRequirements requirements = generatedCommandsRequirements(
+        state, reinterpret_cast<VkPipeline>(pipeline.internal.pipeline), kind, pipeline.rootDataSize, maxCount);
+    // The types both the scratch range and a scratch buffer of that size allow,
+    // so memory from allocateMemory(kind, size, &this) holds the buffer too.
+    const MemoryRequirements buffer =
+        bufferRequirements(device, {.size = std::max<uint64>(requirements.size, 4), .usage = BufferUsage::eIndirectScratch});
+    const uint32 types = requirements.memoryTypeBits & buffer.internal.memoryTypes;
+    return {.size = std::max<uint64>(requirements.size, buffer.size),
+            .alignment = std::max<uint64>({requirements.alignment, buffer.alignment, 4}),
+            .kinds = kindsOf(state, types),
+            .internal = {.memoryTypes = types}};
+}
+
 void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const Buffer &records, uint64 offset,
-                                    uint32 maxCount, const Buffer *count, uint64 countOffset) {
+                                    uint32 maxCount, const Buffer *scratch, uint64 scratchOffset, const Buffer *count,
+                                    uint64 countOffset) {
     DeviceState &state = *cmd.internal.device;
     if (!state.generatedCommands) {
         reportError(ErrorCategory::eUnsupported,
@@ -243,31 +204,33 @@ void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const B
     const uint32 stride = indirectStride(kind, rootDataSize);
     checkIndirectCall(cmd, kind, records, offset, maxCount, count, countOffset, stride, true,
                       "cmdExecuteIndirectWithRootData");
-    const VkIndirectCommandsLayoutEXT layout = indirectLayout(state, kind, rootDataSize);
-    const VkGeneratedCommandsMemoryRequirementsInfoEXT requirementsInfo{
-        .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_EXT,
-        .indirectCommandsLayout = layout,
-        .maxSequenceCount = maxCount};
-    VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    const VkPipeline pipeline = reinterpret_cast<VkPipeline>(cmd.internal.pipeline);
+    const VkMemoryRequirements requirements =
+        generatedCommandsRequirements(state, pipeline, kind, rootDataSize, maxCount);
+    if (scratch != nullptr) {
+        EQ_VK_CHECK_ALIVE(&state, scratch->internal.id, "buffer");
+    }
+    EQ_VALIDATE(Validation::checkIndirectScratch(
+        {.requiredSize = requirements.size,
+         .requiredAlignment = std::max<uint64>(requirements.alignment, 4),
+         .hasScratch = scratch != nullptr,
+         .usage = scratch != nullptr && (scratch->usage & BufferUsage::eIndirectScratch) != BufferUsage::eNone,
+         .offset = scratchOffset,
+         .scratchSize = scratch != nullptr ? scratch->size : 0,
+         .address = scratch != nullptr ? scratch->gpuAddress + scratchOffset : 0},
+        "cmdExecuteIndirectWithRootData"));
     // The bound pipeline (no execution set) is named through pNext.
     const VkGeneratedCommandsPipelineInfoEXT pipelineInfo{
-        .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT,
-        .pipeline = reinterpret_cast<VkPipeline>(cmd.internal.pipeline)};
-    VkGeneratedCommandsMemoryRequirementsInfoEXT withPipeline = requirementsInfo;
-    withPipeline.pNext = &pipelineInfo;
-    state.functions.vkGetGeneratedCommandsMemoryRequirementsEXT(state.device, &withPipeline, &requirements);
-    const VkDeviceSize preprocessSize = std::max<VkDeviceSize>(requirements.memoryRequirements.size, 1);
-    const PreprocessBuffer &preprocess =
-        preprocessBuffer(state, cmd, preprocessSize, requirements.memoryRequirements.memoryTypeBits);
+        .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT, .pipeline = pipeline};
     const VkGeneratedCommandsInfoEXT info{
         .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_INFO_EXT,
         .pNext = &pipelineInfo,
         .shaderStages = stagesOf(kind),
-        .indirectCommandsLayout = layout,
+        .indirectCommandsLayout = indirectLayout(state, kind, rootDataSize),
         .indirectAddress = records.gpuAddress + offset,
         .indirectAddressSize = uint64{stride} * maxCount,
-        .preprocessAddress = preprocess.address,
-        .preprocessSize = preprocessSize,
+        .preprocessAddress = scratch != nullptr ? scratch->gpuAddress + scratchOffset : 0,
+        .preprocessSize = requirements.size,
         .maxSequenceCount = maxCount,
         .sequenceCountAddress = count != nullptr ? count->gpuAddress + countOffset : 0,
     };

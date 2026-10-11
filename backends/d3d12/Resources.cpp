@@ -137,7 +137,9 @@ bool writeTextureView(DeviceState &state, const Descriptor &descriptor, D3D12_CP
 
 // ── Memory ───────────────────────────────────────────────────────────────────
 
-Memory allocateMemory(Device &device, MemoryKind kind, uint64 size) {
+// D3D12 has one heap type per kind, and heap tier 2 holds every resource:
+// `forResource` changes nothing.
+Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *) {
     DeviceState &state = *device.internal.state;
     if (kind == MemoryKind::eGPUUpload && !state.gpuUploadHeap) {
         reportError(ErrorCategory::eUnsupported,

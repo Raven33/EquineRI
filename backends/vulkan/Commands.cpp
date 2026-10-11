@@ -209,8 +209,6 @@ void destroyCommandList(Device &device, CommandList &cmd) {
     EQ_VK_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "destroying"));
     EQ_VK_UNTRACK(&state, cmd.internal.id);
-    auto *extras = static_cast<CommandListExtras *>(cmd.internal.extras);
-    releaseCommandListExtras(state, extras, false);
     state.functions.vkDestroyCommandPool(state.device, reinterpret_cast<VkCommandPool>(cmd.internal.pool), nullptr);
     cmd = {};
 }
@@ -221,9 +219,6 @@ void resetCommandList(CommandList &cmd) {
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "resetting"));
     checkVk(state.functions.vkResetCommandPool(state.device, reinterpret_cast<VkCommandPool>(cmd.internal.pool), 0),
             "vkResetCommandPool");
-    auto *extras = static_cast<CommandListExtras *>(cmd.internal.extras);
-    releaseCommandListExtras(state, extras, true);
-    cmd.internal.extras = extras;
 }
 
 // ── Recording (P34: each call writes the native command at once) ─────────────
@@ -312,11 +307,19 @@ void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
         reportError(ErrorCategory::eUnsupported,
                     "cmdBarrier: Stage::eAccelerationStructure needs ray tracing (DeviceLimits::rayTracing)");
     }
+    // Indirect Level 2 reads and writes its scratch in the preprocess stage (P48).
+    const auto stages = [&](Stage stage) {
+        VkPipelineStageFlags2 flags = stagesOf(stage);
+        if ((stage & Stage::eIndirect) != Stage::eNone && cmd.internal.device->generatedCommands) {
+            flags |= VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT;
+        }
+        return flags;
+    };
     const VkMemoryBarrier2 barrier{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .srcStageMask = stagesOf(before),
+        .srcStageMask = stages(before),
         .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-        .dstStageMask = stagesOf(after),
+        .dstStageMask = stages(after),
         .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
     };
     const VkDependencyInfo dependency{

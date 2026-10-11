@@ -367,12 +367,13 @@ EQ_TEST(d3d12, work_graph) {
     RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
     RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadWriteView{.buffer = output}}});
     const uint32 multiplier = 2;
+    RI::bindWorkGraphMemory(device, graph, backing, 0, backingSize); // initialized here, once
     runOnce(device, [&](RI::CommandList &cmd) {
         RI::cmdClearBuffer(cmd, output, 0);
         RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute);
         RI::cmdSetHeap(cmd, heap);
         for (int launch = 0; launch < 2; ++launch) {
-            RI::cmdSetWorkGraph(cmd, graph, backing, 0, backingSize);
+            RI::cmdSetWorkGraph(cmd, graph);
             RI::cmdSetRootData(cmd, GraphRoot{.outputSlot = 0});
             const RI::GraphInput input{.entry = entry, .records = &multiplier, .recordCount = 1, .recordStride = 4};
             RI::cmdDispatchGraph(cmd, {&input, 1});

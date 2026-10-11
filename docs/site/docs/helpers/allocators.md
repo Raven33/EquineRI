@@ -17,6 +17,10 @@ Both free **late**: `release` and `releaseSlot` take the `TimelinePoint` of the 
 submission that may use the range or slot, and reuse it only once that point is reached
 ([P20](../design-notes/decisions.md#p20), [P59](../design-notes/decisions.md#p59)). The memory allocator's default point means "free at once".
 
+Blocks use each kind's usual memory. A resource whose `MemoryRequirements` rule that memory out
+(Vulkan drivers may allow some resources only in some native types, such as indirect scratch
+on RADV) needs its own block: `RI::allocateMemory(device, kind, size, &requirements)`.
+
 When an allocation reuses a range that held another resource, `Allocation::needsDiscard` is
 set: the new texture's contents are undefined, so `cmdDiscard` it before its first use
 ([P69](../design-notes/decisions.md#p69)).

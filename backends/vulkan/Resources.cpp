@@ -55,13 +55,21 @@ VkBufferUsageFlags usageOf(BufferUsage usage) {
     return flags;
 }
 
-VkBufferCreateInfo bufferInfo(const BufferDesc &desc) {
-    return {
+// The preprocess usage of generated commands (P48) exists only as a
+// VkBufferUsageFlags2 bit, so scratch buffers chain `usage2`.
+VkBufferCreateInfo bufferInfo(const BufferDesc &desc, VkBufferUsageFlags2CreateInfo &usage2) {
+    VkBufferCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = desc.size,
         .usage = usageOf(desc.usage),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
+    if ((desc.usage & BufferUsage::eIndirectScratch) != BufferUsage::eNone) {
+        usage2 = {.sType = VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO,
+                  .usage = info.usage | VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT};
+        info.pNext = &usage2;
+    }
+    return info;
 }
 
 } // namespace
@@ -69,10 +77,11 @@ VkBufferCreateInfo bufferInfo(const BufferDesc &desc) {
 // Every memory kind whose native type is in `typeBits` (P58 (1)).
 uint32 kindsOf(const DeviceState &state, uint32 typeBits) {
     uint32 kinds = 0;
-    for (uint32 kind = 0; kind < state.memoryTypes.size(); ++kind) {
-        const uint32 type = state.memoryTypes[kind];
-        if (type != UINT32_MAX && (typeBits & (1u << type)) != 0) {
-            kinds |= 1u << kind;
+    for (uint32 kind = 0; kind < state.memoryTypeCandidates.size(); ++kind) {
+        for (const uint32 type : state.memoryTypeCandidates[kind]) {
+            if ((typeBits & (1u << type)) != 0) {
+                kinds |= 1u << kind;
+            }
         }
     }
     return kinds;
@@ -80,13 +89,28 @@ uint32 kindsOf(const DeviceState &state, uint32 typeBits) {
 
 // ── Memory ───────────────────────────────────────────────────────────────────
 
-Memory allocateMemory(Device &device, MemoryKind kind, uint64 size) {
+Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *forResource) {
     DeviceState &state = *device.internal.state;
-    const uint32 type = state.memoryTypes[kindIndex(kind)];
+    uint32 type = state.memoryTypes[kindIndex(kind)];
     if (type == UINT32_MAX) {
         reportError(ErrorCategory::eUnsupported,
                     std::format("memory kind {} is not available on '{}' (see DeviceLimits::gpuUploadMemory)",
                                 nameOf(kind), device.gpu.name));
+    }
+    if (forResource != nullptr) {
+        // The best type of the kind that the resource allows.
+        type = UINT32_MAX;
+        for (const uint32 candidate : state.memoryTypeCandidates[kindIndex(kind)]) {
+            if (type == UINT32_MAX && (forResource->internal.memoryTypes & (1u << candidate)) != 0) {
+                type = candidate;
+            }
+        }
+        if (type == UINT32_MAX) {
+            reportError(ErrorCategory::eProgrammerError,
+                        std::format("allocateMemory: memory kind {} cannot hold this resource (see "
+                                    "MemoryRequirements::kinds)",
+                                    nameOf(kind)));
+        }
     }
     const VkMemoryAllocateFlagsInfo flags{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT};
@@ -129,15 +153,22 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
         reportError(ErrorCategory::eUnsupported,
                     "BufferUsage::eAccelerationStructureInput needs ray tracing (DeviceLimits::rayTracing)");
     }
+    if ((desc.usage & BufferUsage::eIndirectScratch) != BufferUsage::eNone &&
+        !device.internal.state->generatedCommands) {
+        reportError(ErrorCategory::eUnsupported,
+                    "BufferUsage::eIndirectScratch needs indirect Level 2 (DeviceLimits::indirectRootData)");
+    }
     DeviceState &state = *device.internal.state;
-    const VkBufferCreateInfo createInfo = bufferInfo(desc);
+    VkBufferUsageFlags2CreateInfo usage2{};
+    const VkBufferCreateInfo createInfo = bufferInfo(desc, usage2);
     const VkDeviceBufferMemoryRequirements info{.sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
                                                 .pCreateInfo = &createInfo};
     VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
     state.functions.vkGetDeviceBufferMemoryRequirements(state.device, &info, &requirements);
     return withGranularity(state, {.size = requirements.memoryRequirements.size,
                                    .alignment = requirements.memoryRequirements.alignment,
-                                   .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)});
+                                   .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits),
+                           .internal = {.memoryTypes = requirements.memoryRequirements.memoryTypeBits}});
 }
 
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
@@ -146,8 +177,12 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
     [[maybe_unused]] const MemoryRequirements requirements = bufferRequirements(device, desc);
     EQ_VALIDATE(Validation::checkRange(offset, requirements.size, memory.size, requirements.alignment,
                                        "createBuffer: placing the buffer in memory"));
+    EQ_VALIDATE(Validation::checkMemoryType(
+        memory.internal.imported || (requirements.internal.memoryTypes & (1u << memory.internal.memoryType)) != 0,
+        "createBuffer"));
 
-    const VkBufferCreateInfo info = bufferInfo(desc);
+    VkBufferUsageFlags2CreateInfo usage2{};
+    const VkBufferCreateInfo info = bufferInfo(desc, usage2);
     VkBuffer buffer = VK_NULL_HANDLE;
     checkVk(state.functions.vkCreateBuffer(state.device, &info, nullptr, &buffer), "vkCreateBuffer");
     checkVk(state.functions.vkBindBufferMemory(state.device, buffer, native(memory), offset), "vkBindBufferMemory");

@@ -25,7 +25,7 @@ EQ_FIELD(Device, limits, RI::DeviceLimits);
 EQ_FIELD(Device, graphicsQueue, RI::Queue);
 
 // Memory and buffers (P31, P32, P33, P58, P61)
-EQ_SIGNATURE(allocateMemory, RI::Memory (*)(RI::Device &, RI::MemoryKind, uint64));
+EQ_SIGNATURE(allocateMemory, RI::Memory (*)(RI::Device &, RI::MemoryKind, uint64, const RI::MemoryRequirements *));
 EQ_SIGNATURE(freeMemory, void (*)(RI::Device &, RI::Memory &));
 EQ_SIGNATURE(bufferRequirements, RI::MemoryRequirements (*)(RI::Device &, const RI::BufferDesc &));
 EQ_SIGNATURE(createBuffer, RI::Buffer (*)(RI::Device &, const RI::Memory &, uint64, const RI::BufferDesc &));
@@ -157,7 +157,9 @@ EQ_SIGNATURE(cmdDrawMesh, void (*)(RI::CommandList &, uint32, uint32, uint32));
 EQ_SIGNATURE(cmdExecuteIndirect, void (*)(RI::CommandList &, RI::IndirectKind, const RI::Buffer &, uint64, uint32,
                                           const RI::Buffer *, uint64));
 EQ_SIGNATURE(cmdExecuteIndirectWithRootData, void (*)(RI::CommandList &, RI::IndirectKind, const RI::Buffer &, uint64,
-                                                      uint32, const RI::Buffer *, uint64));
+                                                      uint32, const RI::Buffer *, uint64, const RI::Buffer *, uint64));
+EQ_SIGNATURE(indirectScratchRequirements,
+             RI::MemoryRequirements (*)(RI::Device &, const RI::Pipeline &, RI::IndirectKind, uint32));
 EQ_SIGNATURE(cmdDrawIndexed, void (*)(RI::CommandList &, uint32, uint32, uint32, int32, uint32));
 
 // Swapchains (P43, P63, P64)
@@ -189,7 +191,8 @@ EQ_FIELD(AccelerationStructure, gpuAddress, uint64);
 EQ_SIGNATURE(createWorkGraph, RI::WorkGraph (*)(RI::Device &, const RI::WorkGraphDesc &));
 EQ_SIGNATURE(destroyWorkGraph, void (*)(RI::Device &, RI::WorkGraph &));
 EQ_SIGNATURE(workGraphEntry, uint32 (*)(const RI::WorkGraph &, std::string_view, uint32));
-EQ_SIGNATURE(cmdSetWorkGraph, void (*)(RI::CommandList &, const RI::WorkGraph &, const RI::Buffer &, uint64, uint64, bool));
+EQ_SIGNATURE(bindWorkGraphMemory, void (*)(RI::Device &, RI::WorkGraph &, const RI::Buffer &, uint64, uint64));
+EQ_SIGNATURE(cmdSetWorkGraph, void (*)(RI::CommandList &, const RI::WorkGraph &));
 EQ_SIGNATURE(cmdDispatchGraph, void (*)(RI::CommandList &, std::span<const RI::GraphInput>));
 EQ_SIGNATURE(cmdDispatchGraphIndirect, void (*)(RI::CommandList &, uint64, bool));
 

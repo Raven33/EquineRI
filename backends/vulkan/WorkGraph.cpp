@@ -21,9 +21,8 @@ namespace {
 WorkGraph createWorkGraph(Device &, const WorkGraphDesc &) { unsupported("createWorkGraph"); }
 void destroyWorkGraph(Device &, WorkGraph &) { unsupported("destroyWorkGraph"); }
 uint32 workGraphEntry(const WorkGraph &, std::string_view, uint32) { unsupported("workGraphEntry"); }
-void cmdSetWorkGraph(CommandList &, const WorkGraph &, const Buffer &, uint64, uint64, bool) {
-    unsupported("cmdSetWorkGraph");
-}
+void bindWorkGraphMemory(Device &, WorkGraph &, const Buffer &, uint64, uint64) { unsupported("bindWorkGraphMemory"); }
+void cmdSetWorkGraph(CommandList &, const WorkGraph &) { unsupported("cmdSetWorkGraph"); }
 void cmdDispatchGraph(CommandList &, std::span<const GraphInput>) { unsupported("cmdDispatchGraph"); }
 void cmdDispatchGraphIndirect(CommandList &, uint64, bool) { unsupported("cmdDispatchGraphIndirect"); }
 

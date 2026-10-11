@@ -44,6 +44,9 @@ struct DeviceState {
 
     // Memory kinds (P32): the native memory type of each, UINT32_MAX if none.
     std::array<uint32, 4> memoryTypes{UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+    // Every native type that can serve each kind, best first (memoryTypes[k]
+    // first): allocateMemory picks among them for resources that need it.
+    std::array<std::vector<uint32>, 4> memoryTypeCandidates;
     std::array<bool, 4> memoryKindMapped{false, true, true, true};
 
     // Descriptor heaps (P94): one set layout per heap kind for the whole device,
@@ -104,19 +107,6 @@ inline uint64 queryResultSize(const DeviceState & /*state*/, QueryType type) {
     return type == QueryType::ePipelineStatistics ? 7 * 8 : 8;
 }
 
-// RI-owned objects of one command list (CommandList::internal.extras):
-// preprocess buffers of generated commands (P48), freed when the list is
-// reset (all but the largest) or destroyed.
-struct PreprocessBuffer {
-    VkBuffer buffer = VK_NULL_HANDLE;
-    VkDeviceMemory memory = VK_NULL_HANDLE;
-    VkDeviceSize size = 0;
-    VkDeviceAddress address = 0;
-};
-struct CommandListExtras {
-    std::vector<PreprocessBuffer> preprocess; // the last one is the largest
-};
-void releaseCommandListExtras(DeviceState &state, CommandListExtras *&extras, bool keepLargest);
 void destroyIndirectLayouts(DeviceState &state);
 
 // Debugging (Debug.cpp, P53).

@@ -32,6 +32,7 @@ enum class BufferUsage : uint32 {
     eIndirect = rvl::eBit(5), // indirect arguments (P48)
     eIndex = rvl::eBit(6),    // index buffer for cmdDrawIndexed (P39)
     eAccelerationStructureInput = rvl::eBit(7), // vertices, indices or instances of a build (P49)
+    eIndirectScratch = rvl::eBit(8), // scratch of cmdExecuteIndirectWithRootData (P48)
 };
 makeBitmask(BufferUsage)
 
@@ -46,6 +47,9 @@ struct MemoryRequirements {
     uint64 size = 0;
     uint64 alignment = 0;
     uint32 kinds = 0; // bit i set: MemoryKind i can hold the resource
+    struct {
+        uint32 memoryTypes = 0; // Vulkan: the native types allowed (memoryTypeBits)
+    } internal;
 };
 
 inline constexpr bool fits(const MemoryRequirements &requirements, MemoryKind kind) {
