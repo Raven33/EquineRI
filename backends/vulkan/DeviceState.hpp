@@ -67,6 +67,12 @@ struct DeviceState {
     std::vector<VkDescriptorType> mutableTypes;
     bool rayTracing = false;
     VkDeviceSize scratchAlignment = 256;
+    // Samplers (P87): one VkSampler per distinct SamplerDesc, kept until the
+    // device is destroyed; the key is the description's fields as 32-bit words.
+    std::map<std::array<uint32, 13>, VkSampler> samplers;
+    uint32 maxSamplers = 0;      // maxSamplerAllocationCount
+    float maxAnisotropy = 1.0f;  // maxSamplerAnisotropy
+    bool samplerMinMax = false;  // samplerFilterMinmax
     VkDeviceSize storageOffsetAlignment = 0;
     VkDeviceSize bufferImageGranularity = 1;
     VkDeviceSize uniformOffsetAlignment = 0;

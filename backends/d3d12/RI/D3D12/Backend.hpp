@@ -231,6 +231,10 @@ struct DescriptorWrite {
 // Writes descriptors into heap slots (D1, P94): one native call per write on D3D12.
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const DescriptorWrite> writes);
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes);
+// Writes sampler descriptions into sampler-heap slots (P87). Vulkan keeps one
+// sampler per distinct description, until the device is destroyed.
+void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes);
+void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes);
 
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────
 

@@ -1075,3 +1075,80 @@ EQ_TEST(texture, indirect_level2) {
     RI::freeMemory(f.device, upload.memory);
     t.destroy(f);
 }
+
+// Samplers (P87): a 2x2 texture whose red channel is 0 in column 0 and 1 in
+// column 1, sampled through filters, address modes, a border and min/max
+// reductions written with writeSamplers.
+EQ_TEST(texture, samplers) {
+    Fixture f;
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)}; // D3D12: 64 KiB per buffer
+    RI::Texture texture = placeTexture(f.device, f.gpu,
+                                       {.width = 2, .height = 2, .format = RI::Format::eRGBA8Unorm,
+                                        .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopyDst});
+    const RI::CopyLayout layout = RI::copyLayout(f.device, texture.view);
+    RI::Buffer staging = placeBuffer(f.device, upload, {.size = layout.size, .usage = RI::BufferUsage::eCopySrc});
+    for (uint32 y = 0; y < 2; ++y) {
+        const uint8 row[8] = {0, 0, 0, 255, 255, 0, 0, 255};
+        std::memcpy(static_cast<std::byte *>(staging.mapped) + y * layout.rowPitch, row, sizeof(row));
+    }
+    RI::cmdCopyBufferToTexture(f.cmd, staging, 0, texture.view);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCompute);
+
+    using RI::AddressMode;
+    using RI::Filter;
+    std::vector<RI::SamplerWrite> samplers = {
+        {.slot = 0, .sampler = {.minFilter = Filter::eNearest, .magFilter = Filter::eNearest,
+                                .mipFilter = Filter::eNearest, .addressU = AddressMode::eClamp,
+                                .addressV = AddressMode::eClamp}},
+        {.slot = 1, .sampler = {.addressU = AddressMode::eClamp, .addressV = AddressMode::eClamp}},
+        {.slot = 2, .sampler = {}}, // linear, repeat
+        {.slot = 3, .sampler = {.addressU = AddressMode::eBorder, .addressV = AddressMode::eBorder,
+                                .border = RI::BorderColor::eOpaqueWhite}},
+    };
+    if (f.device.limits.samplerMinMax) {
+        samplers.push_back({.slot = 4, .sampler = {.addressU = AddressMode::eClamp, .addressV = AddressMode::eClamp,
+                                                   .reduction = RI::Reduction::eMin}});
+        samplers.push_back({.slot = 5, .sampler = {.addressU = AddressMode::eClamp, .addressV = AddressMode::eClamp,
+                                                   .reduction = RI::Reduction::eMax}});
+    }
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(f.device, {.resourceCount = 2, .samplerCount = 8});
+    RI::writeSamplers(f.device, heap, samplers);
+    // Written, not sampled: a comparison sampler, and a repeat of slot 1's
+    // description (one native sampler on Vulkan).
+    RI::writeSamplers(f.device, heap, {{.slot = 6, .sampler = {.compare = RI::CompareOp::eLess}},
+                                       {.slot = 7, .sampler = samplers[1].sampler}});
+    RI::writeDescriptors(f.device, heap, {{.slot = 0, .descriptor = RI::ReadWriteView{.buffer = f.output, .stride = 16}},
+                                          {.slot = 1, .descriptor = RI::ReadView{.texture = texture.view}}});
+    const std::vector<std::byte> shader = loadShader("sample_texture");
+    RI::Pipeline pipeline = RI::createComputePipeline(f.device, {.shader = shader});
+    struct SampleRoot {
+        uint32 textureSlot, outputSlot, count;
+    };
+    RI::cmdSetHeap(f.cmd, heap);
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, SampleRoot{.textureSlot = 1, .outputSlot = 0, .count = uint32(samplers.size())});
+    RI::cmdDispatch(f.cmd, 1, 1, 1);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, samplers.size() * 16);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    // Per sampler: red at (0.5, 0.5), (0, 0), (0.75, 0.25), (-0.5, -0.5).
+    const auto *r = static_cast<const float *>(f.result.mapped);
+    EQ_CHECK(near(r[0 * 4 + 2], 1.0f) && near(r[0 * 4 + 3], 0.0f)); // nearest, clamp
+    EQ_CHECK(near(r[1 * 4 + 0], 0.5f) && near(r[1 * 4 + 1], 0.0f) && near(r[1 * 4 + 3], 0.0f)); // linear, clamp
+    EQ_CHECK(near(r[2 * 4 + 0], 0.5f) && near(r[2 * 4 + 1], 0.5f)); // linear, repeat: column 1 wraps in
+    EQ_CHECK(near(r[3 * 4 + 3], 1.0f));                              // border, opaque white
+    if (f.device.limits.samplerMinMax) {
+        EQ_CHECK(near(r[4 * 4 + 0], 0.0f) && near(r[5 * 4 + 0], 1.0f)); // min and max of the four texels
+    }
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyDescriptorHeap(f.device, heap);
+    RI::destroyTexture(f.device, texture);
+    RI::destroyBuffer(f.device, staging);
+    RI::freeMemory(f.device, upload.memory);
+}

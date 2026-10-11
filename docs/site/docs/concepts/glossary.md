@@ -42,7 +42,7 @@ no RI form: RI hides it, or leaves it to [native access](../native/index.md).
 | Storage image / storage buffer | UAV | `RI::ReadWriteView` | |
 | Uniform buffer | CBV | `RI::ConstantBufferView` | |
 | Acceleration structure descriptor | SRV (raytracing AS) | `RI::AccelerationStructureView` | |
-| `VkSampler` | Sampler descriptor | — (not yet) | The sampler heap exists; writing samplers comes later. |
+| `VkSampler` | Sampler descriptor | `RI::SamplerDesc`, [`writeSamplers`](../reference/writeSamplers.md) | No sampler object: the description goes into a sampler-heap slot; Vulkan samplers are cached per description. |
 | `vkCmdBindDescriptorSets` | `SetDescriptorHeaps` | [`cmdSetHeap`](../reference/cmdSetHeap.md) | Before the first pipeline ([P94](../design-notes/decisions.md#p94)). |
 | Push constants | Root constants | **Root data**, [`cmdSetRootData`](../reference/cmdSetRootData.md) | Declared in the shader with `EQ_ROOT_DATA` ([root data](root-data.md)). |
 | `VkPipelineLayout` | Root signature | — | Built by RI from the shader ([P44](../design-notes/decisions.md#p44)). |

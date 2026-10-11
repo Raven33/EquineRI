@@ -99,6 +99,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.indirect_level1
     texture.indirect_level2
     raytracing.build_trace_update
+    texture.samplers
     helpers.allocators
     helpers.transfers
     helpers.frame_ring_and_profiler
@@ -142,6 +143,7 @@ endif()
 function(equine_add_gpu_test_shaders exe)
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
+                       "${dir}/sample_texture.hlsl"
                        "${dir}/ray_query.hlsl")
     equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl")
     equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl")

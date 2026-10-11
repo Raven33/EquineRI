@@ -594,6 +594,15 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     state->rayTracing = setup.rayQuery && chain.f.accelerationStructure.accelerationStructure == VK_TRUE &&
                         chain.f.rayQuery.rayQuery == VK_TRUE;
     device.limits.rayTracing = state->rayTracing;
+    {
+        // Samplers (P87): min/max reduction, and the driver's sampler limits.
+        state->samplerMinMax = chain.f.v12.samplerFilterMinmax == VK_TRUE;
+        device.limits.samplerMinMax = state->samplerMinMax;
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(state->physicalDevice, &properties);
+        state->maxSamplers = properties.limits.maxSamplerAllocationCount;
+        state->maxAnisotropy = chain.f.core.samplerAnisotropy == VK_TRUE ? properties.limits.maxSamplerAnisotropy : 1.0f;
+    }
     if (state->rayTracing) {
         VkPhysicalDeviceAccelerationStructurePropertiesKHR asProperties{
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
@@ -644,6 +653,9 @@ void destroyDevice(Device &device) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
     destroyIndirectLayouts(*state);
+    for (const auto &[key, sampler] : state->samplers) {
+        state->functions.vkDestroySampler(state->device, sampler, nullptr);
+    }
     state->functions.vkDestroyCommandPool(state->device, state->internalPool, nullptr);
     state->functions.vkDestroySemaphore(state->device, state->timeline, nullptr);
     state->functions.vkDestroyDescriptorSetLayout(state->device, state->resourceSetLayout, nullptr);

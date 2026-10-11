@@ -75,7 +75,7 @@ Every change keeps these. The decision behind each is in `CONTEXT.md`.
   `cmd*` functions (P85); descriptions use designated initializers (P86).
 - **RI allocates no memory on its own** (P31). The user places every buffer, texture and
   scratch range. RI's own objects are small and fixed: CPU descriptor heaps, one internal
-  command list, caches of native layouts and signatures.
+  command list, caches of native layouts, signatures and (Vulkan) samplers (P99).
 - **RI infers only what is evident** (knowable without tracking past commands) and always
   keeps an explicit form (P36). Barriers are the user's, as coarse stage masks (P36).
 - **Layouts are never visible** (P16). Textures rest in a layout chosen from their usage;
@@ -153,7 +153,7 @@ mechanisms.
 |---|---|---|
 | Loading, device | volk, an instance per device, every feature the GPU reports turned on (P60, P89, P92) | Agility SDK 1.619, a DXGI factory per device (P55, P92) |
 | Memory kinds (P32) | One memory type per kind, chosen at device creation, plus other types of the kind for resources that need them (`allocateMemory(..., &requirements)`) | One heap type per kind; resource heap tier 2 holds everything; CPU kinds mapped through one buffer over the whole heap |
-| Descriptor heaps (P94) | Two descriptor sets: set 0 one mutable binding for every resource view (as DXC's `ResourceDescriptorHeap`), set 1 samplers; update-after-bind; heap size limited by what the driver accepts | Native shader-visible heaps, directly indexed |
+| Descriptor heaps (P94, P99) | Two descriptor sets: set 0 one mutable binding for every resource view (as DXC's `ResourceDescriptorHeap`), set 1 samplers (a `VkSampler` cached per description); update-after-bind; heap size limited by what the driver accepts | Native shader-visible heaps, directly indexed |
 | Root data (P44, P45) | Push constants, one range for all stages | Root constants at root parameter 0 (`b0, space999`) |
 | Shaders (P93, P94, P67) | SPIR-V from DXC with `-fvk-use-dx-layout -fvk-bind-sampler-heap 0 1`; SPIRV-Reflect | DXIL; RI's own DXIL reader |
 | Layouts (P95, P97) | Modes: unified (`GENERAL` everywhere), T (resting layouts per usage), G; RI switches around rendering, clears, copies | Enhanced barriers; textures rest in `COMMON` or their attachment layout |

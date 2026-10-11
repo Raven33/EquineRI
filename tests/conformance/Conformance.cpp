@@ -43,6 +43,8 @@ EQ_SIGNATURE(createDescriptorHeap, RI::DescriptorHeap (*)(RI::Device &, const RI
 EQ_SIGNATURE(destroyDescriptorHeap, void (*)(RI::Device &, RI::DescriptorHeap &));
 EQ_SIGNATURE(writeDescriptors, void (*)(RI::Device &, RI::DescriptorHeap &, std::span<const RI::DescriptorWrite>));
 EQ_SIGNATURE(writeDescriptors, void (*)(RI::Device &, RI::DescriptorHeap &, std::initializer_list<RI::DescriptorWrite>));
+EQ_SIGNATURE(writeSamplers, void (*)(RI::Device &, RI::DescriptorHeap &, std::span<const RI::SamplerWrite>));
+EQ_SIGNATURE(writeSamplers, void (*)(RI::Device &, RI::DescriptorHeap &, std::initializer_list<RI::SamplerWrite>));
 EQ_FIELD(DescriptorHeap, resourceCount, uint32);
 EQ_FIELD(DescriptorHeap, samplerCount, uint32);
 EQ_FIELD(ReadView, buffer, RI::Buffer);
