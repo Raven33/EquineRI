@@ -109,8 +109,8 @@ graphs on NVIDIA with no debug-layer message) and all 85 Linux tests. AMD Window
 no indirect scratch for the tested pipelines (4-byte floor), so a large scratch was only
 exercised on RADV.
 Reviewed by the user (2026-10-11): frame graph removed (P35 amended), indirect scratch and
-work-graph memory made explicit, P31 kept strict. Still open: the NVIDIA GPU-AV rule for DGC
-(P98).
+work-graph memory made explicit, P31 kept strict. DGC stays off on NVIDIA under GPU-AV for now; the user
+will investigate the fault by hand later (P98 (5)).
 
 Candidates:
 - Swapchain and present (P43, P63, P64).
