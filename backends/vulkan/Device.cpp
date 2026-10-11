@@ -38,6 +38,7 @@ struct DeviceSetup {
     bool unifiedLayouts = false;
     bool fault = false;
     bool mutableDescriptor = false;
+    bool generatedCommands = false;
 };
 
 // RI's extensions (P60 (2)), each enabled when the GPU has it.
@@ -74,6 +75,10 @@ DeviceSetup chooseSetup(VkPhysicalDevice physicalDevice, uint32 apiVersion) {
     if (EQUINE_VALIDATION) {
         setup.fault = use(VK_EXT_DEVICE_FAULT_EXTENSION_NAME); // P53 (2)
     }
+    // Indirect Level 2 (P48); it relies on maintenance5, core in Vulkan 1.4.
+    if (setup.v14) {
+        setup.generatedCommands = use(VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME);
+    }
     return setup;
 }
 
@@ -97,6 +102,7 @@ struct FeatureChain {
 #endif
         f.fault.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT;
         f.mutableDescriptor.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
+        f.generatedCommands.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_EXT;
 
         std::vector<void *> chain{&f.v11, &f.v12, &f.v13};
         if (setup.v14) {
@@ -121,6 +127,9 @@ struct FeatureChain {
         }
         if (setup.mutableDescriptor) {
             chain.push_back(&f.mutableDescriptor);
+        }
+        if (setup.generatedCommands) {
+            chain.push_back(&f.generatedCommands);
         }
 
         head.features = f.core;
@@ -147,7 +156,8 @@ DeviceFeatures queryDefaultFeatures(VkPhysicalDevice physicalDevice, const Devic
 #ifdef VK_KHR_unified_image_layouts
                     static_cast<void *>(&f.unifiedLayouts),
 #endif
-                    static_cast<void *>(&f.fault), static_cast<void *>(&f.mutableDescriptor)}) {
+                    static_cast<void *>(&f.fault), static_cast<void *>(&f.mutableDescriptor),
+                    static_cast<void *>(&f.generatedCommands)}) {
         static_cast<VkBaseOutStructure *>(s)->pNext = nullptr;
     }
     // Robustness costs performance just by being on. Turn it on through
@@ -221,6 +231,8 @@ void requireFeatures(const DeviceSetup &setup, const DeviceFeatures &f) {
     need(f.v12.hostQueryReset, "hostQueryReset");                           // P71 (1)
     need(f.core.occlusionQueryPrecise, "occlusionQueryPrecise");            // P71: exact sample counts
     need(f.core.pipelineStatisticsQuery, "pipelineStatisticsQuery");        // P71 (2)
+    need(f.v12.drawIndirectCount, "drawIndirectCount");                     // P48
+    need(f.core.multiDrawIndirect, "multiDrawIndirect");                     // P48
     if (!missing.empty()) {
         reportError(ErrorCategory::eUnsupported,
                     std::format("this GPU or your DeviceFeatures lack what RI needs: {}", missing));
@@ -489,6 +501,9 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     }
     state->faultEnabled = setup.fault && chain.f.fault.deviceFault == VK_TRUE;
     device.limits.meshShaders = setup.mesh && chain.f.mesh.meshShader == VK_TRUE && chain.f.mesh.taskShader == VK_TRUE;
+    device.limits.indirectRootData =
+        setup.generatedCommands && chain.f.generatedCommands.deviceGeneratedCommands == VK_TRUE;
+    state->generatedCommands = device.limits.indirectRootData;
     {
         // Depth and stencil resolve modes (P76).
         VkPhysicalDeviceDepthStencilResolveProperties resolve{
@@ -529,6 +544,7 @@ void destroyDevice(Device &device) {
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
+    destroyIndirectLayouts(*state);
     state->functions.vkDestroyCommandPool(state->device, state->internalPool, nullptr);
     state->functions.vkDestroySemaphore(state->device, state->timeline, nullptr);
     state->functions.vkDestroyDescriptorSetLayout(state->device, state->resourceSetLayout, nullptr);

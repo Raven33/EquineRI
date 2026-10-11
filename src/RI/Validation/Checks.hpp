@@ -90,6 +90,19 @@ struct ResolveCheck {
 };
 CheckResult checkResolve(const ResolveCheck &r, std::string_view call);
 
+// An indirect execution (P48): buffers with eIndirect usage, offsets multiple
+// of 4, records inside the buffer, dispatches one at a time without a count.
+struct IndirectCheck {
+    bool dispatch;
+    bool argsUsage;
+    uint64 offset, stride, argsSize;
+    uint32 maxCount;
+    bool hasCount, countUsage;
+    uint64 countOffset, countSize;
+    bool countForDispatchAllowed; // Level 2 dispatches may take a count
+};
+CheckResult checkIndirect(const IndirectCheck &c, std::string_view call);
+
 // cmdEndMarker closes an open marker region (P53); `depth` is the open count.
 CheckResult checkMarkerEnd(uint32 depth);
 // cmdEnd: every marker region opened in the command list is closed.

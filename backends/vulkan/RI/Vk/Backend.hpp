@@ -271,6 +271,7 @@ struct CommandList {
         uint64 heapResourceSet = 0;     // heap set by cmdSetHeap, 0 if none
         uint64 heapSamplerSet = 0;
         uint32 rootDataSize = 0;        // of the pipeline set by cmdSetPipeline
+        uint64 pipeline = 0;            // VkPipeline set by cmdSetPipeline (indirect Level 2)
         uint64 lastSubmitted = 0;       // timeline value of its last submission
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
         bool rendering = false;
@@ -282,6 +283,7 @@ struct CommandList {
         TextureView depthResolve;
         uint32 depthLayout = 0; // VkImageLayout used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
+        void *extras = nullptr; // CommandListExtras: RI-owned per-list objects (P48)
         uint64 id = 0;
     } internal;
 };
@@ -318,6 +320,19 @@ void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount = 
 // Mesh pipelines (P39): launches x * y * z task shader groups, or mesh shader
 // groups when the pipeline has no task shader.
 void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z);
+// Indirect execution (P48). Level 1: `maxCount` records of indirectStride(kind)
+// bytes at `offset` in `args`, with the count read from `count` at `countOffset`
+// when given (at most maxCount). Dispatches take one record and no count.
+// Buffers need BufferUsage::eIndirect; the GPU reads them at Stage::eIndirect.
+void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,
+                        const Buffer *count = nullptr, uint64 countOffset = 0);
+// Level 2 (DeviceLimits::indirectRootData): each record starts with the root
+// data of the pipeline set (its rootDataSize, rounded up to 4), followed by the
+// arguments; stride indirectStride(kind, rootDataSize). Set root data again
+// before later direct draws.
+void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const Buffer &records, uint64 offset,
+                                    uint32 maxCount, const Buffer *count = nullptr, uint64 countOffset = 0);
+
 
 
 

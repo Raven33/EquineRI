@@ -18,6 +18,7 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `gpuUploadMemory` | whether [`MemoryKind::eGPUUpload`](memory.md) can be allocated | all of the largest device-local heap is host-visible (ReBAR) | `GPUUploadHeapSupported` |
 | `timestampFrequency` | [timestamp](timestamps.md) ticks per second | `1e9 / timestampPeriod` (the period is in nanoseconds per tick) | `ID3D12CommandQueue::GetTimestampFrequency` of the graphics queue |
 | `meshShaders` | task and mesh shaders, [`cmdDrawMesh`](cmdDraw.md) | `VK_EXT_mesh_shader` with `taskShader` and `meshShader` | `D3D12_OPTIONS7::MeshShaderTier` at least tier 1 |
+| `indirectRootData` | indirect Level 2, [`cmdExecuteIndirectWithRootData`](indirect.md) | `VK_EXT_device_generated_commands` (Vulkan 1.4 devices) | always |
 | `depthResolveModes`, `stencilResolveModes` | the depth and stencil [resolve](resolve.md) modes, `resolveModeBit(mode)` each | `VkPhysicalDeviceDepthStencilResolveProperties` | programmable sample positions tier 2: depth average/min/max, stencil min/max |
 
 ## Signature

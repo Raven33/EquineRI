@@ -23,6 +23,38 @@ enum class Stage : uint32 {
 };
 makeBitmask(Stage)
 
+// Indirect execution (P48): what the GPU-written arguments describe. Each
+// argument struct has the same layout on both backends.
+enum class IndirectKind : uint8 { eDraw, eDrawIndexed, eDrawMesh, eDispatch };
+
+struct DrawIndirectArgs {
+    uint32 vertexCount;
+    uint32 instanceCount;
+    uint32 firstVertex;
+    uint32 firstInstance;
+};
+struct DrawIndexedIndirectArgs {
+    uint32 indexCount;
+    uint32 instanceCount;
+    uint32 firstIndex;
+    int32 vertexOffset;
+    uint32 firstInstance;
+};
+struct DispatchIndirectArgs { // also mesh draws: task (or mesh) groups
+    uint32 x;
+    uint32 y;
+    uint32 z;
+};
+
+// Bytes from one indirect record to the next (P48): the arguments of `kind`,
+// preceded at Level 2 by `rootDataSize` bytes of root data (rounded up to 4).
+constexpr uint32 indirectStride(IndirectKind kind, uint32 rootDataSize = 0) {
+    const uint32 args = kind == IndirectKind::eDraw          ? sizeof(DrawIndirectArgs)
+                        : kind == IndirectKind::eDrawIndexed ? sizeof(DrawIndexedIndirectArgs)
+                                                             : sizeof(DispatchIndirectArgs);
+    return (rootDataSize + 3) / 4 * 4 + args;
+}
+
 // A point on a queue's GPU timeline (P20): reached when the GPU has finished
 // the submission that returned it. Values only grow; 0 is always reached.
 struct TimelinePoint {

@@ -891,3 +891,162 @@ EQ_TEST(texture, resolve_depth) {
     RI::destroyTexture(f.device, resolved);
     RI::destroyTexture(f.device, msaa);
 }
+
+namespace {
+
+// Additive draws of the full-screen triangle into a 16-bit float target.
+struct AdditiveTarget {
+    RI::Texture target;
+    std::vector<std::byte> vs, ps;
+    RI::Pipeline pipeline;
+
+    explicit AdditiveTarget(Fixture &f) {
+        target = placeTexture(f.device, f.gpu,
+                              {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float,
+                               .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+        vs = loadShader("fullscreen_vs");
+        ps = loadShader("solid_ps");
+        const RI::BlendState additive{.enable = true,
+                                      .srcColor = RI::BlendFactor::eOne,
+                                      .dstColor = RI::BlendFactor::eOne,
+                                      .srcAlpha = RI::BlendFactor::eOne,
+                                      .dstAlpha = RI::BlendFactor::eOne};
+        pipeline = RI::createGraphicsPipeline(
+            f.device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA16Float}, .blend = {additive}});
+    }
+    void destroy(Fixture &f) {
+        RI::destroyPipeline(f.device, pipeline);
+        RI::destroyTexture(f.device, target);
+    }
+};
+
+} // namespace
+
+// Indirect Level 1 (P48): indexed draws cut short by a GPU count, plain draws,
+// and a dispatch, all from buffer arguments.
+EQ_TEST(texture, indirect_level1) {
+    Fixture f;
+    AdditiveTarget t(f);
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
+    const uint16 indexValues[] = {0, 1, 2, 0};
+    std::memcpy(indices.mapped, indexValues, sizeof(indexValues));
+    RI::Buffer args = placeBuffer(f.device, upload, {.size = 256, .usage = RI::BufferUsage::eIndirect});
+    auto *bytes = static_cast<std::byte *>(args.mapped);
+    const RI::DrawIndexedIndirectArgs indexed{.indexCount = 3, .instanceCount = 1};
+    std::memcpy(bytes, &indexed, sizeof(indexed));                  // record 0
+    std::memcpy(bytes + sizeof(indexed), &indexed, sizeof(indexed)); // record 1, cut by the count
+    const RI::DrawIndirectArgs plain{.vertexCount = 3, .instanceCount = 1};
+    std::memcpy(bytes + 64, &plain, sizeof(plain));
+    std::memcpy(bytes + 64 + sizeof(plain), &plain, sizeof(plain));
+    const RI::DispatchIndirectArgs groups{kSize / 8, kSize / 8, 1};
+    std::memcpy(bytes + 128, &groups, sizeof(groups));
+    RI::Buffer count = placeBuffer(f.device, upload, {.size = 4, .usage = RI::BufferUsage::eIndirect});
+    *static_cast<uint32 *>(count.mapped) = 1;
+
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = t.target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, t.pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
+    RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
+    RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDrawIndexed, args, 0, 2, &count, 0); // one draw: +0.25
+    RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDraw, args, 64, 2);                  // two draws: +0.5
+    RI::cmdEndRendering(f.cmd);
+    std::vector<float> texels = f.readBack(t.target.view);
+    EQ_CHECK(all(texels, 0, 0.75f));
+
+    // Dispatch: the storage-write shader fills a texture.
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::Texture storage = placeTexture(f.device, f.gpu,
+                                       {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float,
+                                        .usage = RI::TextureUsage::eStorage | RI::TextureUsage::eSampled});
+    RI::writeDescriptors(f.device, f.heap, {{.slot = 2, .descriptor = RI::ReadWriteView{.texture = storage.view}}});
+    const std::vector<std::byte> shader = loadShader("write_storage");
+    RI::Pipeline write = RI::createComputePipeline(f.device, {.shader = shader});
+    RI::cmdSetPipeline(f.cmd, write);
+    RI::cmdSetRootData(f.cmd, WriteRoot{.textureSlot = 2, .width = kSize, .height = kSize, .value = 3.0f});
+    RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDispatch, args, 128, 1);
+    texels = f.readBack(storage.view);
+    EQ_CHECK(all(texels, 2, 3.0f));
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyPipeline(f.device, write);
+    RI::destroyTexture(f.device, storage);
+    RI::destroyBuffer(f.device, count);
+    RI::destroyBuffer(f.device, args);
+    RI::destroyBuffer(f.device, indices);
+    RI::freeMemory(f.device, upload.memory);
+    t.destroy(f);
+}
+
+// Indirect Level 2 (P48): each record sets the root data, then draws or
+// dispatches; the GPU count stops before the third record.
+EQ_TEST(texture, indirect_level2) {
+    Fixture f;
+    if (!f.device.limits.indirectRootData) {
+        return;
+    }
+    AdditiveTarget t(f);
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
+    const uint16 indexValues[] = {0, 1, 2, 0};
+    std::memcpy(indices.mapped, indexValues, sizeof(indexValues));
+    struct DrawRecord {
+        DrawRoot root;
+        RI::DrawIndexedIndirectArgs args;
+    };
+    static_assert(sizeof(DrawRecord) == RI::indirectStride(RI::IndirectKind::eDrawIndexed, sizeof(DrawRoot)));
+    RI::Buffer records = placeBuffer(f.device, upload, {.size = 3 * sizeof(DrawRecord), .usage = RI::BufferUsage::eIndirect});
+    const RI::DrawIndexedIndirectArgs draw{.indexCount = 3, .instanceCount = 1};
+    const DrawRecord list[3] = {{{.color = {0.25f, 0.0f, 0.0f, 0.0f}, .depth = 0.5f}, draw},
+                                {{.color = {0.0f, 0.5f, 0.0f, 0.0f}, .depth = 0.5f}, draw},
+                                {{.color = {0.0f, 0.0f, 1.0f, 0.0f}, .depth = 0.5f}, draw}};
+    std::memcpy(records.mapped, list, sizeof(list));
+    RI::Buffer count = placeBuffer(f.device, upload, {.size = 4, .usage = RI::BufferUsage::eIndirect});
+    *static_cast<uint32 *>(count.mapped) = 2;
+
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = t.target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, t.pipeline);
+    RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
+    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDrawIndexed, records, 0, 3, &count, 0);
+    RI::cmdEndRendering(f.cmd);
+    std::vector<float> texels = f.readBack(t.target.view);
+    EQ_CHECK(all(texels, 0, 0.25f) && all(texels, 1, 0.5f) && all(texels, 2, 0.0f));
+
+    // A dispatch whose root data comes from the record.
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::Texture storage = placeTexture(f.device, f.gpu,
+                                       {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float,
+                                        .usage = RI::TextureUsage::eStorage | RI::TextureUsage::eSampled});
+    RI::writeDescriptors(f.device, f.heap, {{.slot = 2, .descriptor = RI::ReadWriteView{.texture = storage.view}}});
+    const std::vector<std::byte> shader = loadShader("write_storage");
+    RI::Pipeline write = RI::createComputePipeline(f.device, {.shader = shader});
+    struct DispatchRecord {
+        WriteRoot root;
+        RI::DispatchIndirectArgs args;
+    };
+    RI::Buffer dispatches = placeBuffer(f.device, upload, {.size = sizeof(DispatchRecord), .usage = RI::BufferUsage::eIndirect});
+    const DispatchRecord record{{.textureSlot = 2, .width = kSize, .height = kSize, .value = 5.0f}, {kSize / 8, kSize / 8, 1}};
+    std::memcpy(dispatches.mapped, &record, sizeof(record));
+    RI::cmdSetPipeline(f.cmd, write);
+    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDispatch, dispatches, 0, 1);
+    texels = f.readBack(storage.view);
+    EQ_CHECK(all(texels, 2, 5.0f));
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyPipeline(f.device, write);
+    RI::destroyTexture(f.device, storage);
+    RI::destroyBuffer(f.device, dispatches);
+    RI::destroyBuffer(f.device, count);
+    RI::destroyBuffer(f.device, records);
+    RI::destroyBuffer(f.device, indices);
+    RI::freeMemory(f.device, upload.memory);
+    t.destroy(f);
+}

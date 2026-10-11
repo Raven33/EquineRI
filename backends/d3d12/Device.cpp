@@ -201,6 +201,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .gpuUploadMemory = state->gpuUploadHeap,
         .timestampFrequency = timestampFrequency,
         .meshShaders = meshShaders,
+        .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
         .depthResolveModes = state->depthResolveModes,
         .stencilResolveModes = state->stencilResolveModes,
     };
@@ -215,6 +216,7 @@ void destroyDevice(Device &device) {
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
+    forgetCommandSignatures(*state, nullptr);
     release(state->internalList);
     release(state->internalAllocator);
     release(state->clearHeap);

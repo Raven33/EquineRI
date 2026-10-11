@@ -53,6 +53,7 @@ add_library(EquineVulkanBackend STATIC
     Pipeline.cpp
     Commands.cpp
     Debug.cpp
+    Indirect.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"

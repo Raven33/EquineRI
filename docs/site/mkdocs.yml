@@ -191,6 +191,7 @@ nav:
           - RI::copyLayout and texture copies: reference/copies.md
           - RI::cmdBeginRendering, RI::cmdEndRendering: reference/cmdBeginRendering.md
           - RI::cmdDraw, RI::cmdDrawIndexed, RI::cmdDrawMesh: reference/cmdDraw.md
+          - RI::cmdExecuteIndirect, Level 2: reference/indirect.md
           - RI::cmdDiscard: reference/cmdDiscard.md
           - RI::cmdResolve, resolveTo: reference/resolve.md
           - RI::cmdClearTexture, RI::cmdClearBuffer: reference/cmdClear.md

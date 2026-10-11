@@ -350,6 +350,7 @@ void destroyPipeline(Device &device, Pipeline &pipeline) {
     EQ_DX_UNTRACK(&state, pipeline.internal.id);
     auto *pso = static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState);
     auto *rootSignature = static_cast<ID3D12RootSignature *>(pipeline.internal.rootSignature);
+    forgetCommandSignatures(state, rootSignature);
     release(pso);
     release(rootSignature);
     pipeline = {};
