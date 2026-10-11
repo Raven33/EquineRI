@@ -106,6 +106,28 @@ EQ_TEST(vk, unknown_gpu_reports) {
     RI::createDevice({.gpu = missing});
 }
 
+// Mode T resting layouts of sampled depth (P97): fast sampling by default,
+// the depth read-only layout with eReadOnlyDepthSampling.
+EQ_TEST(vk, sampled_depth_resting_layout) {
+    RI::Device device = RI::Vk::createDevice({.gpu = gputest::pickGpu()}, {.layoutMode = RI::Vk::LayoutMode::eTransitions});
+    gputest::Arena arena{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 8ull << 20)};
+    const RI::TextureUsage usage = RI::TextureUsage::eSampled | RI::TextureUsage::eDepthStencil;
+    RI::Texture fast = gputest::placeTexture(device, arena, {.width = 64, .height = 64, .format = RI::Format::eD32Float, .usage = usage});
+    RI::Texture readOnly = gputest::placeTexture(
+        device, arena,
+        {.width = 64, .height = 64, .format = RI::Format::eD32Float, .usage = usage | RI::TextureUsage::eReadOnlyDepthSampling});
+    RI::Texture color = gputest::placeTexture(
+        device, arena, {.width = 64, .height = 64, .format = RI::Format::eRGBA8Unorm, .usage = RI::TextureUsage::eSampled});
+    EQ_CHECK(RI::Vk::native(fast).restingLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    EQ_CHECK(RI::Vk::native(readOnly).restingLayout == VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+    EQ_CHECK(RI::Vk::native(color).restingLayout == VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+    RI::destroyTexture(device, color);
+    RI::destroyTexture(device, readOnly);
+    RI::destroyTexture(device, fast);
+    RI::freeMemory(device, arena.memory);
+    RI::destroyDevice(device);
+}
+
 // Every layout mode the GPU supports gives the same results (L1, P78, P95):
 // render -> sample, depth -> sample and storage -> sample.
 EQ_TEST(vk, layout_modes) {

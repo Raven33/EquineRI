@@ -54,4 +54,7 @@ CheckResult checkViewFormatCompatible(Format texture, Format view);
 CheckResult checkViewRange(uint32 baseMip, uint32 mipCount, uint32 mips, uint32 baseLayer, uint32 layerCount,
                            uint32 layers);
 
+// eReadOnlyDepthSampling (P97) goes with eSampled, eDepthStencil and a depth format.
+CheckResult checkTextureUsage(Format format, TextureUsage usage);
+
 } // namespace RI::Validation

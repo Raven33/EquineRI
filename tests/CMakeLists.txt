@@ -78,6 +78,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.clear_load_op
     texture.depth_write_then_sample
     texture.read_only_depth_section
+    texture.read_only_depth_section_sampling
     texture.msaa_render_then_sample
     texture.storage_write_then_sample
     texture.clear_commands
@@ -96,6 +97,7 @@ if (EQUINE_VALIDATION)
         compute.buffer_used_after_destroy_reports
         texture.depth_write_in_read_only_section_reports
         texture.missing_discard_reports
+        texture.read_only_depth_sampling_on_color_reports
     )
     list(APPEND EQUINE_GPU_SHARED_ABORT_TESTS
         "compute.root_data_size_mismatch_reports|programmer error: root data is 8 bytes, but the pipeline's shader declares 20 bytes"
@@ -104,6 +106,7 @@ if (EQUINE_VALIDATION)
         "compute.buffer_used_after_destroy_reports|programmer error: this buffer was destroyed"
         "texture.depth_write_in_read_only_section_reports|programmer error: cmdSetPipeline: the pipeline writes depth"
         "texture.missing_discard_reports|programmer error: cmdBeginRendering: the texture was placed over memory"
+        "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
     )
 endif()
 
@@ -164,6 +167,7 @@ if (TARGET EquineVulkanBackend)
         vk.list_gpus_while_device_alive
         vk.unknown_gpu_reports
         vk.layout_modes
+        vk.sampled_depth_resting_layout
     )
     # The Windows loader (1.4.321) fails the whole instance with
     # VK_ERROR_OUT_OF_HOST_MEMORY when a VK_ADD_DRIVER_FILES driver cannot be

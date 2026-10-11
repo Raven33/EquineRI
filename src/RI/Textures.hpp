@@ -55,6 +55,11 @@ enum class TextureUsage : uint32 {
     eDepthStencil = rvl::eBit(3), // depth/stencil attachment
     eCopySrc = rvl::eBit(4),
     eCopyDst = rvl::eBit(5),
+    // Sampled by shaders while it is the read-only depth attachment of a
+    // rendering section (P75, P97). Needs eSampled and eDepthStencil. Without
+    // it, sampled depth rests ready for fast sampling, and shaders must not
+    // sample it during a read-only depth section.
+    eReadOnlyDepthSampling = rvl::eBit(6),
 };
 makeBitmask(TextureUsage)
 

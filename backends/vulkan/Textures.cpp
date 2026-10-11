@@ -160,13 +160,19 @@ VkFormat toVkFormat(Format format) { return infoOf(format).native; }
 const char *formatName(Format format) { return infoOf(format).name; }
 
 // P95 (2): one resting layout per texture. Without unified layouts, mode T
-// picks the optimal layout of the texture's main use, as D3D12 would.
-VkImageLayout restingLayoutOf(LayoutMode mode, TextureUsage usage) {
+// picks the optimal layout of the texture's main use, as D3D12 would. Sampled
+// depth rests in SHADER_READ_ONLY_OPTIMAL (fast sampling, P97) unless it is
+// sampled during read-only depth sections, which need the depth read-only
+// layout (READ_ONLY_OPTIMAL, P75).
+VkImageLayout restingLayoutOf(LayoutMode mode, Format format, TextureUsage usage) {
     if (mode != LayoutMode::eTransitions || has(usage, TextureUsage::eStorage)) {
         return VK_IMAGE_LAYOUT_GENERAL;
     }
     if (has(usage, TextureUsage::eSampled)) {
-        return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL; // color and depth reads (sync2)
+        if (isDepthFormat(format) && !has(usage, TextureUsage::eReadOnlyDepthSampling)) {
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        }
+        return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL; // color reads, and depth reads during read-only sections (sync2)
     }
     if (has(usage, TextureUsage::eRenderTarget)) {
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -287,6 +293,7 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc) 
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc) {
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
+    EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
     ImageInfo image;
     fillImageInfo(desc, image);
     VkImage vkImage = VK_NULL_HANDLE;
@@ -314,7 +321,7 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
     texture.format = desc.format;
     texture.usage = desc.usage;
     texture.internal.image = reinterpret_cast<uint64>(vkImage);
-    texture.internal.restingLayout = static_cast<uint32>(restingLayoutOf(state.layoutMode, desc.usage));
+    texture.internal.restingLayout = static_cast<uint32>(restingLayoutOf(state.layoutMode, desc.format, desc.usage));
     for (Format format : desc.viewFormats) {
         texture.internal.viewFormats |= formatBit(format);
     }
