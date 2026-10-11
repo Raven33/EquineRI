@@ -1,3 +1,7 @@
+// Implements Error.hpp: the policy of the error channel (P57). Today every
+// category prints `[EquineRI] <category>: <message>` with the source location
+// and aborts (X1 is open). Also gpuValidationEnabled (EQUINE_GPU_VALIDATION).
+
 #include <RI/Error.hpp>
 
 #include <cstdio>

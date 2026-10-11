@@ -1,6 +1,20 @@
-// Indirect execution (P48). Level 1: Vulkan's indirect draws and dispatches,
-// with counts. Level 2: VK_EXT_device_generated_commands, a push-constant
-// token (the root data) before the draw or dispatch token.
+// Indirect execution on Vulkan (P48).
+//
+// Owns: cmdExecuteIndirect (Level 1: vkCmdDraw*Indirect(Count), mesh and
+// dispatch variants) and Level 2 (cmdExecuteIndirectWithRootData,
+// indirectScratchRequirements) on VK_EXT_device_generated_commands: one
+// indirect commands layout per (kind, root data size), a push-constant token
+// then the draw or dispatch token.
+//
+// Keeps: the indirect layouts and their pipeline layouts, cached in
+// DeviceState and destroyed with the device.
+//
+// Watch out: the driver's preprocess memory is the caller's scratch range
+// (P31: RI allocates nothing); RADV allows it only in some GPU memory types,
+// hence allocateMemory(..., &requirements). DGC is off on NVIDIA under GPU-AV
+// (Device.cpp, P98 (5)).
+//
+// D3D12 counterpart: backends/d3d12/Indirect.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

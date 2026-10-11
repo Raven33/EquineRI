@@ -1,8 +1,10 @@
 #pragma once
 
-// The D3D12 backend's portable surface (P83). No native types here (P84):
-// native objects are kept as pointers in `internal`, and native access goes
-// through <RI/D3D12/Native.hpp>.
+// The D3D12 backend's structs and functions, namespace RI::D3D12 (P83), found
+// as RI:: through RI.hpp (P90). No native types here (P84): native objects are
+// kept as pointers in `internal`, and native access goes through
+// <RI/D3D12/Native.hpp>. Every declaration matches
+// backends/vulkan/RI/Vk/Backend.hpp (checked by tests/conformance).
 
 #include <RI/Commands.hpp>
 #include <RI/Device.hpp>

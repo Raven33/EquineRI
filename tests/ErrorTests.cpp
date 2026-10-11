@@ -1,3 +1,6 @@
+// GPU-free tests of the error channel (P57): category names, and the report's
+// printed message and abort.
+
 #include <TestHarness.hpp>
 
 #include <RI/Error.hpp>

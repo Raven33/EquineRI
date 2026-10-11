@@ -1,3 +1,8 @@
+// Implements Dxil.hpp: RI's own DXIL reader (P67). Parses the container parts
+// (SFI0, PSV0) and the LLVM 3.7 bitcode of the DXIL part far enough to read the
+// root data size from `!dx.resources`. Every read is bounds-checked: malformed
+// input gives an error message, never a crash.
+
 #include <RI/Reflection/Dxil.hpp>
 
 #include <algorithm>

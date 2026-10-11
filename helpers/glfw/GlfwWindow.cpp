@@ -1,3 +1,6 @@
+// Implements GlfwWindow.hpp (P41, P43): the OS handles of a GLFW window
+// (Win32, X11 or Wayland) as an RI::Window, through glfw3native.h.
+
 #include <RI/Helpers/GlfwWindow.hpp>
 
 #include <GLFW/glfw3.h>

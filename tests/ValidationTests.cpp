@@ -1,3 +1,6 @@
+// GPU-free tests of RI's validation (P88, P91): the object tracker, EQ_VALIDATE,
+// and checks called directly.
+
 #include <TestHarness.hpp>
 
 #include <RI/Validation/Checks.hpp>

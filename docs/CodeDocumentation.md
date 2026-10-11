@@ -23,9 +23,20 @@ below cover what they need at the declaration.
      GPU test, add a docs page, verify on Windows.
    - **Backend differences:** where Vulkan and D3D12 differ underneath RI and how each is
      bridged (layouts, heaps, root data, indirect, clears, ...).
-2. **A header comment at the top of every source file:** what the file owns, and which
-   decisions (P..) it implements.
+2. **A header comment at the top of every source file**, in this shape (user, 2026-10-12); the
+   last four parts appear only when they have something to say:
+   - **Title:** what the file is about, with its decisions (P..);
+   - **Owns:** the RI functions it implements and how, natively;
+   - **Keeps:** the state it caches, and when that state is released;
+   - **Watch out:** what a contributor could break without noticing (decisions taken
+     here, driver quirks, links to other files);
+   - **Counterpart:** the same file in the other backend.
+
+   A file that implements a header says so in one line and points to it.
 3. **Comments on public declarations**, under the rules below.
+4. **A glossary** mapping Vulkan and D3D12 to RI (user, 2026-10-12), like the Vulkan docs'
+   D3D12 conversion chart: each native concept, its RI counterpart, and how RI maps it. It is
+   a docs site page, `docs/site/docs/concepts/glossary.md`, linked from `ARCHITECTURE.md`.
 
 ## Comments on declarations
 

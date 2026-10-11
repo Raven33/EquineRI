@@ -1,3 +1,6 @@
+// Portable texture helpers declared in Textures.hpp: format properties
+// (depth, stencil, texel size) shared by both backends.
+
 #include <RI/Textures.hpp>
 
 namespace RI {

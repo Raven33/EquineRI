@@ -1,7 +1,15 @@
 #pragma once
 
-// Backend-private state behind RI::D3D12::Device (P82: hidden state behind
-// `internal`). Heap-allocated once per device, so Device stays a small value.
+// The hidden per-device state behind RI::D3D12::Device (P82), heap-allocated
+// once per device so Device stays a small value, and the declarations the
+// backend's sources share.
+//
+// Keeps: the factory, adapter, device and queue; command signatures (P48); the
+// fence; RI's CPU heaps for RTV/DSV and its small shader-visible clear heap;
+// the internal command list; and in validation builds the object and
+// placement trackers. Everything is released with the device.
+//
+// Vulkan counterpart: backends/vulkan/DeviceState.hpp.
 
 #include <RI/D3D12/Backend.hpp>
 #if EQUINE_VALIDATION

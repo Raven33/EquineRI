@@ -1,3 +1,6 @@
+// Implements SlotAllocator.hpp (P41, P59): heap slots reused only after their
+// last use's timeline point.
+
 #include <RI/Helpers/SlotAllocator.hpp>
 
 #include <format>

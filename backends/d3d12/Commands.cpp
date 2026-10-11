@@ -1,4 +1,18 @@
-// Command lists, recording and submission (P20, P34, P36, P47, P56, P85).
+// Command lists, binding, barriers and submission on D3D12 (P20, P34, P36,
+// P56, P85).
+//
+// Owns: command lists (one allocator each), cmdBegin / cmdEnd, cmdSetHeap,
+// cmdSetPipeline, cmdSetRootData, cmdBarrier (one global barrier from the
+// stage masks), submit and wait (a fence as the timeline).
+//
+// Keeps: what is bound, in CommandList::internal, so RI can set the user's
+// heaps and root signature again after its own clears and native sections.
+//
+// Watch out: heaps must be set before a root signature with the heap-indexing
+// flags (P94 (10)). Attachment stages are left out of global barriers: RI's
+// layout switches cover them (P95 (3)).
+//
+// Vulkan counterpart: backends/vulkan/Commands.cpp.
 
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"

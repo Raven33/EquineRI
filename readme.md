@@ -3,10 +3,10 @@
 Research rendering interface over Direct3D 12 and Vulkan, with HLSL as the shading
 language. Bindless first. Successor to EquineEngineV2.
 
-Status: design finished, implementation starting. See `CONTEXT.md` for the decisions,
-`docs/Plan.md` for the implementation plan, `docs/RIApiProposal.md` for the API style,
-and `docs/GrillLog.md` for the discussion record. The build currently contains only the
-scaffold (integer aliases, backend header-check targets, an empty GPU-free test harness).
+Status: v1 implemented on both backends (`docs/Plan.md`). Start with `ARCHITECTURE.md` (layout,
+call flow, rules, recipes), then `CONTEXT.md` for the decisions. `HANDOFF.md` gives the
+current state. The docs site has a [Vulkan and D3D12 to RI](docs/site/docs/concepts/glossary.md)
+conversion chart.
 
 ```text
 cmake --preset clangcl-debug     # Windows: both backends

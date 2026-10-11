@@ -155,6 +155,7 @@ nav:
       - Rendering sections: concepts/rendering.md
       - Timestamps: concepts/timestamps.md
       - Debugging: concepts/debugging.md
+      - Vulkan and D3D12 to RI: concepts/glossary.md
   - Reference:
       - reference/index.md
       - Device:

@@ -1,6 +1,14 @@
-// Compute and graphics pipelines (P38, P39, P44, P45, P67, P94). The pipeline
-// layout comes from the shaders: the device's heap set layouts (sets 0 and 1)
-// and a push-constant range of exactly the size the root data declares (P44).
+// Pipelines on Vulkan (P38, P39, P44, P45, P67, P94).
+//
+// Owns: compute, graphics and mesh pipelines. The pipeline layout comes from
+// the shaders (SPIRV-Reflect): the device's two heap set layouts and one
+// push-constant range of exactly the root data size. Rendering formats come
+// from the description (dynamic rendering).
+//
+// Watch out: the stencil reference is part of the pipeline (P38: no dynamic
+// state); root data must agree between stages.
+//
+// D3D12 counterpart: backends/d3d12/Pipeline.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

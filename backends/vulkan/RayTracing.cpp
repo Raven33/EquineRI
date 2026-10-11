@@ -1,6 +1,14 @@
-// Inline ray tracing (P49): acceleration structures in user memory, built by
-// recorded commands (VK_KHR_acceleration_structure; shaders use
-// VK_KHR_ray_query).
+// Inline ray tracing on Vulkan (P49).
+//
+// Owns: acceleration structures in user memory (a buffer plus a
+// VkAccelerationStructureKHR), size queries, and cmdBuildBlas / cmdBuildTlas
+// (with update). Shaders read the top level from a heap slot with RayQuery.
+//
+// Watch out: needs DeviceLimits::rayTracing, which Device.cpp turns off when
+// acceleration structures cannot be mutable descriptors (AMD Windows). Scratch
+// addresses must be aligned to accelerationStructureScratchAlignment.
+//
+// D3D12 counterpart: backends/d3d12/RayTracing.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

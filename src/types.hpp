@@ -1,5 +1,8 @@
 #pragma once
 
+// Fixed-width integer aliases (int8 … uint64) used across RI, its tests and
+// helpers.
+
 #include <cstdint>
 
 using int8 = std::int8_t;

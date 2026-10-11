@@ -1,6 +1,11 @@
-// Inline ray tracing (P49): acceleration structures in placed buffers
-// (ALLOW_UNORDERED_ACCESS | RAYTRACING_ACCELERATION_STRUCTURE), built with
-// BuildRaytracingAccelerationStructure; shaders use RayQuery (RaytracingTier 1.1).
+// Inline ray tracing on D3D12 (P49).
+//
+// Owns: acceleration structures in placed buffers (ALLOW_UNORDERED_ACCESS |
+// RAYTRACING_ACCELERATION_STRUCTURE), size queries, and cmdBuildBlas /
+// cmdBuildTlas (with update) through BuildRaytracingAccelerationStructure.
+// Shaders use RayQuery (RaytracingTier 1.1).
+//
+// Vulkan counterpart: backends/vulkan/RayTracing.cpp.
 
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"

@@ -1,7 +1,8 @@
 #pragma once
 
-// RI's own texture barriers (A', P68, P69): layout switches around RI's
-// operations, with an exact half on RI's side and a full half on the other.
+// RI's own texture barriers on D3D12 (A', P68, P69): layout switches around
+// RI's operations, with an exact half on RI's side and a full half on the
+// other.
 
 #include <RI/D3D12/Backend.hpp>
 

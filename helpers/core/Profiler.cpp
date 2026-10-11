@@ -1,3 +1,6 @@
+// Implements Profiler.hpp (P41, P51): timestamp scopes with marker regions, on
+// RI's public functions.
+
 #include <RI/Helpers/Profiler.hpp>
 
 #include <cstring>

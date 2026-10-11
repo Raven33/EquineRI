@@ -1,5 +1,8 @@
-// Work graphs (P50): D3D12 only for now; every call reports unsupported on
-// Vulkan (VK_AMDX_shader_enqueue is provisional and AMD-only).
+// Work graphs on Vulkan (P50): every call reports unsupported
+// (VK_AMDX_shader_enqueue is provisional and AMD-only). Kept so both backends
+// declare the same functions.
+//
+// D3D12 counterpart: the work-graph section of backends/d3d12/Pipeline.cpp.
 
 #include "DeviceState.hpp"
 

@@ -1,3 +1,5 @@
+// Implements ObjectTracker.hpp: the ids of live objects, per device (P81, P91).
+
 #include <RI/Validation/ObjectTracker.hpp>
 
 #include <atomic>

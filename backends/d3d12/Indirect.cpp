@@ -1,6 +1,15 @@
-// Indirect execution (P48): ExecuteIndirect with RI's command signatures.
-// Level 1 signatures hold only the draw or dispatch; Level 2 signatures set
-// the pipeline's root constants (root parameter 0) first.
+// Indirect execution on D3D12 (P48).
+//
+// Owns: cmdExecuteIndirect and cmdExecuteIndirectWithRootData through
+// ExecuteIndirect, and indirectScratchRequirements (always size 0: D3D12
+// needs no scratch).
+//
+// Keeps: RI's command signatures in DeviceState, per root signature (null for
+// Level 1), kind and root data size. Level 2 signatures set the root
+// constants (root parameter 0) first. Released when their pipeline is
+// destroyed (forgetCommandSignatures) or with the device.
+//
+// Vulkan counterpart: backends/vulkan/Indirect.cpp.
 
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"

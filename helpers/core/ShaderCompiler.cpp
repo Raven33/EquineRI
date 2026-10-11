@@ -1,3 +1,7 @@
+// Implements ShaderCompiler.hpp (P29, P41): loads the DXC library at run time
+// and compiles with RI's rule for the backend the helper is built against
+// (the arguments of equine_add_shaders in cmake/EquineDXC.cmake).
+
 #include <RI/Helpers/ShaderCompiler.hpp>
 
 #if defined(_WIN32)

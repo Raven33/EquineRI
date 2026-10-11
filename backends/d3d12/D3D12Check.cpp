@@ -1,3 +1,6 @@
+// Implements D3D12Check.hpp: a failed HRESULT becomes a report on the error
+// channel, with the category that matches the result (P57).
+
 #include "D3D12Check.hpp"
 
 #include <dxgi1_6.h>

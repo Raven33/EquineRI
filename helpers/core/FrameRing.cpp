@@ -1,3 +1,5 @@
+// Implements FrameRing.hpp (P41): frames in flight on RI's public functions.
+
 #include <RI/Helpers/FrameRing.hpp>
 
 namespace RI::Helpers {

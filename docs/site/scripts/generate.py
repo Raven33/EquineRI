@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Runs every generator, in order: header extraction, design notes, coverage.
+"""Runs every generator, in order: header extraction, design notes, coverage,
+then the code documentation check (docs/CodeDocumentation.md).
 
 The MkDocs hook (hooks/equine_docs.py) calls this before each build, so a
 plain `mkdocs build` is always up to date; CI also runs it explicitly.
@@ -11,13 +12,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import code_docs_check  # noqa: E402
 import coverage_report  # noqa: E402
 import design_notes  # noqa: E402
 import extract_headers  # noqa: E402
 
 
 def main() -> int:
-    for step in (extract_headers.main, design_notes.main, coverage_report.main):
+    for step in (extract_headers.main, design_notes.main, coverage_report.main, code_docs_check.main):
         if step() != 0:
             return 1
     return 0

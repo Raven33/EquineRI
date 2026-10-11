@@ -1,3 +1,6 @@
+// Implements Placement.hpp: which memory ranges resources have occupied, for
+// the discard rule (P69).
+
 #include <RI/Validation/Placement.hpp>
 
 #include <algorithm>

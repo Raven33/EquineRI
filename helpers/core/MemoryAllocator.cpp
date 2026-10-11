@@ -1,3 +1,6 @@
+// Implements MemoryAllocator.hpp (P41, P31): first-fit placement in blocks per
+// memory kind, frees deferred to timeline points, on RI's public functions.
+
 #include <RI/Helpers/MemoryAllocator.hpp>
 
 #include <algorithm>

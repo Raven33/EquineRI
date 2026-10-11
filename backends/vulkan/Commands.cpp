@@ -1,4 +1,19 @@
-// Command lists, recording and submission (P20, P34, P36, P47, P56, P85).
+// Command lists and recording on Vulkan (P20, P34, P36, P56, P85).
+//
+// Owns: command lists (one VkCommandPool each), heap, pipeline and root data
+// binding, barriers, rendering sections and draws, discard and clears,
+// queries, buffer-texture copies, resolve, native sections, submit and wait.
+//
+// Keeps: what is bound, in CommandList::internal (heap sets, pipeline layout,
+// root data size, the open rendering section), so RI can rebind after a
+// pipeline-layout change and restore state after a native section (P70).
+//
+// Watch out: textures change layout only here and in Textures.cpp, through
+// imageBarrier around RI's own operations (A', P68). The viewport has a negative
+// height so clip space is y-up as on D3D12. cmdEnd adds a barrier to the host
+// (P94 (6)). A barrier on Stage::eIndirect also covers DGC preprocess (P48).
+//
+// D3D12 counterpart: backends/d3d12/Commands.cpp and Rendering.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

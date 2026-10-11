@@ -1,3 +1,6 @@
+// Implements Checks.hpp: RI's own validation rules (P88, P91), one function per
+// rule, each returning the message to report or nothing.
+
 #include <RI/Validation/Checks.hpp>
 
 #include <format>

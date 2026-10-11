@@ -1,8 +1,10 @@
 #pragma once
 
-// The Vulkan backend's portable surface (P83). No native types here (P84):
-// native handles are kept as integers or pointers in `internal`, and native
-// access goes through <RI/Vk/Native.hpp>.
+// The Vulkan backend's structs and functions, namespace RI::Vk (P83), found as
+// RI:: through RI.hpp (P90). No native types here (P84): native handles are
+// kept as integers or pointers in `internal`, and native access goes through
+// <RI/Vk/Native.hpp>. Every declaration matches backends/d3d12/RI/D3D12/
+// Backend.hpp (checked by tests/conformance).
 
 #include <RI/Commands.hpp>
 #include <RI/Device.hpp>
