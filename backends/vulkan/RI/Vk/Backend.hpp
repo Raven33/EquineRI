@@ -50,6 +50,9 @@ struct Device {
 std::vector<Gpu> listGpus();
 
 Device createDevice(const DeviceDesc &desc);
+// Every destroy and free function below destroys at once: the GPU must no
+// longer use the object (wait for the timeline point of the last submission
+// that used it, P20).
 void destroyDevice(Device &device);
 
 // ── Memory and buffers (P31, P32, P33, P58, P61) ─────────────────────────────
@@ -141,6 +144,8 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc);
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc);
 void destroyTexture(Device &device, Texture &texture);
 
+// The view's format is the texture's or one of its desc.viewFormats; any
+// other is an error in every build (P74).
 TextureView createView(Device &device, const Texture &texture, const TextureViewDesc &desc);
 void destroyView(Device &device, TextureView &view);
 
@@ -332,19 +337,28 @@ struct CommandList {
 
 CommandList createCommandList(Device &device);
 void destroyCommandList(Device &device, CommandList &cmd);
+// Only once the list's last submission is reached (P56).
 void resetCommandList(CommandList &cmd);
 
 void cmdBegin(CommandList &cmd);
+// After cmdEnd's submission is reached, CPU reads see the GPU's writes (P94 (6)).
 void cmdEnd(CommandList &cmd);
+// Before the first cmdSetPipeline of the list (P94 (10)).
 void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap);
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline);
+// `size` is the pipeline's rootDataSize (checked in validation builds, P24).
+// Kept across draws and dispatches until set again.
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size);
 template <typename T>
 void cmdSetRootData(CommandList &cmd, const T &data) {
     cmdSetRootData(cmd, &data, static_cast<uint32>(sizeof(T)));
 }
+// Outside rendering sections.
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z);
+// Every write made by `before` stages becomes visible to every access of
+// `after` stages; names no resource (P36).
 void cmdBarrier(CommandList &cmd, Stage before, Stage after);
+// Counts as Stage::eCopy.
 void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const Buffer &dst, uint64 dstOffset,
                    uint64 size);
 
@@ -382,8 +396,6 @@ void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const B
                                     const Buffer *count = nullptr, uint64 countOffset = 0);
 
 
-
-
 // Copies (P47). A texture view covers one mip (and one aspect of a depth
 // format); the buffer side follows copyLayout(). Copies count as Stage::eCopy.
 CopyLayout copyLayout(Device &device, const TextureView &view);
@@ -410,11 +422,12 @@ void cmdBuildTlas(CommandList &cmd, const AccelerationStructure &dst, const Tlas
 // (P69). A full-scope barrier.
 void cmdDiscard(CommandList &cmd, const TextureView &view);
 
-// Clears outside rendering sections (P65).
+// Clears outside rendering sections (P65); they count as Stage::eCopy. Buffers
+// need eCopyDst.
 void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value);
 void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value);
 
-// Timestamps (P51, P71).
+// Timestamps (P51, P71): written once all earlier work has finished.
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index);
 void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count);
 // Occlusion and pipeline-statistics queries (P71): begin and end around the
@@ -445,7 +458,9 @@ void setName(Device &device, const CommandList &cmd, std::string_view name);
 void cmdBeginMarker(CommandList &cmd, std::string_view name);
 void cmdEndMarker(CommandList &cmd);
 
+// The list must be ended. Returns the point reached when its work is done (P20).
 TimelinePoint submit(Queue &queue, CommandList &cmd);
+// Blocks the CPU until `point` is reached; isReached only asks.
 void wait(Queue &queue, TimelinePoint point);
 bool isReached(Queue &queue, TimelinePoint point);
 
