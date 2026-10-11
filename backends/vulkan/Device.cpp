@@ -344,8 +344,8 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
     if (state.rayTracing) {
         state.mutableTypes.push_back(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR); // P49
     }
-    const VkMutableDescriptorTypeListEXT typeList{.descriptorTypeCount = static_cast<uint32>(state.mutableTypes.size()),
-                                                  .pDescriptorTypes = state.mutableTypes.data()};
+    VkMutableDescriptorTypeListEXT typeList{.descriptorTypeCount = static_cast<uint32>(state.mutableTypes.size()),
+                                            .pDescriptorTypes = state.mutableTypes.data()};
     const VkMutableDescriptorTypeCreateInfoEXT mutableInfo{
         .sType = VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
         .mutableDescriptorTypeListCount = 1,
@@ -382,8 +382,7 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
         return layout;
     };
     // The largest heap the driver accepts: the property limits are an upper
-    // bound, but drivers may refuse less for mutable descriptors (AMD Windows
-    // with acceleration structures among the types refuses 1M slots).
+    // bound, but drivers may refuse less for mutable descriptors.
     const auto supported = [&](uint32 count) {
         const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
@@ -404,8 +403,21 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
         state.functions.vkGetDescriptorSetLayoutSupport(state.device, &info, &support);
         return support.supported == VK_TRUE;
     };
+    // DXC puts acceleration structures at the same binding as every other
+    // heap access, so they must be a mutable type. Some drivers (AMD Windows)
+    // accept no mutable heap with them: ray tracing is then off (P49, P11).
+    if (state.rayTracing && !supported(1)) {
+        state.mutableTypes.pop_back();
+        typeList.descriptorTypeCount = static_cast<uint32>(state.mutableTypes.size());
+        state.rayTracing = false;
+        limits.rayTracing = false;
+        limits.accelerationStructureScratchAlignment = 0;
+    }
+    if (!supported(1)) {
+        reportError(ErrorCategory::eUnsupported, "the GPU supports no mutable descriptor heap of RI's types");
+    }
     if (!supported(limits.maxResourceDescriptors)) {
-        uint32 low = 0;
+        uint32 low = 1;
         uint32 high = limits.maxResourceDescriptors;
         while (high - low > 1024) {
             const uint32 middle = low + (high - low) / 2;
