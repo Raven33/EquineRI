@@ -47,21 +47,26 @@ if (PROJECT_IS_TOP_LEVEL)
     equine_strip_conflicting_compiler_flags()
 endif()
 
+# As a subproject (add_subdirectory), off by default: sanitized libraries do not
+# link into a program built without them.
+option(EQUINE_SANITIZERS "Build with AddressSanitizer + UndefinedBehaviorSanitizer" ${PROJECT_IS_TOP_LEVEL})
+
 if (MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+    # The release DLL runtime, which clang-cl's ASan needs. As a subproject
+    # without sanitizers, RI follows the parent's runtime (Debug: /MDd), so
+    # both sides link.
+    if (PROJECT_IS_TOP_LEVEL OR EQUINE_SANITIZERS)
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+    endif()
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
 else()
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fexceptions>)
 endif()
 
 message(STATUS "Equine C++ exceptions: enabled")
-# Sanitizers are on by default in every configuration. Turning them off is for
-# optimized measurement builds only (the benchmark presets; see
-# CMakePresets.json); sanitizer configurations remain the correctness
-# coverage.
-# As a subproject (add_subdirectory), off by default: sanitized libraries do not
-# link into a program built without them.
-option(EQUINE_SANITIZERS "Build with AddressSanitizer + UndefinedBehaviorSanitizer" ${PROJECT_IS_TOP_LEVEL})
+# Sanitizers are on by default when RI is built on its own. Turning them off is
+# for optimized measurement builds only (the benchmark presets; see
+# CMakePresets.json); sanitizer configurations remain the correctness coverage.
 
 if (NOT EQUINE_SANITIZERS)
     message(STATUS "Equine sanitizers: disabled (EQUINE_SANITIZERS=OFF)")

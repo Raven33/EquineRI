@@ -26,10 +26,19 @@ add_subdirectory(external/EquineRI)
 
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE EquineVulkanBackend EquineHelpersVulkan)
+# D3D12: target_link_libraries(my_app PRIVATE EquineD3D12Backend EquineHelpersD3D12)
+#        and the Agility SDK steps of section 4.
 
 # Compile shaders with RI's rule (SPIR-V and DXIL) at build time.
 equine_add_shaders(my_app PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/fill.hlsl")
 ```
+
+With a checkout outside your source tree, give `add_subdirectory` a binary folder too:
+`add_subdirectory(<path to EquineRI> EquineRI)`.
+
+**Windows runtime library:** as a subproject without sanitizers, RI uses your project's C
+runtime (`/MDd` in Debug, `/MD` in Release). With `EQUINE_SANITIZERS` on, RI needs the release
+DLL runtime: set `CMAKE_MSVC_RUNTIME_LIBRARY` to `MultiThreadedDLL` in your project too.
 
 Code for one backend is compiled once per backend: to build both, make one executable per
 backend (each links one backend library).
@@ -46,7 +55,8 @@ backend (each links one backend library).
 ## 3. Shaders
 
 `equine_add_shaders(<target> PROFILE <profile> SOURCES <files>)` compiles each file with the
-pinned DXC (downloaded at configure time) to `<build>/shaders/<name>.spv` and `.dxil`, and
+pinned DXC (downloaded at configure time) to `shaders/<name>.spv` and `.dxil` in your
+top-level build folder (both are made whatever the backend), and
 defines `EQUINE_SHADER_DIR` on the target. Load the file of your backend and pass its bytes
 to `createComputePipeline` / `createGraphicsPipeline`. Libraries (`lib_6_8`, work graphs)
 compile to DXIL only. Shaders include `<equine/root.hlsli>` for `EQ_ROOT_DATA`
@@ -68,6 +78,9 @@ and in CMake:
 ```cmake
 equine_deploy_agility_sdk(my_app)   # copies the runtime to <exe dir>/D3D12/
 ```
+
+Without either step D3D12 falls back to the system runtime, and `listGpus` may return no
+GPU. RI then prints `[EquineRI] Agility SDK not loaded …` with the step that is missing.
 
 ## Next
 
