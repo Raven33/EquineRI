@@ -133,8 +133,14 @@ also read makes a round trip through its resting layout at every section, which 
 decompression work. Whether A' is accepted is decided by the **Milestone 3 measurement**,
 against hand-written optimal transitions, with a rule fixed before measuring
 ([P79](../design-notes/decisions.md#p79)): at most 2% slower per frame and 10% per pass on every
-tested GPU. The result is pending. If A' fails somewhere, the fallbacks change the backend (the
-other Vulkan mode, for example), not your code.
+tested GPU. The measurement is done ([P96](../design-notes/decisions.md#p96)): A' passes on the
+RTX 3080 (D3D12, Vulkan unified), on an AMD RDNA2 iGPU under D3D12, and on the RDNA2 680M (Vulkan
+mode T), and at 1080p on the AMD iGPU under Vulkan. It fails in one case: AMD Vulkan at 4K, where
+a pass reading depth is 10–13% slower, because sampled depth rests in the depth read-only
+layout (which [P75](../design-notes/decisions.md#p75)'s read-only depth needs). Mode G is never
+faster on AMD, so mode T is the automatic choice without unified layouts. The image-layout
+question is **reopened** to decide how to handle that case; whatever is chosen changes the
+backend, not your code.
 
 ## In native code
 

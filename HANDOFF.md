@@ -1,20 +1,11 @@
 # Handoff
 
-State on 2026-10-10: **Milestones 1 and 2 are done** (`docs/Plan.md`). Both backends list
-GPUs, create devices, allocate memory kinds, place buffers, write descriptor heaps, build
-compute pipelines from shader reflection, record and submit command lists, and wait on
-timeline points. The Milestone 2 sample (`samples/compute_readback`, buffer -> compute ->
-readback) gives correct results on Vulkan (RADV 680M on Linux, RTX 3080 on Windows) and
-D3D12 (RTX 3080), with validation on and off. Decisions taken during implementation:
-P89-P94 (P94 settles D1 and was decided by the assistant under the user's goal: review it).
-**Milestone 3 in progress (2026-10-10), on branch `m3-wip` (not master):** API contract
-and portable tests (`tests/gpu/TextureTests.cpp`), D3D12 implementation (17/27 cases passed
-on Windows at 9de8f8a; fixes for the global-barrier COMMON access and the 4 MiB MSAA heap
-alignment pushed after), the harness (`tools/layout_bench`: shaders, Bench.hpp, main.cpp;
-no CMake target and no baseline_vk/baseline_d3d12 yet), and the harness design in
-`docs/LayoutEvaluation.md`. The Vulkan side was delegated to a background agent working in
-a worktree; check `git worktree list` / its branch and merge it. Survey item 1 results
-(Windows) are in the conversation: only NVIDIA has unified layouts; AMD Vulkan lacks D24S8.
+State on 2026-10-11: **Milestones 1–3 are done** (`docs/Plan.md`). Milestone 3 added textures,
+views, rendering sections, minimal graphics pipelines, discard, clears and timestamps on both
+backends (P95), and measured L1 (P96, `docs/LayoutEvaluation.md` "Results"). Outcome: A' passes
+P79 everywhere except AMD Windows Vulkan (mode T) at 4K on one pass (HiZ reading depth +10–13%);
+**the user chose to reopen L1** (CONTEXT.md §5). Next: decide L1 together (options listed in
+§5), then Milestone 4. Pending review: P94 (partly reviewed), P95.
 
 A Windows assistant session (`windows-equineri`, Remote Control) builds and tests pushed
 commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`

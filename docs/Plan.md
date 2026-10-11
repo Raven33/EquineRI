@@ -63,6 +63,11 @@ validation on and off.
 
 ## Milestone 3: L1 measurement harness
 
+**Done 2026-10-11** (P95, P96): textures, rendering, graphics pipelines (minimal), discard,
+clears and timestamps on both backends; the harness measured A' on the RTX 3080, an AMD RDNA2
+iGPU (Windows) and the RDNA2 680M (Linux). Exit taken: **L1 reopened together** (P96): A'
+fails P79 in one case (AMD Windows Vulkan, 4K, one pass). P16/P36 are revisited with L1.
+
 Goal: settle L1 (how image layouts are hidden) with real numbers, before much code
 depends on it.
 
@@ -77,7 +82,7 @@ depends on it.
 - Run `docs/LayoutEvaluation.md` items 1–5 (item 6, multi-queue, optional) on the test
   GPUs, together with the user. Apply the decision rule (P79).
 
-Exit: L1 confirmed (or reopened together), and P36 / P16 confirmed with it.
+Exit: L1 confirmed (or reopened together), and P36 / P16 confirmed with it. (Taken: reopened, P96.)
 
 ## Later measurement (P18, P94 (1))
 

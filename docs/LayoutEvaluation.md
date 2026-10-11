@@ -1,6 +1,10 @@
 # L1: Hiding Image Layouts — Evaluation
 
-> Status 2026-10-10: A' is the direction; RI's transitions use exact/full halves (P68);
+> Status 2026-10-11: **measured (Milestone 3, P96); L1 reopened by the user.** A' passes P79
+> everywhere except AMD Windows Vulkan (mode T) at 4K, one pass (HiZ reading depth, +10–13%).
+> See "Results (Milestone 3)" below.
+>
+> Earlier status 2026-10-10: A' is the direction; RI's transitions use exact/full halves (P68);
 > RDNA2 Vulkan runs modes G and T (P78); the decision rule is fixed (P79). The measurement
 > runs in Milestone 3 of `docs/Plan.md`. Code sketches here predate the API style (P81–P88).
 
@@ -217,6 +221,39 @@ checks in RGP / Nsight (item 2) are done by hand only if a pass fails.
 
 **Host barrier (P94 (6)).** The same harness measures one empty command list and the
 render → sample frame with and without Vulkan's automatic host barrier at `cmdEnd`.
+
+## Results (Milestone 3, 2026-10-11)
+
+Interleaved runs (round 3; `docs/measurements/windows/*_r3.csv`, `docs/measurements/vulkan_radv_r3.csv`),
+P79 applied by `tools/layout_bench/analyze.py`:
+
+| GPU | Backend | Mode | 1080p | 4K |
+|---|---|---|---|---|
+| RTX 3080 (Ampere) | D3D12 | resting layouts | pass | pass |
+| RTX 3080 | Vulkan | `eUnified` | pass | pass |
+| RTX 3080 | Vulkan | T / G (for information) | T: frame +2.2% (+4 µs); G pass | pass / pass |
+| AMD RDNA2 iGPU (Windows) | D3D12 | resting layouts | pass | pass |
+| AMD RDNA2 iGPU (Windows) | Vulkan | T | pass | **fail: HiZ pass +10–13% (0.06–0.08 ms)** |
+| AMD RDNA2 iGPU (Windows) | Vulkan | G | fail (realistic frame +29%) | fail (+74%) |
+| RDNA2 680M (Linux RADV) | Vulkan | T | pass | pass |
+| RDNA2 680M (Linux RADV) | Vulkan | G | fail (4x MSAA render ~8×) | fail |
+
+- The failing case: sampled depth rests in the depth read-only layout (P75 needs it to
+  sample during read-only depth sections) and HiZ reads it compressed; the baseline
+  decompresses once into `SHADER_READ_ONLY_OPTIMAL` and reads faster. The workload total is
+  mostly faster under A' and the realistic frame is −0.3%, but P79's per-pass condition fails.
+- Mode G is never the better choice on AMD: P78's automatic choice without unified layouts is T.
+- RI's full-scope switches cost ~20–40 µs per pass boundary (below the 0.05 ms floor).
+- Earlier rounds (separate runs per mode) showed integrated-GPU clock states; only
+  interleaved runs are used for verdicts. Round 1 used the first timing (v1).
+- Not tested: Turing (Ampere instead), Linux NVIDIA, multi-queue (item 6).
+- Drivers measured: NVIDIA 596.49 (Windows), AMD Adrenalin 26.6.4 / Vulkan driver 2.0.353
+  (Windows), Mesa 26.2.2 RADV (Linux). The Windows drivers were updated right after; results on
+  newer drivers are not directly comparable (a newer AMD driver may expose
+  `VK_KHR_unified_image_layouts`, which would change the AMD Vulkan case).
+- **Decision (user): reopen L1** (P96). Options on the table: accept the cost; another
+  resting layout for sampled depth with a different form for P75; an opt-in per-texture
+  mode; another direction.
 
 ## Research results (2026-10-03)
 
