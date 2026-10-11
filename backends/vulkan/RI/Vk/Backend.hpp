@@ -476,4 +476,36 @@ Texture acquire(Device &device, Swapchain &swapchain);
 // Shows the acquired texture once the work submitted before it has finished.
 void present(Queue &queue, Swapchain &swapchain);
 
+// ── Work graphs (P50, P62) ────────────────────────────────────────────────────
+// D3D12 only (DeviceLimits::workGraphs); on Vulkan every call is unsupported.
+
+struct WorkGraphState; // backend-private: the backing memory last used (P62 inference)
+
+struct WorkGraph {
+    uint32 rootDataSize = 0;
+    WorkGraphMemory backing; // what the graph needs
+    struct {
+        // nothing: work graphs are D3D12 only
+        WorkGraphState *state = nullptr;
+        uint64 id = 0;
+    } internal;
+};
+
+WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc);
+void destroyWorkGraph(Device &device, WorkGraph &graph);
+// The index of an entry node, for GraphInput::entry.
+uint32 workGraphEntry(const WorkGraph &graph, std::string_view node, uint32 arrayIndex = 0);
+
+// Sets the graph and its backing memory (a range of an eReadWrite buffer):
+// later cmdSetRootData calls feed its nodes. RI initializes the backing memory
+// on the graph's first use and whenever the range changes (P62); set
+// `forceInitialize` to reset it deliberately.
+void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size,
+                     bool forceInitialize = false);
+// Launches the graph with CPU records: one entry node, or several (P62).
+void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs);
+// Launches the graph with GPU-written input at `inputAddress`: D3D12's
+// D3D12_NODE_GPU_INPUT layout, or D3D12_MULTI_NODE_GPU_INPUT when `multiNode`.
+void cmdDispatchGraphIndirect(CommandList &cmd, uint64 inputAddress, bool multiNode);
+
 } // namespace RI::Vk

@@ -13,8 +13,11 @@
 #include "Formats.hpp"
 
 #include <climits>
+#include <cstring>
 
 #include <format>
+#include <string>
+#include <vector>
 
 namespace RI::D3D12 {
 
@@ -372,6 +375,187 @@ Pipeline importPipeline(Device &device, ID3D12PipelineState *pipeline, ID3D12Roo
     out.internal.imported = true;
     out.internal.id = EQ_DX_TRACK(&state);
     return out;
+}
+
+// ── Work graphs (P50, P62) ───────────────────────────────────────────────────
+
+struct WorkGraphState {
+    uint64 backingAddress = 0; // the backing memory the graph last used (P62)
+    uint64 backingSize = 0;
+    UINT graphIndex = 0;
+};
+
+namespace {
+
+constexpr const wchar_t *kProgramName = L"EquineWorkGraph";
+
+void requireWorkGraphs(const Device &device, const char *call) {
+    if (!device.limits.workGraphs) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("{}: this GPU has no work graphs (DeviceLimits::workGraphs; Ampere or RDNA3 and newer)",
+                                call));
+    }
+}
+
+ID3D12WorkGraphProperties *workGraphProperties(const WorkGraph &graph) {
+    ID3D12WorkGraphProperties *properties = nullptr;
+    checkHr(static_cast<ID3D12StateObject *>(graph.internal.stateObject)->QueryInterface(IID_PPV_ARGS(&properties)),
+            "ID3D12WorkGraphProperties");
+    return properties;
+}
+
+ID3D12GraphicsCommandList10 *list10(const CommandList &cmd) {
+    ID3D12GraphicsCommandList10 *l = nullptr;
+    checkHr(static_cast<ID3D12GraphicsCommandList7 *>(cmd.internal.list)->QueryInterface(IID_PPV_ARGS(&l)),
+            "ID3D12GraphicsCommandList10 (work graphs)");
+    return l;
+}
+
+} // namespace
+
+WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
+    DeviceState &state = *device.internal.state;
+    requireWorkGraphs(device, "createWorkGraph");
+    checkRootDataSize(device, desc.rootDataSize, "createWorkGraph");
+    Reflection::DxilInfo info{};
+    info.hasRootData = desc.rootDataSize > 0;
+    info.rootDataSize = desc.rootDataSize;
+    ID3D12RootSignature *rootSignature = createRootSignature(state, info);
+
+    // Every node of the library, one global root signature, one work graph.
+    D3D12_DXIL_LIBRARY_DESC library{.DXILLibrary = {desc.library.data(), desc.library.size()}};
+    D3D12_GLOBAL_ROOT_SIGNATURE global{.pGlobalRootSignature = rootSignature};
+    D3D12_WORK_GRAPH_DESC graphDesc{.ProgramName = kProgramName, .Flags = D3D12_WORK_GRAPH_FLAG_INCLUDE_ALL_AVAILABLE_NODES};
+    const D3D12_STATE_SUBOBJECT subobjects[] = {
+        {D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, &library},
+        {D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &global},
+        {D3D12_STATE_SUBOBJECT_TYPE_WORK_GRAPH, &graphDesc},
+    };
+    const D3D12_STATE_OBJECT_DESC objectDesc{.Type = D3D12_STATE_OBJECT_TYPE_EXECUTABLE,
+                                             .NumSubobjects = static_cast<UINT>(std::size(subobjects)),
+                                             .pSubobjects = subobjects};
+    ID3D12StateObject *stateObject = nullptr;
+    checkHr(state.device->CreateStateObject(&objectDesc, IID_PPV_ARGS(&stateObject)), "CreateStateObject (work graph)");
+
+    WorkGraph graph;
+    graph.rootDataSize = desc.rootDataSize;
+    graph.internal.stateObject = stateObject;
+    graph.internal.rootSignature = rootSignature;
+    ID3D12StateObjectProperties1 *objectProperties = nullptr;
+    checkHr(stateObject->QueryInterface(IID_PPV_ARGS(&objectProperties)), "ID3D12StateObjectProperties1");
+    const D3D12_PROGRAM_IDENTIFIER id = objectProperties->GetProgramIdentifier(kProgramName);
+    static_assert(sizeof(id) == sizeof(graph.internal.programId));
+    std::memcpy(graph.internal.programId, &id, sizeof(id));
+    release(objectProperties);
+
+    auto *s = new WorkGraphState;
+    ID3D12WorkGraphProperties *properties = workGraphProperties(graph);
+    s->graphIndex = properties->GetWorkGraphIndex(kProgramName);
+    D3D12_WORK_GRAPH_MEMORY_REQUIREMENTS memory{};
+    properties->GetWorkGraphMemoryRequirements(s->graphIndex, &memory);
+    release(properties);
+    graph.backing = {.minSize = memory.MinSizeInBytes, .maxSize = memory.MaxSizeInBytes};
+    graph.internal.state = s;
+    graph.internal.id = EQ_DX_TRACK(&state);
+    return graph;
+}
+
+void destroyWorkGraph(Device &device, WorkGraph &graph) {
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
+    EQ_DX_UNTRACK(&state, graph.internal.id);
+    auto *stateObject = static_cast<ID3D12StateObject *>(graph.internal.stateObject);
+    auto *rootSignature = static_cast<ID3D12RootSignature *>(graph.internal.rootSignature);
+    release(stateObject);
+    release(rootSignature);
+    delete graph.internal.state;
+    graph = {};
+}
+
+uint32 workGraphEntry(const WorkGraph &graph, std::string_view node, uint32 arrayIndex) {
+    const std::wstring name(node.begin(), node.end());
+    ID3D12WorkGraphProperties *properties = workGraphProperties(graph);
+    const UINT index = properties->GetEntrypointIndex(graph.internal.state->graphIndex, {name.c_str(), arrayIndex});
+    release(properties);
+    if (index == UINT_MAX) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("workGraphEntry: the graph has no entry node '{}' [{}]", node, arrayIndex));
+    }
+    return index;
+}
+
+void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size,
+                     bool forceInitialize) {
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
+    EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
+    EQ_DX_CHECK_ALIVE(&state, backing.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
+    EQ_VALIDATE(Validation::checkRange(offset, size, backing.size, 8, "cmdSetWorkGraph: the backing memory"));
+    if (size < graph.backing.minSize || (backing.usage & BufferUsage::eReadWrite) == BufferUsage::eNone) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("cmdSetWorkGraph: the backing memory needs eReadWrite usage and at least {} bytes",
+                                graph.backing.minSize));
+    }
+    // Initialization is inferred (P62): first use, or another range.
+    WorkGraphState &s = *graph.internal.state;
+    const uint64 address = backing.gpuAddress + offset;
+    const bool initialize = forceInitialize || s.backingAddress != address || s.backingSize != size;
+    s.backingAddress = address;
+    s.backingSize = size;
+
+    ID3D12GraphicsCommandList10 *l = list10(cmd);
+    auto *rootSignature = static_cast<ID3D12RootSignature *>(graph.internal.rootSignature);
+    l->SetComputeRootSignature(rootSignature);
+    cmd.internal.rootSignature[0] = rootSignature;
+    cmd.internal.graphics = false;
+    cmd.internal.rootDataSize = graph.rootDataSize;
+    cmd.internal.pipelineState[0] = nullptr; // SetProgram replaces the pipeline state
+    D3D12_SET_PROGRAM_DESC program{.Type = D3D12_PROGRAM_TYPE_WORK_GRAPH};
+    std::memcpy(&program.WorkGraph.ProgramIdentifier, graph.internal.programId, sizeof(graph.internal.programId));
+    program.WorkGraph.Flags = initialize ? D3D12_SET_WORK_GRAPH_FLAG_INITIALIZE : D3D12_SET_WORK_GRAPH_FLAG_NONE;
+    program.WorkGraph.BackingMemory = {.StartAddress = address, .SizeInBytes = size};
+    l->SetProgram(&program);
+    release(l);
+}
+
+void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs) {
+    if (inputs.empty()) {
+        return;
+    }
+    ID3D12GraphicsCommandList10 *l = list10(cmd);
+    D3D12_DISPATCH_GRAPH_DESC desc{};
+    std::vector<D3D12_NODE_CPU_INPUT> nodes;
+    for (const GraphInput &input : inputs) {
+        nodes.push_back({.EntrypointIndex = input.entry,
+                         .NumRecords = input.recordCount,
+                         .pRecords = const_cast<void *>(input.records),
+                         .RecordStrideInBytes = input.recordStride});
+    }
+    if (nodes.size() == 1) {
+        desc.Mode = D3D12_DISPATCH_MODE_NODE_CPU_INPUT;
+        desc.NodeCPUInput = nodes.front();
+    } else {
+        desc.Mode = D3D12_DISPATCH_MODE_MULTI_NODE_CPU_INPUT;
+        desc.MultiNodeCPUInput = {.NumNodeInputs = static_cast<UINT>(nodes.size()),
+                                  .pNodeInputs = nodes.data(),
+                                  .NodeInputStrideInBytes = sizeof(D3D12_NODE_CPU_INPUT)};
+    }
+    l->DispatchGraph(&desc); // records are copied into the command list here
+    release(l);
+}
+
+void cmdDispatchGraphIndirect(CommandList &cmd, uint64 inputAddress, bool multiNode) {
+    ID3D12GraphicsCommandList10 *l = list10(cmd);
+    D3D12_DISPATCH_GRAPH_DESC desc{};
+    if (multiNode) {
+        desc.Mode = D3D12_DISPATCH_MODE_MULTI_NODE_GPU_INPUT;
+        desc.MultiNodeGPUInput = inputAddress;
+    } else {
+        desc.Mode = D3D12_DISPATCH_MODE_NODE_GPU_INPUT;
+        desc.NodeGPUInput = inputAddress;
+    }
+    l->DispatchGraph(&desc);
+    release(l);
 }
 
 } // namespace RI::D3D12

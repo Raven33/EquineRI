@@ -185,6 +185,14 @@ EQ_SIGNATURE(cmdBuildTlas, void (*)(RI::CommandList &, const RI::AccelerationStr
                                     const RI::Buffer &, uint64, bool));
 EQ_FIELD(AccelerationStructure, gpuAddress, uint64);
 
+// Work graphs (P50, P62)
+EQ_SIGNATURE(createWorkGraph, RI::WorkGraph (*)(RI::Device &, const RI::WorkGraphDesc &));
+EQ_SIGNATURE(destroyWorkGraph, void (*)(RI::Device &, RI::WorkGraph &));
+EQ_SIGNATURE(workGraphEntry, uint32 (*)(const RI::WorkGraph &, std::string_view, uint32));
+EQ_SIGNATURE(cmdSetWorkGraph, void (*)(RI::CommandList &, const RI::WorkGraph &, const RI::Buffer &, uint64, uint64, bool));
+EQ_SIGNATURE(cmdDispatchGraph, void (*)(RI::CommandList &, std::span<const RI::GraphInput>));
+EQ_SIGNATURE(cmdDispatchGraphIndirect, void (*)(RI::CommandList &, uint64, bool));
+
 // Debugging (P53)
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Memory &, std::string_view));
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Buffer &, std::string_view));

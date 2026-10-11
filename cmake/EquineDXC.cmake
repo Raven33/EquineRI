@@ -66,7 +66,19 @@ function(equine_add_shaders target)
         get_filename_component(name "${source}" NAME_WE)
         # One rule per shader, shared by every target that uses it.
         set(shader_target "equine_shader_${name}")
-        if (NOT TARGET "${shader_target}")
+        if (NOT TARGET "${shader_target}" AND ARG_PROFILE MATCHES "^lib_")
+            # Libraries (work graphs, P50) are D3D12 only: DXIL, no entry point.
+            add_custom_command(
+                OUTPUT "${out_dir}/${name}.dxil"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}"
+                COMMAND "${EQUINE_DXC_EXECUTABLE}" -T ${ARG_PROFILE} -HV 2021 -I "${EQUINE_SHADER_INCLUDE_DIR}" -WX
+                        -Qstrip_reflect -Qstrip_debug -Fo "${out_dir}/${name}.dxil" "${source}"
+                DEPENDS "${source}" "${EQUINE_SHADER_INCLUDE_DIR}/equine/root.hlsli"
+                COMMENT "Compiling ${name} (${ARG_PROFILE}) to DXIL"
+                VERBATIM
+            )
+            add_custom_target("${shader_target}" DEPENDS "${out_dir}/${name}.dxil")
+        elseif (NOT TARGET "${shader_target}")
             set(common -T ${ARG_PROFILE} -E main -HV 2021 -I "${EQUINE_SHADER_INCLUDE_DIR}" -WX)
             # Samplers in their own set, so heaps of any size share one layout (P94).
             set(spirv_rules -fvk-bind-sampler-heap 0 1)
