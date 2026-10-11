@@ -8,6 +8,8 @@
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/Placement.hpp>
 
+#include <algorithm>
+#include <cstring>
 #include <format>
 
 namespace RI::D3D12 {
@@ -132,6 +134,10 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.graphics = false;
     cmd.internal.heapSet = false;
     cmd.internal.markerDepth = 0;
+    cmd.internal.pipelineState[0] = nullptr;
+    cmd.internal.pipelineState[1] = nullptr;
+    cmd.internal.rootDataBytes = 0;
+    cmd.internal.native = false;
     cmd.internal.rootDataSize = 0;
     cmd.internal.rendering = false;
 }
@@ -185,10 +191,18 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     }
     cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
+    cmd.internal.pipelineState[point] = pipeline.internal.pipelineState;
+    if (pipeline.internal.graphics) {
+        cmd.internal.topology = pipeline.internal.topology;
+    }
 }
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
     EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
+    // Kept for endNative (P70).
+    std::memcpy(cmd.internal.rootData, data, std::min<size_t>(size, sizeof(cmd.internal.rootData)));
+    cmd.internal.rootDataBytes = size;
+    cmd.internal.rootDataGraphics = cmd.internal.graphics;
     if (cmd.internal.graphics) {
         list(cmd)->SetGraphicsRoot32BitConstants(0, (size + 3) / 4, data, 0);
     } else {

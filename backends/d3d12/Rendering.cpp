@@ -233,6 +233,8 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         const D3D12_RECT scissor{0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
         l->RSSetViewports(1, &viewport);
         l->RSSetScissorRects(1, &scissor);
+        cmd.internal.renderWidth = width;
+        cmd.internal.renderHeight = height;
     }
     cmd.internal.rendering = true;
 }
@@ -402,6 +404,67 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
     restoreUserState(cmd);
 }
 
+// ── Native sections (P27, P70) ───────────────────────────────────────────────
+
+NativeCommands beginNative(CommandList &cmd) {
+    if (cmd.internal.native) {
+        reportError(ErrorCategory::eProgrammerError, "beginNative: a native section is already open");
+    }
+    cmd.internal.native = true;
+    return {.list = list(cmd)};
+}
+
+void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
+    if (!cmd.internal.native) {
+        reportError(ErrorCategory::eProgrammerError, "endNative: no native section is open");
+    }
+    if (cmd.internal.rendering && !changed.empty()) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "endNative: layouts cannot change inside a rendering section (P70 (2)); the list must be empty");
+    }
+    cmd.internal.native = false;
+    ID3D12GraphicsCommandList7 *l = list(cmd);
+    // The textures native code left elsewhere go back to rest, full on both halves.
+    for (const NativeLayoutChange &c : changed) {
+        if (c.layout != resting(c.view)) {
+            textureBarrier(l, c.view,
+                           {.before = c.layout,
+                            .after = resting(c.view),
+                            .syncBefore = D3D12_BARRIER_SYNC_ALL,
+                            .syncAfter = D3D12_BARRIER_SYNC_ALL,
+                            .accessBefore = D3D12_BARRIER_ACCESS_COMMON,
+                            .accessAfter = D3D12_BARRIER_ACCESS_COMMON});
+        }
+    }
+    // Everything RI set comes back (P70 (1)): heaps, root signatures, pipelines,
+    // root data, topology, and inside a section the viewport and scissor.
+    restoreUserState(cmd);
+    // D3D12 has one pipeline-state slot for compute and graphics: the current one.
+    const int current = cmd.internal.graphics ? 1 : 0;
+    if (cmd.internal.pipelineState[current] != nullptr) {
+        l->SetPipelineState(static_cast<ID3D12PipelineState *>(cmd.internal.pipelineState[current]));
+    }
+    if (cmd.internal.pipelineState[1] != nullptr) {
+        l->IASetPrimitiveTopology(static_cast<D3D_PRIMITIVE_TOPOLOGY>(cmd.internal.topology));
+    }
+    if (cmd.internal.rootDataBytes > 0) {
+        const UINT values = (cmd.internal.rootDataBytes + 3) / 4;
+        if (cmd.internal.rootDataGraphics) {
+            l->SetGraphicsRoot32BitConstants(0, values, cmd.internal.rootData, 0);
+        } else {
+            l->SetComputeRoot32BitConstants(0, values, cmd.internal.rootData, 0);
+        }
+    }
+    if (cmd.internal.rendering && cmd.internal.renderWidth != 0) {
+        const D3D12_VIEWPORT viewport{0.0f, 0.0f, static_cast<float>(cmd.internal.renderWidth),
+                                      static_cast<float>(cmd.internal.renderHeight), 0.0f, 1.0f};
+        const D3D12_RECT scissor{0, 0, static_cast<LONG>(cmd.internal.renderWidth),
+                                 static_cast<LONG>(cmd.internal.renderHeight)};
+        l->RSSetViewports(1, &viewport);
+        l->RSSetScissorRects(1, &scissor);
+    }
+}
+
 // ── Resolve (P52, P76) ───────────────────────────────────────────────────────
 
 void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode) {
@@ -488,8 +551,7 @@ uint32 copyBytesOf(const TextureView &view) {
 
 uint64 roundUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
 
-void checkCopy(const TextureView &view, bool bufferCopy, TextureUsage usage, std::string_view usageName,
-               std::string_view call) {
+void checkCopy([[maybe_unused]] const TextureView &view, [[maybe_unused]] bool bufferCopy, [[maybe_unused]] TextureUsage usage, [[maybe_unused]] std::string_view usageName, [[maybe_unused]] std::string_view call) {
     EQ_VALIDATE(Validation::checkCopyView(view.internal.mipCount, view.samples, bufferCopy, copyBytesOf(view),
                                           (view.internal.textureUsage & usage) != TextureUsage::eNone, usageName,
                                           call));
@@ -524,8 +586,7 @@ D3D12_TEXTURE_COPY_LOCATION textureLocation(const TextureView &view, uint32 laye
     return location;
 }
 
-void checkBufferCopyRange(const Buffer &buffer, uint64 offset, const CopyLayout &layout, BufferUsage usage,
-                          std::string_view call) {
+void checkBufferCopyRange([[maybe_unused]] const Buffer &buffer, [[maybe_unused]] uint64 offset, [[maybe_unused]] const CopyLayout &layout, [[maybe_unused]] BufferUsage usage, [[maybe_unused]] std::string_view call) {
     EQ_VALIDATE(Validation::checkRange(offset, layout.size, buffer.size, layout.alignment,
                                        std::format("{}: the texels in the buffer", call)));
     if ((buffer.usage & usage) == BufferUsage::eNone) {
@@ -598,7 +659,7 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
 }
 
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
-    DeviceState &state = *cmd.internal.device;
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_DX_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTexture"));

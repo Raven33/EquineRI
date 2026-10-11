@@ -1,5 +1,7 @@
 #include <TestHarness.hpp>
 
+#include "../gpu/GpuTestCommon.hpp"
+
 #include <RI/RI.hpp>
 #include <RI/D3D12/Native.hpp>
 
@@ -8,6 +10,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 EQ_TEST(d3d12, list_gpus) {
     const std::vector<RI::Gpu> gpus = RI::listGpus();
@@ -105,4 +108,233 @@ EQ_TEST(d3d12, unknown_gpu_reports) {
     RI::Gpu missing;
     missing.name = "Nonexistent GPU";
     RI::createDevice({.gpu = missing});
+}
+
+namespace {
+
+struct WriteRoot {
+    uint32 textureSlot;
+    uint32 width;
+    uint32 height;
+    float value;
+};
+
+template <typename Record>
+void runOnce(RI::Device &device, Record record) {
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    record(cmd);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    RI::destroyCommandList(device, cmd);
+}
+
+void textureBarrier(ID3D12GraphicsCommandList7 *list, ID3D12Resource *resource, D3D12_BARRIER_LAYOUT before,
+                    D3D12_BARRIER_LAYOUT after, D3D12_BARRIER_ACCESS accessAfter) {
+    D3D12_TEXTURE_BARRIER barrier{.SyncBefore = D3D12_BARRIER_SYNC_ALL,
+                                  .SyncAfter = D3D12_BARRIER_SYNC_ALL,
+                                  .AccessBefore = before == D3D12_BARRIER_LAYOUT_UNDEFINED
+                                                      ? D3D12_BARRIER_ACCESS_NO_ACCESS
+                                                      : D3D12_BARRIER_ACCESS_COMMON,
+                                  .AccessAfter = accessAfter,
+                                  .LayoutBefore = before,
+                                  .LayoutAfter = after,
+                                  .pResource = resource,
+                                  .Subresources = {.IndexOrFirstMipLevel = 0xffffffff}};
+    const D3D12_BARRIER_GROUP group{.Type = D3D12_BARRIER_TYPE_TEXTURE, .NumBarriers = 1, .pTextureBarriers = &barrier};
+    list->Barrier(1, &group);
+}
+
+} // namespace
+
+// Native sections (P27, P70): native code fills a texture with a copy and
+// leaves it in COPY_DEST (declared on exit), and disturbs the root constants;
+// after endNative RI's dispatch uses RI's state again. The storage descriptor
+// is written natively (P77 (2)).
+EQ_TEST(d3d12, native_section) {
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    ID3D12Device *nd = RI::D3D12::native(device).device;
+    gputest::Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 16 << 20)};
+    gputest::Arena upload{.memory = RI::allocateMemory(device, RI::MemoryKind::eUpload, 1 << 20)};
+    gputest::Arena readback{.memory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 20)};
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
+    RI::Texture storage = gputest::placeTexture(device, gpu, {.width = 16, .height = 16, .format = RI::Format::eRGBA32Float,
+                                                              .usage = RI::TextureUsage::eStorage | RI::TextureUsage::eCopySrc});
+    RI::Texture filled = gputest::placeTexture(device, gpu, {.width = 16, .height = 16, .format = RI::Format::eRGBA8Unorm,
+                                                             .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopySrc |
+                                                                      RI::TextureUsage::eCopyDst});
+    // The storage UAV, created in a native CPU heap and copied into slot 2.
+    ID3D12DescriptorHeap *cpuHeap = nullptr;
+    const D3D12_DESCRIPTOR_HEAP_DESC cpuDesc{.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1};
+    EQ_CHECK(SUCCEEDED(nd->CreateDescriptorHeap(&cpuDesc, IID_PPV_ARGS(&cpuHeap))));
+    const D3D12_UNORDERED_ACCESS_VIEW_DESC uav{.Format = DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                               .ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D};
+    nd->CreateUnorderedAccessView(RI::D3D12::native(storage).resource, nullptr, &uav,
+                                  cpuHeap->GetCPUDescriptorHandleForHeapStart());
+    RI::D3D12::writeNativeDescriptor(device, heap, 2, cpuHeap->GetCPUDescriptorHandleForHeapStart());
+    const std::vector<std::byte> shader = gputest::loadShader("write_storage");
+    RI::Pipeline write = RI::createComputePipeline(device, {.shader = shader});
+    const RI::CopyLayout storageLayout = RI::copyLayout(device, storage.view);
+    const RI::CopyLayout filledLayout = RI::copyLayout(device, filled.view);
+    RI::Buffer source = gputest::placeBuffer(device, upload, {.size = filledLayout.size, .usage = RI::BufferUsage::eCopySrc});
+    std::memset(source.mapped, 0x80, filledLayout.size);
+    RI::Buffer storageBack = gputest::placeBuffer(device, readback, {.size = storageLayout.size, .usage = RI::BufferUsage::eCopyDst});
+    RI::Buffer filledBack = gputest::placeBuffer(device, readback, {.size = filledLayout.size, .usage = RI::BufferUsage::eCopyDst});
+
+    runOnce(device, [&](RI::CommandList &cmd) {
+        RI::cmdSetHeap(cmd, heap);
+        RI::cmdSetPipeline(cmd, write);
+        RI::cmdSetRootData(cmd, WriteRoot{.textureSlot = 2, .width = 16, .height = 16, .value = 9.0f});
+        const RI::D3D12::NativeCommands n = RI::D3D12::beginNative(cmd);
+        const WriteRoot wrong{.textureSlot = 2, .width = 16, .height = 16, .value = 1.0f};
+        n.list->SetComputeRoot32BitConstants(0, sizeof(wrong) / 4, &wrong, 0);
+        ID3D12Resource *texture = RI::D3D12::native(filled).resource;
+        textureBarrier(n.list, texture, RI::D3D12::native(filled).restingLayout, D3D12_BARRIER_LAYOUT_COPY_DEST,
+                       D3D12_BARRIER_ACCESS_COPY_DEST);
+        const D3D12_RESOURCE_DESC desc = texture->GetDesc();
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+        nd->GetCopyableFootprints(&desc, 0, 1, 0, &footprint, nullptr, nullptr, nullptr);
+        D3D12_TEXTURE_COPY_LOCATION to{.pResource = texture, .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX};
+        to.SubresourceIndex = 0;
+        D3D12_TEXTURE_COPY_LOCATION from{.pResource = RI::D3D12::native(source),
+                                         .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
+        from.PlacedFootprint = footprint;
+        n.list->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+        const RI::D3D12::NativeLayoutChange left[] = {{filled.view, D3D12_BARRIER_LAYOUT_COPY_DEST}};
+        RI::D3D12::endNative(cmd, left);
+        RI::cmdDispatch(cmd, 2, 2, 1); // RI's root data again: 9
+        RI::cmdBarrier(cmd, RI::Stage::eAll, RI::Stage::eCopy);
+        RI::cmdCopyTextureToBuffer(cmd, storage.view, storageBack, 0);
+        RI::cmdCopyTextureToBuffer(cmd, filled.view, filledBack, 0);
+    });
+    uint32 wrong = 0;
+    for (uint32 y = 0; y < 16; ++y) {
+        const auto *row = reinterpret_cast<const float *>(static_cast<const uint8 *>(storageBack.mapped) +
+                                                          y * storageLayout.rowPitch);
+        const auto *bytes = static_cast<const uint8 *>(filledBack.mapped) + y * filledLayout.rowPitch;
+        for (uint32 x = 0; x < 16; ++x) {
+            wrong += row[x * 4 + 2] != 9.0f;
+            wrong += bytes[x * 4] != 0x80;
+        }
+    }
+    EQ_CHECK(wrong == 0);
+
+    cpuHeap->Release();
+    RI::destroyBuffer(device, filledBack);
+    RI::destroyBuffer(device, storageBack);
+    RI::destroyBuffer(device, source);
+    RI::destroyPipeline(device, write);
+    RI::destroyTexture(device, filled);
+    RI::destroyTexture(device, storage);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::freeMemory(device, readback.memory);
+    RI::freeMemory(device, upload.memory);
+    RI::freeMemory(device, gpu.memory);
+    RI::destroyDevice(device);
+}
+
+// Import (P77): a native placed texture, a native heap and a committed buffer
+// used by RI; RI forgets them on destroy and the native objects stay valid.
+EQ_TEST(d3d12, import_objects) {
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    ID3D12Device *nd = RI::D3D12::native(device).device;
+    RI::Memory gpuMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 4 << 20);
+
+    const RI::TextureDesc desc{.width = 16, .height = 16, .format = RI::Format::eRGBA8Unorm,
+                               .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopySrc | RI::TextureUsage::eCopyDst};
+    const D3D12_RESOURCE_DESC1 textureDesc{.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+                                           .Width = 16,
+                                           .Height = 16,
+                                           .DepthOrArraySize = 1,
+                                           .MipLevels = 1,
+                                           .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+                                           .SampleDesc = {1, 0},
+                                           .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN};
+    ID3D12Device10 *device10 = nullptr;
+    EQ_CHECK(SUCCEEDED(nd->QueryInterface(IID_PPV_ARGS(&device10))));
+    ID3D12Resource *image = nullptr;
+    EQ_CHECK(SUCCEEDED(device10->CreatePlacedResource2(RI::D3D12::native(gpuMemory), 0, &textureDesc,
+                                                       D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, 0, nullptr,
+                                                       IID_PPV_ARGS(&image))));
+    RI::Texture texture = RI::D3D12::importTexture(device, image, desc);
+
+    // A native upload heap, imported; RI places its staging buffer in it.
+    const D3D12_HEAP_DESC heapDesc{.SizeInBytes = 1 << 20,
+                                   .Properties = {.Type = D3D12_HEAP_TYPE_UPLOAD},
+                                   .Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS};
+    ID3D12Heap *uploadHeap = nullptr;
+    EQ_CHECK(SUCCEEDED(nd->CreateHeap(&heapDesc, IID_PPV_ARGS(&uploadHeap))));
+    const D3D12_RESOURCE_DESC bufferDesc{.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+                                         .Width = 1 << 20,
+                                         .Height = 1,
+                                         .DepthOrArraySize = 1,
+                                         .MipLevels = 1,
+                                         .SampleDesc = {1, 0},
+                                         .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR};
+    ID3D12Resource *whole = nullptr; // maps the whole heap for its CPU address
+    EQ_CHECK(SUCCEEDED(nd->CreatePlacedResource(uploadHeap, 0, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+                                                IID_PPV_ARGS(&whole))));
+    void *mapped = nullptr;
+    EQ_CHECK(SUCCEEDED(whole->Map(0, nullptr, &mapped)));
+    RI::Memory uploadMemory = RI::D3D12::importMemory(device, uploadHeap, RI::MemoryKind::eUpload, 1 << 20, mapped);
+    RI::Buffer staging = RI::createBuffer(device, uploadMemory, 0, {.size = 64 * 1024, .usage = RI::BufferUsage::eCopySrc});
+
+    // A native committed readback buffer, imported.
+    const D3D12_HEAP_PROPERTIES readbackHeap{.Type = D3D12_HEAP_TYPE_READBACK};
+    D3D12_RESOURCE_DESC readbackDesc = bufferDesc;
+    readbackDesc.Width = 64 * 1024;
+    ID3D12Resource *readbackResource = nullptr;
+    EQ_CHECK(SUCCEEDED(nd->CreateCommittedResource(&readbackHeap, D3D12_HEAP_FLAG_NONE, &readbackDesc,
+                                                   D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
+                                                   IID_PPV_ARGS(&readbackResource))));
+    void *readbackMapped = nullptr;
+    EQ_CHECK(SUCCEEDED(readbackResource->Map(0, nullptr, &readbackMapped)));
+    RI::Buffer back = RI::D3D12::importBuffer(device, readbackResource,
+                                              {.size = 64 * 1024, .usage = RI::BufferUsage::eCopyDst}, readbackMapped);
+
+    const RI::CopyLayout layout = RI::copyLayout(device, texture.view);
+    auto *bytes = static_cast<uint8 *>(staging.mapped);
+    for (uint64 i = 0; i < layout.size; ++i) {
+        bytes[i] = static_cast<uint8>(i * 7);
+    }
+    runOnce(device, [&](RI::CommandList &cmd) {
+        // The imported texture goes to RI's resting layout before RI uses it.
+        const RI::D3D12::NativeCommands n = RI::D3D12::beginNative(cmd);
+        textureBarrier(n.list, image, D3D12_BARRIER_LAYOUT_UNDEFINED, RI::D3D12::native(texture).restingLayout,
+                       D3D12_BARRIER_ACCESS_COMMON);
+        RI::D3D12::endNative(cmd);
+        RI::cmdCopyBufferToTexture(cmd, staging, 0, texture.view);
+        RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+        RI::cmdCopyTextureToBuffer(cmd, texture.view, back, 0);
+    });
+    const auto *out = static_cast<const uint8 *>(back.mapped);
+    uint32 wrong = 0;
+    for (uint32 y = 0; y < 16; ++y) {
+        for (uint32 x = 0; x < 64; ++x) {
+            const uint64 at = y * layout.rowPitch + x;
+            wrong += out[at] != static_cast<uint8>(at * 7);
+        }
+    }
+    EQ_CHECK(wrong == 0);
+
+    const std::vector<std::byte> shader = gputest::loadShader("write_storage");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = shader});
+    RI::Pipeline imported = RI::D3D12::importPipeline(device, RI::D3D12::native(pipeline).pipelineState,
+                                                      RI::D3D12::native(pipeline).rootSignature, false,
+                                                      pipeline.rootDataSize);
+    EQ_CHECK(imported.rootDataSize == sizeof(WriteRoot));
+    RI::destroyPipeline(device, imported);
+    RI::destroyPipeline(device, pipeline);
+
+    RI::destroyBuffer(device, back);       // forgets only
+    RI::destroyBuffer(device, staging);
+    RI::freeMemory(device, uploadMemory);  // forgets only
+    RI::destroyTexture(device, texture);   // frees RI's descriptors, forgets the resource
+    readbackResource->Release();
+    whole->Release();
+    uploadHeap->Release();
+    image->Release();
+    device10->Release();
+    RI::freeMemory(device, gpuMemory);
+    RI::destroyDevice(device);
 }

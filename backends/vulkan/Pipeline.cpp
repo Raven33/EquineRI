@@ -402,7 +402,7 @@ void destroyPipeline(Device &device, Pipeline &pipeline) {
 
 Pipeline importPipeline(Device &device, VkPipeline pipeline, VkPipelineLayout layout, bool graphics,
                         uint32 rootDataSize) {
-    DeviceState &state = *device.internal.state;
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
     Pipeline result;
     result.rootDataSize = rootDataSize;
     result.internal.pipeline = reinterpret_cast<uint64>(pipeline);

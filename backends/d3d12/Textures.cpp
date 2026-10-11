@@ -300,8 +300,10 @@ void destroyTexture(Device &device, Texture &texture) {
     EQ_DX_CHECK_ALIVE(&state, texture.internal.id, "texture");
     EQ_DX_UNTRACK(&state, texture.internal.id);
     releaseViewSlots(state, texture.view);
-    auto *resource = static_cast<ID3D12Resource *>(texture.internal.resource);
-    release(resource);
+    if (!texture.internal.imported) { // P77: an imported resource stays the user's
+        auto *resource = static_cast<ID3D12Resource *>(texture.internal.resource);
+        release(resource);
+    }
     texture = {};
 }
 
@@ -370,6 +372,31 @@ PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
             .clippingPrimitives = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CPrimitives),
             .pixelShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, PSInvocations),
             .computeShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CSInvocations)};
+}
+
+// ── Import (P77) ─────────────────────────────────────────────────────────────
+
+Texture importTexture(Device &device, ID3D12Resource *resource, const TextureDesc &desc) {
+    DeviceState &state = *device.internal.state;
+    EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    Texture texture;
+    texture.width = desc.width;
+    texture.height = desc.height;
+    texture.layers = desc.layers;
+    texture.mips = desc.mips;
+    texture.samples = desc.samples;
+    texture.format = desc.format;
+    texture.usage = desc.usage;
+    texture.internal.resource = resource;
+    texture.internal.restingLayout = static_cast<uint32>(restingLayout(desc.usage));
+    texture.internal.viewFormats = uint64{1} << static_cast<uint32>(desc.format);
+    for (Format f : desc.viewFormats) {
+        texture.internal.viewFormats |= uint64{1} << static_cast<uint32>(f);
+    }
+    texture.internal.imported = true;
+    texture.internal.id = EQ_DX_TRACK(&state);
+    texture.view = makeView(state, texture, {});
+    return texture;
 }
 
 } // namespace RI::D3D12

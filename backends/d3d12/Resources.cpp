@@ -171,10 +171,12 @@ void freeMemory(Device &device, Memory &memory) {
 #if EQUINE_VALIDATION
     Validation::forgetMemory(state.placements, memory.internal.id);
 #endif
-    auto *whole = static_cast<ID3D12Resource *>(memory.internal.mapBuffer);
-    release(whole);
-    auto *heap = static_cast<ID3D12Heap *>(memory.internal.heap);
-    release(heap);
+    if (!memory.internal.imported) { // P77: an imported heap stays the user's
+        auto *whole = static_cast<ID3D12Resource *>(memory.internal.mapBuffer);
+        release(whole);
+        auto *heap = static_cast<ID3D12Heap *>(memory.internal.heap);
+        release(heap);
+    }
     memory = {};
 }
 
@@ -222,8 +224,10 @@ void destroyBuffer(Device &device, Buffer &buffer) {
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
     EQ_DX_UNTRACK(&state, buffer.internal.id);
-    auto *resource = static_cast<ID3D12Resource *>(buffer.internal.resource);
-    release(resource);
+    if (!buffer.internal.imported) { // P77: an imported resource stays the user's
+        auto *resource = static_cast<ID3D12Resource *>(buffer.internal.resource);
+        release(resource);
+    }
     buffer = {};
 }
 
@@ -335,6 +339,43 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
             state.device->CreateShaderResourceView(resource, &srv, slot);
         }
     }
+}
+
+// ── Import (P77) ─────────────────────────────────────────────────────────────
+
+Memory importMemory(Device &device, ID3D12Heap *heap, MemoryKind kind, uint64 size, void *mapped) {
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    Memory memory;
+    memory.kind = kind;
+    memory.size = size;
+    memory.mapped = mapped;
+    memory.internal.heap = heap;
+    memory.internal.imported = true;
+    memory.internal.id = EQ_DX_TRACK(&state);
+    return memory;
+}
+
+Buffer importBuffer(Device &device, ID3D12Resource *resource, const BufferDesc &desc, void *mapped) {
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    Buffer buffer;
+    buffer.size = desc.size;
+    buffer.usage = desc.usage;
+    buffer.gpuAddress = resource->GetGPUVirtualAddress();
+    buffer.mapped = mapped;
+    buffer.internal.resource = resource;
+    buffer.internal.imported = true;
+    buffer.internal.id = EQ_DX_TRACK(&state);
+    return buffer;
+}
+
+void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, D3D12_CPU_DESCRIPTOR_HANDLE source) {
+    DeviceState &state = *device.internal.state;
+    EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
+    EQ_VALIDATE(Validation::checkSlot(slot, heap.resourceCount, "resource"));
+    const D3D12_CPU_DESCRIPTOR_HANDLE start =
+        static_cast<ID3D12DescriptorHeap *>(heap.internal.resourceHeap)->GetCPUDescriptorHandleForHeapStart();
+    const D3D12_CPU_DESCRIPTOR_HANDLE target{start.ptr + static_cast<SIZE_T>(slot) * state.resourceDescriptorSize};
+    state.device->CopyDescriptorsSimple(1, target, source, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 } // namespace RI::D3D12

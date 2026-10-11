@@ -244,6 +244,8 @@ if (TARGET EquineD3D12Backend)
         d3d12.native_hook_runs_before_creation
         d3d12.list_gpus_while_device_alive
         d3d12.unknown_gpu_reports
+        d3d12.native_section
+        d3d12.import_objects
     )
     equine_add_gpu_tests(EquineRID3D12Tests d3d12 ${EQUINE_D3D12_TEST_NAMES})
     set_tests_properties(d3d12.unknown_gpu_reports PROPERTIES
