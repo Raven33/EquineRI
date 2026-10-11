@@ -64,7 +64,10 @@ struct Memory {
     } internal;
 };
 
-Memory allocateMemory(Device &device, MemoryKind kind, uint64 size);
+// With `forResource`, the memory suits that resource: Vulkan picks a native
+// type of `kind` the resource allows (some drivers allow only some types, e.g.
+// RADV for indirect scratch). Without it, the kind's default type.
+Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *forResource = nullptr);
 void freeMemory(Device &device, Memory &memory);
 
 MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc);
@@ -321,7 +324,6 @@ struct CommandList {
         TextureView depthResolve;
         uint32 depthLayout = 0; // VkImageLayout used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
-        void *extras = nullptr; // CommandListExtras: RI-owned per-list objects (P48)
         uint64 id = 0;
     } internal;
 };
@@ -367,9 +369,15 @@ void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args,
 // Level 2 (DeviceLimits::indirectRootData): each record starts with the root
 // data of the pipeline set (its rootDataSize, rounded up to 4), followed by the
 // arguments; stride indirectStride(kind, rootDataSize). Set root data again
-// before later direct draws.
+// before later direct draws. `scratch` (BufferUsage::eIndirectScratch) holds
+// indirectScratchRequirements(...).size bytes at `scratchOffset`; it may be
+// null when that size is 0. Calls not separated by a barrier on
+// Stage::eIndirect must use separate scratch ranges.
+MemoryRequirements indirectScratchRequirements(Device &device, const Pipeline &pipeline, IndirectKind kind,
+                                               uint32 maxCount);
 void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const Buffer &records, uint64 offset,
-                                    uint32 maxCount, const Buffer *count = nullptr, uint64 countOffset = 0);
+                                    uint32 maxCount, const Buffer *scratch, uint64 scratchOffset,
+                                    const Buffer *count = nullptr, uint64 countOffset = 0);
 
 
 
@@ -479,14 +487,11 @@ void present(Queue &queue, Swapchain &swapchain);
 // ── Work graphs (P50, P62) ────────────────────────────────────────────────────
 // D3D12 only (DeviceLimits::workGraphs); on Vulkan every call is unsupported.
 
-struct WorkGraphState; // backend-private: the backing memory last used (P62 inference)
-
 struct WorkGraph {
     uint32 rootDataSize = 0;
     WorkGraphMemory backing; // what the graph needs
     struct {
         // nothing: work graphs are D3D12 only
-        WorkGraphState *state = nullptr;
         uint64 id = 0;
     } internal;
 };
@@ -496,12 +501,14 @@ void destroyWorkGraph(Device &device, WorkGraph &graph);
 // The index of an entry node, for GraphInput::entry.
 uint32 workGraphEntry(const WorkGraph &graph, std::string_view node, uint32 arrayIndex = 0);
 
-// Sets the graph and its backing memory (a range of an eReadWrite buffer):
-// later cmdSetRootData calls feed its nodes. RI initializes the backing memory
-// on the graph's first use and whenever the range changes (P62); set
-// `forceInitialize` to reset it deliberately.
-void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size,
-                     bool forceInitialize = false);
+// Gives the graph its backing memory (a range of an eReadWrite buffer, at
+// least backing.minSize bytes). The range belongs to the graph until it is
+// bound again or the graph is destroyed: place nothing else over it. RI
+// initializes it at once, with an internal submission that waits (P62).
+void bindWorkGraphMemory(Device &device, WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size);
+// Sets the graph (with its bound memory): later cmdSetRootData calls feed
+// its nodes.
+void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph);
 // Launches the graph with CPU records: one entry node, or several (P62).
 void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs);
 // Launches the graph with GPU-written input at `inputAddress`: D3D12's

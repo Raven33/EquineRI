@@ -165,7 +165,8 @@ MemoryRequirements accelerationStructureRequirements(Device &device, uint64 size
     state.functions.vkGetDeviceBufferMemoryRequirements(state.device, &query, &requirements);
     MemoryRequirements out{.size = requirements.memoryRequirements.size,
                            .alignment = std::max<uint64>(requirements.memoryRequirements.alignment, 256),
-                           .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)};
+                           .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits),
+                           .internal = {.memoryTypes = requirements.memoryRequirements.memoryTypeBits}};
     return withGranularity(state, out);
 }
 
@@ -177,6 +178,9 @@ AccelerationStructure createAccelerationStructure(Device &device, const Memory &
     [[maybe_unused]] const MemoryRequirements requirements = accelerationStructureRequirements(device, size);
     EQ_VALIDATE(Validation::checkRange(offset, requirements.size, memory.size, requirements.alignment,
                                        "createAccelerationStructure: placing it in memory"));
+    EQ_VALIDATE(Validation::checkMemoryType(
+        memory.internal.imported || (requirements.internal.memoryTypes & (1u << memory.internal.memoryType)) != 0,
+        "createAccelerationStructure"));
     const VkBufferCreateInfo bufferInfo = storageBufferInfo(size);
     VkBuffer buffer = VK_NULL_HANDLE;
     checkVk(state.functions.vkCreateBuffer(state.device, &bufferInfo, nullptr, &buffer), "vkCreateBuffer");

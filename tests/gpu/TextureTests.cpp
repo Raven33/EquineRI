@@ -1011,7 +1011,22 @@ EQ_TEST(texture, indirect_level2) {
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = t.target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetPipeline(f.cmd, t.pipeline);
     RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
-    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDrawIndexed, records, 0, 3, &count, 0);
+    // The scratch the call needs (none on D3D12), in memory of a kind it allows.
+    std::vector<RI::Memory> scratchMemory;
+    const auto makeScratch = [&](const RI::Pipeline &pipeline, RI::IndirectKind kind, uint32 maxCount) {
+        const RI::MemoryRequirements need = RI::indirectScratchRequirements(f.device, pipeline, kind, maxCount);
+        if (need.size == 0) {
+            return RI::Buffer{};
+        }
+        EQ_CHECK(RI::fits(need, RI::MemoryKind::eGPU));
+        // Memory of a type the scratch allows (RADV: only some GPU types).
+        scratchMemory.push_back(RI::allocateMemory(f.device, RI::MemoryKind::eGPU, need.size, &need));
+        return RI::createBuffer(f.device, scratchMemory.back(), 0,
+                                {.size = need.size, .usage = RI::BufferUsage::eIndirectScratch});
+    };
+    RI::Buffer drawScratch = makeScratch(t.pipeline, RI::IndirectKind::eDrawIndexed, 3);
+    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDrawIndexed, records, 0, 3,
+                                       drawScratch.size > 0 ? &drawScratch : nullptr, 0, &count, 0);
     RI::cmdEndRendering(f.cmd);
     std::vector<float> texels = f.readBack(t.target.view);
     EQ_CHECK(all(texels, 0, 0.25f) && all(texels, 1, 0.5f) && all(texels, 2, 0.0f));
@@ -1034,7 +1049,9 @@ EQ_TEST(texture, indirect_level2) {
     const DispatchRecord record{{.textureSlot = 2, .width = kSize, .height = kSize, .value = 5.0f}, {kSize / 8, kSize / 8, 1}};
     std::memcpy(dispatches.mapped, &record, sizeof(record));
     RI::cmdSetPipeline(f.cmd, write);
-    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDispatch, dispatches, 0, 1);
+    RI::Buffer dispatchScratch = makeScratch(write, RI::IndirectKind::eDispatch, 1);
+    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDispatch, dispatches, 0, 1,
+                                       dispatchScratch.size > 0 ? &dispatchScratch : nullptr, 0);
     texels = f.readBack(storage.view);
     EQ_CHECK(all(texels, 2, 5.0f));
 
@@ -1044,6 +1061,14 @@ EQ_TEST(texture, indirect_level2) {
     RI::destroyPipeline(f.device, write);
     RI::destroyTexture(f.device, storage);
     RI::destroyBuffer(f.device, dispatches);
+    for (RI::Buffer *scratch : {&drawScratch, &dispatchScratch}) {
+        if (scratch->size > 0) {
+            RI::destroyBuffer(f.device, *scratch);
+        }
+    }
+    for (RI::Memory &memory : scratchMemory) {
+        RI::freeMemory(f.device, memory);
+    }
     RI::destroyBuffer(f.device, count);
     RI::destroyBuffer(f.device, records);
     RI::destroyBuffer(f.device, indices);

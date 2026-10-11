@@ -289,7 +289,8 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc) 
     state.functions.vkGetDeviceImageMemoryRequirements(state.device, &info, &requirements);
     return withGranularity(state, {.size = requirements.memoryRequirements.size,
                                    .alignment = requirements.memoryRequirements.alignment,
-                                   .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits)});
+                                   .kinds = kindsOf(state, requirements.memoryRequirements.memoryTypeBits),
+                           .internal = {.memoryTypes = requirements.memoryRequirements.memoryTypeBits}});
 }
 
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc) {
@@ -307,7 +308,8 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
         state.functions.vkDestroyImage(state.device, vkImage, nullptr);
         reportError(ErrorCategory::eUnsupported,
                     std::format("createTexture: this {} texture cannot be placed in this memory kind on '{}' "
-                                "(check textureRequirements(...).kinds)",
+                                "(check textureRequirements(...).kinds; allocateMemory(device, kind, size, &requirements) "
+                                "picks a type that fits)",
                                 formatName(desc.format), device.gpu.name));
     }
     EQ_VALIDATE(Validation::checkRange(offset, requirements.size, memory.size, requirements.alignment,

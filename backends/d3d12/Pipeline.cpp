@@ -379,12 +379,6 @@ Pipeline importPipeline(Device &device, ID3D12PipelineState *pipeline, ID3D12Roo
 
 // ── Work graphs (P50, P62) ───────────────────────────────────────────────────
 
-struct WorkGraphState {
-    uint64 backingAddress = 0; // the backing memory the graph last used (P62)
-    uint64 backingSize = 0;
-    UINT graphIndex = 0;
-};
-
 namespace {
 
 constexpr const wchar_t *kProgramName = L"EquineWorkGraph";
@@ -448,14 +442,12 @@ WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
     std::memcpy(graph.internal.programId, &id, sizeof(id));
     release(objectProperties);
 
-    auto *s = new WorkGraphState;
     ID3D12WorkGraphProperties *properties = workGraphProperties(graph);
-    s->graphIndex = properties->GetWorkGraphIndex(kProgramName);
+    graph.internal.graphIndex = properties->GetWorkGraphIndex(kProgramName);
     D3D12_WORK_GRAPH_MEMORY_REQUIREMENTS memory{};
-    properties->GetWorkGraphMemoryRequirements(s->graphIndex, &memory);
+    properties->GetWorkGraphMemoryRequirements(graph.internal.graphIndex, &memory);
     release(properties);
     graph.backing = {.minSize = memory.MinSizeInBytes, .maxSize = memory.MaxSizeInBytes};
-    graph.internal.state = s;
     graph.internal.id = EQ_DX_TRACK(&state);
     return graph;
 }
@@ -468,14 +460,13 @@ void destroyWorkGraph(Device &device, WorkGraph &graph) {
     auto *rootSignature = static_cast<ID3D12RootSignature *>(graph.internal.rootSignature);
     release(stateObject);
     release(rootSignature);
-    delete graph.internal.state;
     graph = {};
 }
 
 uint32 workGraphEntry(const WorkGraph &graph, std::string_view node, uint32 arrayIndex) {
     const std::wstring name(node.begin(), node.end());
     ID3D12WorkGraphProperties *properties = workGraphProperties(graph);
-    const UINT index = properties->GetEntrypointIndex(graph.internal.state->graphIndex, {name.c_str(), arrayIndex});
+    const UINT index = properties->GetEntrypointIndex(graph.internal.graphIndex, {name.c_str(), arrayIndex});
     release(properties);
     if (index == UINT_MAX) {
         reportError(ErrorCategory::eProgrammerError,
@@ -484,25 +475,48 @@ uint32 workGraphEntry(const WorkGraph &graph, std::string_view node, uint32 arra
     return index;
 }
 
-void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size,
-                     bool forceInitialize) {
-    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
+namespace {
+
+D3D12_SET_PROGRAM_DESC programOf(const WorkGraph &graph, bool initialize) {
+    D3D12_SET_PROGRAM_DESC program{.Type = D3D12_PROGRAM_TYPE_WORK_GRAPH};
+    std::memcpy(&program.WorkGraph.ProgramIdentifier, graph.internal.programId, sizeof(graph.internal.programId));
+    program.WorkGraph.Flags = initialize ? D3D12_SET_WORK_GRAPH_FLAG_INITIALIZE : D3D12_SET_WORK_GRAPH_FLAG_NONE;
+    program.WorkGraph.BackingMemory = {.StartAddress = graph.internal.backingAddress,
+                                       .SizeInBytes = graph.internal.backingSize};
+    return program;
+}
+
+} // namespace
+
+void bindWorkGraphMemory(Device &device, WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size) {
+    DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
     EQ_DX_CHECK_ALIVE(&state, backing.internal.id, "buffer");
-    EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
-    EQ_VALIDATE(Validation::checkRange(offset, size, backing.size, 8, "cmdSetWorkGraph: the backing memory"));
+    EQ_VALIDATE(Validation::checkRange(offset, size, backing.size, 8, "bindWorkGraphMemory: the backing memory"));
     if (size < graph.backing.minSize || (backing.usage & BufferUsage::eReadWrite) == BufferUsage::eNone) {
         reportError(ErrorCategory::eProgrammerError,
-                    std::format("cmdSetWorkGraph: the backing memory needs eReadWrite usage and at least {} bytes",
+                    std::format("bindWorkGraphMemory: the backing memory needs eReadWrite usage and at least {} bytes",
                                 graph.backing.minSize));
     }
-    // Initialization is inferred (P62): first use, or another range.
-    WorkGraphState &s = *graph.internal.state;
-    const uint64 address = backing.gpuAddress + offset;
-    const bool initialize = forceInitialize || s.backingAddress != address || s.backingSize != size;
-    s.backingAddress = address;
-    s.backingSize = size;
+    graph.internal.backingAddress = backing.gpuAddress + offset;
+    graph.internal.backingSize = size;
+    // Initialized here, once per bind (P62): the range is the graph's from now on.
+    submitInternal(state, [&](ID3D12GraphicsCommandList7 *list) {
+        ID3D12GraphicsCommandList10 *l = nullptr;
+        checkHr(list->QueryInterface(IID_PPV_ARGS(&l)), "ID3D12GraphicsCommandList10 (work graphs)");
+        const D3D12_SET_PROGRAM_DESC program = programOf(graph, true);
+        l->SetProgram(&program);
+        release(l);
+    });
+}
 
+void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
+    EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
+    EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
+    if (graph.internal.backingSize == 0) {
+        reportError(ErrorCategory::eProgrammerError, "cmdSetWorkGraph: the graph has no memory (bindWorkGraphMemory)");
+    }
     ID3D12GraphicsCommandList10 *l = list10(cmd);
     auto *rootSignature = static_cast<ID3D12RootSignature *>(graph.internal.rootSignature);
     l->SetComputeRootSignature(rootSignature);
@@ -510,10 +524,7 @@ void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph, const Buffer &bac
     cmd.internal.graphics = false;
     cmd.internal.rootDataSize = graph.rootDataSize;
     cmd.internal.pipelineState[0] = nullptr; // SetProgram replaces the pipeline state
-    D3D12_SET_PROGRAM_DESC program{.Type = D3D12_PROGRAM_TYPE_WORK_GRAPH};
-    std::memcpy(&program.WorkGraph.ProgramIdentifier, graph.internal.programId, sizeof(graph.internal.programId));
-    program.WorkGraph.Flags = initialize ? D3D12_SET_WORK_GRAPH_FLAG_INITIALIZE : D3D12_SET_WORK_GRAPH_FLAG_NONE;
-    program.WorkGraph.BackingMemory = {.StartAddress = address, .SizeInBytes = size};
+    const D3D12_SET_PROGRAM_DESC program = programOf(graph, false);
     l->SetProgram(&program);
     release(l);
 }

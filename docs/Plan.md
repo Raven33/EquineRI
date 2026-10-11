@@ -104,9 +104,9 @@ Linux tests pass (RADV 680M, Vulkan). Windows: RTX 3080 passed every test up to 
 AMD Vulkan failed at `3f13bfb` (no mutable heap with acceleration structures, P98 (8)); with
 the fix (ray tracing off there), `e1363bc` passes 138/138 on both AMD and NVIDIA with GPU
 validation on (logs on branch `m4-verify-windows-e1363bc`). AMD Vulkan keeps 1,000,000 heap
-slots. Awaiting the user's review: the
-DGC preprocess-buffer exception to P31, the NVIDIA GPU-AV rule for DGC, and the work-graph
-initialization inference (P98).
+slots. Reviewed by the user (2026-10-11): frame graph removed (P35 amended), indirect scratch and
+work-graph memory made explicit, P31 kept strict. Still open: the NVIDIA GPU-AV rule for DGC
+(P98).
 
 Candidates:
 - Swapchain and present (P43, P63, P64).

@@ -102,6 +102,18 @@ struct IndirectCheck {
     bool countForDispatchAllowed; // Level 2 dispatches may take a count
 };
 CheckResult checkIndirect(const IndirectCheck &c, std::string_view call);
+// Vulkan: the memory's native type is one the resource allows (allocate it
+// with allocateMemory(kind, size, &requirements) when the kind's default type
+// does not fit).
+CheckResult checkMemoryType(bool allowed, std::string_view call);
+// The scratch range of cmdExecuteIndirectWithRootData (P48).
+struct IndirectScratchCheck {
+    uint64 requiredSize, requiredAlignment;
+    bool hasScratch, usage;
+    uint64 offset, scratchSize;
+    uint64 address; // GPU address of the range, for the alignment
+};
+CheckResult checkIndirectScratch(const IndirectScratchCheck &c, std::string_view call);
 
 // cmdEndMarker closes an open marker region (P53); `depth` is the open count.
 CheckResult checkMarkerEnd(uint32 depth);

@@ -13,7 +13,11 @@ the block back.
 
 Step by step, `allocateMemory`:
 
-1. picks the native memory for the kind (chosen when the device was created);
+1. picks the native memory for the kind (chosen when the device was created). With a third
+   argument, `allocateMemory(device, kind, size, &requirements)`, it picks memory of that
+   kind that **suits that resource**: some drivers allow some resources only in some of a
+   kind's native memory types (RADV puts [indirect scratch](indirect.md) only in its
+   32-bit-addressable GPU memory). On D3D12 the argument changes nothing;
 2. allocates `size` bytes of it, allowing GPU addresses for buffers placed inside;
 3. for every kind except `eGPU`, **maps** the block once: `memory.mapped` is its CPU address
    for the block's whole life ([P33](../design-notes/decisions.md#p33));
@@ -87,6 +91,9 @@ buffers in each, rather than one block per buffer.
   longer uses them (after their [timeline point](../concepts/timeline.md)).
 - `freeMemory` resets the struct to empty. In validation builds, using freed memory (or
   memory from another device) is a **programmer error**.
+- Placing a resource in memory whose native type it does not allow is a **programmer error**
+  (Vulkan, validation builds). `requirements.kinds` lists the kinds that can hold it; allocate
+  with `&requirements` when the kind's usual memory does not.
 - On D3D12, the block's size is rounded up to 64 KiB; `memory.size` is the size you asked for.
 
 ## Related decisions

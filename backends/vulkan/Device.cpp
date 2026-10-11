@@ -306,6 +306,28 @@ void chooseMemoryTypes(DeviceState &state, DeviceLimits &limits) {
         state.memoryTypes[kindIndex(MemoryKind::eGPUUpload)] = gpuUpload;
         limits.gpuUploadMemory = true;
     }
+
+    // Other types with the kind's flags, for resources the default type does
+    // not fit (allocateMemory with `forResource`).
+    const VkMemoryPropertyFlags required[4] = {kLocal, kHost, kHost, kLocal | kHost};
+    for (uint32 kind = 0; kind < 4; ++kind) {
+        const uint32 first = state.memoryTypes[kind];
+        if (first == UINT32_MAX) {
+            continue;
+        }
+        state.memoryTypeCandidates[kind].push_back(first);
+        for (uint32 i = 0; i < memory.memoryTypeCount; ++i) {
+            const VkMemoryPropertyFlags flags = memory.memoryTypes[i].propertyFlags;
+            // Same heap kind as the default: GPU memory stays CPU-invisible
+            // where the default is, CPU memory stays off the GPU heap.
+            const VkMemoryPropertyFlags sameAsDefault =
+                memory.memoryTypes[first].propertyFlags & (kLocal | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            if (i != first && (flags & required[kind]) == required[kind] && (flags & kNever) == 0 &&
+                (flags & (kLocal | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == sameAsDefault) {
+                state.memoryTypeCandidates[kind].push_back(i);
+            }
+        }
+    }
 }
 
 // The device-wide descriptor set layouts behind descriptor heaps (P94): set 0

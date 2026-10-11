@@ -90,8 +90,19 @@ void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args,
     execute(cmd, kind, args, offset, maxCount, count, countOffset, false, "cmdExecuteIndirect");
 }
 
+// ExecuteIndirect needs no scratch: size 0, so `scratch` may be null.
+MemoryRequirements indirectScratchRequirements(Device &device, [[maybe_unused]] const Pipeline &pipeline,
+                                               IndirectKind, uint32) {
+    EQ_DX_CHECK_ALIVE(device.internal.state, pipeline.internal.id, "pipeline");
+    return {.size = 0, .alignment = 1, .kinds = bufferRequirements(device, {.size = 256}).kinds};
+}
+
 void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const Buffer &records, uint64 offset,
-                                    uint32 maxCount, const Buffer *count, uint64 countOffset) {
+                                    uint32 maxCount, const Buffer *scratch, uint64, const Buffer *count,
+                                    uint64 countOffset) {
+    if (scratch != nullptr) {
+        EQ_DX_CHECK_ALIVE(cmd.internal.device, scratch->internal.id, "buffer");
+    }
     execute(cmd, kind, records, offset, maxCount, count, countOffset, true, "cmdExecuteIndirectWithRootData");
 }
 
