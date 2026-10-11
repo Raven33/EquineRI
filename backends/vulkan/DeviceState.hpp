@@ -28,7 +28,9 @@ struct DeviceState {
     PFN_vkSetDebugUtilsObjectNameEXT setObjectName = nullptr;
     PFN_vkCmdBeginDebugUtilsLabelEXT beginLabel = nullptr;
     PFN_vkCmdEndDebugUtilsLabelEXT endLabel = nullptr;
-    bool faultEnabled = false; // VK_EXT_device_fault (validation builds, P53 (2))
+    bool faultEnabled = false;
+    uint32 depthResolveModes = 0; // DeviceLimits copies (P76), for checks while recording
+    uint32 stencilResolveModes = 0; // VK_EXT_device_fault (validation builds, P53 (2))
     uint32 graphicsQueueFamily = 0;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
 

@@ -121,6 +121,52 @@ constexpr VkPipelineStageFlags2 kDepthStages =
     VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
 constexpr VkAccessFlags2 kAllAccess = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
 
+// Resolves (P52, P76): they write the target in the attachment stages.
+constexpr VkPipelineStageFlags2 kResolveStages =
+    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+constexpr VkAccessFlags2 kResolveAccess =
+    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+VkResolveModeFlagBits resolveModeOf(ResolveMode mode) {
+    switch (mode) {
+    case ResolveMode::eAverage: return VK_RESOLVE_MODE_AVERAGE_BIT;
+    case ResolveMode::eMin: return VK_RESOLVE_MODE_MIN_BIT;
+    case ResolveMode::eMax: return VK_RESOLVE_MODE_MAX_BIT;
+    case ResolveMode::eSampleZero: return VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+    }
+    return VK_RESOLVE_MODE_AVERAGE_BIT;
+}
+
+[[maybe_unused]] Validation::ResolveCheck resolveCheckOf(const DeviceState &state, const TextureView &src,
+                                                         const TextureView &dst, ResolveMode mode) {
+    const TextureUsage attachment = isDepthFormat(dst.format) ? TextureUsage::eDepthStencil : TextureUsage::eRenderTarget;
+    return {.srcSamples = src.samples,
+            .dstSamples = dst.samples,
+            .srcWidth = src.width,
+            .srcHeight = src.height,
+            .srcLayers = src.internal.layerCount,
+            .dstWidth = dst.width,
+            .dstHeight = dst.height,
+            .dstLayers = dst.internal.layerCount,
+            .srcFormat = src.format,
+            .dstFormat = dst.format,
+            .dstHasAttachmentUsage = (dst.internal.textureUsage & attachment) != TextureUsage::eNone,
+            .mode = mode,
+            .depthModes = state.depthResolveModes,
+            .stencilModes = state.stencilResolveModes};
+}
+
+// The switch of a resolve target into `layout` before the section: its old
+// contents are replaced.
+VkImageMemoryBarrier2 resolveTargetIn(const TextureView &view, VkImageLayout layout) {
+    return imageBarrier(view, {.srcStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                               .srcAccess = VK_ACCESS_2_NONE,
+                               .dstStage = kResolveStages,
+                               .dstAccess = kResolveAccess,
+                               .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                               .newLayout = layout});
+}
+
 uint64 completedValue(DeviceState &state) {
     uint64 value = 0;
     checkQueueVk(state, state.functions.vkGetSemaphoreCounterValue(state.device, state.timeline, &value),
@@ -338,6 +384,20 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
                           .clearValue = clear});
         cover(a.view);
         cmd.internal.colors[i] = a.view;
+        cmd.internal.resolves[i] = {};
+        if (a.resolveTo.format != Format::eUndefined) {
+            EQ_VK_CHECK_ALIVE(&state, a.resolveTo.internal.textureId, "texture");
+#if EQUINE_VALIDATION
+            EQ_VALIDATE(Validation::checkDiscarded(state.placements, a.resolveTo.internal.textureId, "cmdBeginRendering"));
+#endif
+            EQ_VALIDATE(Validation::checkResolve(resolveCheckOf(state, a.view, a.resolveTo, a.resolveMode),
+                                                 "cmdBeginRendering"));
+            barriers.push_back(resolveTargetIn(a.resolveTo, layout));
+            colors.back().resolveMode = resolveModeOf(a.resolveMode);
+            colors.back().resolveImageView = native(a.resolveTo);
+            colors.back().resolveImageLayout = layout;
+            cmd.internal.resolves[i] = a.resolveTo;
+        }
     }
     cmd.internal.colorCount = static_cast<uint32>(desc.colors.size());
 
@@ -378,6 +438,22 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
                      .loadOp = loadOf(d.load),
                      .storeOp = storeOf(d.store, d.depthReadOnly),
                      .clearValue = clear};
+        cmd.internal.depthResolve = {};
+        if (d.resolveTo.format != Format::eUndefined) {
+            EQ_VK_CHECK_ALIVE(&state, d.resolveTo.internal.textureId, "texture");
+#if EQUINE_VALIDATION
+            EQ_VALIDATE(Validation::checkDiscarded(state.placements, d.resolveTo.internal.textureId, "cmdBeginRendering"));
+#endif
+            EQ_VALIDATE(Validation::checkResolve(resolveCheckOf(state, d.view, d.resolveTo, d.resolveMode),
+                                                 "cmdBeginRendering"));
+            const VkImageLayout resolveLayout =
+                state.layoutMode == LayoutMode::eTransitions ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+            barriers.push_back(resolveTargetIn(d.resolveTo, resolveLayout));
+            depthInfo.resolveMode = resolveModeOf(d.resolveMode);
+            depthInfo.resolveImageView = native(d.resolveTo);
+            depthInfo.resolveImageLayout = resolveLayout;
+            cmd.internal.depthResolve = d.resolveTo;
+        }
         stencilInfo = depthInfo;
         stencilInfo.loadOp = loadOf(d.stencilLoad);
         stencilInfo.storeOp = storeOf(d.stencilStore, d.stencilReadOnly);
@@ -442,10 +518,28 @@ void cmdEndRendering(CommandList &cmd) {
                                                 .oldLayout = static_cast<VkImageLayout>(cmd.internal.depthLayout),
                                                 .newLayout = static_cast<VkImageLayout>(depth.internal.restingLayout)}));
     }
+    // Resolve targets back to rest: exact src half on the resolve, full dst half.
+    const auto resolveBack = [&](const TextureView &view, VkImageLayout layout) {
+        if (view.internal.view != 0 && layout != static_cast<VkImageLayout>(view.internal.restingLayout)) {
+            barriers.push_back(imageBarrier(view, {.srcStage = kResolveStages,
+                                                   .srcAccess = kResolveAccess,
+                                                   .dstStage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                   .dstAccess = kAllAccess,
+                                                   .oldLayout = layout,
+                                                   .newLayout = static_cast<VkImageLayout>(view.internal.restingLayout)}));
+        }
+    };
+    for (uint32 i = 0; i < cmd.internal.colorCount; ++i) {
+        resolveBack(cmd.internal.resolves[i],
+                    transitions ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL);
+    }
+    resolveBack(cmd.internal.depthResolve, transitions ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL);
     pipelineBarrier(cmd, barriers);
     for (uint32 i = 0; i < cmd.internal.colorCount; ++i) {
         cmd.internal.colors[i] = {};
+        cmd.internal.resolves[i] = {};
     }
+    cmd.internal.depthResolve = {};
     cmd.internal.colorCount = 0;
     cmd.internal.depth = {};
     cmd.internal.rendering = false;
@@ -790,6 +884,22 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
     switchForCopy(barriers, src, false, true);
     switchForCopy(barriers, dst, true, true);
     pipelineBarrier(cmd, barriers);
+}
+
+// ── Resolve (P52, P76) ───────────────────────────────────────────────────────
+
+// An empty rendering section whose attachment resolves into `dst`: Vulkan's
+// resolve command handles color averages only, sections handle every mode.
+void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolve"));
+    RenderingDesc desc;
+    if (isDepthFormat(src.format)) {
+        desc.depth = DepthAttachment{.view = src, .resolveTo = dst, .resolveMode = mode};
+    } else {
+        desc.colors = {{.view = src, .resolveTo = dst, .resolveMode = mode}};
+    }
+    cmdBeginRendering(cmd, desc);
+    cmdEndRendering(cmd);
 }
 
 // ── Submission (P20) ─────────────────────────────────────────────────────────

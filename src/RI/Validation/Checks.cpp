@@ -193,4 +193,38 @@ CheckResult checkIndexBuffer(bool hasUsage, uint64 offset, uint32 indexSize, uin
     return {};
 }
 
+CheckResult checkResolve(const ResolveCheck &r, std::string_view call) {
+    if (r.srcSamples < 2 || r.dstSamples != 1) {
+        return std::format("{}: a resolve goes from a multisampled view into a single-sampled one ({} and {} samples)",
+                           call, r.srcSamples, r.dstSamples);
+    }
+    if (r.srcWidth != r.dstWidth || r.srcHeight != r.dstHeight || r.srcLayers != r.dstLayers) {
+        return std::format("{}: the resolve source is {}x{} with {} layer(s), the destination {}x{} with {}; they "
+                           "must match",
+                           call, r.srcWidth, r.srcHeight, r.srcLayers, r.dstWidth, r.dstHeight, r.dstLayers);
+    }
+    if (r.srcFormat != r.dstFormat) {
+        return std::format("{}: the resolve source and destination formats differ", call);
+    }
+    if (!r.dstHasAttachmentUsage) {
+        return std::format("{}: the resolve destination needs TextureUsage::{}", call,
+                           isDepthFormat(r.dstFormat) ? "eDepthStencil" : "eRenderTarget");
+    }
+    if (!isDepthFormat(r.srcFormat)) {
+        const bool integer = r.srcFormat == Format::eR32Uint || r.srcFormat == Format::eRG32Uint ||
+                             r.srcFormat == Format::eRGBA32Uint;
+        if (r.mode != ResolveMode::eAverage || integer) {
+            return std::format("{}: color resolves average, and only non-integer formats (P76)", call);
+        }
+        return {};
+    }
+    if ((r.depthModes & resolveModeBit(r.mode)) == 0 ||
+        (hasStencil(r.srcFormat) && (r.stencilModes & resolveModeBit(r.mode)) == 0)) {
+        return std::format("{}: this resolve mode is not supported for this depth format on this GPU "
+                           "(DeviceLimits::depthResolveModes, stencilResolveModes; P76)",
+                           call);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

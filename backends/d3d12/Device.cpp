@@ -180,6 +180,18 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     const bool meshShaders =
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))) &&
         options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
+    // Depth and stencil resolves (P76): ResolveSubresourceRegion takes depth
+    // formats with programmable sample positions tier 2, with min, max and
+    // average for depth and min and max for stencil. No sample-zero mode.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2{};
+    const bool depthResolve =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))) &&
+        options2.ProgrammableSamplePositionsTier >= D3D12_PROGRAMMABLE_SAMPLE_POSITIONS_TIER_2;
+    state->depthResolveModes = depthResolve ? resolveModeBit(ResolveMode::eAverage) | resolveModeBit(ResolveMode::eMin) |
+                                                  resolveModeBit(ResolveMode::eMax)
+                                            : 0;
+    state->stencilResolveModes =
+        depthResolve ? resolveModeBit(ResolveMode::eMin) | resolveModeBit(ResolveMode::eMax) : 0;
 
     // Resource binding tier 3 and the root signature's 64-DWORD budget (P44).
     device.limits = {
@@ -189,6 +201,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .gpuUploadMemory = state->gpuUploadHeap,
         .timestampFrequency = timestampFrequency,
         .meshShaders = meshShaders,
+        .depthResolveModes = state->depthResolveModes,
+        .stencilResolveModes = state->stencilResolveModes,
     };
 
     device.graphicsQueue.internal.device = state;

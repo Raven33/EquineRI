@@ -74,6 +74,22 @@ CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stenci
 // of the index size.
 CheckResult checkIndexBuffer(bool hasUsage, uint64 offset, uint32 indexSize, uint64 bufferSize);
 
+// A resolve (P52, P76) from `src` into `dst`: a multisampled source, a
+// single-sampled destination of the same size, layers and format, the
+// destination's attachment usage, a supported mode (color: eAverage on a
+// non-integer format; depth/stencil: in `depthModes`, and `stencilModes`
+// when the format has stencil).
+struct ResolveCheck {
+    uint32 srcSamples, dstSamples;
+    uint32 srcWidth, srcHeight, srcLayers;
+    uint32 dstWidth, dstHeight, dstLayers;
+    Format srcFormat, dstFormat;
+    bool dstHasAttachmentUsage;
+    ResolveMode mode;
+    uint32 depthModes, stencilModes;
+};
+CheckResult checkResolve(const ResolveCheck &r, std::string_view call);
+
 // cmdEndMarker closes an open marker region (P53); `depth` is the open count.
 CheckResult checkMarkerEnd(uint32 depth);
 // cmdEnd: every marker region opened in the command list is closed.

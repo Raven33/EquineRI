@@ -213,6 +213,10 @@ struct ColorAttachment {
     LoadOp load = LoadOp::eLoad;
     StoreOp store = StoreOp::eStore;
     ClearValue clear;
+    // Resolve into this single-sampled view at cmdEndRendering (P52); a view
+    // with format eUndefined (the default): no resolve.
+    TextureView resolveTo;
+    ResolveMode resolveMode = ResolveMode::eAverage;
 };
 
 struct DepthAttachment {
@@ -224,6 +228,10 @@ struct DepthAttachment {
     ClearValue clear; // depth and stencil
     bool depthReadOnly = false;   // shaders may sample it during the section if it has eReadOnlyDepthSampling (P75, P97)
     bool stencilReadOnly = false;
+    // Resolve into this single-sampled view at cmdEndRendering (P52, P76),
+    // depth and stencil with the same mode; format eUndefined: no resolve.
+    TextureView resolveTo;
+    ResolveMode resolveMode = ResolveMode::eMin;
 };
 
 // A rendering section. The viewport and scissor cover the attachments.
@@ -270,6 +278,8 @@ struct CommandList {
         uint32 colorCount = 0;
         TextureView colors[8];
         TextureView depth;
+        TextureView resolves[8]; // resolve targets of the open section (P52)
+        TextureView depthResolve;
         uint32 depthLayout = 0; // VkImageLayout used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
         uint64 id = 0;
@@ -318,6 +328,11 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
 void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset);
 // Same size, layer count, sample count and texel size.
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst);
+
+// Resolves a multisampled view into a single-sampled one (P52, P76), outside
+// rendering sections. Counts as Stage::eRenderTarget (color) or
+// Stage::eDepthStencil (depth) for barriers.
+void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode);
 
 // Required before first use of a texture whose memory held another resource
 // (P69). A full-scope barrier.

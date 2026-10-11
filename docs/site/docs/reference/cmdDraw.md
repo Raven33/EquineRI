@@ -31,7 +31,10 @@ vertices make each primitive (and let the GPU reuse shaded vertices).
 **Mesh draws** (`device.limits.meshShaders`): with a mesh pipeline set,
 `RI::cmdDrawMesh(cmd, x, y, z)` launches `x * y * z` groups of the task shader, or of the mesh
 shader when the pipeline has none. Mesh shaders output vertices and primitives themselves
-(`SetMeshOutputCounts`); a task shader launches mesh groups with `DispatchMesh`.
+(`SetMeshOutputCounts`); a task shader launches mesh groups with `DispatchMesh`. The mesh
+shader's input payload must match the task shader's output payload exactly (D3D12 refuses the
+pipeline otherwise; Vulkan does not check), and a mesh shader without a task shader takes no
+payload.
 
 ## Signature
 
