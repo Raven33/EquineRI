@@ -351,9 +351,27 @@ void destroyPipeline(Device &device, Pipeline &pipeline) {
     auto *pso = static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState);
     auto *rootSignature = static_cast<ID3D12RootSignature *>(pipeline.internal.rootSignature);
     forgetCommandSignatures(state, rootSignature);
-    release(pso);
-    release(rootSignature);
+    if (!pipeline.internal.imported) { // P77: an imported pipeline stays the user's
+        release(pso);
+        release(rootSignature);
+    }
     pipeline = {};
+}
+
+// ── Import (P77) ─────────────────────────────────────────────────────────────
+
+Pipeline importPipeline(Device &device, ID3D12PipelineState *pipeline, ID3D12RootSignature *rootSignature,
+                        bool graphics, uint32 rootDataSize, D3D_PRIMITIVE_TOPOLOGY topology) {
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    Pipeline out;
+    out.rootDataSize = rootDataSize;
+    out.internal.pipelineState = pipeline;
+    out.internal.rootSignature = rootSignature;
+    out.internal.graphics = graphics;
+    out.internal.topology = static_cast<uint32>(topology);
+    out.internal.imported = true;
+    out.internal.id = EQ_DX_TRACK(&state);
+    return out;
 }
 
 } // namespace RI::D3D12

@@ -59,6 +59,7 @@ struct Memory {
     struct {
         void *heap = nullptr;      // ID3D12Heap
         void *mapBuffer = nullptr; // ID3D12Resource over the whole heap, for mapping (CPU kinds)
+        bool imported = false;     // P77: RI holds no reference
         uint64 id = 0;             // validation builds: use-after-free tracking (P91)
     } internal;
 };
@@ -76,6 +77,7 @@ struct Buffer {
     void *mapped = nullptr; // memory.mapped + offset, or nullptr for eGPU memory
     struct {
         void *resource = nullptr; // ID3D12Resource
+        bool imported = false;    // P77: RI holds no reference
         uint64 id = 0;
     } internal;
 };
@@ -121,6 +123,7 @@ struct Texture {
     TextureView view; // the whole texture, in its own format
     struct {
         void *resource = nullptr; // ID3D12Resource
+        bool imported = false;    // P77: RI holds no reference
         uint32 restingLayout = 0;
         uint64 viewFormats = 0;   // bit per RI::Format a view may use (P74)
         uint64 id = 0;
@@ -256,6 +259,7 @@ struct Pipeline {
         bool graphics = false;
         bool depthWrite = false; // checked against read-only depth sections (P75)
         uint32 topology = 0;     // D3D_PRIMITIVE_TOPOLOGY
+        bool imported = false;   // P77: RI holds no reference
         bool stencil = false;    // the stencil test is on: cmdSetPipeline sets the reference
         uint8 stencilReference = 0;
         uint64 id = 0;
@@ -293,6 +297,15 @@ struct CommandList {
         ResolveMode depthResolveMode = ResolveMode::eMin;
         uint32 depthLayout = 0; // D3D12_BARRIER_LAYOUT used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
+        // Restored by endNative (P70): the last pipeline per bind point, the
+        // last root data, the topology and the open section's size.
+        void *pipelineState[2] = {nullptr, nullptr};
+        uint32 topology = 0;
+        uint8 rootData[256] = {};
+        uint32 rootDataBytes = 0;
+        bool rootDataGraphics = false;
+        uint32 renderWidth = 0, renderHeight = 0;
+        bool native = false;
         uint64 id = 0;
     } internal;
 };

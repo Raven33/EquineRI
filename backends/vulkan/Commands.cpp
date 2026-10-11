@@ -716,8 +716,7 @@ uint32 copyBytesOf(const TextureView &view) {
 
 uint64 roundUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
 
-void checkCopy(const TextureView &view, bool bufferCopy, TextureUsage usage, std::string_view usageName,
-               std::string_view call) {
+void checkCopy([[maybe_unused]] const TextureView &view, [[maybe_unused]] bool bufferCopy, [[maybe_unused]] TextureUsage usage, [[maybe_unused]] std::string_view usageName, [[maybe_unused]] std::string_view call) {
     EQ_VALIDATE(Validation::checkCopyView(view.internal.mipCount, view.samples, bufferCopy, copyBytesOf(view),
                                           (view.internal.textureUsage & usage) != TextureUsage::eNone, usageName,
                                           call));
@@ -768,8 +767,7 @@ void switchForCopy(std::vector<VkImageMemoryBarrier2> &barriers, const TextureVi
     }
 }
 
-void checkBufferCopyRange(const Buffer &buffer, uint64 offset, const CopyLayout &layout, BufferUsage usage,
-                          std::string_view call) {
+void checkBufferCopyRange([[maybe_unused]] const Buffer &buffer, [[maybe_unused]] uint64 offset, [[maybe_unused]] const CopyLayout &layout, [[maybe_unused]] BufferUsage usage, [[maybe_unused]] std::string_view call) {
     EQ_VALIDATE(Validation::checkRange(offset, layout.size, buffer.size, layout.alignment,
                                        std::format("{}: the texels in the buffer", call)));
     if ((buffer.usage & usage) == BufferUsage::eNone) {
@@ -870,7 +868,7 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
 }
 
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
-    DeviceState &state = *cmd.internal.device;
+    [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_VK_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTexture"));

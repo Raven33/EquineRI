@@ -16,8 +16,7 @@ namespace {
 
 const VolkDeviceTable &fn(const CommandList &cmd) { return cmd.internal.device->functions; }
 
-void checkIndirectCall(const CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,
-                       const Buffer *count, uint64 countOffset, uint32 stride, bool level2, std::string_view call) {
+void checkIndirectCall([[maybe_unused]] const CommandList &cmd, [[maybe_unused]] IndirectKind kind, [[maybe_unused]] const Buffer &args, [[maybe_unused]] uint64 offset, [[maybe_unused]] uint32 maxCount, [[maybe_unused]] const Buffer *count, [[maybe_unused]] uint64 countOffset, [[maybe_unused]] uint32 stride, [[maybe_unused]] bool level2, [[maybe_unused]] std::string_view call) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, args.internal.id, "buffer");
     if (count != nullptr) {
         EQ_VK_CHECK_ALIVE(cmd.internal.device, count->internal.id, "buffer");

@@ -8,6 +8,8 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
+#include <span>
+
 namespace RI::D3D12 {
 
 // Borrowed pointers: RI keeps its references; AddRef to keep one longer.
@@ -68,5 +70,49 @@ struct NativeDeviceAdditions {
 };
 
 Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additions);
+
+// ── Native sections (P27, P70) ────────────────────────────────────────────────
+
+// Native commands in the middle of an RI command list. Textures are in their
+// resting layouts (native(texture).restingLayout) on entry.
+struct NativeCommands {
+    ID3D12GraphicsCommandList7 *list = nullptr;
+};
+NativeCommands beginNative(CommandList &cmd);
+
+// A texture native code left in another layout than its resting one (P27).
+struct NativeLayoutChange {
+    TextureView view;
+    D3D12_BARRIER_LAYOUT layout = D3D12_BARRIER_LAYOUT_UNDEFINED;
+};
+// Ends the native section: switches the listed textures back to rest (full
+// barriers on both halves) and restores everything RI set (P70): descriptor
+// heaps, root signatures, the last pipelines and root data, the topology, and
+// inside a rendering section the viewport and scissor. Inside a rendering
+// section the list must be empty, and native code must not change attachments.
+void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed = {});
+
+// ── Import (P77) ──────────────────────────────────────────────────────────────
+// Natively created objects as RI objects. RI holds no reference and releases
+// nothing: destroying the RI object only forgets it (RI's own descriptors for
+// an imported texture are freed). Keep the native object alive meanwhile.
+
+// `mapped`: a CPU address for the whole heap, or nullptr (then RI buffers
+// placed in it have no CPU address).
+Memory importMemory(Device &device, ID3D12Heap *heap, MemoryKind kind, uint64 size, void *mapped);
+Buffer importBuffer(Device &device, ID3D12Resource *buffer, const BufferDesc &desc, void *mapped);
+// A 2D texture matching `desc`, with the resource flags RI gives `desc.usage`
+// (ALLOW_RENDER_TARGET, ALLOW_DEPTH_STENCIL, ALLOW_UNORDERED_ACCESS). Before RI
+// first uses it, bring it into native(texture).restingLayout yourself.
+Texture importTexture(Device &device, ID3D12Resource *texture, const TextureDesc &desc);
+// A pipeline whose root signature is RI's kind: root parameter 0 the root
+// constants (b0, space999) of rootDataSize bytes, heaps directly indexed.
+Pipeline importPipeline(Device &device, ID3D12PipelineState *pipeline, ID3D12RootSignature *rootSignature,
+                        bool graphics, uint32 rootDataSize,
+                        D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+// Copies a native descriptor from a CPU (non-shader-visible) heap into heap
+// slot `slot` (P77 (2)), for view types RI does not model.
+void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, D3D12_CPU_DESCRIPTOR_HANDLE source);
 
 } // namespace RI::D3D12

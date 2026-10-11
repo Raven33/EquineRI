@@ -6,9 +6,7 @@
 #include "VkCheck.hpp"
 
 #include <RI/Error.hpp>
-#if EQUINE_VALIDATION
 #include <RI/Validation/Checks.hpp>
-#endif
 
 #include <format>
 #include <string>
