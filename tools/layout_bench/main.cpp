@@ -377,6 +377,13 @@ void recordRI(Workload &w, RI::CommandList &cmd, const Pass &pass, const Pass *p
     if (previous != nullptr) {
         RI::cmdBarrier(cmd, stageOf(*previous), stageOf(pass));
     }
+    // A storage texture the pass overwrites: the baseline starts it from
+    // UNDEFINED, and RI says the same with cmdDiscard (P69; harness v4).
+    for (const Use &use : pass.uses) {
+        if (use.role == Role::eStorage && use.discard) {
+            RI::cmdDiscard(cmd, w.textures[use.texture].texture.view);
+        }
+    }
     if (pass.kind == PassKind::eCompute) {
         RI::cmdWriteTimestamp(cmd, *stamp.pool, stamp.start);
         pass.record(cmd);
