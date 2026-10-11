@@ -423,6 +423,7 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
     out.internal.baseLayer = desc.baseLayer;
     out.internal.layerCount = layerCount;
     out.internal.restingLayout = texture.internal.restingLayout;
+    out.internal.textureUsage = texture.usage;
     out.internal.textureId = texture.internal.id;
     return out;
 }

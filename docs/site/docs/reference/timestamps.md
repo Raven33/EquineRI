@@ -11,8 +11,9 @@ The recorded half of [timestamps](../concepts/timestamps.md)
 
 - `RI::cmdWriteTimestamp(cmd, pool, index)` writes the GPU's tick count into query `index`
   once every earlier command has finished. Allowed inside and outside rendering sections;
-- `RI::cmdResolveQueries(cmd, pool, first, count, buffer, offset)` copies `count` results, one
-  64-bit value each, to `buffer` at `offset`. It waits for the queries to be written, and never
+- `RI::cmdResolveQueries(cmd, pool, first, count, buffer, offset)` copies `count` results to
+  `buffer` at `offset`: one 64-bit value each for timestamps and occlusion, and
+  [`pipelineStatisticsLayout(device).size`](queries.md) bytes each for statistics. It waits for the queries to be written, and never
   resets them;
 - `RI::cmdResetQueries(cmd, pool, first, count)` resets queries in the command list, to write
   them again later in the same list. Most programs reset on the CPU instead, with

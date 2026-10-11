@@ -43,7 +43,6 @@ std::vector<char> loadDxil(const char *path) {
     return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 }
 
-UINT64 alignUp(UINT64 value, UINT64 alignment) { return (value + alignment - 1) / alignment * alignment; }
 
 // --8<-- [start:texture-desc-function]
 // A 2D texture description. Flags say what else than sampling it allows.

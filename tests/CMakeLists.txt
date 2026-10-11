@@ -85,6 +85,9 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.clear_commands
     texture.discard_after_aliasing
     texture.timestamps
+    texture.copy_round_trip
+    texture.copy_depth_upload
+    texture.occlusion_and_statistics
     texture.unlisted_view_format_reports
 )
 set(EQUINE_GPU_SHARED_ABORT_TESTS
@@ -100,6 +103,7 @@ if (EQUINE_VALIDATION)
         texture.depth_write_in_read_only_section_reports
         texture.missing_discard_reports
         texture.read_only_depth_sampling_on_color_reports
+        texture.copy_without_usage_reports
     )
     list(APPEND EQUINE_GPU_SHARED_ABORT_TESTS
         "compute.root_data_size_mismatch_reports|programmer error: root data is 8 bytes, but the pipeline's shader declares 20 bytes"
@@ -109,6 +113,7 @@ if (EQUINE_VALIDATION)
         "compute.unclosed_marker_reports|programmer error: cmdEnd: 1 marker region(s) left open"
         "texture.depth_write_in_read_only_section_reports|programmer error: cmdSetPipeline: the pipeline writes depth"
         "texture.missing_discard_reports|programmer error: cmdBeginRendering: the texture was placed over memory"
+        "texture.copy_without_usage_reports|programmer error: cmdCopyTextureToBuffer: the texture needs TextureUsage::eCopySrc"
         "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
     )
 endif()

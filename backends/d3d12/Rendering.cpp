@@ -10,6 +10,7 @@
 
 #include <RI/D3D12/Native.hpp>
 #include <RI/Error.hpp>
+#include <RI/Validation/Checks.hpp>
 #include <RI/Validation/Placement.hpp>
 
 #include <algorithm>
@@ -305,10 +306,45 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
     restoreUserState(cmd);
 }
 
-// ── Timestamps (P51, P71) ────────────────────────────────────────────────────
+// ── Queries (P51, P71) ───────────────────────────────────────────────────────
+
+namespace {
+
+D3D12_QUERY_TYPE queryTypeOf(QueryType type) {
+    switch (type) {
+    case QueryType::eOcclusion: return D3D12_QUERY_TYPE_OCCLUSION;
+    case QueryType::ePipelineStatistics: return D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
+    default: return D3D12_QUERY_TYPE_TIMESTAMP;
+    }
+}
+
+uint64 resultSizeOf(QueryType type) {
+    return type == QueryType::ePipelineStatistics ? sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS) : 8;
+}
+
+ID3D12QueryHeap *heapOf(const QueryPool &pool) { return static_cast<ID3D12QueryHeap *>(pool.internal.heap); }
+
+} // namespace
 
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
-    list(cmd)->EndQuery(static_cast<ID3D12QueryHeap *>(pool.internal.heap), D3D12_QUERY_TYPE_TIMESTAMP, index);
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkQueryKind(pool.type == QueryType::eTimestamp, "cmdWriteTimestamp"));
+    EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdWriteTimestamp: the query"));
+    list(cmd)->EndQuery(heapOf(pool), D3D12_QUERY_TYPE_TIMESTAMP, index);
+}
+
+void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdBeginQuery"));
+    EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdBeginQuery: the query"));
+    list(cmd)->BeginQuery(heapOf(pool), queryTypeOf(pool.type), index);
+}
+
+void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdEndQuery"));
+    EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdEndQuery: the query"));
+    list(cmd)->EndQuery(heapOf(pool), queryTypeOf(pool.type), index);
 }
 
 // D3D12 query heaps need no reset (P71 (1)).
@@ -316,8 +352,159 @@ void cmdResetQueries(CommandList &, const QueryPool &, uint32, uint32) {}
 
 void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
                        uint64 offset) {
-    list(cmd)->ResolveQueryData(static_cast<ID3D12QueryHeap *>(pool.internal.heap), D3D12_QUERY_TYPE_TIMESTAMP, first,
-                                count, static_cast<ID3D12Resource *>(buffer.internal.resource), offset);
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolveQueries"));
+    EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "cmdResolveQueries: the query range"));
+    EQ_VALIDATE(Validation::checkRange(offset, uint64{count} * resultSizeOf(pool.type), buffer.size, 8,
+                                       "cmdResolveQueries: the results in the buffer"));
+    if ((buffer.usage & BufferUsage::eCopyDst) == BufferUsage::eNone) {
+        reportError(ErrorCategory::eProgrammerError, "cmdResolveQueries: the buffer needs BufferUsage::eCopyDst");
+    }
+    list(cmd)->ResolveQueryData(heapOf(pool), queryTypeOf(pool.type), first, count,
+                                static_cast<ID3D12Resource *>(buffer.internal.resource), offset);
+}
+
+// ── Copies (P47) ─────────────────────────────────────────────────────────────
+
+namespace {
+
+uint32 copyBytesOf(const TextureView &view) {
+    if (view.internal.planes == 3) {
+        return 0; // one aspect at a time
+    }
+    return copyBytesPerTexel(view.format, view.internal.planes == 2 ? Aspect::eStencil : Aspect::eDefault);
+}
+
+uint64 roundUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
+
+void checkCopy(const TextureView &view, bool bufferCopy, TextureUsage usage, std::string_view usageName,
+               std::string_view call) {
+    EQ_VALIDATE(Validation::checkCopyView(view.internal.mipCount, view.samples, bufferCopy, copyBytesOf(view),
+                                          (view.internal.textureUsage & usage) != TextureUsage::eNone, usageName,
+                                          call));
+}
+
+ID3D12Resource *resourceOf(const TextureView &view) { return static_cast<ID3D12Resource *>(view.internal.resource); }
+
+// The subresource of `layer` (counted from the view's first layer).
+UINT subresourceOf(const TextureView &view, uint32 layer) {
+    const UINT plane = view.internal.planes == 2 ? 1 : 0;
+    return view.internal.baseMip + (view.internal.baseLayer + layer) * view.internal.textureMips +
+           plane * view.internal.textureMips * view.internal.textureLayers;
+}
+
+// One layer's placed footprint at `offset`, as D3D12 describes it.
+D3D12_TEXTURE_COPY_LOCATION bufferLocation(ID3D12Device *device, const TextureView &view, uint32 layer,
+                                           ID3D12Resource *buffer, uint64 offset, const CopyLayout &layout) {
+    const D3D12_RESOURCE_DESC desc = resourceOf(view)->GetDesc();
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+    device->GetCopyableFootprints(&desc, subresourceOf(view, layer), 1, 0, &footprint, nullptr, nullptr, nullptr);
+    footprint.Offset = offset + layer * layout.layerPitch;
+    footprint.Footprint.RowPitch = static_cast<UINT>(layout.rowPitch);
+    D3D12_TEXTURE_COPY_LOCATION location{.pResource = buffer, .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
+    location.PlacedFootprint = footprint;
+    return location;
+}
+
+D3D12_TEXTURE_COPY_LOCATION textureLocation(const TextureView &view, uint32 layer) {
+    D3D12_TEXTURE_COPY_LOCATION location{.pResource = resourceOf(view),
+                                         .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX};
+    location.SubresourceIndex = subresourceOf(view, layer);
+    return location;
+}
+
+void checkBufferCopyRange(const Buffer &buffer, uint64 offset, const CopyLayout &layout, BufferUsage usage,
+                          std::string_view call) {
+    EQ_VALIDATE(Validation::checkRange(offset, layout.size, buffer.size, layout.alignment,
+                                       std::format("{}: the texels in the buffer", call)));
+    if ((buffer.usage & usage) == BufferUsage::eNone) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("{}: the buffer needs BufferUsage::{}", call,
+                                usage == BufferUsage::eCopySrc ? "eCopySrc" : "eCopyDst"));
+    }
+}
+
+} // namespace
+
+// Rows on D3D12's 256-byte pitch, layers on its 512-byte placement alignment.
+CopyLayout copyLayout(Device & /*device*/, const TextureView &view) {
+    CopyLayout layout;
+    layout.width = view.width;
+    layout.height = view.height;
+    layout.layers = view.internal.layerCount;
+    layout.bytesPerTexel = copyBytesOf(view);
+    if (layout.bytesPerTexel == 0) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "copyLayout: the view has both depth and stencil; copies take one aspect (P47)");
+    }
+    layout.alignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+    layout.rowPitch = roundUp(uint64{layout.width} * layout.bytesPerTexel, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+    const uint64 layerBytes = layout.rowPitch * layout.height;
+    layout.layerPitch = roundUp(layerBytes, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+    layout.size = layout.layerPitch * (layout.layers - 1) + layerBytes;
+    return layout;
+}
+
+// Textures with copy usage rest in DIRECT_QUEUE_COMMON (L1), which allows
+// copies: no layout switch.
+void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_DX_CHECK_ALIVE(&state, src.internal.id, "buffer");
+    EQ_DX_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyBufferToTexture"));
+#if EQUINE_VALIDATION
+    EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdCopyBufferToTexture"));
+#endif
+    checkCopy(dst, true, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyBufferToTexture");
+    Device device{.internal = {.state = &state}};
+    const CopyLayout layout = copyLayout(device, dst);
+    checkBufferCopyRange(src, srcOffset, layout, BufferUsage::eCopySrc, "cmdCopyBufferToTexture");
+    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+        const D3D12_TEXTURE_COPY_LOCATION to = textureLocation(dst, layer);
+        const D3D12_TEXTURE_COPY_LOCATION from =
+            bufferLocation(state.device, dst, layer, static_cast<ID3D12Resource *>(src.internal.resource), srcOffset,
+                           layout);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+    }
+}
+
+void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
+    EQ_DX_CHECK_ALIVE(&state, dst.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTextureToBuffer"));
+    checkCopy(src, true, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTextureToBuffer");
+    Device device{.internal = {.state = &state}};
+    const CopyLayout layout = copyLayout(device, src);
+    checkBufferCopyRange(dst, dstOffset, layout, BufferUsage::eCopyDst, "cmdCopyTextureToBuffer");
+    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+        const D3D12_TEXTURE_COPY_LOCATION to =
+            bufferLocation(state.device, src, layer, static_cast<ID3D12Resource *>(dst.internal.resource), dstOffset,
+                           layout);
+        const D3D12_TEXTURE_COPY_LOCATION from = textureLocation(src, layer);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+    }
+}
+
+void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
+    DeviceState &state = *cmd.internal.device;
+    EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
+    EQ_DX_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTexture"));
+#if EQUINE_VALIDATION
+    EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdCopyTexture"));
+#endif
+    checkCopy(src, false, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTexture");
+    checkCopy(dst, false, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyTexture");
+    EQ_VALIDATE(Validation::checkCopyTextureMatch(src.width, src.height, src.internal.layerCount, src.samples,
+                                                  copyBytesOf(src), dst.width, dst.height, dst.internal.layerCount,
+                                                  dst.samples, copyBytesOf(dst)));
+    for (uint32 layer = 0; layer < src.internal.layerCount; ++layer) {
+        const D3D12_TEXTURE_COPY_LOCATION to = textureLocation(dst, layer);
+        const D3D12_TEXTURE_COPY_LOCATION from = textureLocation(src, layer);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+    }
 }
 
 } // namespace RI::D3D12

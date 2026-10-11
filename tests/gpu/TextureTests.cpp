@@ -10,6 +10,7 @@
 #include <RI/RI.hpp>
 
 #include <cmath>
+#include <cstdio>
 #include <csignal>
 #include <cstdlib>
 #include <vector>
@@ -499,5 +500,184 @@ EQ_TEST(texture, missing_discard_reports) {
     RI::destroyTexture(f.device, first);
     RI::Texture second = RI::createTexture(f.device, f.gpu.memory, offset, desc);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = second.view, .load = RI::LoadOp::eClear}}});
+}
+#endif
+
+namespace {
+
+// The value of byte `c` of texel (x, y) in `layer` for the copy tests.
+uint8 copyPattern(uint32 x, uint32 y, uint32 layer, uint32 c) { return static_cast<uint8>(x + y * 3 + layer * 7 + c * 11); }
+
+} // namespace
+
+// Buffer -> texture -> texture -> buffer, on one mip of a two-layer texture
+// (P47): the bytes come back where copyLayout says.
+EQ_TEST(texture, copy_round_trip) {
+    Fixture f;
+    const RI::TextureDesc desc{.width = 64,
+                               .height = 48,
+                               .layers = 2,
+                               .mips = 2,
+                               .format = RI::Format::eRGBA8Unorm,
+                               .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopySrc |
+                                        RI::TextureUsage::eCopyDst};
+    RI::Texture a = placeTexture(f.device, f.gpu, desc);
+    RI::Texture b = placeTexture(f.device, f.gpu, desc);
+    RI::TextureView aMip = RI::createView(f.device, a, {.baseMip = 1, .mipCount = 1});
+    RI::TextureView bMip = RI::createView(f.device, b, {.baseMip = 1, .mipCount = 1});
+    const RI::CopyLayout layout = RI::copyLayout(f.device, aMip);
+    EQ_CHECK(layout.width == 32 && layout.height == 24 && layout.layers == 2 && layout.bytesPerTexel == 4);
+    EQ_CHECK(layout.rowPitch >= 32 * 4 && layout.layerPitch >= layout.rowPitch * 24);
+    EQ_CHECK(layout.layerPitch % layout.alignment == 0);
+
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)};
+    RI::Buffer staging = placeBuffer(f.device, upload, {.size = layout.size, .usage = RI::BufferUsage::eCopySrc});
+    RI::Buffer back = placeBuffer(f.device, f.readback, {.size = layout.size, .usage = RI::BufferUsage::eCopyDst});
+    auto *bytes = static_cast<uint8 *>(staging.mapped);
+    for (uint32 layer = 0; layer < 2; ++layer) {
+        for (uint32 y = 0; y < 24; ++y) {
+            for (uint32 x = 0; x < 32; ++x) {
+                for (uint32 c = 0; c < 4; ++c) {
+                    bytes[layer * layout.layerPitch + y * layout.rowPitch + x * 4 + c] = copyPattern(x, y, layer, c);
+                }
+            }
+        }
+    }
+    RI::cmdCopyBufferToTexture(f.cmd, staging, 0, aMip);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, aMip, bMip);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTextureToBuffer(f.cmd, bMip, back, 0);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    const auto *out = static_cast<const uint8 *>(back.mapped);
+    uint32 wrong = 0;
+    for (uint32 layer = 0; layer < 2; ++layer) {
+        for (uint32 y = 0; y < 24; ++y) {
+            for (uint32 x = 0; x < 32; ++x) {
+                for (uint32 c = 0; c < 4; ++c) {
+                    wrong += out[layer * layout.layerPitch + y * layout.rowPitch + x * 4 + c] !=
+                             copyPattern(x, y, layer, c);
+                }
+            }
+        }
+    }
+    EQ_CHECK(wrong == 0);
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyBuffer(f.device, staging);
+    RI::destroyBuffer(f.device, back);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyView(f.device, aMip);
+    RI::destroyView(f.device, bMip);
+    RI::destroyTexture(f.device, a);
+    RI::destroyTexture(f.device, b);
+}
+
+// Depth values uploaded with a copy are what a shader then samples (P47).
+EQ_TEST(texture, copy_depth_upload) {
+    Fixture f;
+    RI::Texture depth = placeTexture(f.device, f.gpu,
+                                     {.width = kSize,
+                                      .height = kSize,
+                                      .format = RI::Format::eD32Float,
+                                      .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eDepthStencil |
+                                               RI::TextureUsage::eCopyDst});
+    const RI::CopyLayout layout = RI::copyLayout(f.device, depth.view);
+    EQ_CHECK(layout.bytesPerTexel == 4);
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)};
+    RI::Buffer staging = placeBuffer(f.device, upload, {.size = layout.size, .usage = RI::BufferUsage::eCopySrc});
+    auto *bytes = static_cast<uint8 *>(staging.mapped);
+    for (uint32 y = 0; y < kSize; ++y) {
+        auto *row = reinterpret_cast<float *>(bytes + y * layout.rowPitch);
+        for (uint32 x = 0; x < kSize; ++x) {
+            row[x] = 0.25f;
+        }
+    }
+    RI::cmdCopyBufferToTexture(f.cmd, staging, 0, depth.view);
+    const std::vector<float> texels = f.readBack(depth.view);
+    EQ_CHECK(all(texels, 0, 0.25f));
+    RI::destroyBuffer(f.device, staging);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyTexture(f.device, depth);
+}
+
+// Occlusion counts every covered sample; pipeline statistics count draws and
+// dispatches at the offsets pipelineStatisticsLayout gives (P71).
+EQ_TEST(texture, occlusion_and_statistics) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize,
+                                       .height = kSize,
+                                       .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs, ps;
+    RI::Pipeline pipeline = drawPipeline(f.device, RI::Format::eRGBA8Unorm, RI::Format::eUndefined, 1, false, vs, ps);
+    RI::QueryPool occlusion = RI::createQueryPool(f.device, {.type = RI::QueryType::eOcclusion, .count = 1});
+    RI::QueryPool statistics = RI::createQueryPool(f.device, {.type = RI::QueryType::ePipelineStatistics, .count = 2});
+    const RI::PipelineStatisticsLayout stats = RI::pipelineStatisticsLayout(f.device);
+    RI::Buffer results =
+        placeBuffer(f.device, f.readback, {.size = 8 + 2 * uint64{stats.size}, .usage = RI::BufferUsage::eCopyDst});
+
+    RI::cmdBeginQuery(f.cmd, statistics, 0);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdBeginQuery(f.cmd, occlusion, 0);
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndQuery(f.cmd, occlusion, 0);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdEndQuery(f.cmd, statistics, 0);
+
+    RI::writeDescriptors(f.device, f.heap, {{.slot = kTextureSlot, .descriptor = RI::ReadView{.texture = target.view}}});
+    RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCompute);
+    RI::cmdBeginQuery(f.cmd, statistics, 1);
+    RI::cmdSetPipeline(f.cmd, f.read);
+    RI::cmdSetRootData(f.cmd, ReadRoot{.textureSlot = kTextureSlot, .outputSlot = kOutputSlot, .width = kSize,
+                                       .height = kSize, .multisampled = 0, .sampleIndex = 0});
+    RI::cmdDispatch(f.cmd, kSize / 8, kSize / 8, 1);
+    RI::cmdEndQuery(f.cmd, statistics, 1);
+    RI::cmdResolveQueries(f.cmd, occlusion, 0, 1, results, 0);
+    RI::cmdResolveQueries(f.cmd, statistics, 0, 2, results, 8);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    const auto *base = static_cast<const uint8 *>(results.mapped);
+    const auto value = [&](uint64 offset) { return *reinterpret_cast<const uint64 *>(base + offset); };
+    EQ_CHECK(value(0) == kSize * kSize);
+    const uint64 draw = 8;
+    const uint64 dispatch = 8 + stats.size;
+    EQ_CHECK(value(draw + stats.vertexShaderInvocations) >= 3);
+    EQ_CHECK(value(draw + stats.inputPrimitives) == 1);
+    // How pixel-shader invocations are counted is up to the GPU: AMD counts
+    // 2x2 quads, so 1024 covered pixels may read 256.
+    EQ_CHECK(value(draw + stats.pixelShaderInvocations) >= kSize * kSize / 4);
+    EQ_CHECK(value(draw + stats.computeShaderInvocations) == 0);
+    EQ_CHECK(value(dispatch + stats.computeShaderInvocations) == kSize * kSize);
+    EQ_CHECK(value(dispatch + stats.pixelShaderInvocations) == 0);
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyQueryPool(f.device, occlusion);
+    RI::destroyQueryPool(f.device, statistics);
+    RI::destroyBuffer(f.device, results);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, target);
+}
+
+#if EQUINE_VALIDATION
+// A copy needs the texture's copy usage (P47).
+EQ_TEST(texture, copy_without_usage_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    Fixture f;
+    RI::Texture texture = placeTexture(f.device, f.gpu,
+                                       {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                        .usage = RI::TextureUsage::eSampled});
+    RI::Buffer back = placeBuffer(f.device, f.readback, {.size = 1 << 16, .usage = RI::BufferUsage::eCopyDst});
+    RI::cmdCopyTextureToBuffer(f.cmd, texture.view, back, 0);
 }
 #endif

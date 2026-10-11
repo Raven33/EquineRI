@@ -102,6 +102,7 @@ struct TextureView {
         uint32 planes = 1;         // bitmask of planes: 1 color/depth, 2 stencil
         uint32 restingLayout = 0;  // D3D12_BARRIER_LAYOUT the texture rests in (L1)
         uint32 textureMips = 1, textureLayers = 1;
+        TextureUsage textureUsage = TextureUsage::eNone; // checked by copies (P47)
         uint64 textureId = 0;      // validation builds (P91)
     } internal;
 };
@@ -207,6 +208,8 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc);
 void destroyQueryPool(Device &device, QueryPool &pool);
 // Resets queries on the CPU, after their results were read (P71 (1)). No GPU cost.
 void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count);
+// Where each counter is in a pipeline-statistics result (P71 (2)).
+PipelineStatisticsLayout pipelineStatisticsLayout(Device &device);
 
 // ── Rendering (P40, P52, P75) ────────────────────────────────────────────────
 
@@ -304,6 +307,14 @@ void cmdEndRendering(CommandList &cmd);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
 
+// Copies (P47). A texture view covers one mip (and one aspect of a depth
+// format); the buffer side follows copyLayout(). Copies count as Stage::eCopy.
+CopyLayout copyLayout(Device &device, const TextureView &view);
+void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst);
+void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset);
+// Same size, layer count, sample count and texel size.
+void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst);
+
 // Required before first use of a texture whose memory held another resource
 // (P69). A full-scope barrier.
 void cmdDiscard(CommandList &cmd, const TextureView &view);
@@ -315,7 +326,13 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value);
 // Timestamps (P51, P71).
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index);
 void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count);
-// Copies `count` 64-bit results to `buffer` at `offset` (a multiple of 8).
+// Occlusion and pipeline-statistics queries (P71): begin and end around the
+// commands to measure, in the same command list.
+void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index);
+void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index);
+// Copies `count` results to `buffer` at `offset` (a multiple of 8): one
+// 64-bit value per timestamp or occlusion query, pipelineStatisticsLayout().size
+// bytes per statistics query.
 void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
                        uint64 offset);
 

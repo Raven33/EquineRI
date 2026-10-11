@@ -45,6 +45,7 @@ bool isDepthFormat(Format format);
 bool hasStencil(Format format);
 uint32 bytesPerTexel(Format format); // 0 for depth-stencil formats
 
+
 // What a texture may be used for (P58). Also decides, inside each backend, the
 // layout the texture rests in between operations (L1, A').
 enum class TextureUsage : uint32 {
@@ -88,6 +89,11 @@ inline constexpr uint32 kAllMips = ~0u;
 inline constexpr uint32 kAllLayers = ~0u;
 
 // Part of a texture (P73): a mip range, a layer range, an aspect, a format.
+// Bytes per texel as copies read and write one aspect (P47): the color size,
+// 4 for depth (2 for eD16Unorm; 24-bit depth is padded to 4), 1 for stencil.
+// eDefault means color, or depth for depth formats.
+uint32 copyBytesPerTexel(Format format, Aspect aspect);
+
 struct TextureViewDesc {
     Format format = Format::eUndefined; // eUndefined: the texture's format
     uint32 baseMip = 0;
@@ -137,7 +143,37 @@ struct GraphicsPipelineDesc {
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────
 
 enum class QueryType : uint8 {
-    eTimestamp, // one 64-bit tick count per query; ticks per second in DeviceLimits
+    eTimestamp,          // one 64-bit tick count per query; ticks per second in DeviceLimits
+    eOcclusion,          // one 64-bit count of samples that passed the depth and stencil tests
+    ePipelineStatistics, // counters per query, laid out as pipelineStatisticsLayout says (P71 (2))
+};
+
+// Where each counter of a pipeline-statistics result is (P71 (2)): byte
+// offsets of 64-bit values inside one query's result of `size` bytes. The
+// layouts differ per backend; RI reports them instead of converting.
+struct PipelineStatisticsLayout {
+    uint32 size = 0;                     // bytes per query result
+    uint32 inputVertices = 0;            // vertices read by draws
+    uint32 inputPrimitives = 0;          // primitives assembled
+    uint32 vertexShaderInvocations = 0;
+    uint32 clippingInvocations = 0;      // primitives entering clipping
+    uint32 clippingPrimitives = 0;       // primitives leaving clipping
+    uint32 pixelShaderInvocations = 0;
+    uint32 computeShaderInvocations = 0;
+};
+
+// The staging layout of a texture view's texels in a buffer (P47), for
+// cmdCopyBufferToTexture and cmdCopyTextureToBuffer. The view covers one mip.
+// Row `y` of layer `l` starts at offset + l * layerPitch + y * rowPitch.
+struct CopyLayout {
+    uint32 width = 0;        // texels per row
+    uint32 height = 0;       // rows per layer
+    uint32 layers = 1;
+    uint32 bytesPerTexel = 0;
+    uint64 rowPitch = 0;     // bytes from one row to the next (>= width * bytesPerTexel)
+    uint64 layerPitch = 0;   // bytes from one layer to the next
+    uint64 size = 0;         // bytes the copy reads or writes from the offset
+    uint64 alignment = 0;    // the buffer offset must be a multiple of this
 };
 
 struct QueryPoolDesc {
