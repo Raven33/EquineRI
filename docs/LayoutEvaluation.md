@@ -208,6 +208,21 @@ per pass and per frame is the median. Frames run back to back in one command lis
 frame, so a full-scope transition that removes overlap between passes shows up in the frame
 time.
 
+**Placement balance (v4/v5, 2026-10-11).** Each path runs on its own copy of the
+textures, placed one after the other in one memory block. On the AMD iGPU (Windows, driver
+26.8.1) the copy alone moved the realistic frame's lighting pass from 3.87 to 4.58 ms and
+post from 3.71 to 4.04 ms, whichever path used it (round 7, `--swap on` gives each path the
+other copy). Before that was found, two other explanations were ruled out on the same GPU:
+the option of P97 (a control run of the commit before it was equally slow) and RI's own
+choices (`--baseline-variant ro|general|full` made the baseline copy RI's sampled-color
+layout, `GENERAL` reads of storage textures and full-scope barriers; none moved it). v4
+also makes the RI path discard a storage texture a pass overwrites (`cmdDiscard`), as the
+baseline starts it from `UNDEFINED`; it changed nothing measurable. Verdicts from round 8
+on run every configuration with `--swap off` and `--swap on`; `analyze.py` takes the
+geometric mean of the two interleaved RI/baseline ratios, which cancels the placement
+factor (it multiplies one ratio and divides the other) and keeps each ratio inside one
+interleaved run. The mode is reported as `<mode>[balanced]`.
+
 **Applying P79.** For each GPU and backend, A' passes when the best A' mode allowed on that
 driver (`eUnified` where available; otherwise the faster of T and G, chosen per GPU as P78
 says) meets P79's two conditions: (1) the realistic frame (workload 4) at most 2% above
@@ -251,9 +266,36 @@ P79 applied by `tools/layout_bench/analyze.py`:
   (Windows), Mesa 26.2.2 RADV (Linux). The Windows drivers were updated right after; results on
   newer drivers are not directly comparable (a newer AMD driver may expose
   `VK_KHR_unified_image_layouts`, which would change the AMD Vulkan case).
-- **Decision (user): reopen L1** (P96). Options on the table: accept the cost; another
-  resting layout for sampled depth with a different form for P75; an opt-in per-texture
-  mode; another direction.
+- **Decision (user): reopen L1** (P96), then settled with an opt-in per-texture flag and
+  placement-balanced runs: see "Final results" below (P97).
+
+## Final results: L1 confirmed (P97, 2026-10-11)
+
+After the user reopened L1, `TextureUsage::eReadOnlyDepthSampling` was added (sampled depth
+rests in `SHADER_READ_ONLY_OPTIMAL` in mode T unless the flag asks for P75's sampling during
+read-only sections), and the measurement was made placement-balanced (see "Placement balance"
+above). Round 8 (`docs/measurements/windows/{vulkan,d3d12}_r8*.csv`,
+`docs/measurements/vulkan_radv_r8.csv`), each configuration interleaved with `--swap off` and
+`on`, verdict on `<mode>[balanced]`:
+
+| GPU | Backend | Mode | 1080p | 4K | Realistic frame (1080p / 4K) |
+|---|---|---|---|---|---|
+| AMD RDNA2 iGPU (Windows, 26.8.1) | Vulkan | T | pass | pass | +0.4% / +0.2% |
+| AMD RDNA2 iGPU | D3D12 | resting layouts | pass | pass | +0.5% / +0.2% |
+| RTX 3080 (617.42) | Vulkan | `eUnified` | pass (round 3) | pass | - / +1.5% |
+| RTX 3080 | D3D12 | resting layouts | pass (round 3) | pass | - / +0.3% |
+| RDNA2 680M (Mesa 26.2.2) | Vulkan | T | pass | pass | +0.4% / +0.0% |
+
+- AMD D3D12 4K: one row failed in the full run (`render_sample_d32fs8/render` +10.2%,
+  0.09 ms, per-run ratios 0.99–1.20, within-run spread ±25%); re-measured alone with 1000
+  frames and four off/on pairs (`d3d12_r8b.csv`): +1.6%, pass.
+- The history in between: round 4 (option, new AMD driver) fixed the HiZ pass but showed
+  lighting +18% at 4K; a control run of the commit before the option had the same; round 5
+  (harness v4, discards) and round 6 (`--baseline-variant`) did not move it; round 7 (`--swap`)
+  showed it follows the texture copy. Data in `docs/measurements/windows/` (r4–r8) and the
+  `m3-results-windows-*` branches.
+- Drivers: NVIDIA 617.42, AMD Adrenalin 26.8.1 (Vulkan 2.0.353, still without
+  `VK_KHR_unified_image_layouts`), Mesa 26.2.2.
 
 ## Research results (2026-10-03)
 

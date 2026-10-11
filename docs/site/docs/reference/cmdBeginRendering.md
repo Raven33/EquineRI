@@ -21,7 +21,9 @@ Each attachment has a `view` (of a texture with `eRenderTarget` or `eDepthStenci
 load operation (`eLoad`, `eClear`, `eDontCare`; default `eLoad`), a store operation (`eStore`,
 `eDontCare`; default `eStore`) and a `clear` value used with `eClear`. A depth attachment also
 has `stencilLoad` and `stencilStore`, and the read-only flags `depthReadOnly` and
-`stencilReadOnly` ([P75](../design-notes/decisions.md#p75)).
+`stencilReadOnly` ([P75](../design-notes/decisions.md#p75)); shaders may sample the depth
+texture during a read-only section only if it has `TextureUsage::eReadOnlyDepthSampling`
+([P97](../design-notes/decisions.md#p97)).
 
 At `cmdBeginRendering`, RI:
 

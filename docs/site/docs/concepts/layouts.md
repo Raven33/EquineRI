@@ -69,7 +69,9 @@ In mode T, the resting layouts are:
 | Texture usage | Resting layout |
 |---|---|
 | `eStorage` (with anything else) | `GENERAL` |
-| `eSampled` (color or depth) | `READ_ONLY_OPTIMAL` |
+| `eSampled` (color) | `READ_ONLY_OPTIMAL` |
+| `eSampled` (depth) | `SHADER_READ_ONLY_OPTIMAL` (fastest for sampling; read-only depth sections switch it) |
+| `eSampled` + `eReadOnlyDepthSampling` (depth) | `READ_ONLY_OPTIMAL` (the depth read-only layout: no switch in read-only sections, [P97](../design-notes/decisions.md#p97)) |
 | `eRenderTarget` only | `COLOR_ATTACHMENT_OPTIMAL` |
 | `eDepthStencil` only | `ATTACHMENT_OPTIMAL` |
 | copies only | `GENERAL` |
@@ -130,17 +132,17 @@ resting layout, which resets the metadata. See [Textures and views](textures.md#
 
 Hiding layouts has a possible cost: on D3D12 and in Vulkan mode T, an attachment that shaders
 also read makes a round trip through its resting layout at every section, which can trigger
-decompression work. Whether A' is accepted is decided by the **Milestone 3 measurement**,
-against hand-written optimal transitions, with a rule fixed before measuring
-([P79](../design-notes/decisions.md#p79)): at most 2% slower per frame and 10% per pass on every
-tested GPU. The measurement is done ([P96](../design-notes/decisions.md#p96)): A' passes on the
-RTX 3080 (D3D12, Vulkan unified), on an AMD RDNA2 iGPU under D3D12, and on the RDNA2 680M (Vulkan
-mode T), and at 1080p on the AMD iGPU under Vulkan. It fails in one case: AMD Vulkan at 4K, where
-a pass reading depth is 10–13% slower, because sampled depth rests in the depth read-only
-layout (which [P75](../design-notes/decisions.md#p75)'s read-only depth needs). Mode G is never
-faster on AMD, so mode T is the automatic choice without unified layouts. The image-layout
-question is **reopened** to decide how to handle that case; whatever is chosen changes the
-backend, not your code.
+decompression work. A' was measured in Milestone 3 against hand-written optimal transitions,
+with a rule fixed before measuring ([P79](../design-notes/decisions.md#p79)): at most 2%
+slower per realistic frame and 10% per pass (unless under 0.05 ms) on every tested GPU.
+
+It passes on every tested GPU ([P97](../design-notes/decisions.md#p97)): the RTX 3080 (D3D12,
+Vulkan unified), an AMD RDNA2 iGPU (D3D12, Vulkan mode T) and the RDNA2 680M (Vulkan mode T),
+at 1080p and 4K, with the realistic frame within +1.5%. One case first failed (AMD Vulkan, a
+pass reading depth); that is why a sampled depth texture rests in the layout fastest for
+sampling, and `eReadOnlyDepthSampling` is only for textures sampled during a read-only depth
+section. Mode G is never faster on AMD, so mode T is the automatic choice without unified
+layouts.
 
 ## In native code
 

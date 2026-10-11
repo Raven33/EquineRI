@@ -54,7 +54,9 @@ int main() {
 
     // --8<-- [start:format-supported]
     // D24S8 is missing on some GPUs (AMD on Vulkan): ask, and fall back.
-    const RI::TextureUsage depthUsage = RI::TextureUsage::eDepthStencil | RI::TextureUsage::eSampled;
+    // eReadOnlyDepthSampling: sampled during read-only depth sections (below).
+    const RI::TextureUsage depthUsage = RI::TextureUsage::eDepthStencil | RI::TextureUsage::eSampled |
+                                        RI::TextureUsage::eReadOnlyDepthSampling;
     const RI::Format depthFormat = RI::formatSupported(device, RI::Format::eD24UnormS8Uint, depthUsage)
                                        ? RI::Format::eD24UnormS8Uint
                                        : RI::Format::eD32FloatS8Uint;
@@ -212,8 +214,9 @@ int main() {
     // --8<-- [end:barrier-render-sample]
 
     // --8<-- [start:read-only-depth]
-    // Depth stays bound for testing while shaders sample it (P75). Draws in
-    // this section must not write depth; loads keep the contents.
+    // Depth stays bound for testing while shaders sample it (P75; the texture
+    // has eReadOnlyDepthSampling, P97). Draws in this section must not write
+    // depth; loads keep the contents.
     RI::cmdBeginRendering(cmd, {
         .colors = {{.view = color.view}}, // eLoad / eStore: keep what is there
         .depth = RI::DepthAttachment{.view = depth.view, .depthReadOnly = true, .stencilReadOnly = true},

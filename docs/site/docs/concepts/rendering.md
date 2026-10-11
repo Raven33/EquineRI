@@ -64,7 +64,8 @@ Some effects test against the depth buffer while sampling it in the pixel shader
 particles, decals. Normally a texture cannot be an attachment and a shader input at once. Set
 `depthReadOnly` (and `stencilReadOnly`, for a format with stencil) on the depth attachment,
 and the section uses a read-only depth layout that allows both
-([P75](../design-notes/decisions.md#p75)):
+([P75](../design-notes/decisions.md#p75)). A texture sampled this way is created with
+`TextureUsage::eReadOnlyDepthSampling` ([P97](../design-notes/decisions.md#p97)):
 
 ```cpp
 --8<-- "snippets/ri/textures.cpp:read-only-depth"
@@ -76,7 +77,12 @@ In such a section:
   depth-writing pipeline is a **programmer error**: `cmdSetPipeline: the pipeline writes depth,
   but the rendering section's depth is read-only (P75)`;
 - keep the load operation at `eLoad` (the default): a read-only attachment is not cleared;
-- nothing is stored for the read-only aspects, whatever the store operation says.
+- nothing is stored for the read-only aspects, whatever the store operation says;
+- shaders sample the depth texture only if it has `eReadOnlyDepthSampling`. Without the flag,
+  a read-only section is still allowed (depth testing only), but shaders must not sample the
+  texture inside it: on Vulkan without unified layouts, a sampled depth texture rests in the
+  layout fastest for ordinary sampling, which is not the read-only depth layout, and RI
+  switches it around the section. RI cannot see bindless reads, so this is not checked.
 
 ## Around the section: RI's layout switches
 
