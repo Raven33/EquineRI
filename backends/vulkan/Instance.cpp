@@ -88,7 +88,9 @@ InstanceHandles createInstance(InstancePurpose purpose) {
         {kValidationLayer, "gpuav_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &on},
     };
     const VkLayerSettingsCreateInfoEXT layerSettings{.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT,
-                                                     .settingCount = static_cast<uint32>(std::size(settings)),
+                                                     // EQUINE_GPU_VALIDATION=0 drops gpuav_enable (the last one).
+                                                     .settingCount = static_cast<uint32>(std::size(settings)) -
+                                                                     (gpuValidationEnabled() ? 0u : 1u),
                                                      .pSettings = settings};
     messengerInfo.pNext = &layerSettings;
 

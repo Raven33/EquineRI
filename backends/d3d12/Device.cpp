@@ -34,7 +34,7 @@ void enableValidationOnce() {
     // GPU-based validation (P53 (4)): bindless indices and resource states,
     // checked by instrumented shaders.
     ID3D12Debug1 *debug1 = nullptr;
-    if (SUCCEEDED(debug->QueryInterface(IID_PPV_ARGS(&debug1)))) {
+    if (gpuValidationEnabled() && SUCCEEDED(debug->QueryInterface(IID_PPV_ARGS(&debug1)))) {
         debug1->SetEnableGPUBasedValidation(TRUE);
         release(debug1);
     }

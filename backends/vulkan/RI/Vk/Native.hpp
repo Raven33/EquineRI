@@ -120,4 +120,52 @@ struct NativeDeviceAdditions {
 
 Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additions);
 
+// ── Native sections (P27, P70) ────────────────────────────────────────────────
+
+// Native commands in the middle of an RI command list. Textures are in their
+// resting layouts (native(texture).restingLayout) on entry.
+struct NativeCommands {
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    const VolkDeviceTable *functions = nullptr;
+};
+NativeCommands beginNative(CommandList &cmd);
+
+// A texture native code left in another layout than its resting one (P27).
+struct NativeLayoutChange {
+    TextureView view;
+    VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+};
+// Ends the native section: switches the listed textures back to rest (full
+// barriers on both halves) and restores everything RI set (P70): the heap's
+// descriptor sets, the last pipeline and root data, and inside a rendering
+// section the viewport and scissor. Inside a rendering section the list must
+// be empty, and native code must not end rendering or change attachments.
+void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed = {});
+
+// ── Import (P77) ──────────────────────────────────────────────────────────────
+// Natively created objects as RI objects. RI does not own them: destroying the
+// RI object only forgets it (RI's own views of an imported texture are
+// destroyed); destroy the native object yourself, afterwards.
+
+// `memory` from vkAllocateMemory with VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+// `mapped`: its CPU address, or nullptr.
+Memory importMemory(Device &device, VkDeviceMemory memory, MemoryKind kind, uint64 size, void *mapped);
+// A buffer with the usages `desc.usage` needs, bound to memory, with
+// VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT. `mapped`: its CPU address, or nullptr.
+Buffer importBuffer(Device &device, VkBuffer buffer, const BufferDesc &desc, void *mapped);
+// An image matching `desc` (2D, optimal tiling, the usages RI gives `desc.usage`),
+// bound to memory. Before RI first uses it, bring it into
+// native(texture).restingLayout yourself (in a native section).
+Texture importTexture(Device &device, VkImage image, const TextureDesc &desc);
+// A pipeline whose layout is compatible with RI's: set 0 the resource heap,
+// set 1 the sampler heap, one push-constant range (all stages) of rootDataSize.
+Pipeline importPipeline(Device &device, VkPipeline pipeline, VkPipelineLayout layout, bool graphics,
+                        uint32 rootDataSize);
+
+// Writes a native descriptor into heap slot `slot` (P77 (2)), for view types
+// RI does not model. `type` is one of the heap's mutable types; give the image
+// or the buffer info that `type` uses.
+void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, VkDescriptorType type,
+                           const VkDescriptorImageInfo *image, const VkDescriptorBufferInfo *buffer);
+
 } // namespace RI::Vk

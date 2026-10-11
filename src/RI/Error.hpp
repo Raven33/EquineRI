@@ -12,6 +12,11 @@
 
 namespace RI {
 
+// Validation builds (P53 (4)): GPU-assisted validation (Vulkan GPU-AV, D3D12
+// GPU-based validation) is on unless the environment variable
+// EQUINE_GPU_VALIDATION is "0", a switch for isolating driver problems.
+bool gpuValidationEnabled();
+
 enum class ErrorCategory : uint8 {
     eProgrammerError,     // the caller broke an RI rule
     eUnsupported,         // the GPU, driver or backend lacks a feature (P11)

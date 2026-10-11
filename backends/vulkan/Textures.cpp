@@ -352,7 +352,9 @@ void destroyTexture(Device &device, Texture &texture) {
     Validation::markDiscarded(state.placements, texture.internal.id);
 #endif
     state.functions.vkDestroyImageView(state.device, native(texture.view), nullptr);
-    state.functions.vkDestroyImage(state.device, native(texture).image, nullptr);
+    if (!texture.internal.imported) { // P77: an imported image stays the user's
+        state.functions.vkDestroyImage(state.device, native(texture).image, nullptr);
+    }
     texture = {};
 }
 
@@ -435,6 +437,30 @@ void destroyView(Device &device, TextureView &view) {
     EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
     state.functions.vkDestroyImageView(state.device, native(view), nullptr);
     view = {};
+}
+
+// ── Import (P77) ─────────────────────────────────────────────────────────────
+
+Texture importTexture(Device &device, VkImage image, const TextureDesc &desc) {
+    DeviceState &state = *device.internal.state;
+    EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    Texture texture;
+    texture.width = desc.width;
+    texture.height = desc.height;
+    texture.layers = desc.layers;
+    texture.mips = desc.mips;
+    texture.samples = desc.samples;
+    texture.format = desc.format;
+    texture.usage = desc.usage;
+    texture.internal.image = reinterpret_cast<uint64>(image);
+    texture.internal.restingLayout = static_cast<uint32>(restingLayoutOf(state.layoutMode, desc.format, desc.usage));
+    for (Format format : desc.viewFormats) {
+        texture.internal.viewFormats |= formatBit(format);
+    }
+    texture.internal.imported = true;
+    texture.internal.id = EQ_VK_TRACK(&state);
+    texture.view = createView(device, texture, {});
+    return texture;
 }
 
 } // namespace RI::Vk

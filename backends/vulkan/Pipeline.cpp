@@ -391,9 +391,26 @@ void destroyPipeline(Device &device, Pipeline &pipeline) {
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, pipeline.internal.id, "pipeline");
     EQ_VK_UNTRACK(&state, pipeline.internal.id);
-    state.functions.vkDestroyPipeline(state.device, native(pipeline).pipeline, nullptr);
-    state.functions.vkDestroyPipelineLayout(state.device, native(pipeline).layout, nullptr);
+    if (!pipeline.internal.imported) { // P77: an imported pipeline stays the user's
+        state.functions.vkDestroyPipeline(state.device, native(pipeline).pipeline, nullptr);
+        state.functions.vkDestroyPipelineLayout(state.device, native(pipeline).layout, nullptr);
+    }
     pipeline = {};
+}
+
+// ── Import (P77) ─────────────────────────────────────────────────────────────
+
+Pipeline importPipeline(Device &device, VkPipeline pipeline, VkPipelineLayout layout, bool graphics,
+                        uint32 rootDataSize) {
+    DeviceState &state = *device.internal.state;
+    Pipeline result;
+    result.rootDataSize = rootDataSize;
+    result.internal.pipeline = reinterpret_cast<uint64>(pipeline);
+    result.internal.layout = reinterpret_cast<uint64>(layout);
+    result.internal.graphics = graphics;
+    result.internal.imported = true;
+    result.internal.id = EQ_VK_TRACK(&state);
+    return result;
 }
 
 } // namespace RI::Vk
