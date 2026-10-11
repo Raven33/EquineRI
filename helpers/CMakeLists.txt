@@ -27,7 +27,6 @@ set(EQUINE_HELPER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Transfers.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/FrameRing.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Profiler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/FrameGraph.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ShaderCompiler.cpp"
 )
 foreach(backend IN ITEMS Vulkan D3D12)

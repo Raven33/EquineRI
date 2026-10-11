@@ -1,8 +1,7 @@
 // RI helpers (P41): memory and slot allocators, transfers, a frame ring with
-// a profiler, the frame graph planner and the shader compiler. Compiled once
+// a profiler and the shader compiler. Compiled once
 // per enabled backend.
 
-#include <RI/Helpers/FrameGraph.hpp>
 #include <RI/Helpers/FrameRing.hpp>
 #include <RI/Helpers/MemoryAllocator.hpp>
 #include <RI/Helpers/Profiler.hpp>
@@ -79,37 +78,6 @@ int main() {
     RI::Helpers::releaseSlot(slots, slot, lastFrame);
     // --8<-- [end:release]
 
-    // --8<-- [start:frame-graph]
-    using RI::Helpers::Access;
-    RI::Helpers::FrameGraph graph = RI::Helpers::createFrameGraph(device);
-    const RI::TextureDesc targetDesc{.width = 1920,
-                                     .height = 1080,
-                                     .format = RI::Format::eRGBA16Float,
-                                     .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled};
-    const uint32 scene = RI::Helpers::addTransientTexture(graph, targetDesc);
-    const uint32 blurred = RI::Helpers::addTransientTexture(graph, targetDesc);
-    const uint32 output = RI::Helpers::addExternal(graph); // e.g. the screen texture
-    const uint32 drawScene = RI::Helpers::addStep(graph, {{scene, RI::Stage::eRenderTarget, Access::eWrite}});
-    const uint32 blur = RI::Helpers::addStep(graph, {{scene, RI::Stage::ePixel, Access::eRead},
-                                                     {blurred, RI::Stage::eRenderTarget, Access::eWrite}});
-    const uint32 compose = RI::Helpers::addStep(graph, {{blurred, RI::Stage::ePixel, Access::eRead},
-                                                        {output, RI::Stage::eRenderTarget, Access::eWrite}});
-    RI::Helpers::compileFrameGraph(graph); // once: places, creates and plans
-
-    // Every frame: begin each step, then record its commands yourself.
-    RI::CommandList &cmd = RI::Helpers::beginFrame(ring);
-    RI::Helpers::beginStep(graph, cmd, drawScene);
-    RI::cmdBeginRendering(cmd, {.colors = {{.view = RI::Helpers::graphTexture(graph, scene).view,
-                                            .load = RI::LoadOp::eClear}}});
-    // ... draw the scene ...
-    RI::cmdEndRendering(cmd);
-    RI::Helpers::beginStep(graph, cmd, blur);
-    // ... read `scene`, draw into `blurred` ...
-    RI::Helpers::beginStep(graph, cmd, compose);
-    // ... read `blurred`, draw into the output ...
-    RI::wait(device.graphicsQueue, RI::Helpers::endFrame(ring));
-    // --8<-- [end:frame-graph]
-
     // --8<-- [start:compiler]
     RI::Helpers::ShaderCompiler compiler = RI::Helpers::createShaderCompiler(); // the build's pinned DXC
     const char *code = R"(#include <equine/root.hlsli>
@@ -131,7 +99,6 @@ void main(uint3 id : SV_DispatchThreadID) {
 
     RI::destroyPipeline(device, pipeline);
     RI::Helpers::destroyShaderCompiler(compiler);
-    RI::Helpers::destroyFrameGraph(graph);
     RI::Helpers::destroyProfiler(profiler);
     RI::Helpers::destroyFrameRing(ring);
     RI::destroyTexture(device, texture);

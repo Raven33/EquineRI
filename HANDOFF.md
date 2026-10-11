@@ -5,7 +5,7 @@ L1 and confirmed it with P16 and P36 (P97). Milestone 4 added the rest of v1 (P9
 copies and queries, graphics completion, indirect execution, swapchain, native sections and
 import, inline ray tracing, work graphs (D3D12) and the helpers. All Linux tests pass.
 Windows at `e1363bc`: 138/138 on AMD and NVIDIA (work graphs included, on NVIDIA D3D12);
-ray tracing is off on AMD Windows Vulkan (P98 (8)). Pending review: P94 (partly reviewed), P95, P97, P98 (frame graph shape, the DGC
+ray tracing is off on AMD Windows Vulkan (P98 (8)). Pending review: P94 (partly reviewed), P95, P97, P98 (the DGC
 exception to P31, DGC off on NVIDIA under GPU-AV, work-graph initialization).
 
 A Windows assistant session (`windows-equineri`, Remote Control) builds and tests pushed

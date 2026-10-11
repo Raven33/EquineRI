@@ -9,10 +9,24 @@ symbols: [RI::AccelerationStructure, RI::blasSizes, RI::tlasSizes, RI::accelerat
 **Inline ray tracing** lets any shader cast rays with HLSL `RayQuery` against an
 **acceleration structure** ([P49](../design-notes/decisions.md#p49)). Available when
 `device.limits.rayTracing` is set (Vulkan `VK_KHR_acceleration_structure` + `VK_KHR_ray_query`,
-D3D12 raytracing tier 1.1). On Vulkan the driver must also accept acceleration structures among
-the heap's mutable descriptor types, since shaders read them from the same binding as every
-other heap descriptor; the AMD Windows driver does not, so ray tracing is off there on Vulkan
-(D3D12 is unaffected).
+D3D12 raytracing tier 1.1).
+
+!!! warning "Known limitation: no Vulkan ray tracing on AMD's Windows driver"
+    On Vulkan, shaders read acceleration structures from the same heap binding as every other
+    descriptor (DXC places every `ResourceDescriptorHeap` access there), so the driver must
+    accept acceleration structures among the heap's mutable descriptor types. RI asks it with
+    `vkGetDescriptorSetLayoutSupport` at device creation; when the answer is no, even for a
+    heap of one slot, RI leaves the type out and sets `limits.rayTracing` to false.
+
+    | GPU | Driver | Vulkan ray tracing in RI |
+    |---|---|---|
+    | AMD RDNA2 integrated GPU ("AMD Radeon(TM) Graphics"), Windows | Adrenalin 26.8.1, Vulkan driver 2.0.353 | **off**: no mutable heap with acceleration structures, at any size |
+    | NVIDIA GeForce RTX 3080, Windows | 617.42 | on |
+    | AMD Radeon 680M (RDNA2), Linux | Mesa 26.2.2 (RADV) | on |
+
+    Checked 2026-10-11 (logs: branch `m4-verify-windows-3f13bfb`, `heap_probe.txt`). D3D12 ray
+    tracing on the same AMD GPU is unaffected. Newer drivers may lift this: RI asks the driver
+    each time, so nothing changes in your code.
 
 The explicit form, as everywhere in RI:
 

@@ -102,7 +102,6 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     helpers.allocators
     helpers.transfers
     helpers.frame_ring_and_profiler
-    helpers.frame_graph
     helpers.shader_compiler
     texture.unlisted_view_format_reports
 )
