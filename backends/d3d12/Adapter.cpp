@@ -3,7 +3,8 @@
 // Owns: listGpus (each adapter checked on a short-lived device: feature level
 // 12_0, shader model 6.6, resource binding tier 3, enhanced barriers), the
 // per-device factory, and the portable Gpu description (the id is the
-// adapter LUID; UMA marks integrated GPUs).
+// adapter LUID; UMA marks integrated GPUs). Prints a warning when the
+// executable has not set up the Agility SDK (exports, deployed runtime).
 //
 // Vulkan counterpart: backends/vulkan/Instance.cpp.
 
@@ -15,7 +16,9 @@
 #include <RI/Error.hpp>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <format>
 #include <string>
 
@@ -57,6 +60,29 @@ bool meetsRequirements(ID3D12Device *device, bool &uma) {
     }
     uma = architecture.UMA != FALSE;
     return true;
+}
+
+// D3D12 loads RI's Agility SDK only when the executable exports
+// D3D12SDKVersion and the runtime sits in <exe dir>/D3D12/ (P55). Without
+// them it falls back to the system runtime, which may reject every adapter.
+// Returns what is missing, or nothing.
+std::string agilityProblem() {
+    HMODULE exe = GetModuleHandleW(nullptr);
+    if (GetProcAddress(exe, "D3D12SDKVersion") == nullptr) {
+        return "the executable does not export D3D12SDKVersion: invoke EQUINE_D3D12_AGILITY_SDK_EXPORTS() in one "
+               ".cpp of the executable (D3D12AgilityExports.hpp)";
+    }
+    wchar_t path[MAX_PATH] = {};
+    const DWORD length = GetModuleFileNameW(exe, path, MAX_PATH);
+    if (length == 0 || length >= MAX_PATH) {
+        return {};
+    }
+    const std::filesystem::path core = std::filesystem::path(path).parent_path() / "D3D12" / "D3D12Core.dll";
+    if (!std::filesystem::exists(core)) {
+        return "D3D12Core.dll is not in the executable's D3D12 folder: call equine_deploy_agility_sdk(<target>) in "
+               "CMake";
+    }
+    return {};
 }
 
 } // namespace
@@ -135,6 +161,13 @@ std::vector<Gpu> listGpus() {
         release(adapter);
     }
     release(factory);
+    // A missing Agility SDK is a setup mistake, not "no GPU": say so, once.
+    static bool reported = false;
+    if (const std::string problem = agilityProblem(); !problem.empty() && !reported) {
+        reported = true;
+        std::fprintf(stderr, "[EquineRI] Agility SDK not loaded (%zu GPU(s) listed): %s\n", gpus.size(),
+                     problem.c_str());
+    }
     return gpus;
 }
 
