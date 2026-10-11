@@ -51,6 +51,6 @@ commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
 Presets: `clangcl-debug` (Windows, both backends) and `clang-debug` (Linux, Vulkan). The
 D3D12 backend downloads the Agility SDK 1.619.6 at configure time. The scaffold holds only
 what v1 needs: integer aliases (`src/types.hpp`), RavenLib's bitmask, backend header-check
-targets, the Agility SDK module, `FindDXC`, and an empty GPU-free test harness. Validated on
+targets, the Agility SDK module, and an empty GPU-free test harness. Validated on
 both platforms (Milestone 1). The Windows check ran from a shell with the VS 2022 build
 environment loaded and Ninja from msys64; a plain terminal was not tested.

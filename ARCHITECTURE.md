@@ -4,6 +4,9 @@ The entry point for anyone changing RI. It says where things are, how a call tra
 rules every change keeps, how to make common changes, and where Vulkan and D3D12 differ
 underneath. The standard this follows is `docs/CodeDocumentation.md`.
 
+Using RI from another repository (a git submodule and `add_subdirectory`):
+`docs/site/docs/getting-started/use-in-your-project.md`.
+
 Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md` (milestones),
 `HANDOFF.md` (current state), the docs site `docs/site/` (for people using RI), and the
 [Vulkan / D3D12 → RI glossary](docs/site/docs/concepts/glossary.md).
@@ -23,7 +26,7 @@ Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md`
 | `tests/` | `*.cpp` at the top: GPU-free tests (`EquineRITests`). `gpu/`: portable GPU tests, compiled once per backend. `vulkan/`, `d3d12/`: backend-only GPU tests (native access, backend quirks). `conformance/`: both backends declare the same signatures. `shaders/`: the tests' HLSL. |
 | `samples/` | Small programs on RI. |
 | `tools/layout_bench/` | The L1 measurement harness (P96, P97). |
-| `cmake/` | The pinned DXC (`EquineDXC.cmake`, `equine_add_shaders`), the Agility SDK, `FindDXC`. |
+| `cmake/` | The pinned DXC (`EquineDXC.cmake`, `equine_add_shaders`) and the Agility SDK (`EquineAgilitySDK.cmake`). |
 | `third_party/` | Pinned submodules: Vulkan-Headers, volk, SPIRV-Reflect, GLFW. |
 | `docs/site/` | The MkDocs site: `docs/` pages, `snippets/` (complete programs compiled with `-DEQUINE_BUILD_DOC_SNIPPETS=ON`), `scripts/` (header extraction, coverage, decision pages). |
 

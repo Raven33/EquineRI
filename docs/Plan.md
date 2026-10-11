@@ -131,7 +131,8 @@ In this order:
 1. **Code documentation** for contributors first, then users of the API (user's choice): what
    "clear" means is being defined together, question by question; then a deep review of the
    local documentation against that definition.
-2. **Sample ports:** every Sascha Willems Vulkan sample ported to RI (triage first: port,
+2. **Sample ports, in a separate repository** (user, 2026-10-12), done by fresh agents that
+   double as the cold-agent test of the documentation: every Sascha Willems Vulkan sample ported to RI (triage first: port,
    adapt, or skip what is Vulkan-only), plus D3D12 samples covering Agility SDK features and
    work graphs (sources to survey: Microsoft DirectX-Graphics-Samples, AMD GPUOpen).
 3. **EquineEngine V3:** a new project inspired by EquineEngineV2, built on RI, with a more
