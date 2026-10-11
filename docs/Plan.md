@@ -125,6 +125,18 @@ Candidates:
 - Helpers (P41), each replaceable by the user: automatic allocation, slot assignment,
   staging upload/readback, frames in flight, profiler, shader-compilation helper (P29), GLFW window helper (P43).
 
+## After v1 (user, 2026-10-11)
+
+In this order:
+1. **Code documentation** for contributors first, then users of the API (user's choice): what
+   "clear" means is being defined together, question by question; then a deep review of the
+   local documentation against that definition.
+2. **Sample ports:** every Sascha Willems Vulkan sample ported to RI (triage first: port,
+   adapt, or skip what is Vulkan-only), plus D3D12 samples covering Agility SDK features and
+   work graphs (sources to survey: Microsoft DirectX-Graphics-Samples, AMD GPUOpen).
+3. **EquineEngine V3:** a new project inspired by EquineEngineV2, built on RI, with a more
+   abstracted layer, more helpers and more management (frame graph included, P35).
+
 ## Not in v1
 
 Sparse resources (F1), the VRS rate image (F2), multi-queue and cross-queue texture
