@@ -220,6 +220,12 @@ nav:
   - Helpers:
       - helpers/index.md
       - GLFW window: helpers/glfw-window.md
+      - Memory and slot allocators: helpers/allocators.md
+      - Transfers: helpers/transfers.md
+      - Frame ring: helpers/frame-ring.md
+      - GPU profiler: helpers/profiler.md
+      - Frame graph: helpers/frame-graph.md
+      - Shader compiler: helpers/shader-compiler.md
   - Design notes:
       - design-notes/index.md
       - Decision log: design-notes/decisions.md

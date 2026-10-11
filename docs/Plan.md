@@ -98,6 +98,13 @@ completion (index buffers, blending, mesh shaders, resolve: P39, P52, P76) → i
 swapchain and present (P43, P63, P64) → native sections and import (P27, P70, P77) → ray
 tracing (P49) → work graphs (P50, P62) → helpers (P41). Progress is recorded in P98.
 
+**Status (2026-10-11): implemented** (P98), every step with a docs page and GPU tests. All
+Linux tests pass (RADV 680M, Vulkan). Windows: RTX 3080 passed every test up to ray tracing
+(`e1221b8`); still to run there: the AMD Vulkan heap clamp (P98 (8)), `d3d12.work_graph`, and
+the helpers on both backends. Awaiting the user's review: the frame graph's shape (P35), the
+DGC preprocess-buffer exception to P31, the NVIDIA GPU-AV rule for DGC, and the work-graph
+initialization inference (P98).
+
 Candidates:
 - Swapchain and present (P43, P63, P64).
 - Graphics pipelines, mesh shaders, vertex pulling (P38, P39); MSAA resolve (P52, P76).
