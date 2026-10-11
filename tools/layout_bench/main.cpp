@@ -46,6 +46,7 @@ struct Options {
     uint32 warmup = 30;
     std::string out;
     bool hostBarrier = true; // Vulkan: --host-barrier off measures P94 (6)
+    bool interleave = false; // --interleave on: the mode and the baseline, frame by frame
 };
 
 Options parse(int argc, char **argv) {
@@ -75,6 +76,8 @@ Options parse(int argc, char **argv) {
             o.warmup = static_cast<uint32>(std::stoul(value));
         } else if (key == "--out") {
             o.out = value;
+        } else if (key == "--interleave") {
+            o.interleave = value == "on";
         } else if (key == "--host-barrier") {
             o.hostBarrier = value != "off";
         } else {
@@ -422,29 +425,47 @@ Stats stats(std::vector<double> v) {
     return {at(0.5), at(0.1), at(0.9)};
 }
 
-void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName) {
-    if (c.useBaseline) {
-        bench::baselineReset(*c.baseline, w);
-    }
-    writeDescriptors(c, w);
+// One measured path: a workload instance recorded the RI way or the baseline way.
+struct Path {
+    Workload *workload = nullptr;
+    bool baseline = false;
+    std::string mode;
+    std::vector<std::vector<double>> times; // per pass, frame, cpu, between
+};
+
+// Runs the paths' frames alternately (frame f records path f % paths.size()), so
+// with --interleave the baseline and the RI mode see the same GPU clock and
+// power states (integrated GPUs switch between them). Without it, one path.
+void run(Context &c, std::vector<Path> &paths, std::ostream &out, const std::string &gpuName) {
     RI::CommandList cmd = RI::createCommandList(c.device);
-    // Each workload reuses the previous one's memory, so its textures are
-    // discarded before first use (P69), on both paths.
+    // Each workload reuses earlier memory, so its textures are discarded
+    // before first use (P69), on both paths.
     RI::cmdBegin(cmd);
-    for (bench::Texture &t : w.textures) {
-        RI::cmdDiscard(cmd, t.texture.view);
+    for (Path &path : paths) {
+        if (path.baseline) {
+            bench::baselineReset(*c.baseline, *path.workload);
+            bench::baselineWriteDescriptors(*c.baseline, *path.workload);
+        } else {
+            const bool saved = c.useBaseline;
+            c.useBaseline = false;
+            writeDescriptors(c, *path.workload);
+            c.useBaseline = saved;
+        }
+        for (bench::Texture &t : path.workload->textures) {
+            RI::cmdDiscard(cmd, t.texture.view);
+        }
+        path.times.assign(path.workload->passes.size() + 3, {});
     }
     RI::cmdEnd(cmd);
     RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
     RI::resetCommandList(cmd);
-    const uint32 passCount = static_cast<uint32>(w.passes.size());
-    // Pass times, the frame, and the CPU wall time from submit to the end of the
-    // wait (includes everything recorded after the last timestamp, such as
-    // Vulkan's host barrier at cmdEnd, P94 (6)).
-    std::vector<std::vector<double>> times(passCount + 3);
     const double msPerTick = 1000.0 / static_cast<double>(c.device.limits.timestampFrequency);
+    const uint32 pathCount = static_cast<uint32>(paths.size());
 
-    for (uint32 frame = 0; frame < c.options.warmup + c.options.frames; ++frame) {
+    for (uint32 frame = 0; frame < (c.options.warmup + c.options.frames) * pathCount; ++frame) {
+        Path &path = paths[frame % pathCount];
+        Workload &w = *path.workload;
+        const uint32 passCount = static_cast<uint32>(w.passes.size());
         if (frame > 0) {
             RI::resetCommandList(cmd);
         }
@@ -455,7 +476,7 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
         RI::cmdWriteTimestamp(cmd, c.queries, 0);
         for (uint32 i = 0; i < passCount; ++i) {
             const Stamp stamp{&c.queries, 1 + 2 * i, 2 + 2 * i};
-            if (c.useBaseline) {
+            if (path.baseline) {
                 recordBaseline(c, w, cmd, w.passes[i], stamp);
             } else {
                 recordRI(w, cmd, w.passes[i], i > 0 ? &w.passes[i - 1] : nullptr, stamp);
@@ -468,40 +489,44 @@ void run(Context &c, Workload &w, std::ostream &out, const std::string &gpuName)
         RI::wait(c.device.graphicsQueue, RI::submit(c.device.graphicsQueue, cmd));
         const double cpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
         RI::resetQueries(c.device, c.queries, 0, last + 1);
-        if (frame < c.options.warmup) {
+        if (frame < c.options.warmup * pathCount) {
             continue;
         }
         const auto *t = static_cast<const uint64 *>(c.ticks.mapped);
         double passSum = 0.0;
         for (uint32 i = 0; i < passCount; ++i) {
             const double ms = static_cast<double>(t[2 + 2 * i] - t[1 + 2 * i]) * msPerTick;
-            times[i].push_back(ms);
+            path.times[i].push_back(ms);
             passSum += ms;
         }
         const double frameMs = static_cast<double>(t[last] - t[0]) * msPerTick;
-        times[passCount].push_back(frameMs);
-        times[passCount + 1].push_back(cpuMs);
-        times[passCount + 2].push_back(frameMs - passSum);
+        path.times[passCount].push_back(frameMs);
+        path.times[passCount + 1].push_back(cpuMs);
+        path.times[passCount + 2].push_back(frameMs - passSum);
     }
     RI::destroyCommandList(c.device, cmd);
 
-    const auto line = [&](const std::string &pass, const Stats &s) {
+    for (Path &path : paths) {
+        Workload &w = *path.workload;
+        const uint32 passCount = static_cast<uint32>(w.passes.size());
+        const auto line = [&](const std::string &pass, const Stats &s) {
 #if EQUINE_BACKEND_VULKAN
-        const char *backend = "vulkan";
+            const char *backend = "vulkan";
 #else
-        const char *backend = "d3d12";
+            const char *backend = "d3d12";
 #endif
-        char text[512];
-        std::snprintf(text, sizeof(text), "%s,%s,%s,%u,%s,%s,%.4f,%.4f,%.4f\n", backend, gpuName.c_str(),
-                      c.options.mode.c_str(), c.options.height, w.name.c_str(), pass.c_str(), s.median, s.p10, s.p90);
-        out << text << std::flush;
-    };
-    for (uint32 i = 0; i < passCount; ++i) {
-        line(w.passes[i].name, stats(times[i]));
+            char text[512];
+            std::snprintf(text, sizeof(text), "%s,%s,%s,%u,%s,%s,%.4f,%.4f,%.4f\n", backend, gpuName.c_str(),
+                          path.mode.c_str(), c.options.height, w.name.c_str(), pass.c_str(), s.median, s.p10, s.p90);
+            out << text << std::flush;
+        };
+        for (uint32 i = 0; i < passCount; ++i) {
+            line(w.passes[i].name, stats(path.times[i]));
+        }
+        line("frame", stats(path.times[passCount]));
+        line("cpu_submit_wait", stats(path.times[passCount + 1]));
+        line("between", stats(path.times[passCount + 2]));
     }
-    line("frame", stats(times[passCount]));
-    line("cpu_submit_wait", stats(times[passCount + 1]));
-    line("between", stats(times[passCount + 2]));
 }
 
 } // namespace
@@ -528,7 +553,7 @@ int main(int argc, char **argv) {
 #endif
     c.useBaseline = c.options.mode == "baseline";
 
-    c.gpuMemory = RI::allocateMemory(c.device, RI::MemoryKind::eGPU, c.options.height > 1080 ? 1536ull << 20 : 512ull << 20);
+    c.gpuMemory = RI::allocateMemory(c.device, RI::MemoryKind::eGPU, c.options.height > 1080 ? 2048ull << 20 : 768ull << 20);
     c.readbackMemory = RI::allocateMemory(c.device, RI::MemoryKind::eReadback, 1 << 16);
     c.heap = RI::createDescriptorHeap(c.device, {.resourceCount = 4096});
     const RI::BufferDesc outputDesc{.size = 4 << 20, .usage = RI::BufferUsage::eReadWrite};
@@ -547,7 +572,7 @@ int main(int argc, char **argv) {
     c.write = RI::createComputePipeline(c.device, {.shader = c.shaders.write});
     c.light = RI::createComputePipeline(c.device, {.shader = c.shaders.light});
     c.hiz = RI::createComputePipeline(c.device, {.shader = c.shaders.hiz});
-    if (c.useBaseline) {
+    if (c.useBaseline || c.options.interleave) {
         c.baseline = bench::createBaseline(c.device, c.heap);
     }
 
@@ -588,13 +613,28 @@ int main(int argc, char **argv) {
     for (auto &make : makers) {
         Owned owned;
         c.used = baseUsed;
-        Workload w = make(owned);
-        run(c, w, out, c.device.gpu.name);
-        for (bench::Texture &t : w.textures) {
-            if (t.sampledView.internal.textureId != 0 && RI::isDepthFormat(t.texture.format)) {
-                RI::destroyView(c.device, t.sampledView);
+        // --interleave: the RI mode and the baseline, each on its own textures,
+        // alternating frame by frame. Otherwise the one mode given.
+        std::vector<Workload> instances;
+        instances.push_back(make(owned));
+        if (c.options.interleave) {
+            instances.push_back(make(owned));
+        }
+        std::vector<Path> paths;
+        if (c.options.interleave) {
+            paths.push_back({&instances[0], false, c.options.mode, {}});
+            paths.push_back({&instances[1], true, "baseline:" + c.options.mode, {}});
+        } else {
+            paths.push_back({&instances[0], c.useBaseline, c.options.mode, {}});
+        }
+        run(c, paths, out, c.device.gpu.name);
+        for (Workload &w : instances) {
+            for (bench::Texture &t : w.textures) {
+                if (t.sampledView.internal.textureId != 0 && RI::isDepthFormat(t.texture.format)) {
+                    RI::destroyView(c.device, t.sampledView);
+                }
+                RI::destroyTexture(c.device, t.texture);
             }
-            RI::destroyTexture(c.device, t.texture);
         }
         for (RI::Pipeline &p : owned.pipelines) {
             RI::destroyPipeline(c.device, p);

@@ -190,7 +190,15 @@ minus the sum of passes). *Revision (v2, 2026-10-11): the first runs stamped onl
 passes, which counted RI's switch back to rest in the pass before it and the baseline's
 transition in the pass after it; on the AMD iGPU with 4x MSAA this moved a decompression
 from one pass to the other with an unchanged total. All measurements were repeated with v2;
-the first-round data is kept in `docs/measurements/round1/`.* Each configuration runs 30 warm-up
+the first-round data is kept in `docs/measurements/round1/`.*
+
+**Interleaving (v3, 2026-10-11).** Integrated GPUs switch between clock or power states
+(the 680M's depth sample pass alternated between ~0.38 and ~0.455 ms in every mode,
+baseline included), so separate runs per mode can land in different states. With
+`--interleave on`, one process runs the RI mode and the baseline alternately frame by
+frame, each on its own copy of the textures; the baseline rows are labelled
+`baseline:<mode>` and the analysis compares each mode with its own baseline. Verdicts use
+interleaved runs. Each configuration runs 30 warm-up
 frames and 300 measured frames, each frame submitted and waited on alone; the reported value
 per pass and per frame is the median. Frames run back to back in one command list per
 frame, so a full-scope transition that removes overlap between passes shows up in the frame
