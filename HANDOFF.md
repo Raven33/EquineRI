@@ -2,10 +2,11 @@
 
 State on 2026-10-11: **Milestones 1–3 are done** (`docs/Plan.md`). Milestone 3 added textures,
 views, rendering sections, minimal graphics pipelines, discard, clears and timestamps on both
-backends (P95), and measured L1 (P96, `docs/LayoutEvaluation.md` "Results"). Outcome: A' passes
-P79 everywhere except AMD Windows Vulkan (mode T) at 4K on one pass (HiZ reading depth +10–13%);
-**the user chose to reopen L1** (CONTEXT.md §5). Next: decide L1 together (options listed in
-§5), then Milestone 4. Pending review: P94 (partly reviewed), P95.
+backends (P95), and measured L1 (P96, P97, `docs/LayoutEvaluation.md` "Results"). Outcome:
+**L1 confirmed, with P16 and P36** (P97): A' passes P79 on every tested GPU, with the opt-in
+`TextureUsage::eReadOnlyDepthSampling` (sampled depth otherwise rests ready for fast sampling)
+and placement-balanced measurement (`--swap`). Next: Milestone 4. Pending review: P94 (partly
+reviewed), P95, P97.
 
 A Windows assistant session (`windows-equineri`, Remote Control) builds and tests pushed
 commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
@@ -13,21 +14,20 @@ commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
 
 ## Where to read
 
-- `CONTEXT.md`: the decision log (P1–P94) and the open questions (§5). Start here.
+- `CONTEXT.md`: the decision log (P1–P97) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
 - `docs/RIApiProposal.md`: the decided API style (P80–P88) with code sketches.
 - `docs/DocsProposal.md`: the user-facing documentation site (MkDocs + Material as a
   test; also a teaching resource with canonical Vulkan/D3D12 equivalents). A feature is
   not done until its page exists.
 - `docs/LayoutEvaluation.md`: the image-layout problem (L1), driver research, the
-  measurement plan, and the decision rule (P79). Run in Milestone 3.
+  measurement plan, the decision rule (P79) and the Milestone 3 results.
 - `docs/GrillLog.md`: the full question-and-answer history, in order. Background only.
 - `docs/Review-2026-10-04.md`, `docs/Review-Inference-2026-10-10.md`: past reviews, fully
   applied. Background only.
 
 ## Still open (CONTEXT.md §5)
 
-- **L1:** confirmed only by the Milestone 3 measurement, done together on real hardware.
 - **X1:** the error policy; open by design, the user settles it by using the API.
 
 ## Working with the user

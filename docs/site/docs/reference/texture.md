@@ -37,6 +37,7 @@ attachments, descriptors, clears and discards.
 | `eRenderTarget` | render to it ([color attachment](cmdBeginRendering.md)) | `COLOR_ATTACHMENT` | `ALLOW_RENDER_TARGET` |
 | `eDepthStencil` | use it as the depth attachment | `DEPTH_STENCIL_ATTACHMENT` | `ALLOW_DEPTH_STENCIL` |
 | `eCopySrc` / `eCopyDst` | copy from / to it (later) | `TRANSFER_SRC` / `TRANSFER_DST` | - |
+| `eReadOnlyDepthSampling` | sample it in shaders while it is a read-only depth attachment ([P75](../design-notes/decisions.md#p75), [P97](../design-notes/decisions.md#p97)); needs `eSampled`, `eDepthStencil` and a depth format | - | - |
 
 The flags also decide the layout the texture rests in between operations, inside the backend
 ([Image layouts are RI's business](../concepts/layouts.md)). Set every use you need and no

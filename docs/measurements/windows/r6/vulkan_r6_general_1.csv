@@ -1,0 +1,16 @@
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,gbuffer,2.9965,2.9787,3.0104
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,lighting,4.5749,4.2405,4.6821
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,hiz,0.5480,0.5100,0.5766
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,post,4.0412,3.1734,4.1519
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,present,3.0431,2.7667,3.2205
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,frame,17.5794,15.7197,17.8476
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,cpu_submit_wait,17.7055,15.9197,17.9753
+vulkan,AMD Radeon(TM) Graphics,transitions,2160,frame,between,2.3507,2.3307,2.3701
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,gbuffer,3.0810,3.0470,3.1005
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,lighting,3.8628,3.8004,3.9290
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,hiz,0.5842,0.5736,0.5942
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,post,3.6777,3.3240,3.7876
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,present,3.0157,2.6569,3.1665
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,frame,16.6646,15.9756,16.8758
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,cpu_submit_wait,16.7980,16.1038,17.0157
+vulkan,AMD Radeon(TM) Graphics,baseline:transitions,2160,frame,between,2.4281,2.4207,2.4694
