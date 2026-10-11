@@ -19,6 +19,7 @@ add_library(EquineD3D12Backend STATIC
     Device.cpp
     Debug.cpp
     Indirect.cpp
+    Swapchain.cpp
     DeviceState.hpp
     Resources.cpp
     Pipeline.cpp

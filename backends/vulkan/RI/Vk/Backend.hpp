@@ -8,6 +8,7 @@
 #include <RI/Device.hpp>
 #include <RI/Resources.hpp>
 #include <RI/Textures.hpp>
+#include <RI/Window.hpp>
 
 #include <initializer_list>
 #include <optional>
@@ -391,5 +392,42 @@ void cmdEndMarker(CommandList &cmd);
 TimelinePoint submit(Queue &queue, CommandList &cmd);
 void wait(Queue &queue, TimelinePoint point);
 bool isReached(Queue &queue, TimelinePoint point);
+
+// ── Swapchains (P43, P63, P64) ───────────────────────────────────────────────
+
+struct SwapchainState; // backend-private: surface, images, semaphores
+
+// A window's swapchain. The screen texture of each frame comes from acquire();
+// swapchain image cycling is not frames in flight (P43).
+struct Swapchain {
+    uint32 width = 0;
+    uint32 height = 0;
+    SurfaceFormat format;
+    PresentMode presentMode = PresentMode::eFifo;
+    uint32 imageCount = 0;
+    struct {
+        SwapchainState *state = nullptr;
+        uint64 id = 0;
+    } internal;
+};
+
+// The (format, color space) pairs the window can show (P64 (1)).
+std::vector<SurfaceFormat> surfaceFormats(Device &device, const Window &window);
+bool presentModeSupported(Device &device, const Window &window, PresentMode mode);
+// Whether compute may write the screen texture in this format (P64 (5)).
+bool screenStorageSupported(Device &device, const Window &window, Format format);
+
+Swapchain createSwapchain(Device &device, const SwapchainDesc &desc);
+// Waits for the GPU, then recreates the images at the new size (P43: the user
+// decides when, e.g. after a window resize or an out-of-date report).
+void resizeSwapchain(Device &device, Swapchain &swapchain, uint32 width, uint32 height);
+void destroySwapchain(Device &device, Swapchain &swapchain);
+
+// The screen texture to draw into this frame (P63 (2)): usage eRenderTarget |
+// eCopyDst (and eStorage if asked). Blocks while no image is free. Its
+// contents are undefined after acquire.
+Texture acquire(Device &device, Swapchain &swapchain);
+// Shows the acquired texture once the work submitted before it has finished.
+void present(Queue &queue, Swapchain &swapchain);
 
 } // namespace RI::Vk

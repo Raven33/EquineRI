@@ -151,6 +151,11 @@ void releaseViewSlots(DeviceState &state, TextureView &view) {
 
 } // namespace
 
+TextureView makeTextureView(DeviceState &state, const Texture &texture, const TextureViewDesc &desc) {
+    return makeView(state, texture, desc);
+}
+void releaseTextureView(DeviceState &state, TextureView &view) { releaseViewSlots(state, view); }
+
 D3D12_BARRIER_LAYOUT restingLayout(TextureUsage usage) {
     if (has(usage, TextureUsage::eSampled) || has(usage, TextureUsage::eStorage) ||
         has(usage, TextureUsage::eCopySrc) || has(usage, TextureUsage::eCopyDst)) {

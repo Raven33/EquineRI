@@ -280,6 +280,11 @@ if (EQUINE_BUILD_TESTS)
     enable_testing() # before samples: they register their own run as a test
 endif()
 
+# Helpers (P41): built for tests, samples and doc snippets, which use them.
+if (EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES OR EQUINE_BUILD_DOC_SNIPPETS)
+    add_subdirectory(helpers)
+endif()
+
 if (EQUINE_BUILD_SAMPLES)
     add_subdirectory(samples)
     add_subdirectory(tools/layout_bench) # the L1 measurement (Milestone 3)

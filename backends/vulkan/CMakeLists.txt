@@ -54,6 +54,7 @@ add_library(EquineVulkanBackend STATIC
     Commands.cpp
     Debug.cpp
     Indirect.cpp
+    Swapchain.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
