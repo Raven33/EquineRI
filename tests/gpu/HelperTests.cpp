@@ -4,7 +4,6 @@
 
 #include <TestHarness.hpp>
 
-#include <RI/Helpers/FrameGraph.hpp>
 #include <RI/Helpers/FrameRing.hpp>
 #include <RI/Helpers/MemoryAllocator.hpp>
 #include <RI/Helpers/Profiler.hpp>
@@ -117,54 +116,6 @@ EQ_TEST(helpers, frame_ring_and_profiler) {
     RI::Helpers::destroyFrameRing(ring);
     RI::destroyTexture(device, target);
     RI::Helpers::destroyMemoryAllocator(allocator);
-    RI::destroyDevice(device);
-}
-
-// The frame graph planner: A (steps 0-1) and C (step 2) alias; barriers and
-// discards come from the plan; the data arrives in the external buffer.
-EQ_TEST(helpers, frame_graph) {
-    RI::Device device = createTestDevice();
-    using RI::Helpers::Access;
-    RI::Helpers::FrameGraph graph = RI::Helpers::createFrameGraph(device);
-    const RI::TextureDesc desc{.width = 32, .height = 32, .format = RI::Format::eRGBA8Unorm,
-                               .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc |
-                                        RI::TextureUsage::eCopyDst};
-    const uint32 a = RI::Helpers::addTransientTexture(graph, desc);
-    const uint32 b = RI::Helpers::addTransientTexture(graph, desc);
-    const uint32 c = RI::Helpers::addTransientTexture(graph, desc);
-    const uint32 out = RI::Helpers::addExternal(graph);
-    const uint32 clearA = RI::Helpers::addStep(graph, {{a, RI::Stage::eCopy, Access::eWrite}});
-    const uint32 copyAB = RI::Helpers::addStep(graph, {{a, RI::Stage::eCopy, Access::eRead}, {b, RI::Stage::eCopy, Access::eWrite}});
-    const uint32 finish = RI::Helpers::addStep(graph, {{b, RI::Stage::eCopy, Access::eRead},
-                                                       {c, RI::Stage::eCopy, Access::eWrite},
-                                                       {out, RI::Stage::eCopy, Access::eWrite}});
-    RI::Helpers::compileFrameGraph(graph);
-    EQ_CHECK(graph.resources[a].offset == graph.resources[c].offset); // lifetimes 0-1 and 2: aliased
-    EQ_CHECK(graph.plan[copyAB].before != RI::Stage::eNone);           // reads A after step 0 wrote it
-
-    RI::Helpers::MemoryAllocator allocator = RI::Helpers::createMemoryAllocator(device);
-    RI::Helpers::Allocation allocation;
-    const RI::CopyLayout layout = RI::copyLayout(device, RI::Helpers::graphTexture(graph, b).view);
-    RI::Buffer readback = RI::Helpers::createBuffer(allocator, RI::MemoryKind::eReadback,
-                                                    {.size = layout.size, .usage = RI::BufferUsage::eCopyDst}, allocation);
-    RI::CommandList cmd = RI::createCommandList(device);
-    RI::cmdBegin(cmd);
-    RI::Helpers::beginStep(graph, cmd, clearA);
-    RI::cmdClearTexture(cmd, RI::Helpers::graphTexture(graph, a).view, {.color = {1.0f, 0.5f, 0.0f, 1.0f}});
-    RI::Helpers::beginStep(graph, cmd, copyAB);
-    RI::cmdCopyTexture(cmd, RI::Helpers::graphTexture(graph, a).view, RI::Helpers::graphTexture(graph, b).view);
-    RI::Helpers::beginStep(graph, cmd, finish);
-    RI::cmdClearTexture(cmd, RI::Helpers::graphTexture(graph, c).view, {.color = {0.0f, 0.0f, 0.0f, 0.0f}});
-    RI::cmdCopyTextureToBuffer(cmd, RI::Helpers::graphTexture(graph, b).view, readback, 0);
-    RI::cmdEnd(cmd);
-    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
-    const auto *bytes = static_cast<const uint8 *>(readback.mapped);
-    EQ_CHECK(bytes[0] == 255 && (bytes[1] == 127 || bytes[1] == 128) && bytes[2] == 0);
-
-    RI::destroyCommandList(device, cmd);
-    RI::destroyBuffer(device, readback);
-    RI::Helpers::destroyMemoryAllocator(allocator);
-    RI::Helpers::destroyFrameGraph(graph);
     RI::destroyDevice(device);
 }
 
