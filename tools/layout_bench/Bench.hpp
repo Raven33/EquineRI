@@ -52,6 +52,15 @@ struct Workload {
     std::vector<Pass> passes;
 };
 
+// Diagnosis (--baseline-variant, Vulkan): the baseline copies one of RI's
+// choices, to find which one costs. Comma-separated: "ro" (sampled color in
+// READ_ONLY_OPTIMAL), "general" (storage textures sampled in GENERAL), "full"
+// (full-scope barriers). Empty: the optimal baseline.
+inline std::string baselineVariant;
+inline bool hasVariant(const char *name) {
+    return ("," + baselineVariant + ",").find("," + std::string(name) + ",") != std::string::npos;
+}
+
 // The baseline's state and calls, one implementation per backend.
 struct Baseline;
 Baseline *createBaseline(RI::Device &device, RI::DescriptorHeap &heap);
