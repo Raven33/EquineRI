@@ -74,6 +74,16 @@ uint64 alignUp(uint64 value, uint64 alignment) { return (value + alignment - 1) 
 // Texture views in descriptors (P87): an SRV or a UAV of the view's range.
 // Returns false when the descriptor names a buffer.
 bool writeTextureView(DeviceState &state, const Descriptor &descriptor, D3D12_CPU_DESCRIPTOR_HANDLE slot) {
+    // Top-level acceleration structures (P49): an SRV naming the address.
+    if (const auto *as = std::get_if<AccelerationStructureView>(&descriptor)) {
+        EQ_DX_CHECK_ALIVE(&state, as->tlas.internal.id, "acceleration structure");
+        D3D12_SHADER_RESOURCE_VIEW_DESC srv{.Format = DXGI_FORMAT_UNKNOWN,
+                                            .ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE,
+                                            .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING};
+        srv.RaytracingAccelerationStructure.Location = as->tlas.gpuAddress;
+        state.device->CreateShaderResourceView(nullptr, &srv, slot);
+        return true;
+    }
     const TextureView *view = nullptr;
     bool readWrite = false;
     if (const auto *r = std::get_if<ReadView>(&descriptor); r != nullptr && r->texture.internal.resource != nullptr) {
@@ -296,6 +306,8 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
                 using View = std::decay_t<decltype(view)>;
                 if constexpr (std::is_same_v<View, ConstantBufferView>) {
                     return std::tuple{view.buffer, view.offset, view.size, uint32{0}, 2};
+                } else if constexpr (std::is_same_v<View, AccelerationStructureView>) {
+                    return std::tuple{Buffer{}, uint64{0}, uint64{0}, uint32{0}, 0}; // written by writeTextureView
                 } else if constexpr (std::is_same_v<View, ReadWriteView>) {
                     return std::tuple{view.buffer, view.offset, view.size, view.stride, 1};
                 } else {

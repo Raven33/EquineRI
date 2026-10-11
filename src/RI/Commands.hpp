@@ -19,6 +19,7 @@ enum class Stage : uint32 {
     ePixel = rvl::eBit(4),    // pixel shading
     eRenderTarget = rvl::eBit(5),  // color attachment reads and writes
     eDepthStencil = rvl::eBit(6),  // depth/stencil tests and writes
+    eAccelerationStructure = rvl::eBit(7), // acceleration structure builds (P49)
     eAll = rvl::eBit(31),
 };
 makeBitmask(Stage)

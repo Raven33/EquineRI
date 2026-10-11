@@ -491,7 +491,7 @@ D3D12_QUERY_TYPE queryTypeOf(QueryType type) {
     }
 }
 
-uint64 resultSizeOf(QueryType type) {
+[[maybe_unused]] uint64 resultSizeOf(QueryType type) {
     return type == QueryType::ePipelineStatistics ? sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS) : 8;
 }
 

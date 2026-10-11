@@ -69,6 +69,7 @@ set(EQUINE_GPU_SHARED_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ComputeTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/TextureTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/SwapchainTests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/gpu/RayTracingTests.cpp"
 )
 set(EQUINE_GPU_SHARED_TEST_NAMES
     compute.buffer_compute_readback
@@ -96,6 +97,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.resolve_depth
     texture.indirect_level1
     texture.indirect_level2
+    raytracing.build_trace_update
     texture.unlisted_view_format_reports
 )
 if (WIN32)
@@ -134,7 +136,8 @@ endif()
 # The shaders of the portable GPU tests.
 function(equine_add_gpu_test_shaders exe)
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
-    equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl")
+    equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
+                       "${dir}/ray_query.hlsl")
     equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl")
     equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl")
     equine_add_shaders(${exe} PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl" "${dir}/fullscreen_payload_ms.hlsl")

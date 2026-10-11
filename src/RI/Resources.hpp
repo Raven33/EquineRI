@@ -31,6 +31,7 @@ enum class BufferUsage : uint32 {
     eCopyDst = rvl::eBit(4),
     eIndirect = rvl::eBit(5), // indirect arguments (P48)
     eIndex = rvl::eBit(6),    // index buffer for cmdDrawIndexed (P39)
+    eAccelerationStructureInput = rvl::eBit(7), // vertices, indices or instances of a build (P49)
 };
 makeBitmask(BufferUsage)
 

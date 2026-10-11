@@ -7,6 +7,7 @@
 #include <RI/Commands.hpp>
 #include <RI/Device.hpp>
 #include <RI/Resources.hpp>
+#include <RI/RayTracing.hpp>
 #include <RI/Textures.hpp>
 #include <RI/Window.hpp>
 
@@ -138,6 +139,29 @@ void destroyTexture(Device &device, Texture &texture);
 TextureView createView(Device &device, const Texture &texture, const TextureViewDesc &desc);
 void destroyView(Device &device, TextureView &view);
 
+// ── Acceleration structures (P49) ─────────────────────────────────────────────
+
+// A bottom- or top-level acceleration structure placed in user memory (P31).
+struct AccelerationStructure {
+    uint64 size = 0;
+    uint64 gpuAddress = 0; // the address TLAS instances name (AccelerationStructureInstance::blasAddress)
+    bool topLevel = false;
+    struct {
+        uint64 handle = 0; // VkAccelerationStructureKHR
+        uint64 buffer = 0; // VkBuffer holding it, placed in the memory
+        uint64 id = 0;
+    } internal;
+};
+
+// Sizes for building `desc` (P49): the structure, and scratch for builds and updates.
+AccelerationStructureSizes blasSizes(Device &device, const BlasDesc &desc);
+AccelerationStructureSizes tlasSizes(Device &device, const TlasDesc &desc);
+// Placement of a structure of `size` bytes: alignment and memory kinds.
+MemoryRequirements accelerationStructureRequirements(Device &device, uint64 size);
+AccelerationStructure createAccelerationStructure(Device &device, const Memory &memory, uint64 offset, uint64 size,
+                                                  bool topLevel);
+void destroyAccelerationStructure(Device &device, AccelerationStructure &structure);
+
 // ── Descriptors (P42, P59, P87, P94) ─────────────────────────────────────────
 
 // A resource heap and a sampler heap, written by slot (P42). Writes take effect
@@ -178,8 +202,12 @@ struct ConstantBufferView {
     uint64 offset = 0;
     uint64 size = kWholeSize;
 };
+// A top-level acceleration structure for RayQuery (RaytracingAccelerationStructure, P49).
+struct AccelerationStructureView {
+    AccelerationStructure tlas;
+};
 
-using Descriptor = std::variant<ReadView, ReadWriteView, ConstantBufferView>;
+using Descriptor = std::variant<ReadView, ReadWriteView, ConstantBufferView, AccelerationStructureView>;
 
 struct DescriptorWrite {
     uint32 slot = 0;
@@ -358,6 +386,15 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
 // rendering sections. Counts as Stage::eRenderTarget (color) or
 // Stage::eDepthStencil (depth) for barriers.
 void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode);
+
+// Acceleration structure builds (P49): `update` refits a structure built with
+// eAllowUpdate from the same geometry. Scratch at `scratchOffset` (a multiple of
+// DeviceLimits::accelerationStructureScratchAlignment) of a buffer with
+// eReadWrite. Builds count as Stage::eAccelerationStructure.
+void cmdBuildBlas(CommandList &cmd, const AccelerationStructure &dst, const BlasDesc &desc, const Buffer &scratch,
+                  uint64 scratchOffset, bool update = false);
+void cmdBuildTlas(CommandList &cmd, const AccelerationStructure &dst, const TlasDesc &desc, const Buffer &scratch,
+                  uint64 scratchOffset, bool update = false);
 
 // Required before first use of a texture whose memory held another resource
 // (P69). A full-scope barrier.

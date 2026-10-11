@@ -183,6 +183,10 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     // Depth and stencil resolves (P76): ResolveSubresourceRegion takes depth
     // formats with programmable sample positions tier 2, with min, max and
     // average for depth and min and max for stencil. No sample-zero mode.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5{};
+    state->rayTracing =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5))) &&
+        options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
     D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2{};
     const bool depthResolve =
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))) &&
@@ -202,6 +206,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .timestampFrequency = timestampFrequency,
         .meshShaders = meshShaders,
         .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
+        .rayTracing = state->rayTracing,
+        .accelerationStructureScratchAlignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT,
         .depthResolveModes = state->depthResolveModes,
         .stencilResolveModes = state->stencilResolveModes,
     };

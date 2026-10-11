@@ -47,6 +47,9 @@ VkPipelineStageFlags2 stagesOf(Stage stage) {
     if ((stage & Stage::eDepthStencil) != Stage::eNone) {
         flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
     }
+    if ((stage & Stage::eAccelerationStructure) != Stage::eNone) {
+        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+    }
     return flags;
 }
 
@@ -305,6 +308,10 @@ void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) { fn(cmd).vkCmd
 
 // Coarse stage -> stage barrier (P36): every write before, every access after.
 void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
+    if (((before | after) & Stage::eAccelerationStructure) != Stage::eNone && !cmd.internal.device->rayTracing) {
+        reportError(ErrorCategory::eUnsupported,
+                    "cmdBarrier: Stage::eAccelerationStructure needs ray tracing (DeviceLimits::rayTracing)");
+    }
     const VkMemoryBarrier2 barrier{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .srcStageMask = stagesOf(before),
