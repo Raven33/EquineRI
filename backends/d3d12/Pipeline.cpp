@@ -170,22 +170,66 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
 }
 
 // Graphics pipelines (P38, P39): complete state up front, no input layout.
+// A pipeline-state stream subobject (mesh pipelines): its type, then its
+// value, aligned as D3D12 reads the stream.
+template <D3D12_PIPELINE_STATE_SUBOBJECT_TYPE Type, typename T>
+struct alignas(void *) Subobject {
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type = Type;
+    T value{};
+};
+
+struct MeshStream {
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE, ID3D12RootSignature *> rootSignature;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_AS, D3D12_SHADER_BYTECODE> task;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MS, D3D12_SHADER_BYTECODE> mesh;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS, D3D12_SHADER_BYTECODE> pixel;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND, D3D12_BLEND_DESC> blend;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK, UINT> sampleMask;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER, D3D12_RASTERIZER_DESC> rasterizer;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL, D3D12_DEPTH_STENCIL_DESC> depthStencil;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS, D3D12_RT_FORMAT_ARRAY> renderTargets;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT, DXGI_FORMAT> depthFormat;
+    Subobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC, DXGI_SAMPLE_DESC> sampleDesc;
+};
+
 Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc) {
     DeviceState &state = *device.internal.state;
     const char *call = "createGraphicsPipeline";
-    Reflection::DxilInfo info = reflectStage(desc.vertex, call);
-    if (!desc.pixel.empty()) {
-        const Reflection::DxilInfo pixel = reflectStage(desc.pixel, call);
-        if (info.hasRootData && pixel.hasRootData && info.rootDataSize != pixel.rootDataSize) {
-            reportError(ErrorCategory::eProgrammerError,
-                        std::format("{}: the vertex and pixel shaders declare different root data ({} and {} bytes)",
-                                    call, info.rootDataSize, pixel.rootDataSize));
-        }
-        if (!info.hasRootData && pixel.hasRootData) {
-            info.hasRootData = true;
-            info.rootDataSize = pixel.rootDataSize;
-        }
+    const bool meshPipeline = !desc.mesh.empty();
+    if (meshPipeline == !desc.vertex.empty() || (!desc.task.empty() && !meshPipeline)) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("{}: give a vertex shader, or a mesh shader (with an optional task shader), not both",
+                                call));
     }
+    if (meshPipeline && !device.limits.meshShaders) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("{}: this GPU has no mesh shaders (DeviceLimits::meshShaders)", call));
+    }
+    // One root data block for the whole pipeline (P44).
+    Reflection::DxilInfo info{};
+    const char *rootStage = nullptr;
+    const auto addStage = [&](Bytecode code, const char *name) {
+        if (code.empty()) {
+            return;
+        }
+        const Reflection::DxilInfo stage = reflectStage(code, call);
+        if (!stage.hasRootData) {
+            return;
+        }
+        if (rootStage != nullptr && stage.rootDataSize != info.rootDataSize) {
+            reportError(ErrorCategory::eProgrammerError,
+                        std::format("{}: the {} shader declares {} bytes of root data and the {} shader {}; every "
+                                    "stage must declare the same root data (P44)",
+                                    call, rootStage, info.rootDataSize, name, stage.rootDataSize));
+        }
+        info.hasRootData = true;
+        info.rootDataSize = stage.rootDataSize;
+        rootStage = name;
+    };
+    addStage(desc.task, "task");
+    addStage(desc.mesh, "mesh");
+    addStage(desc.vertex, "vertex");
+    addStage(desc.pixel, "pixel");
     checkRootDataSize(device, info.rootDataSize, call);
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
                                                hasStencil(desc.depthFormat)));
@@ -196,7 +240,9 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     ID3D12RootSignature *rootSignature = createRootSignature(state, info);
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pso{};
     pso.pRootSignature = rootSignature;
-    pso.VS = {desc.vertex.data(), desc.vertex.size()};
+    if (!meshPipeline) {
+        pso.VS = {desc.vertex.data(), desc.vertex.size()};
+    }
     if (!desc.pixel.empty()) {
         pso.PS = {desc.pixel.data(), desc.pixel.size()};
     }
@@ -259,7 +305,28 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     pso.DSVFormat = dxgiFormat(desc.depthFormat);
     pso.SampleDesc = {.Count = desc.samples, .Quality = 0};
     ID3D12PipelineState *pipelineState = nullptr;
-    checkHr(state.device->CreateGraphicsPipelineState(&pso, IID_PPV_ARGS(&pipelineState)), "CreateGraphicsPipelineState");
+    if (meshPipeline) {
+        MeshStream stream;
+        stream.rootSignature.value = rootSignature;
+        stream.task.value = {desc.task.data(), desc.task.size()};
+        stream.mesh.value = {desc.mesh.data(), desc.mesh.size()};
+        stream.pixel.value = pso.PS;
+        stream.blend.value = pso.BlendState;
+        stream.sampleMask.value = pso.SampleMask;
+        stream.rasterizer.value = pso.RasterizerState;
+        stream.depthStencil.value = pso.DepthStencilState;
+        stream.renderTargets.value.NumRenderTargets = pso.NumRenderTargets;
+        for (UINT i = 0; i < 8; ++i) {
+            stream.renderTargets.value.RTFormats[i] = pso.RTVFormats[i];
+        }
+        stream.depthFormat.value = pso.DSVFormat;
+        stream.sampleDesc.value = pso.SampleDesc;
+        const D3D12_PIPELINE_STATE_STREAM_DESC streamDesc{.SizeInBytes = sizeof(stream), .pPipelineStateSubobjectStream = &stream};
+        checkHr(state.device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState)), "CreatePipelineState (mesh)");
+    } else {
+        checkHr(state.device->CreateGraphicsPipelineState(&pso, IID_PPV_ARGS(&pipelineState)),
+                "CreateGraphicsPipelineState");
+    }
 
     Pipeline out;
     out.rootDataSize = info.hasRootData ? info.rootDataSize : 0;

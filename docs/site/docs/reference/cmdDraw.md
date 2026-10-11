@@ -1,8 +1,8 @@
 ---
-symbols: [RI::cmdDraw, RI::cmdSetIndexBuffer, RI::cmdDrawIndexed, RI::IndexFormat]
+symbols: [RI::cmdDraw, RI::cmdSetIndexBuffer, RI::cmdDrawIndexed, RI::IndexFormat, RI::cmdDrawMesh]
 ---
 
-# RI::cmdDraw, RI::cmdDrawIndexed
+# RI::cmdDraw, RI::cmdDrawIndexed, RI::cmdDrawMesh
 
 ## What it does
 
@@ -28,6 +28,11 @@ firstIndex, vertexOffset, firstInstance)` draws with it. `SV_VertexID` is then t
 plus `vertexOffset`: the vertex shader still pulls its data, the indices only say which
 vertices make each primitive (and let the GPU reuse shaded vertices).
 
+**Mesh draws** (`device.limits.meshShaders`): with a mesh pipeline set,
+`RI::cmdDrawMesh(cmd, x, y, z)` launches `x * y * z` groups of the task shader, or of the mesh
+shader when the pipeline has none. Mesh shaders output vertices and primitives themselves
+(`SetMeshOutputCounts`); a task shader launches mesh groups with `DispatchMesh`.
+
 ## Signature
 
 --8<-- "generated/signatures/RI.cmdDraw.md"
@@ -35,6 +40,8 @@ vertices make each primitive (and let the GPU reuse shaded vertices).
 --8<-- "generated/signatures/RI.cmdSetIndexBuffer.md"
 
 --8<-- "generated/signatures/RI.cmdDrawIndexed.md"
+
+--8<-- "generated/signatures/RI.cmdDrawMesh.md"
 
 ## Example
 

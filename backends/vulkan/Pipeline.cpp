@@ -231,39 +231,63 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
 Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc) {
     DeviceState &state = *device.internal.state;
     constexpr const char *kCall = "createGraphicsPipeline";
-    const ShaderInfo vertex = reflect(desc.vertex, SPV_REFLECT_SHADER_STAGE_VERTEX_BIT, kCall, "vertex");
-    ShaderInfo pixel;
-    if (!desc.pixel.empty()) {
-        pixel = reflect(desc.pixel, SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT, kCall, "pixel");
-    }
-    // One root data block for the whole pipeline (P44).
-    if (vertex.hasRootData && pixel.hasRootData && vertex.rootDataSize != pixel.rootDataSize) {
+    const bool meshPipeline = !desc.mesh.empty();
+    if (meshPipeline == !desc.vertex.empty() || (!desc.task.empty() && !meshPipeline)) {
         reportError(ErrorCategory::eProgrammerError,
-                    std::format("{}: the vertex shader declares {} bytes of root data and the pixel shader {}; "
-                                "both stages must declare the same root data (P44)",
-                                kCall, vertex.rootDataSize, pixel.rootDataSize));
+                    std::format("{}: give a vertex shader, or a mesh shader (with an optional task shader), not both",
+                                kCall));
     }
-    const uint32 rootDataSize = vertex.hasRootData ? vertex.rootDataSize : pixel.rootDataSize;
+    if (meshPipeline && !device.limits.meshShaders) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("{}: this GPU has no mesh shaders (DeviceLimits::meshShaders)", kCall));
+    }
+    // Every stage, with its reflection; one root data block for the whole pipeline (P44).
+    struct Stage {
+        Bytecode code;
+        SpvReflectShaderStageFlagBits reflectStage;
+        VkShaderStageFlagBits stage;
+        const char *name;
+    };
+    std::vector<Stage> stageList;
+    if (meshPipeline) {
+        if (!desc.task.empty()) {
+            stageList.push_back({desc.task, SPV_REFLECT_SHADER_STAGE_TASK_BIT_EXT, VK_SHADER_STAGE_TASK_BIT_EXT, "task"});
+        }
+        stageList.push_back({desc.mesh, SPV_REFLECT_SHADER_STAGE_MESH_BIT_EXT, VK_SHADER_STAGE_MESH_BIT_EXT, "mesh"});
+    } else {
+        stageList.push_back({desc.vertex, SPV_REFLECT_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_VERTEX_BIT, "vertex"});
+    }
+    if (!desc.pixel.empty()) {
+        stageList.push_back({desc.pixel, SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, "pixel"});
+    }
+    uint32 rootDataSize = 0;
+    const char *rootStage = nullptr;
+    for (const Stage &stage : stageList) {
+        const ShaderInfo info = reflect(stage.code, stage.reflectStage, kCall, stage.name);
+        if (!info.hasRootData) {
+            continue;
+        }
+        if (rootStage != nullptr && info.rootDataSize != rootDataSize) {
+            reportError(ErrorCategory::eProgrammerError,
+                        std::format("{}: the {} shader declares {} bytes of root data and the {} shader {}; "
+                                    "every stage must declare the same root data (P44)",
+                                    kCall, rootStage, rootDataSize, stage.name, info.rootDataSize));
+        }
+        rootDataSize = info.rootDataSize;
+        rootStage = stage.name;
+    }
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
                                                hasStencil(desc.depthFormat)));
     const VkPipelineLayout layout = createLayout(state, device.limits, rootDataSize, kCall);
 
-    VkShaderModule modules[2] = {createModule(state, desc.vertex), VK_NULL_HANDLE};
-    VkPipelineShaderStageCreateInfo stages[2] = {
-        {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-         .stage = VK_SHADER_STAGE_VERTEX_BIT,
-         .module = modules[0],
-         .pName = "main"},
-        {},
-    };
-    uint32 stageCount = 1;
-    if (!desc.pixel.empty()) {
-        modules[1] = createModule(state, desc.pixel);
-        stages[1] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                     .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                     .module = modules[1],
-                     .pName = "main"};
-        stageCount = 2;
+    std::vector<VkShaderModule> modules;
+    std::vector<VkPipelineShaderStageCreateInfo> stages;
+    for (const Stage &stage : stageList) {
+        modules.push_back(createModule(state, stage.code));
+        stages.push_back({.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                          .stage = stage.stage,
+                          .module = modules.back(),
+                          .pName = "main"});
     }
 
     std::vector<VkFormat> colorFormats;
@@ -332,10 +356,11 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     const VkGraphicsPipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext = &renderingInfo,
-        .stageCount = stageCount,
-        .pStages = stages,
-        .pVertexInputState = &vertexInput,
-        .pInputAssemblyState = &inputAssembly,
+        .stageCount = static_cast<uint32>(stages.size()),
+        .pStages = stages.data(),
+        // Mesh pipelines have no vertex input or input assembly.
+        .pVertexInputState = meshPipeline ? nullptr : &vertexInput,
+        .pInputAssemblyState = meshPipeline ? nullptr : &inputAssembly,
         .pViewportState = &viewport,
         .pRasterizationState = &rasterization,
         .pMultisampleState = &multisample,

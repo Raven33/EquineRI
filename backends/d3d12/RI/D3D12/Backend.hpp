@@ -313,6 +313,10 @@ void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uin
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format);
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0,
                     int32 vertexOffset = 0, uint32 firstInstance = 0);
+// Mesh pipelines (P39): launches x * y * z task shader groups, or mesh shader
+// groups when the pipeline has no task shader.
+void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z);
+
 
 
 // Copies (P47). A texture view covers one mip (and one aspect of a depth

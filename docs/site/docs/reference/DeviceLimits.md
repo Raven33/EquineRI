@@ -17,6 +17,7 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `maxRootDataSize` | the most bytes of [root data](../concepts/root-data.md) a shader may declare | `maxPushConstantsSize` (at least 128) | 256 (64 root constants) |
 | `gpuUploadMemory` | whether [`MemoryKind::eGPUUpload`](memory.md) can be allocated | all of the largest device-local heap is host-visible (ReBAR) | `GPUUploadHeapSupported` |
 | `timestampFrequency` | [timestamp](timestamps.md) ticks per second | `1e9 / timestampPeriod` (the period is in nanoseconds per tick) | `ID3D12CommandQueue::GetTimestampFrequency` of the graphics queue |
+| `meshShaders` | task and mesh shaders, [`cmdDrawMesh`](cmdDraw.md) | `VK_EXT_mesh_shader` with `taskShader` and `meshShader` | `D3D12_OPTIONS7::MeshShaderTier` at least tier 1 |
 
 ## Signature
 

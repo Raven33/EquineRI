@@ -17,6 +17,10 @@ a [rendering section](../concepts/rendering.md), and destroy it with
 
 - `vertex`, `pixel`: bytecode (SPIR-V or DXIL), entry point `main`. `pixel` may be empty for a
   depth-only pipeline;
+- `task`, `mesh`: a **mesh pipeline** gives a mesh shader instead of `vertex` (compiled with
+  profile `ms_6_6`), and optionally a task (amplification) shader before it (`as_6_6`). It is
+  drawn with [`cmdDrawMesh`](cmdDraw.md); `topology` does not apply (the mesh shader declares
+  its own). Mesh shaders need `device.limits.meshShaders`;
 - `colorFormats`, `depthFormat`, `samples`: the formats and sample count of the attachments it
   renders to. They must match the rendering section's;
 - `topology`: `eTriangleList` (default), `eTriangleStrip`, `eLineList`, `ePointList`;
@@ -120,6 +124,8 @@ The shaders:
 - To write depth, set both `test` and `write`; to write depth unconditionally, compare with
   `CompareOp::eAlways`. (Vulkan writes depth only when the test is on.)
 - A pipeline with `depth.write` set is refused in a read-only depth section (validation builds).
+- Exactly one of `vertex` and `mesh`; `task` only with `mesh` (**programmer error**). A mesh
+  pipeline on a GPU without mesh shaders is **unsupported**.
 - `blend` holds no states or one per color format; the stencil test needs a `depthFormat` with
   stencil (**programmer error** in validation builds).
 - Alpha blend factors that name a color (`eSrcColor`, ...) are read as the matching alpha

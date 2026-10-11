@@ -190,7 +190,7 @@ nav:
           - RI::cmdCopyBuffer: reference/cmdCopyBuffer.md
           - RI::copyLayout and texture copies: reference/copies.md
           - RI::cmdBeginRendering, RI::cmdEndRendering: reference/cmdBeginRendering.md
-          - RI::cmdDraw, RI::cmdDrawIndexed: reference/cmdDraw.md
+          - RI::cmdDraw, RI::cmdDrawIndexed, RI::cmdDrawMesh: reference/cmdDraw.md
           - RI::cmdDiscard: reference/cmdDiscard.md
           - RI::cmdClearTexture, RI::cmdClearBuffer: reference/cmdClear.md
           - RI::cmdWriteTimestamp, RI::cmdResolveQueries, RI::cmdResetQueries: reference/timestamps.md

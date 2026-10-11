@@ -176,6 +176,10 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
 
     UINT64 timestampFrequency = 0;
     checkHr(state->graphicsQueue->GetTimestampFrequency(&timestampFrequency), "GetTimestampFrequency");
+    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
+    const bool meshShaders =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))) &&
+        options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
     // Resource binding tier 3 and the root signature's 64-DWORD budget (P44).
     device.limits = {
@@ -184,6 +188,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .maxRootDataSize = 64 * 4,
         .gpuUploadMemory = state->gpuUploadHeap,
         .timestampFrequency = timestampFrequency,
+        .meshShaders = meshShaders,
     };
 
     device.graphicsQueue.internal.device = state;

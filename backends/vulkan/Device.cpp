@@ -488,6 +488,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         state->copyRowPitchAlignment = std::max<VkDeviceSize>(properties.limits.optimalBufferCopyRowPitchAlignment, 1);
     }
     state->faultEnabled = setup.fault && chain.f.fault.deviceFault == VK_TRUE;
+    device.limits.meshShaders = setup.mesh && chain.f.mesh.meshShader == VK_TRUE && chain.f.mesh.taskShader == VK_TRUE;
     state->functions.vkGetDeviceQueue(state->device, state->graphicsQueueFamily, 0, &state->graphicsQueue);
 
     chooseMemoryTypes(*state, device.limits);

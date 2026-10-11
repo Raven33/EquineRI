@@ -452,6 +452,10 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.depthReadOnly = false;
 }
 
+void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
+    fn(cmd).vkCmdDrawMeshTasksEXT(native(cmd), x, y, z);
+}
+
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkIndexBuffer((buffer.usage & BufferUsage::eIndex) != BufferUsage::eNone, offset,

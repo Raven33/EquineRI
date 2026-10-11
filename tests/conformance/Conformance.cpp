@@ -150,6 +150,7 @@ EQ_SIGNATURE(pipelineStatisticsLayout, RI::PipelineStatisticsLayout (*)(RI::Devi
 EQ_SIGNATURE(cmdBeginQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdEndQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdSetIndexBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint64, RI::IndexFormat));
+EQ_SIGNATURE(cmdDrawMesh, void (*)(RI::CommandList &, uint32, uint32, uint32));
 EQ_SIGNATURE(cmdDrawIndexed, void (*)(RI::CommandList &, uint32, uint32, uint32, int32, uint32));
 
 // Debugging (P53)
