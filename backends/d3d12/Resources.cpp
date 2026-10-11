@@ -1,4 +1,15 @@
-// Memory, buffers and descriptor heaps (P31, P32, P33, P58, P59, P61, P87, P94).
+// Memory, buffers and descriptor heaps on D3D12 (P31, P32, P33, P58, P59, P61,
+// P87, P94), and the import of native memory and buffers (P77).
+//
+// Owns: allocateMemory (one heap type per kind; resource heap tier 2, so
+// `forResource` changes nothing), placed buffers, shader-visible descriptor
+// heaps, descriptor writes, writeNativeDescriptor.
+//
+// Watch out: D3D12 maps resources, not heaps: CPU-visible memory is mapped
+// through one buffer spanning the whole heap, and buffers placed later share
+// it. GPU heaps are 4 MiB aligned so they can hold MSAA textures.
+//
+// Vulkan counterpart: backends/vulkan/Resources.cpp.
 
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"

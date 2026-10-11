@@ -1,10 +1,19 @@
-// Swapchains (P43, P63, P64). The D3D12 model on Vulkan: acquire() returns the
-// screen texture, present() shows it. RI hides the semaphores: acquire submits
-// a prerecorded command buffer that waits on the acquire semaphore and moves
-// the image to its resting layout (contents undefined); present submits one
-// that moves it to PRESENT_SRC and signals the image's present semaphore.
-// Both run on the graphics queue's timeline, after the user's work in
-// submission order.
+// Swapchains on Vulkan (P43, P63, P64), in the D3D12 model: acquire() returns
+// the screen texture, present() shows it.
+//
+// Owns: surfaces (Win32, Xlib, Wayland, through mirrored create-info structs),
+// surface formats and present modes, create / resize / destroy, acquire and
+// present.
+//
+// Keeps: per image, prerecorded command buffers for the layout switches and
+// the semaphores RI hides; acquire waits on the acquire semaphore and moves
+// the image to its resting layout (contents undefined), present moves it to
+// PRESENT_SRC and signals. Both run on the graphics queue's timeline.
+//
+// Watch out: resize and destroy wait for the queue to be idle (present
+// semaphores may still be in use).
+//
+// D3D12 counterpart: backends/d3d12/Swapchain.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

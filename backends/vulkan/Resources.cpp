@@ -1,4 +1,17 @@
-// Memory, buffers and descriptor heaps (P31, P32, P33, P58, P59, P61, P87, P94).
+// Memory, buffers, descriptor heaps and query pools on Vulkan (P31, P32, P33,
+// P58, P59, P61, P71, P87, P94), and the import of native memory and buffers
+// (P77).
+//
+// Owns: allocateMemory (picking among a kind's types when given a resource's
+// requirements), buffers placed in user memory (every buffer has a GPU
+// address), descriptor heaps as descriptor sets from one pool each, descriptor
+// writes, query pools.
+//
+// Watch out: eIndirectScratch buffers need VkBufferUsageFlags2 (the preprocess
+// usage has no legacy bit). Placing a resource in a type it does not allow is
+// reported (validation builds).
+//
+// D3D12 counterpart: backends/d3d12/Resources.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

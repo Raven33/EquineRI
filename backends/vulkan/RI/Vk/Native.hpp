@@ -1,7 +1,9 @@
 #pragma once
 
-// Native Vulkan access (P84). Including this header and naming the backend
-// (`RI::Vk::native(device)`) is the only way to reach Vulkan objects.
+// Native Vulkan access (P22, P84): including this header and naming the backend
+// (`RI::Vk::native(device)`) is the only way to reach Vulkan objects. Also the
+// native device additions (features, extensions, pNext, layout mode), native
+// sections (P27, P70) and import of native objects (P77).
 
 #include <RI/Vk/Backend.hpp>
 

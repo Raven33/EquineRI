@@ -1,3 +1,8 @@
+// Vulkan-only GPU tests: GPU listing and device creation, native device
+// additions (features, extensions, pNext), layout modes and resting layouts,
+// shader printf, native sections and import, and work graphs reporting
+// unsupported. Portable tests live in tests/gpu/.
+
 #include <TestHarness.hpp>
 
 #include "../gpu/GpuTestCommon.hpp"

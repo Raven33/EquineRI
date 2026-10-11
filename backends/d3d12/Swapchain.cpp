@@ -1,8 +1,14 @@
-// Swapchains (P43, P63, P64): a DXGI flip-model swapchain. acquire() takes the
-// current back buffer once the GPU is done with its last frame and runs a
-// prerecorded switch from "undefined" (contents dropped) to its resting
-// layout; present() runs the switch to PRESENT, then Present. sRGB formats
-// use a UNORM buffer with sRGB render-target views, as flip model requires.
+// Swapchains on D3D12 (P43, P63, P64): a DXGI flip-model swapchain.
+//
+// Owns: surface formats and present modes, create / resize / destroy, acquire
+// and present. acquire() takes the current back buffer once the GPU is done
+// with its last frame and runs a prerecorded switch from "undefined" to its
+// resting layout; present() runs the switch to PRESENT, then Present.
+//
+// Watch out: sRGB formats use a UNORM buffer with sRGB render-target views,
+// as flip model requires.
+//
+// Vulkan counterpart: backends/vulkan/Swapchain.cpp.
 
 #include "Barriers.hpp"
 #include "D3D12Check.hpp"

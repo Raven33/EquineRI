@@ -1,4 +1,14 @@
-// Textures, views and query pools (P51, P58, P69, P71, P73, P74, P95).
+// Textures, views and query pools on D3D12 (P51, P58, P69, P71, P73, P74, P95).
+//
+// Owns: format support, texture requirements and placed textures, the resting
+// layout of each texture (COMMON, or the attachment layout for attachment-only
+// textures), views with RTV/DSV descriptors in RI's CPU heaps, query pools,
+// and import of native textures (P77).
+//
+// Watch out: a new texture is reset at once on the internal list (R16, P69).
+// Sampled depth textures are typeless (Formats.hpp).
+//
+// Vulkan counterpart: backends/vulkan/Textures.cpp and Resources.cpp.
 
 #include "Barriers.hpp"
 #include "D3D12Check.hpp"

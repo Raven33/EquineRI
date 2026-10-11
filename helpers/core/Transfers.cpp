@@ -1,3 +1,6 @@
+// Implements Transfers.hpp (P41, P47): one-call uploads and readbacks, each
+// with its own staging memory and command list, waiting for the GPU.
+
 #include <RI/Helpers/Transfers.hpp>
 
 #include <cstring>

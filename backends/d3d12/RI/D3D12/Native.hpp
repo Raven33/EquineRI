@@ -1,7 +1,9 @@
 #pragma once
 
-// Native D3D12 access (P84). Including this header and naming the backend
-// (`RI::D3D12::native(device)`) is the only way to reach D3D12 objects.
+// Native D3D12 access (P22, P84): including this header and naming the backend
+// (`RI::D3D12::native(device)`) is the only way to reach D3D12 objects. Also
+// the device-creation hook, native sections (P27, P70) and import of native
+// objects (P77).
 
 #include <RI/D3D12/Backend.hpp>
 

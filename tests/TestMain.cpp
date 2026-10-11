@@ -1,14 +1,17 @@
+// The test runner shared by every test executable.
+//
+// Usage:
+//   EquineRITests                  run every case
+//   EquineRITests <group.name>     run one case (CTest registers each this way)
+//   EquineRITests --list           print registered case names
+//   EquineRITests --expect-count N fail unless exactly N cases are registered
+
 #include <TestHarness.hpp>
 
 #include <cstdio>
 #include <cstdlib>
 #include <string_view>
 
-// Usage:
-//   EquineRITests                  run every case
-//   EquineRITests <group.name>     run one case (CTest registers each this way)
-//   EquineRITests --list           print registered case names
-//   EquineRITests --expect-count N fail unless exactly N cases are registered
 int main(int argc, char **argv) {
     const auto &cases = eqtest::registry();
 

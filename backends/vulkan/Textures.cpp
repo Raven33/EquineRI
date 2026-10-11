@@ -1,7 +1,17 @@
-// Textures, views and their layouts (P58, P69, P73, P74, P78, P95). Layouts
-// never reach the user (P16): each texture rests in one layout chosen from its
-// usage and the device's layout mode, and RI switches it only around its own
-// operations (A', P68).
+// Textures, views and their layouts on Vulkan (P16, P58, P69, P73, P74, P78,
+// P95, P97).
+//
+// Owns: format support, texture requirements and creation in user memory,
+// views, import of native images (P77), the resting layout of each texture
+// (restingLayoutOf, from its usage and the device's layout mode), the image
+// barrier builder, and RI's internal submissions (a new texture's initial
+// reset, R16).
+//
+// Watch out: layouts never reach the user; a texture changes layout only
+// around RI's own operations. A texture with only copy usages gets no image
+// view (none would be valid).
+//
+// D3D12 counterpart: backends/d3d12/Textures.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

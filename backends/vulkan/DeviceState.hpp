@@ -1,7 +1,16 @@
 #pragma once
 
-// Backend-private state behind RI::Vk::Device (P82: hidden state behind
-// `internal`). Heap-allocated once per device, so Device stays a small value.
+// The hidden per-device state behind RI::Vk::Device (P82), heap-allocated once
+// per device so Device stays a small value, and the declarations the backend's
+// sources share (formats, layouts, image barriers, internal submissions,
+// validation macros).
+//
+// Keeps: the instance, device and volk table; the chosen memory types; the heap
+// set layouts; DGC layouts; the timeline; the internal command buffer; and in
+// validation builds the object and placement trackers. Everything is
+// destroyed with the device.
+//
+// D3D12 counterpart: backends/d3d12/DeviceState.hpp.
 
 #include <RI/Vk/Native.hpp>
 #if EQUINE_VALIDATION
@@ -30,7 +39,7 @@ struct DeviceState {
     PFN_vkSetDebugUtilsObjectNameEXT setObjectName = nullptr;
     PFN_vkCmdBeginDebugUtilsLabelEXT beginLabel = nullptr;
     PFN_vkCmdEndDebugUtilsLabelEXT endLabel = nullptr;
-    bool faultEnabled = false;
+    bool faultEnabled = false; // VK_EXT_device_fault (validation builds, P53 (2))
     // Indirect Level 2 (P48): VK_EXT_device_generated_commands, with RI's
     // command layouts per (kind, root data size) and a matching pipeline layout
     // per root data size (compatible with every RI pipeline of that size).
@@ -38,7 +47,7 @@ struct DeviceState {
     std::map<uint64, VkIndirectCommandsLayoutEXT> indirectLayouts;
     std::map<uint32, VkPipelineLayout> indirectPipelineLayouts;
     uint32 depthResolveModes = 0; // DeviceLimits copies (P76), for checks while recording
-    uint32 stencilResolveModes = 0; // VK_EXT_device_fault (validation builds, P53 (2))
+    uint32 stencilResolveModes = 0;
     uint32 graphicsQueueFamily = 0;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
 

@@ -1,3 +1,7 @@
+// D3D12-only GPU tests: GPU listing and device creation, the Agility SDK, the
+// native creation hook, native sections and import, and work graphs. Portable
+// tests live in tests/gpu/.
+
 #include <TestHarness.hpp>
 
 #include "../gpu/GpuTestCommon.hpp"

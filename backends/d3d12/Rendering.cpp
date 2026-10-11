@@ -1,7 +1,17 @@
-// Rendering sections, draws, discard, clears and timestamps (P40, P51, P65,
-// P68, P69, P71, P75, P95). D3D12 always uses A' with resting layouts: RI
-// switches attachments into their attachment layout at cmdBeginRendering and
-// back at cmdEndRendering. The half on RI's side is exact, the other full (P68).
+// Rendering and other recorded work on D3D12 (P40, P47, P51, P52, P65, P68,
+// P69, P70, P71, P75, P76, P95).
+//
+// Owns: rendering sections and draws, discard, clears, native sections,
+// resolve, queries, and buffer-texture copies (CopyTextureRegion, rows
+// aligned to 256 bytes).
+//
+// Watch out: RI switches attachments into their attachment layout at
+// cmdBeginRendering and back at cmdEndRendering; the half on RI's side is
+// exact, the other full (P68). Clears outside sections use Clear*View; UAV
+// clears go through RI's own shader-visible heap, then the user's heaps and
+// root signature are set again (P95 (7)).
+//
+// Vulkan counterpart: backends/vulkan/Commands.cpp.
 
 #include "Barriers.hpp"
 #include "D3D12Check.hpp"

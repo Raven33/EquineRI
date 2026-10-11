@@ -1,3 +1,12 @@
+// DXGI adapters and GPU listing on D3D12 (P60, P92).
+//
+// Owns: listGpus (each adapter checked on a short-lived device: feature level
+// 12_0, shader model 6.6, resource binding tier 3, enhanced barriers), the
+// per-device factory, and the portable Gpu description (the id is the
+// adapter LUID; UMA marks integrated GPUs).
+//
+// Vulkan counterpart: backends/vulkan/Instance.cpp.
+
 #include "Adapter.hpp"
 
 #include "D3D12Check.hpp"

@@ -1,6 +1,15 @@
-// Device creation (P60, P92). D3D12 has no feature enable step: every feature
-// the GPU supports is available once the device exists. Native additions are a
-// hook that runs just before D3D12CreateDevice.
+// Device creation on D3D12 (P55, P60, P92).
+//
+// Owns: createDevice / destroyDevice (the Agility SDK, and in validation
+// builds the debug layer, GBV and DRED, set up once per process before any
+// device), the DeviceLimits, RI's CPU descriptor heaps (RTV, DSV) and clear
+// heaps, the fence, and the internal command list (beginInternal /
+// endAndWaitInternal).
+//
+// Watch out: D3D12 has no feature enable step. A native hook runs just before
+// D3D12CreateDevice. Two RI devices on one adapter share one ID3D12Device.
+//
+// Vulkan counterpart: backends/vulkan/Device.cpp and Instance.cpp.
 
 #include "Adapter.hpp"
 #include "D3D12Check.hpp"

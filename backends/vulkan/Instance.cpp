@@ -1,3 +1,14 @@
+// Vulkan instances and GPU listing (P60, P92).
+//
+// Owns: listGpus (a short-lived instance with no layers), the per-device
+// instance (validation layer and messenger in validation builds; layer
+// messages go to the error channel), and the portable Gpu description.
+//
+// Watch out: instance-level extension functions are kept per instance,
+// because volk's globals follow the newest instance.
+//
+// D3D12 counterpart: backends/d3d12/Adapter.cpp.
+
 #include "Instance.hpp"
 
 #include "VkCheck.hpp"

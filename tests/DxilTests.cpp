@@ -1,3 +1,8 @@
+// GPU-free tests of RI's DXIL reader (P67) on shaders compiled at build time by
+// the pinned DXC (P93, reflection and debug info stripped), plus synthetic and
+// corrupted containers. Malformed input must give an error, never a crash
+// (these run under ASan + UBSan).
+
 #include <TestHarness.hpp>
 
 #include <RI/Reflection/Dxil.hpp>
@@ -9,11 +14,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-// GPU-free tests of RI's DXIL reader (P67) on shaders compiled at build time by
-// the pinned DXC (P93, reflection and debug info stripped), plus synthetic and
-// corrupted containers. Malformed input must give an error, never a crash
-// (these run under ASan + UBSan).
 
 namespace {
 

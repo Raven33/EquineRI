@@ -1,6 +1,10 @@
-// Debugging (P53): object names and command markers (always on, through
-// VK_EXT_debug_utils), and GPU crash details from VK_EXT_device_fault when a
-// validation build loses the device.
+// Debugging on Vulkan (P53).
+//
+// Owns: setName for every object kind and cmdBeginMarker / cmdEndMarker
+// (VK_EXT_debug_utils, always on), and the device-lost path: checkQueueVk
+// reports VK_EXT_device_fault details in validation builds.
+//
+// D3D12 counterpart: backends/d3d12/Debug.cpp.
 
 #include "DeviceState.hpp"
 #include "VkCheck.hpp"

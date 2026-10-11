@@ -1,3 +1,6 @@
+// Implements Formats.hpp: RI formats as DXGI formats, and the typeless and SRV
+// formats of sampled depth textures.
+
 #include "Formats.hpp"
 
 namespace RI::D3D12 {

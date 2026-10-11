@@ -14,6 +14,8 @@ commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
 
 ## Where to read
 
+- `ARCHITECTURE.md`: the entry point for changing RI (layout, call flow, invariants,
+  recipes, backend differences); `docs/CodeDocumentation.md` is the standard it follows.
 - `CONTEXT.md`: the decision log (P1–P98) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
 - Environment: `EQUINE_GPU=nvidia|amd|<index>` picks the test GPU; `EQUINE_GPU_VALIDATION=0`

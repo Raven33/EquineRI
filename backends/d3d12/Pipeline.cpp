@@ -1,6 +1,15 @@
-// Compute pipelines (P38, P44, P45, P67, P94). RI builds the root signature
-// from the shader with its own DXIL reader: heap-indexing flags, and root
-// constants at b0 space999 with exactly the size the shader declares (P44).
+// Pipelines and work graphs on D3D12 (P38, P39, P44, P45, P50, P62, P67, P94).
+//
+// Owns: root signatures built from the shader by RI's own DXIL reader
+// (heap-indexing flags; root constants at b0 space999 of exactly the declared
+// size), compute, graphics and mesh pipelines, and work graphs: a state object
+// from a lib_6_8 library, bindWorkGraphMemory (initializes the backing memory
+// at once on the internal list), cmdSetWorkGraph, cmdDispatchGraph(Indirect).
+//
+// Watch out: RI does not read root data from libraries, so WorkGraphDesc
+// gives its size (P62). The stencil reference is part of the pipeline (P38).
+//
+// Vulkan counterpart: backends/vulkan/Pipeline.cpp and WorkGraph.cpp.
 
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"

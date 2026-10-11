@@ -1,6 +1,11 @@
-// Debugging (P53): object names (SetName) and command markers (PIX events
-// without the PIX runtime: BeginEvent with a UTF-16 string, the format PIX and
-// other tools read), and DRED details when a validation build loses the device.
+// Debugging on D3D12 (P53).
+//
+// Owns: setName for every object kind, cmdBeginMarker / cmdEndMarker (PIX
+// events without the PIX runtime: BeginEvent with a UTF-16 string, the format
+// PIX and other tools read), and the device-removed path: reportDeviceRemoved
+// prints DRED's breadcrumbs and page-fault details in validation builds.
+//
+// Vulkan counterpart: backends/vulkan/Debug.cpp.
 
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"

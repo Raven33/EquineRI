@@ -1,3 +1,6 @@
+// Implements VkCheck.hpp: a failed VkResult becomes a report on the error
+// channel, with the category that matches the result (P57).
+
 #include "VkCheck.hpp"
 
 

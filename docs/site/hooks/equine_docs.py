@@ -44,7 +44,10 @@ def on_config(config, **kwargs):
 
 
 def on_pre_build(config, **kwargs):
-    equine_generate.main()
+    if equine_generate.main() != 0:
+        from mkdocs.exceptions import PluginError
+
+        raise PluginError("a documentation generator or check failed (see the messages above)")
 
 
 def coverage_link(page) -> str:

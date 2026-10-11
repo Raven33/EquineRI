@@ -1,8 +1,18 @@
-// Device creation (P60, P92). D3D12 has no enable step, so the Vulkan device
-// enables every *feature* the GPU reports, except those that cost performance
-// just by being on (robustness) or that need something RI does not enable.
-// Extensions are not all enabled: RI enables the ones it uses, when present;
-// the user adds others through NativeDeviceAdditions.
+// Device creation on Vulkan (P60, P89, P92).
+//
+// Owns: createDevice, destroyDevice, defaultDeviceFeatures, and the choices
+// made once per device: which extensions RI enables (chooseSetup), which
+// features are turned on (every feature the GPU reports, except robustness
+// and capture/replay), the memory type of each kind (chooseMemoryTypes), the
+// descriptor set layouts behind heaps (createHeapLayouts), the timeline and
+// the internal command buffer.
+//
+// Watch out: DGC is left off on NVIDIA under GPU-AV (the driver faults, P98
+// (5)). Ray tracing is turned off when the driver accepts no mutable heap
+// with acceleration structures, and the heap size is lowered to what the
+// driver accepts (P98 (8)).
+//
+// D3D12 counterpart: backends/d3d12/Device.cpp.
 
 #include "DeviceState.hpp"
 #include "Instance.hpp"
