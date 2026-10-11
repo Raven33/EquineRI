@@ -43,6 +43,9 @@ VkBufferUsageFlags usageOf(BufferUsage usage) {
     if ((usage & BufferUsage::eCopyDst) != BufferUsage::eNone) {
         flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     }
+    if ((usage & BufferUsage::eAccelerationStructureInput) != BufferUsage::eNone) {
+        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    }
     if ((usage & BufferUsage::eIndirect) != BufferUsage::eNone) {
         flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     }
@@ -121,6 +124,11 @@ void freeMemory(Device &device, Memory &memory) {
 // ── Buffers ──────────────────────────────────────────────────────────────────
 
 MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
+    if ((desc.usage & BufferUsage::eAccelerationStructureInput) != BufferUsage::eNone &&
+        !device.internal.state->rayTracing) {
+        reportError(ErrorCategory::eUnsupported,
+                    "BufferUsage::eAccelerationStructureInput needs ray tracing (DeviceLimits::rayTracing)");
+    }
     DeviceState &state = *device.internal.state;
     const VkBufferCreateInfo createInfo = bufferInfo(desc);
     const VkDeviceBufferMemoryRequirements info{.sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
@@ -182,13 +190,9 @@ DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &de
                                 device.limits.maxSamplerDescriptors));
     }
 
-    const VkDescriptorType mutableTypes[] = {
-        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-    };
-    const VkMutableDescriptorTypeListEXT lists[] = {{.descriptorTypeCount = 6, .pDescriptorTypes = mutableTypes},
-                                                    {}};
+    const VkMutableDescriptorTypeListEXT lists[] = {
+        {.descriptorTypeCount = static_cast<uint32>(state.mutableTypes.size()), .pDescriptorTypes = state.mutableTypes.data()},
+        {}};
     const VkMutableDescriptorTypeCreateInfoEXT mutableInfo{
         .sType = VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
         .mutableDescriptorTypeListCount = 2,
@@ -256,6 +260,8 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
     std::vector<VkDescriptorBufferInfo> bufferInfos(writes.size());
     std::vector<VkDescriptorImageInfo> imageInfos(writes.size());
     std::vector<VkWriteDescriptorSet> natives(writes.size());
+    std::vector<VkAccelerationStructureKHR> asHandles(writes.size());
+    std::vector<VkWriteDescriptorSetAccelerationStructureKHR> asInfos(writes.size());
     for (size_t i = 0; i < writes.size(); ++i) {
         const DescriptorWrite &write = writes[i];
         EQ_VALIDATE(Validation::checkSlot(write.slot, heap.resourceCount, "resource"));
@@ -267,11 +273,22 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
             .descriptorCount = 1,
         };
 
+        // Top-level acceleration structures (P49).
+        if (const auto *as = std::get_if<AccelerationStructureView>(&write.descriptor)) {
+            EQ_VK_CHECK_ALIVE(&state, as->tlas.internal.id, "acceleration structure");
+            asHandles[i] = reinterpret_cast<VkAccelerationStructureKHR>(as->tlas.internal.handle);
+            asInfos[i] = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+                          .accelerationStructureCount = 1,
+                          .pAccelerationStructures = &asHandles[i]};
+            natives[i].pNext = &asInfos[i];
+            natives[i].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+            continue;
+        }
         // A read or read-write view names a texture when its texture view is set.
         const TextureView *texture = std::visit(
             [](const auto &view) -> const TextureView * {
                 using View = std::decay_t<decltype(view)>;
-                if constexpr (std::is_same_v<View, ConstantBufferView>) {
+                if constexpr (std::is_same_v<View, ConstantBufferView> || std::is_same_v<View, AccelerationStructureView>) {
                     return nullptr;
                 } else {
                     return view.texture.internal.view != 0 ? &view.texture : nullptr;
@@ -302,6 +319,8 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
                 using View = std::decay_t<decltype(view)>;
                 if constexpr (std::is_same_v<View, ConstantBufferView>) {
                     return std::tuple{view.buffer, view.offset, view.size, uint32{0}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER};
+                } else if constexpr (std::is_same_v<View, AccelerationStructureView>) {
+                    return std::tuple{Buffer{}, uint64{0}, uint64{0}, uint32{0}, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}; // handled above
                 } else {
                     return std::tuple{view.buffer, view.offset, view.size, view.stride, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER};
                 }

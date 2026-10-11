@@ -55,6 +55,7 @@ add_library(EquineVulkanBackend STATIC
     Debug.cpp
     Indirect.cpp
     Swapchain.cpp
+    RayTracing.cpp
 )
 target_include_directories(EquineVulkanBackend PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"

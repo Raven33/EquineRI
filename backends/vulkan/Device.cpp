@@ -76,7 +76,13 @@ DeviceSetup chooseSetup(VkPhysicalDevice physicalDevice, uint32 apiVersion) {
         setup.fault = use(VK_EXT_DEVICE_FAULT_EXTENSION_NAME); // P53 (2)
     }
     // Indirect Level 2 (P48); it relies on maintenance5, core in Vulkan 1.4.
-    if (setup.v14) {
+    // Not on NVIDIA in validation builds with GPU-assisted validation: GPU-AV's
+    // instrumentation of generated commands made the RTX 3080 (driver 617.42)
+    // fault and reset (2026-10-11); EQUINE_GPU_VALIDATION=0 brings it back.
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    const bool gpuAvOnNvidia = EQUINE_VALIDATION && gpuValidationEnabled() && properties.vendorID == 0x10DE;
+    if (setup.v14 && !gpuAvOnNvidia) {
         setup.generatedCommands = use(VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME);
     }
     return setup;
@@ -330,12 +336,16 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
                                              v12.maxPerStageDescriptorUpdateAfterBindSamplers});
     limits.maxRootDataSize = l.maxPushConstantsSize;
 
-    const VkDescriptorType mutableTypes[] = {
+    state.mutableTypes = {
         VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
         VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
     };
-    const VkMutableDescriptorTypeListEXT typeList{.descriptorTypeCount = 6, .pDescriptorTypes = mutableTypes};
+    if (state.rayTracing) {
+        state.mutableTypes.push_back(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR); // P49
+    }
+    const VkMutableDescriptorTypeListEXT typeList{.descriptorTypeCount = static_cast<uint32>(state.mutableTypes.size()),
+                                                  .pDescriptorTypes = state.mutableTypes.data()};
     const VkMutableDescriptorTypeCreateInfoEXT mutableInfo{
         .sType = VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
         .mutableDescriptorTypeListCount = 1,
@@ -504,6 +514,19 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     device.limits.indirectRootData =
         setup.generatedCommands && chain.f.generatedCommands.deviceGeneratedCommands == VK_TRUE;
     state->generatedCommands = device.limits.indirectRootData;
+    // Inline ray tracing (P49): acceleration structures and ray queries.
+    state->rayTracing = setup.rayQuery && chain.f.accelerationStructure.accelerationStructure == VK_TRUE &&
+                        chain.f.rayQuery.rayQuery == VK_TRUE;
+    device.limits.rayTracing = state->rayTracing;
+    if (state->rayTracing) {
+        VkPhysicalDeviceAccelerationStructurePropertiesKHR asProperties{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+        VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                                               .pNext = &asProperties};
+        vkGetPhysicalDeviceProperties2(state->physicalDevice, &properties);
+        state->scratchAlignment = std::max<VkDeviceSize>(asProperties.minAccelerationStructureScratchOffsetAlignment, 1);
+        device.limits.accelerationStructureScratchAlignment = static_cast<uint32>(state->scratchAlignment);
+    }
     {
         // Depth and stencil resolve modes (P76).
         VkPhysicalDeviceDepthStencilResolveProperties resolve{

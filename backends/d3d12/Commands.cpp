@@ -41,6 +41,9 @@ D3D12_BARRIER_SYNC syncOf(Stage stage) {
     if ((stage & Stage::ePixel) != Stage::eNone) {
         sync |= D3D12_BARRIER_SYNC_PIXEL_SHADING;
     }
+    if ((stage & Stage::eAccelerationStructure) != Stage::eNone) {
+        sync |= D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+    }
     // Attachment stages are not part of global barriers: under A' their writes
     // are made visible by RI's own switch back to rest at cmdEndRendering, and
     // D3D12 rejects sync bits that none of a global barrier's accesses use.
@@ -54,9 +57,12 @@ D3D12_BARRIER_SYNC syncOf(Stage stage) {
 // back to rest at cmdEndRendering; textures resting in an attachment layout
 // see only ordered attachment writes. An empty set is NO_ACCESS (an execution
 // dependency), never COMMON.
-D3D12_BARRIER_ACCESS accessOf(Stage stage) {
+// With ray tracing, shaders also read acceleration structures and builds
+// write them (P49).
+D3D12_BARRIER_ACCESS accessOf(Stage stage, bool rayTracing) {
     if ((stage & Stage::eAll) != Stage::eNone) {
-        stage = Stage::eCopy | Stage::eCompute | Stage::eIndirect | Stage::eVertex | Stage::ePixel;
+        stage = Stage::eCopy | Stage::eCompute | Stage::eIndirect | Stage::eVertex | Stage::ePixel |
+                (rayTracing ? Stage::eAccelerationStructure : Stage::eNone);
     }
     D3D12_BARRIER_ACCESS access = D3D12_BARRIER_ACCESS_COMMON;
     if ((stage & Stage::eCopy) != Stage::eNone) {
@@ -68,6 +74,13 @@ D3D12_BARRIER_ACCESS accessOf(Stage stage) {
     }
     if ((stage & Stage::eIndirect) != Stage::eNone) {
         access |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
+    }
+    if (rayTracing && (stage & (Stage::eCompute | Stage::eVertex | Stage::ePixel)) != Stage::eNone) {
+        access |= D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_READ;
+    }
+    if ((stage & Stage::eAccelerationStructure) != Stage::eNone) {
+        access |= D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_READ |
+                  D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE;
     }
     return access == D3D12_BARRIER_ACCESS_COMMON ? D3D12_BARRIER_ACCESS_NO_ACCESS : access;
 }
@@ -214,14 +227,18 @@ void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) { list(cmd)->Di
 
 // Coarse stage -> stage barrier (P36), as one global enhanced barrier.
 void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
+    if (((before | after) & Stage::eAccelerationStructure) != Stage::eNone && !cmd.internal.device->rayTracing) {
+        reportError(ErrorCategory::eUnsupported,
+                    "cmdBarrier: Stage::eAccelerationStructure needs ray tracing (DeviceLimits::rayTracing)");
+    }
     if (syncOf(before) == D3D12_BARRIER_SYNC_NONE || syncOf(after) == D3D12_BARRIER_SYNC_NONE) {
         return; // only attachment stages on one side: RI's own transitions cover them
     }
     D3D12_GLOBAL_BARRIER barrier{
         .SyncBefore = syncOf(before),
         .SyncAfter = syncOf(after),
-        .AccessBefore = accessOf(before),
-        .AccessAfter = accessOf(after),
+        .AccessBefore = accessOf(before, cmd.internal.device->rayTracing),
+        .AccessAfter = accessOf(after, cmd.internal.device->rayTracing),
     };
     const D3D12_BARRIER_GROUP group{.Type = D3D12_BARRIER_TYPE_GLOBAL, .NumBarriers = 1, .pGlobalBarriers = &barrier};
     list(cmd)->Barrier(1, &group);

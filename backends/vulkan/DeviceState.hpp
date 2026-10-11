@@ -50,6 +50,11 @@ struct DeviceState {
     // so every pipeline layout stays compatible with every heap.
     VkDescriptorSetLayout resourceSetLayout = VK_NULL_HANDLE; // set 0
     VkDescriptorSetLayout samplerSetLayout = VK_NULL_HANDLE;  // set 1
+    // The mutable descriptor types of the resource heap (layout and pools
+    // must agree): acceleration structures join when ray tracing is on (P49).
+    std::vector<VkDescriptorType> mutableTypes;
+    bool rayTracing = false;
+    VkDeviceSize scratchAlignment = 256;
     VkDeviceSize storageOffsetAlignment = 0;
     VkDeviceSize bufferImageGranularity = 1;
     VkDeviceSize uniformOffsetAlignment = 0;

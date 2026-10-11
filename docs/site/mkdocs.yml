@@ -201,6 +201,8 @@ nav:
           - RI::cmdBeginQuery, RI::pipelineStatisticsLayout: reference/queries.md
       - Submission:
           - RI::submit, RI::wait, RI::isReached: reference/submit.md
+      - Ray tracing:
+          - Acceleration structures: reference/raytracing.md
       - Swapchains:
           - RI::createSwapchain, RI::acquire, RI::present: reference/swapchain.md
       - Debugging:

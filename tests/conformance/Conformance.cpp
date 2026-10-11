@@ -172,6 +172,19 @@ EQ_SIGNATURE(present, void (*)(RI::Queue &, RI::Swapchain &));
 EQ_FIELD(Swapchain, width, uint32);
 EQ_FIELD(Swapchain, format, RI::SurfaceFormat);
 
+// Ray tracing (P49)
+EQ_SIGNATURE(blasSizes, RI::AccelerationStructureSizes (*)(RI::Device &, const RI::BlasDesc &));
+EQ_SIGNATURE(tlasSizes, RI::AccelerationStructureSizes (*)(RI::Device &, const RI::TlasDesc &));
+EQ_SIGNATURE(accelerationStructureRequirements, RI::MemoryRequirements (*)(RI::Device &, uint64));
+EQ_SIGNATURE(createAccelerationStructure,
+             RI::AccelerationStructure (*)(RI::Device &, const RI::Memory &, uint64, uint64, bool));
+EQ_SIGNATURE(destroyAccelerationStructure, void (*)(RI::Device &, RI::AccelerationStructure &));
+EQ_SIGNATURE(cmdBuildBlas, void (*)(RI::CommandList &, const RI::AccelerationStructure &, const RI::BlasDesc &,
+                                    const RI::Buffer &, uint64, bool));
+EQ_SIGNATURE(cmdBuildTlas, void (*)(RI::CommandList &, const RI::AccelerationStructure &, const RI::TlasDesc &,
+                                    const RI::Buffer &, uint64, bool));
+EQ_FIELD(AccelerationStructure, gpuAddress, uint64);
+
 // Debugging (P53)
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Memory &, std::string_view));
 EQ_SIGNATURE(setName, void (*)(RI::Device &, const RI::Buffer &, std::string_view));

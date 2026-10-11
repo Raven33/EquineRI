@@ -20,6 +20,7 @@ add_library(EquineD3D12Backend STATIC
     Debug.cpp
     Indirect.cpp
     Swapchain.cpp
+    RayTracing.cpp
     DeviceState.hpp
     Resources.cpp
     Pipeline.cpp

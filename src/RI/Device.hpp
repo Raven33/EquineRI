@@ -55,6 +55,8 @@ struct DeviceLimits {
     uint64 timestampFrequency = 0;     // timestamp ticks per second (P71 (3))
     bool meshShaders = false;          // task and mesh shaders, cmdDrawMesh (P39)
     bool indirectRootData = false;     // indirect Level 2: cmdExecuteIndirectWithRootData (P48)
+    bool rayTracing = false;           // acceleration structures and RayQuery (P49)
+    uint32 accelerationStructureScratchAlignment = 0; // scratch buffer offsets (P49)
     // Depth and stencil resolve modes (P76): resolveModeBit(mode) per mode.
     uint32 depthResolveModes = 0;
     uint32 stencilResolveModes = 0;

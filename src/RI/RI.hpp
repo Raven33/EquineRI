@@ -10,6 +10,7 @@
 // both backends is compiled once per backend, in separate targets.
 
 #include <RI/Error.hpp>
+#include <RI/RayTracing.hpp>
 #include <RI/Window.hpp>
 
 #if EQUINE_BACKEND_VULKAN && EQUINE_BACKEND_D3D12

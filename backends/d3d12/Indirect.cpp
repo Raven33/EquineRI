@@ -53,7 +53,7 @@ ID3D12CommandSignature *signatureFor(DeviceState &state, IndirectKind kind, ID3D
 }
 
 void execute(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,
-             const Buffer *count, uint64 countOffset, bool level2, const char *call) {
+             const Buffer *count, uint64 countOffset, bool level2, [[maybe_unused]] const char *call) {
     DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, args.internal.id, "buffer");
     if (count != nullptr) {
@@ -62,7 +62,7 @@ void execute(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 off
     const bool graphics = kind != IndirectKind::eDispatch;
     auto *root = static_cast<ID3D12RootSignature *>(cmd.internal.rootSignature[graphics ? 1 : 0]);
     const uint32 rootDataSize = level2 ? cmd.internal.rootDataSize : 0;
-    const uint32 stride = indirectStride(kind, rootDataSize);
+    [[maybe_unused]] const uint32 stride = indirectStride(kind, rootDataSize);
     EQ_VALIDATE(Validation::checkIndirect(
         {.dispatch = !graphics,
          .argsUsage = (args.usage & BufferUsage::eIndirect) != BufferUsage::eNone,
