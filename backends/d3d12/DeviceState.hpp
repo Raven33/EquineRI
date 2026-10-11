@@ -9,6 +9,8 @@
 #include <RI/Validation/Placement.hpp>
 #endif
 
+#include <compare>
+#include <map>
 #include <string_view>
 #include <vector>
 
@@ -30,6 +32,15 @@ struct DeviceState {
     UINT resourceDescriptorSize = 0;
     UINT samplerDescriptorSize = 0;
     bool gpuUploadHeap = false;
+    // Indirect execution (P48): RI's command signatures, per root signature
+    // (null for Level 1), kind and root data size.
+    struct SignatureKey {
+        void *root;
+        uint32 kind;
+        uint32 rootDataSize;
+        auto operator<=>(const SignatureKey &) const = default;
+    };
+    std::map<SignatureKey, ID3D12CommandSignature *> commandSignatures;
     uint32 depthResolveModes = 0; // DeviceLimits copies (P76), for checks while recording
     uint32 stencilResolveModes = 0;
 
@@ -66,6 +77,9 @@ struct DeviceState {
 // Debugging (Debug.cpp, P53): a removed device is reported with DRED's
 // breadcrumbs and page-fault details (validation builds).
 void reportDeviceRemoved(DeviceState &state);
+// Indirect (Indirect.cpp, P48): releases the command signatures made for
+// `rootSignature` (a pipeline being destroyed), or all of them (nullptr).
+void forgetCommandSignatures(DeviceState &state, void *rootSignature);
 // checkHr for queue submission and waits.
 void checkQueueHr(DeviceState &state, HRESULT result, std::string_view call);
 

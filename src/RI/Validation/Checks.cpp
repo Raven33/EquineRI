@@ -227,4 +227,24 @@ CheckResult checkResolve(const ResolveCheck &r, std::string_view call) {
     return {};
 }
 
+CheckResult checkIndirect(const IndirectCheck &c, std::string_view call) {
+    if (!c.argsUsage || (c.hasCount && !c.countUsage)) {
+        return std::format("{}: indirect argument and count buffers need BufferUsage::eIndirect", call);
+    }
+    if (c.offset % 4 != 0 || c.offset + c.stride * c.maxCount > c.argsSize) {
+        return std::format("{}: {} record(s) of {} bytes at offset {} do not fit in the {}-byte buffer (offsets are "
+                           "multiples of 4)",
+                           call, c.maxCount, c.stride, c.offset, c.argsSize);
+    }
+    if (c.hasCount && (c.countOffset % 4 != 0 || c.countOffset + 4 > c.countSize)) {
+        return std::format("{}: the count at offset {} must be a 4-byte aligned uint32 inside its buffer", call,
+                           c.countOffset);
+    }
+    if (c.dispatch && !c.countForDispatchAllowed && (c.maxCount != 1 || c.hasCount)) {
+        return std::format("{}: indirect dispatches take one record and no count (Vulkan has no dispatch count)",
+                           call);
+    }
+    return {};
+}
+
 } // namespace RI::Validation

@@ -94,6 +94,7 @@ struct DeviceFeatures {
 #endif
     VkPhysicalDeviceFaultFeaturesEXT fault{};
     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT mutableDescriptor{}; // descriptor heaps (P94)
+    VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT generatedCommands{}; // indirect Level 2 (P48)
 };
 
 DeviceFeatures defaultDeviceFeatures(const Gpu &gpu);

@@ -93,6 +93,8 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.mesh_shaders
     texture.resolve_color
     texture.resolve_depth
+    texture.indirect_level1
+    texture.indirect_level2
     texture.unlisted_view_format_reports
 )
 set(EQUINE_GPU_SHARED_ABORT_TESTS

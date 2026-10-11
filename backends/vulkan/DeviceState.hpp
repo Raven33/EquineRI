@@ -12,6 +12,8 @@
 #include <volk.h>
 
 #include <array>
+#include <map>
+#include <vector>
 #include <string_view>
 
 namespace RI::Vk {
@@ -29,6 +31,12 @@ struct DeviceState {
     PFN_vkCmdBeginDebugUtilsLabelEXT beginLabel = nullptr;
     PFN_vkCmdEndDebugUtilsLabelEXT endLabel = nullptr;
     bool faultEnabled = false;
+    // Indirect Level 2 (P48): VK_EXT_device_generated_commands, with RI's
+    // command layouts per (kind, root data size) and a matching pipeline layout
+    // per root data size (compatible with every RI pipeline of that size).
+    bool generatedCommands = false;
+    std::map<uint64, VkIndirectCommandsLayoutEXT> indirectLayouts;
+    std::map<uint32, VkPipelineLayout> indirectPipelineLayouts;
     uint32 depthResolveModes = 0; // DeviceLimits copies (P76), for checks while recording
     uint32 stencilResolveModes = 0; // VK_EXT_device_fault (validation builds, P53 (2))
     uint32 graphicsQueueFamily = 0;
@@ -90,6 +98,21 @@ inline constexpr VkQueryPipelineStatisticFlags kPipelineStatistics =
 inline uint64 queryResultSize(const DeviceState & /*state*/, QueryType type) {
     return type == QueryType::ePipelineStatistics ? 7 * 8 : 8;
 }
+
+// RI-owned objects of one command list (CommandList::internal.extras):
+// preprocess buffers of generated commands (P48), freed when the list is
+// reset (all but the largest) or destroyed.
+struct PreprocessBuffer {
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkDeviceSize size = 0;
+    VkDeviceAddress address = 0;
+};
+struct CommandListExtras {
+    std::vector<PreprocessBuffer> preprocess; // the last one is the largest
+};
+void releaseCommandListExtras(DeviceState &state, CommandListExtras *&extras, bool keepLargest);
+void destroyIndirectLayouts(DeviceState &state);
 
 // Debugging (Debug.cpp, P53).
 void loadDebugFunctions(DeviceState &state);

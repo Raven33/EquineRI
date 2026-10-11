@@ -205,6 +205,8 @@ void destroyCommandList(Device &device, CommandList &cmd) {
     EQ_VK_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "destroying"));
     EQ_VK_UNTRACK(&state, cmd.internal.id);
+    auto *extras = static_cast<CommandListExtras *>(cmd.internal.extras);
+    releaseCommandListExtras(state, extras, false);
     state.functions.vkDestroyCommandPool(state.device, reinterpret_cast<VkCommandPool>(cmd.internal.pool), nullptr);
     cmd = {};
 }
@@ -215,6 +217,9 @@ void resetCommandList(CommandList &cmd) {
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "resetting"));
     checkVk(state.functions.vkResetCommandPool(state.device, reinterpret_cast<VkCommandPool>(cmd.internal.pool), 0),
             "vkResetCommandPool");
+    auto *extras = static_cast<CommandListExtras *>(cmd.internal.extras);
+    releaseCommandListExtras(state, extras, true);
+    cmd.internal.extras = extras;
 }
 
 // ── Recording (P34: each call writes the native command at once) ─────────────
@@ -272,6 +277,7 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     fn(cmd).vkCmdBindPipeline(native(cmd), bindPointOf(index), native(pipeline).pipeline);
     cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
+    cmd.internal.pipeline = pipeline.internal.pipeline;
     if (cmd.internal.boundLayout[index] != pipeline.internal.layout) {
         cmd.internal.boundLayout[index] = pipeline.internal.layout;
         bindHeap(cmd, index);

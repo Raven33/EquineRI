@@ -154,6 +154,10 @@ EQ_SIGNATURE(cmdBeginQuery, void (*)(RI::CommandList &, const RI::QueryPool &, u
 EQ_SIGNATURE(cmdEndQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdSetIndexBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint64, RI::IndexFormat));
 EQ_SIGNATURE(cmdDrawMesh, void (*)(RI::CommandList &, uint32, uint32, uint32));
+EQ_SIGNATURE(cmdExecuteIndirect, void (*)(RI::CommandList &, RI::IndirectKind, const RI::Buffer &, uint64, uint32,
+                                          const RI::Buffer *, uint64));
+EQ_SIGNATURE(cmdExecuteIndirectWithRootData, void (*)(RI::CommandList &, RI::IndirectKind, const RI::Buffer &, uint64,
+                                                      uint32, const RI::Buffer *, uint64));
 EQ_SIGNATURE(cmdDrawIndexed, void (*)(RI::CommandList &, uint32, uint32, uint32, int32, uint32));
 
 // Debugging (P53)
