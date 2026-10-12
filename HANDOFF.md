@@ -17,6 +17,8 @@ commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
 
 ## Where to read
 
+- `docs/SamplePortReview.md`: the next task's handoff, reviewing the sample-port pilot
+  (`Raven33/EquineRI-Samples`) and fixing the docs from it.
 - `ARCHITECTURE.md`: the entry point for changing RI (layout, call flow, invariants,
   recipes, backend differences); `docs/CodeDocumentation.md` is the standard it follows.
 - `CONTEXT.md`: the decision log (P1–P98) and the open questions (§5). Start here.
