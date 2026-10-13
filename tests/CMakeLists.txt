@@ -20,6 +20,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.tracker_rejects_other_device
     validation.macro_evaluates_only_when_on
     validation.texture_and_rendering_checks
+    validation.stage_link
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -38,6 +39,7 @@ set(EQUINE_RI_TEST_NAMES
     dxil.corrupted_bitcode
     dxil.corrupted_container
     dxil.garbage_bitcode
+    dxil.signatures
 )
 if (EQUINE_VALIDATION)
     list(APPEND EQUINE_RI_TEST_NAMES validation.macro_reports_failure)
@@ -100,6 +102,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.indirect_level2
     raytracing.build_trace_update
     texture.samplers
+    texture.stage_link
     helpers.allocators
     helpers.transfers
     helpers.frame_ring_and_profiler
@@ -125,6 +128,7 @@ if (EQUINE_VALIDATION)
         texture.missing_discard_reports
         texture.read_only_depth_sampling_on_color_reports
         texture.copy_without_usage_reports
+        texture.stage_link_mismatch_reports
     )
     list(APPEND EQUINE_GPU_SHARED_ABORT_TESTS
         "compute.root_data_size_mismatch_reports|programmer error: root data is 8 bytes, but the pipeline's shader declares 20 bytes"
@@ -136,6 +140,7 @@ if (EQUINE_VALIDATION)
         "texture.missing_discard_reports|programmer error: cmdBeginRendering: the texture was placed over memory"
         "texture.copy_without_usage_reports|programmer error: cmdCopyTextureToBuffer: the texture needs TextureUsage::eCopySrc"
         "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
+        "texture.stage_link_mismatch_reports|programmer error: createGraphicsPipeline: the pixel shader reads NORMAL0 at"
     )
 endif()
 
@@ -145,8 +150,8 @@ function(equine_add_gpu_test_shaders exe)
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
                        "${dir}/sample_texture.hlsl"
                        "${dir}/ray_query.hlsl")
-    equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl")
-    equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl")
+    equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl")
+    equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl" "${dir}/link_skip_ps.hlsl")
     equine_add_shaders(${exe} PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl" "${dir}/fullscreen_payload_ms.hlsl")
     equine_add_shaders(${exe} PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
 endfunction()
@@ -289,3 +294,5 @@ equine_add_shaders(EquineRITests PROFILE cs_6_6 SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_b1.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_extra.hlsl"
 )
+equine_add_shaders(EquineRITests PROFILE vs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/link_vs.hlsl")
+equine_add_shaders(EquineRITests PROFILE ps_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/link_skip_ps.hlsl")

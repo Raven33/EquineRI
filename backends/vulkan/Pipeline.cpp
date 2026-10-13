@@ -6,7 +6,9 @@
 // from the description (dynamic rendering).
 //
 // Watch out: the stencil reference is part of the pipeline (P38: no dynamic
-// state); root data must agree between stages.
+// state); root data must agree between stages. In validation builds the
+// pixel shader's inputs are matched to the previous stage's outputs by DXC's
+// interface names and locations (P101).
 //
 // D3D12 counterpart: backends/d3d12/Pipeline.cpp.
 
@@ -19,8 +21,10 @@
 
 #include <spirv_reflect.h>
 
+#include <cstdint>
 #include <format>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace RI::Vk {
@@ -30,7 +34,33 @@ namespace {
 struct ShaderInfo {
     uint32 rootDataSize = 0;
     bool hasRootData = false;
+    // The values passed between stages (P101), in validation builds.
+    std::vector<Validation::StageValue> inputs;
+    std::vector<Validation::StageValue> outputs;
 };
+
+#if EQUINE_VALIDATION
+// DXC names a stage's interface variables "in.var.<semantic>" and
+// "out.var.<semantic>", and numbers their locations in declaration order.
+// Built-ins (SV_Position) have no location; variables without such a name
+// (another compiler, stripped names) cannot be matched and are skipped.
+std::vector<Validation::StageValue> stageValues(SpvReflectInterfaceVariable *const *variables, uint32 count,
+                                                std::string_view prefix) {
+    std::vector<Validation::StageValue> values;
+    for (uint32 i = 0; i < count; ++i) {
+        const SpvReflectInterfaceVariable &v = *variables[i];
+        const std::string_view name = v.name != nullptr ? v.name : "";
+        if (v.built_in != -1 || !name.starts_with(prefix) || name.size() == prefix.size()) {
+            continue;
+        }
+        values.push_back({.semantic = Validation::stageSemantic(name.substr(prefix.size())),
+                          .slot = v.location,
+                          // UINT32_MAX without a Component decoration (DXC writes none).
+                          .component = v.component == UINT32_MAX ? 0 : v.component});
+    }
+    return values;
+}
+#endif
 
 // Reads what RI needs from SPIR-V (SPIRV-Reflect, P67) and rejects bindings RI
 // does not set up. Every problem is reported as a readable error.
@@ -60,6 +90,12 @@ ShaderInfo reflect(Bytecode bytecode, SpvReflectShaderStageFlagBits stage, const
         info.rootDataSize = block.offset + block.size;
         info.hasRootData = true;
     }
+#if EQUINE_VALIDATION
+    if (problem.empty()) {
+        info.inputs = stageValues(module.input_variables, module.input_variable_count, "in.var.");
+        info.outputs = stageValues(module.output_variables, module.output_variable_count, "out.var.");
+    }
+#endif
 
     // Only the descriptor heaps: set 0 binding 0 (ResourceDescriptorHeap) and
     // set 1 binding 0 (SamplerDescriptorHeap with -fvk-bind-sampler-heap 0 1).
@@ -270,8 +306,15 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     }
     uint32 rootDataSize = 0;
     const char *rootStage = nullptr;
+    [[maybe_unused]] std::vector<Validation::StageValue> producerOutputs;
     for (const Stage &stage : stageList) {
         const ShaderInfo info = reflect(stage.code, stage.reflectStage, kCall, stage.name);
+        if (stage.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+            EQ_VALIDATE(Validation::checkStageLink(producerOutputs, info.inputs, meshPipeline ? "mesh" : "vertex",
+                                                   "location"));
+        } else {
+            producerOutputs = info.outputs;
+        }
         if (!info.hasRootData) {
             continue;
         }

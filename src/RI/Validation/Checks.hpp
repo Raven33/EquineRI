@@ -8,6 +8,8 @@
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
 
+#include <span>
+#include <string>
 #include <string_view>
 
 namespace RI::Validation {
@@ -70,6 +72,29 @@ CheckResult checkQueryKind(bool ok, std::string_view call);
 // Graphics pipeline state (P38): `blend` is empty or one per color format,
 // and the stencil test needs a depth format with stencil.
 CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stencilTest, bool depthHasStencil);
+
+// One value passed from the vertex (or mesh) shader to the pixel shader (P101):
+// its semantic, normalized by stageSemantic, and where the backend places it
+// (Vulkan: location, component 0; D3D12: register and first component).
+// `slotChecked` is false where the backend numbers the producer's slots apart
+// from the pixel shader's (D3D12 per-primitive mesh outputs): then only the
+// semantic is matched.
+struct StageValue {
+    std::string semantic;
+    uint32 slot = 0;
+    uint32 component = 0;
+    bool slotChecked = true;
+};
+// A semantic as both backends compare it: upper case (HLSL semantics ignore
+// case), with its index ("NORMAL" -> "NORMAL0", "color1" -> "COLOR1").
+std::string stageSemantic(std::string_view semantic);
+// Every value the pixel shader reads is written by the previous stage, in the
+// same slot (P101). Vulkan pairs values by location and D3D12 by register, both
+// numbered in declaration order, so a pixel shader that leaves out a value
+// before others would read the wrong one (Vulkan, silently) or fail (D3D12).
+// `producer` names the previous stage, `slotName` the backend's slot.
+CheckResult checkStageLink(std::span<const StageValue> outputs, std::span<const StageValue> inputs,
+                           std::string_view producer, std::string_view slotName);
 // cmdSetIndexBuffer: the buffer has eIndex usage and the offset is a multiple
 // of the index size.
 CheckResult checkIndexBuffer(bool hasUsage, uint64 offset, uint32 indexSize, uint64 bufferSize);

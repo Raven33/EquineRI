@@ -7,7 +7,9 @@
 //   - PSV0 part: the declared resource ranges and the compute thread-group size;
 //   - DXIL part: the size of the root data constant buffer (P45), read from the
 //     module's `!dx.resources` metadata in the LLVM 3.7 bitcode. That metadata
-//     survives `-Qstrip_reflect`, so no reflection part is needed.
+//     survives `-Qstrip_reflect`, so no reflection part is needed;
+//   - ISG1, OSG1, PSG1 parts: the input, output and per-primitive output
+//     signatures, to check the values passed to the pixel shader (P101).
 //
 // The reader only parses bytes, so it is portable and tested on every platform.
 // Malformed input yields an error message, never a crash or an out-of-bounds read.
@@ -36,6 +38,19 @@ struct DxilBinding {
     uint32 count = 0; // UINT32_MAX for unbounded arrays
 };
 
+// One element of a signature (ISG1, OSG1, PSG1 parts): a value passed between stages.
+struct DxilSignatureElement {
+    std::string semanticName; // as written, without its index
+    uint32 semanticIndex = 0;
+    uint32 systemValue = 0; // D3D_NAME: 0 for none, kDxilSystemValuePosition for SV_Position, ...
+    uint32 registerIndex = 0;
+    uint8 mask = 0; // the components it uses, bit 0 = x
+};
+
+// D3D_NAME values RI looks at.
+inline constexpr uint32 kDxilSystemValueNone = 0;
+inline constexpr uint32 kDxilSystemValuePosition = 1;
+
 struct DxilInfo {
     bool resourceHeapIndexing = false;     // SFI0: shader uses ResourceDescriptorHeap[]
     bool samplerHeapIndexing = false;      // SFI0: shader uses SamplerDescriptorHeap[]
@@ -43,6 +58,9 @@ struct DxilInfo {
     uint32 rootDataSize = 0;               // its size in bytes, from the DXIL part's dx.resources metadata
     std::vector<DxilBinding> bindings;     // every other declared resource (from PSV0), in PSV0 order
     uint32 threadGroupSize[3] = {0, 0, 0}; // compute/mesh/amplification numthreads (PSV0, else metadata); 0 if not
+    std::vector<DxilSignatureElement> inputs;           // ISG1, in signature order; empty if absent
+    std::vector<DxilSignatureElement> outputs;          // OSG1 (a mesh shader's per-vertex outputs)
+    std::vector<DxilSignatureElement> primitiveOutputs; // PSG1 (a mesh shader's per-primitive outputs)
 };
 
 struct DxilReadResult {

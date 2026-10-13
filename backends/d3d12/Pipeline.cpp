@@ -8,6 +8,8 @@
 //
 // Watch out: RI does not read root data from libraries, so WorkGraphDesc
 // gives its size (P62). The stencil reference is part of the pipeline (P38).
+// In validation builds the pixel shader's input signature is matched to the
+// previous stage's outputs by semantic and register (P101).
 //
 // Vulkan counterpart: backends/vulkan/Pipeline.cpp and WorkGraph.cpp.
 
@@ -21,6 +23,7 @@
 
 #include "Formats.hpp"
 
+#include <bit>
 #include <climits>
 #include <cstring>
 
@@ -81,6 +84,36 @@ Reflection::DxilInfo reflectStage(Bytecode bytecode, const char *call) {
     }
     return read.info;
 }
+
+#if EQUINE_VALIDATION
+// The values a signature passes between stages (P101): user values and
+// SV_Position. Other system values are made by the GPU or rarely passed, and
+// are left to the D3D12 runtime.
+std::vector<Validation::StageValue> stageValues(const std::vector<Reflection::DxilSignatureElement> &elements,
+                                                bool slotChecked) {
+    std::vector<Validation::StageValue> values;
+    for (const Reflection::DxilSignatureElement &e : elements) {
+        if (e.systemValue != Reflection::kDxilSystemValueNone && e.systemValue != Reflection::kDxilSystemValuePosition) {
+            continue;
+        }
+        values.push_back({.semantic = Validation::stageSemantic(e.semanticName + std::to_string(e.semanticIndex)),
+                          .slot = e.registerIndex,
+                          .component = e.mask == 0 ? 0u : static_cast<uint32>(std::countr_zero(e.mask)),
+                          .slotChecked = slotChecked});
+    }
+    return values;
+}
+
+// A vertex or mesh shader's outputs; per-primitive mesh outputs are numbered
+// apart from the pixel shader's registers, so only their semantic is matched.
+std::vector<Validation::StageValue> stageOutputs(const Reflection::DxilInfo &producer) {
+    std::vector<Validation::StageValue> values = stageValues(producer.outputs, true);
+    for (Validation::StageValue &value : stageValues(producer.primitiveOutputs, false)) {
+        values.push_back(std::move(value));
+    }
+    return values;
+}
+#endif
 
 void checkRootDataSize(const Device &device, uint32 size, const char *call) {
     if (size > device.limits.maxRootDataSize) {
@@ -220,13 +253,13 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     // One root data block for the whole pipeline (P44).
     Reflection::DxilInfo info{};
     const char *rootStage = nullptr;
-    const auto addStage = [&](Bytecode code, const char *name) {
+    const auto addStage = [&](Bytecode code, const char *name) -> Reflection::DxilInfo {
         if (code.empty()) {
-            return;
+            return {};
         }
-        const Reflection::DxilInfo stage = reflectStage(code, call);
+        Reflection::DxilInfo stage = reflectStage(code, call);
         if (!stage.hasRootData) {
-            return;
+            return stage;
         }
         if (rootStage != nullptr && stage.rootDataSize != info.rootDataSize) {
             reportError(ErrorCategory::eProgrammerError,
@@ -237,11 +270,17 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         info.hasRootData = true;
         info.rootDataSize = stage.rootDataSize;
         rootStage = name;
+        return stage;
     };
     addStage(desc.task, "task");
-    addStage(desc.mesh, "mesh");
-    addStage(desc.vertex, "vertex");
-    addStage(desc.pixel, "pixel");
+    [[maybe_unused]] const Reflection::DxilInfo mesh = addStage(desc.mesh, "mesh");
+    [[maybe_unused]] const Reflection::DxilInfo vertex = addStage(desc.vertex, "vertex");
+    [[maybe_unused]] const Reflection::DxilInfo pixel = addStage(desc.pixel, "pixel");
+    if (!desc.pixel.empty()) {
+        EQ_VALIDATE(Validation::checkStageLink(stageOutputs(meshPipeline ? mesh : vertex),
+                                               stageValues(pixel.inputs, true), meshPipeline ? "mesh" : "vertex",
+                                               "register"));
+    }
     checkRootDataSize(device, info.rootDataSize, call);
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
                                                hasStencil(desc.depthFormat)));
