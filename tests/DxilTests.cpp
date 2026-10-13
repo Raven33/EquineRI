@@ -369,3 +369,49 @@ EQ_TEST(dxil, garbage_bitcode) {
         EQ_CHECK(!read(joinParts(parts)).error.empty());
     }
 }
+
+// link_vs.hlsl and link_skip_ps.hlsl: the signatures, as the stage link check
+// reads them (P101); they survive -Qstrip_reflect.
+EQ_TEST(dxil, signatures) {
+    const DxilReadResult vs = read(loadShader("link_vs"));
+    EQ_CHECK(vs.error.empty());
+    EQ_CHECK(vs.info.inputs.size() == 1 && vs.info.inputs[0].semanticName == "SV_VertexID");
+    EQ_CHECK(vs.info.outputs.size() == 4);
+    if (vs.info.outputs.size() == 4) {
+        EQ_CHECK(vs.info.outputs[0].semanticName == "SV_Position");
+        EQ_CHECK(vs.info.outputs[0].systemValue == RI::Reflection::kDxilSystemValuePosition);
+        EQ_CHECK(vs.info.outputs[0].mask == 0xF);
+        EQ_CHECK(vs.info.outputs[2].semanticName == "NORMAL" && vs.info.outputs[2].registerIndex == 2);
+        EQ_CHECK(vs.info.outputs[3].semanticName == "COLOR" && vs.info.outputs[3].semanticIndex == 1);
+        EQ_CHECK(vs.info.outputs[3].systemValue == RI::Reflection::kDxilSystemValueNone);
+    }
+    EQ_CHECK(vs.info.primitiveOutputs.empty());
+
+    const DxilReadResult ps = read(loadShader("link_skip_ps"));
+    EQ_CHECK(ps.error.empty());
+    EQ_CHECK(ps.info.inputs.size() == 2);
+    if (ps.info.inputs.size() == 2) {
+        EQ_CHECK(ps.info.inputs[0].semanticName == "NORMAL" && ps.info.inputs[0].registerIndex == 0);
+        EQ_CHECK(ps.info.inputs[1].semanticName == "SV_IsFrontFace");
+        EQ_CHECK(ps.info.inputs[1].systemValue != RI::Reflection::kDxilSystemValueNone);
+    }
+
+    // Malformed signatures are errors: too many elements, a name outside the
+    // part, a name with no terminator.
+    const Bytes original = loadShader("link_vs");
+    const auto corrupt = [&](size_t offset, uint32 value) {
+        std::vector<Part> parts = splitParts(original);
+        Part *osg1 = findPart(parts, fourCC("OSG1"));
+        EQ_CHECK(osg1 != nullptr);
+        storeU32(osg1->data, offset, value);
+        return read(joinParts(parts));
+    };
+    EQ_CHECK(mentions(corrupt(0, 1000), "the OSG1 part's 1000 elements do not fit"));
+    EQ_CHECK(mentions(corrupt(8 + 4, 0xFFFF), "semantic name lies outside the part"));
+    std::vector<Part> parts = splitParts(original);
+    Part *osg1 = findPart(parts, fourCC("OSG1"));
+    EQ_CHECK(osg1 != nullptr);
+    storeU32(osg1->data, 8 + 4, static_cast<uint32>(osg1->data.size() - 1));
+    osg1->data.back() = std::byte{'X'};
+    EQ_CHECK(mentions(read(joinParts(parts)), "semantic name is not terminated"));
+}

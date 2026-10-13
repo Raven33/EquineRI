@@ -56,12 +56,8 @@ are built.
 
 Three things compile on both targets but behave differently unless you follow one rule:
 
-- **Pass values from the vertex to the pixel shader in one struct.** Vulkan matches the
-  stages' values by location, D3D12 by their position in the vertex output (`SV_Position`
-  included). A pixel shader that takes only part of the vertex output works on Vulkan and
-  fails at pipeline creation on D3D12 (`Semantic 'TEXCOORD', Index '0' is defined for
-  mismatched hardware registers`). Declare one struct, return it from the vertex shader and
-  take it in the pixel shader.
+- **Pass values from the vertex to the pixel shader in one struct**: see
+  [below](#values-passed-to-the-pixel-shader).
 - **Matrices in buffers are column-major.** A `float4x4` in a constant or structured buffer is
   read column by column unless declared `row_major`, on both backends (the compile rule gives
   both D3D12's layout). With `mul(matrix, vector)`, store the matrix column by column from
@@ -70,6 +66,43 @@ Three things compile on both targets but behave differently unless you follow on
 - **Clip space is D3D12's on both backends:** y up, depth from 0 (near) to 1 (far). Use
   projection matrices for a 0-to-1 depth range (GLM: `GLM_FORCE_DEPTH_ZERO_TO_ONE`), not
   OpenGL's -1-to-1 ([rendering](rendering.md#clip-space-points-up-on-both-backends)).
+
+## Values passed to the pixel shader
+
+The vertex shader (or mesh shader) outputs a position and other values: a color, texture
+coordinates, a normal. The GPU interpolates them across each triangle and gives them to the
+pixel shader as its inputs. Each backend pairs outputs and inputs its own way:
+
+- **Vulkan** numbers the values (their *location*) in the order they are declared, leaving
+  out `SV_Position`, and pairs equal numbers.
+- **D3D12** places the values in *registers*, in the order they are declared, `SV_Position`
+  included, and pairs equal registers.
+
+Neither pairs them by name. So the rules are:
+
+1. **Use one struct.** Return it from the vertex shader and take the same struct in the pixel
+   shader. This always works.
+2. A pixel shader that declares its own inputs lists the **same values in the same order**,
+   `SV_Position` included, and may leave out only values **at the end**.
+3. Leaving out a value in the middle breaks both backends. If the vertex shader outputs `uv`
+   then `normal` and the pixel shader takes only `normal`, Vulkan gives it the `uv` (silently:
+   the image is just wrong) and D3D12 refuses the pipeline.
+
+Values the GPU makes for the pixel shader (`SV_IsFrontFace`, `SV_SampleIndex`, ...) are not
+outputs of the vertex shader and may be declared anywhere.
+
+In validation builds, `createGraphicsPipeline` checks rules 2 and 3 on both backends
+([P101](../design-notes/decisions.md#p101)), matching values by semantic:
+
+```text
+programmer error: createGraphicsPipeline: the pixel shader reads NORMAL0 at location 0, but the
+vertex shader writes it at location 1: ...; pass them in one struct (P101)
+```
+
+One case is visible only on D3D12: a pixel shader that leaves out `SV_Position` at the start
+while taking the values after it. Vulkan has no location for `SV_Position`, so it works there,
+and D3D12 refuses it. The check relies on the names DXC gives the values in SPIR-V; shaders
+from another compiler are not checked on Vulkan.
 
 ## What RI checks at pipeline creation
 

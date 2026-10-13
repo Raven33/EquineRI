@@ -71,3 +71,33 @@ EQ_TEST(validation, texture_and_rendering_checks) {
     EQ_CHECK(checkViewRange(2, 2, 3, 0, 1, 1).has_value());
     EQ_CHECK(checkViewRange(0, 1, 1, 1, 1, 1).has_value());
 }
+
+// Values passed to the pixel shader (P101), matched by semantic and slot.
+EQ_TEST(validation, stage_link) {
+    using namespace RI::Validation;
+    EQ_CHECK(stageSemantic("normal") == "NORMAL0");
+    EQ_CHECK(stageSemantic("Color1") == "COLOR1");
+    const StageValue outputs[] = {{.semantic = "SV_POSITION0", .slot = 0},
+                                  {.semantic = "TEXCOORD0", .slot = 1},
+                                  {.semantic = "NORMAL0", .slot = 2},
+                                  {.semantic = "PRIMID0", .slot = 0, .slotChecked = false}};
+    // The whole struct, and a prefix of it, link.
+    EQ_CHECK(!checkStageLink(outputs, std::span(outputs).first(3), "vertex", "register"));
+    EQ_CHECK(!checkStageLink(outputs, std::span(outputs).first(2), "vertex", "register"));
+    // A per-primitive value is matched by semantic only.
+    const StageValue primitive[] = {{.semantic = "PRIMID0", .slot = 5}};
+    EQ_CHECK(!checkStageLink(outputs, primitive, "mesh", "register"));
+    // Leaving out values before NORMAL moves it.
+    const StageValue skipped[] = {{.semantic = "NORMAL0", .slot = 0}};
+    const CheckResult moved = checkStageLink(outputs, skipped, "vertex", "register");
+    EQ_CHECK(moved && moved->find("the pixel shader reads NORMAL0 at register 0, but the vertex shader writes it at "
+                                  "register 2") != std::string::npos);
+    // Another component of the same register.
+    const StageValue component[] = {{.semantic = "NORMAL0", .slot = 2, .component = 1}};
+    const CheckResult shifted = checkStageLink(outputs, component, "vertex", "register");
+    EQ_CHECK(shifted && shifted->find("at register 2, component 1") != std::string::npos);
+    // A value the vertex shader does not write.
+    const StageValue missing[] = {{.semantic = "COLOR0", .slot = 0}};
+    const CheckResult absent = checkStageLink(outputs, missing, "vertex", "location");
+    EQ_CHECK(absent && absent->find("reads COLOR0, which the vertex shader does not write") != std::string::npos);
+}

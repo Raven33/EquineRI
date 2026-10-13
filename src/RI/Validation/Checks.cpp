@@ -3,6 +3,8 @@
 
 #include <RI/Validation/Checks.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <format>
 
 namespace RI::Validation {
@@ -180,6 +182,46 @@ CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stenci
     }
     if (stencilTest && !depthHasStencil) {
         return std::string("createGraphicsPipeline: the stencil test needs a depth format with stencil");
+    }
+    return {};
+}
+
+std::string stageSemantic(std::string_view semantic) {
+    std::string result;
+    for (const char c : semantic) {
+        result.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
+    }
+    if (result.empty() || std::isdigit(static_cast<unsigned char>(result.back())) == 0) {
+        result.push_back('0');
+    }
+    return result;
+}
+
+namespace {
+
+std::string slotText(std::string_view slotName, const StageValue &value) {
+    return value.component == 0 ? std::format("{} {}", slotName, value.slot)
+                                : std::format("{} {}, component {}", slotName, value.slot, value.component);
+}
+
+} // namespace
+
+CheckResult checkStageLink(std::span<const StageValue> outputs, std::span<const StageValue> inputs,
+                           std::string_view producer, std::string_view slotName) {
+    for (const StageValue &input : inputs) {
+        const auto output = std::ranges::find(outputs, input.semantic, &StageValue::semantic);
+        if (output == outputs.end()) {
+            return std::format("createGraphicsPipeline: the pixel shader reads {}, which the {} shader does not "
+                               "write; pass values from the {} to the pixel shader in one struct (P101)",
+                               input.semantic, producer, producer);
+        }
+        if (output->slotChecked && (output->slot != input.slot || output->component != input.component)) {
+            return std::format("createGraphicsPipeline: the pixel shader reads {} at {}, but the {} shader writes "
+                               "it at {}: the pixel shader must take the {} shader's values in the same order, "
+                               "leaving none out before the last one it reads; pass them in one struct (P101)",
+                               input.semantic, slotText(slotName, input), producer, slotText(slotName, *output),
+                               producer);
+        }
     }
     return {};
 }

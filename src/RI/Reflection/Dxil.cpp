@@ -1,5 +1,5 @@
 // Implements Dxil.hpp: RI's own DXIL reader (P67). Parses the container parts
-// (SFI0, PSV0) and the LLVM 3.7 bitcode of the DXIL part far enough to read the
+// (SFI0, PSV0, the signatures) and the LLVM 3.7 bitcode of the DXIL part far enough to read the
 // root data size from `!dx.resources`. Every read is bounds-checked: malformed
 // input gives an error message, never a crash.
 
@@ -40,6 +40,9 @@ constexpr uint32 fourCC(char a, char b, char c, char d) {
 constexpr uint32 kPartSFI0 = fourCC('S', 'F', 'I', '0');
 constexpr uint32 kPartPSV0 = fourCC('P', 'S', 'V', '0');
 constexpr uint32 kPartDXIL = fourCC('D', 'X', 'I', 'L');
+constexpr uint32 kPartISG1 = fourCC('I', 'S', 'G', '1');
+constexpr uint32 kPartOSG1 = fourCC('O', 'S', 'G', '1');
+constexpr uint32 kPartPSG1 = fourCC('P', 'S', 'G', '1');
 
 // ── DXBC container ───────────────────────────────────────────────────────────
 // Header: "DXBC", 16-byte hash, u16 major + u16 minor version, u32 total size,
@@ -52,9 +55,15 @@ struct Parts {
     std::span<const std::byte> sfi0;
     std::span<const std::byte> psv0;
     std::span<const std::byte> dxil;
+    std::span<const std::byte> isg1;
+    std::span<const std::byte> osg1;
+    std::span<const std::byte> psg1;
     bool hasSfi0 = false;
     bool hasPsv0 = false;
     bool hasDxil = false;
+    bool hasIsg1 = false;
+    bool hasOsg1 = false;
+    bool hasPsg1 = false;
 };
 
 std::string findParts(std::span<const std::byte> bytes, Parts &parts) {
@@ -105,6 +114,18 @@ std::string findParts(std::span<const std::byte> bytes, Parts &parts) {
             slot = &parts.dxil;
             seen = &parts.hasDxil;
             name = "DXIL";
+        } else if (code == kPartISG1) {
+            slot = &parts.isg1;
+            seen = &parts.hasIsg1;
+            name = "ISG1";
+        } else if (code == kPartOSG1) {
+            slot = &parts.osg1;
+            seen = &parts.hasOsg1;
+            name = "OSG1";
+        } else if (code == kPartPSG1) {
+            slot = &parts.psg1;
+            seen = &parts.hasPsg1;
+            name = "PSG1";
         } else {
             continue;
         }
@@ -1017,6 +1038,49 @@ std::string sortReservedSpace(const std::vector<DxilBinding> &resources, DxilInf
 // DXIL part: program header (u32 version, u32 size in dwords), then the bitcode
 // header ("DXIL", u32 version, u32 bitcode offset from "DXIL", u32 bitcode size).
 constexpr uint64 kDxilProgramHeaderSize = 24;
+// ── ISG1, OSG1, PSG1: signatures ─────────────────────────────────────────────
+// Header: u32 element count, u32 offset of the first element (from the part's
+// start). Each element, 32 bytes: u32 stream, u32 name offset (from the part's
+// start, NUL-terminated), u32 semantic index, u32 system value (D3D_NAME),
+// u32 component type, u32 register, u8 mask, u8 read/write mask, u16 padding,
+// u32 minimum precision.
+
+constexpr uint64 kSignatureElementSize = 32;
+
+std::string readSignature(std::span<const std::byte> part, std::string_view name,
+                          std::vector<DxilSignatureElement> &elements) {
+    if (part.size() < 8) {
+        return std::format("the {} part is truncated", name);
+    }
+    const uint64 count = loadU32(part, 0);
+    const uint64 first = loadU32(part, 4);
+    if (first > part.size() || count > (part.size() - first) / kSignatureElementSize) {
+        return std::format("the {} part's {} elements do not fit in it", name, count);
+    }
+    for (uint64 i = 0; i < count; ++i) {
+        const uint64 at = first + i * kSignatureElementSize;
+        const uint64 nameOffset = loadU32(part, at + 4);
+        if (nameOffset >= part.size()) {
+            return std::format("a {} element's semantic name lies outside the part", name);
+        }
+        DxilSignatureElement element;
+        uint64 end = nameOffset;
+        while (end < part.size() && part[end] != std::byte{0}) {
+            element.semanticName.push_back(static_cast<char>(part[end]));
+            ++end;
+        }
+        if (end == part.size()) {
+            return std::format("a {} element's semantic name is not terminated", name);
+        }
+        element.semanticIndex = loadU32(part, at + 8);
+        element.systemValue = loadU32(part, at + 12);
+        element.registerIndex = loadU32(part, at + 20);
+        element.mask = std::to_integer<uint8>(part[at + 24]);
+        elements.push_back(std::move(element));
+    }
+    return {};
+}
+
 constexpr uint64 kBitcodeHeaderOffset = 8;
 
 std::string findBitcode(std::span<const std::byte> part, std::span<const std::byte> &bitcode) {
@@ -1056,6 +1120,19 @@ std::string readInto(std::span<const std::byte> bytecode, DxilInfo &info) {
     }
     if (!error.empty()) {
         return error;
+    }
+
+    const std::pair<std::span<const std::byte>, bool> signatures[] = {
+        {parts.isg1, parts.hasIsg1}, {parts.osg1, parts.hasOsg1}, {parts.psg1, parts.hasPsg1}};
+    std::vector<DxilSignatureElement> *targets[] = {&info.inputs, &info.outputs, &info.primitiveOutputs};
+    const std::string_view names[] = {"ISG1", "OSG1", "PSG1"};
+    for (size_t i = 0; i < 3; ++i) {
+        if (signatures[i].second) {
+            error = readSignature(signatures[i].first, names[i], *targets[i]);
+            if (!error.empty()) {
+                return error;
+            }
+        }
     }
 
     // The bitcode is always parsed, so a corrupt DXIL part is reported even

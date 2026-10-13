@@ -123,6 +123,9 @@ The shaders:
   error**. A stage that declares root data but never reads it counts as none
   ([root data](../concepts/root-data.md#one-c-struct-for-both-backends)). Root data larger than `device.limits.maxRootDataSize` is **unsupported**.
 - At most 8 color formats (**programmer error** on D3D12).
+- Every value the pixel shader reads is written by the vertex (or mesh) shader in the same
+  place: pass them in one struct ([values passed to the pixel shader](../concepts/shaders.md#values-passed-to-the-pixel-shader),
+  [P101](../design-notes/decisions.md#p101); **programmer error** in validation builds).
 - Shader bytecode that is not SPIR-V on Vulkan (or DXIL on D3D12) is a **programmer error**.
 - To write depth, set both `test` and `write`; to write depth unconditionally, compare with
   `CompareOp::eAlways`. (Vulkan writes depth only when the test is on.)

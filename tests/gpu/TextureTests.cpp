@@ -1152,3 +1152,25 @@ EQ_TEST(texture, samplers) {
     RI::destroyBuffer(f.device, staging);
     RI::freeMemory(f.device, upload.memory);
 }
+
+// A pixel shader that takes the vertex shader's output struct as written links
+// on both backends (P101).
+EQ_TEST(texture, stage_link) {
+    RI::Device device = createTestDevice();
+    const std::vector<std::byte> vs = loadShader("link_vs"), ps = loadShader("link_ps");
+    RI::Pipeline pipeline =
+        RI::createGraphicsPipeline(device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    RI::destroyPipeline(device, pipeline);
+    RI::destroyDevice(device);
+}
+
+#if EQUINE_VALIDATION
+// A pixel shader that leaves out values before the one it reads (P101): RI
+// reports it on both backends, where Vulkan alone would read the wrong value.
+EQ_TEST(texture, stage_link_mismatch_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    const std::vector<std::byte> vs = loadShader("link_vs"), ps = loadShader("link_skip_ps");
+    RI::createGraphicsPipeline(device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}});
+}
+#endif

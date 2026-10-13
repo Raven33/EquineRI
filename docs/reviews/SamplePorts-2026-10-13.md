@@ -137,6 +137,12 @@ All the documentation fixes above, plus header comments on `createFrameRing`,
 (code-documentation check: 0 problems), the snippets compile, and the Linux tests pass (86/86).
 No signature changed.
 
+## Added after the review
+
+The user asked for the vertex-to-pixel rule to be caught at validation (P101):
+`createGraphicsPipeline` now matches the pixel shader's inputs to the previous stage's outputs
+by semantic and slot, on both backends, and `concepts/shaders.md` gives the rules.
+
 ## Waiting for the user
 
 Ranked by samples affected:
