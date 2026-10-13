@@ -19,8 +19,10 @@ struct FrameRing {
     bool recording = false;
 };
 
+// Keeps &device: the device must stay at that address, alive, until destroyFrameRing.
 FrameRing createFrameRing(Device &device, uint32 framesInFlight = 2);
-// Waits for the GPU, then destroys the lists.
+// Waits for every frame in flight, then destroys the lists. Call it before
+// destroying what the frames used.
 void destroyFrameRing(FrameRing &ring);
 
 // Waits until this frame's list is free, resets it and begins recording.

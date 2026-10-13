@@ -4,8 +4,8 @@
 
 RI does not compile shaders: you give it **bytecode**, SPIR-V on Vulkan and DXIL on D3D12
 ([P29](../design-notes/decisions.md#p29)). Shaders are written in HLSL and compiled with
-**one DXC** for both targets ([P4](../design-notes/decisions.md#p4)). A helper for compiling
-at run time will come later.
+**one DXC** for both targets ([P4](../design-notes/decisions.md#p4)). To compile at run time, use the
+[shader compiler helper](../helpers/shader-compiler.md).
 
 ```cpp
 --8<-- "snippets/ri/compute.cpp:load-shader"
@@ -51,6 +51,25 @@ equine_add_shaders(my_app PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/my
 The outputs go to `<build>/shaders/`, and the target gets the define `EQUINE_SHADER_DIR`
 pointing there. The function is available when tests, samples or the documentation snippets
 are built.
+
+## HLSL that works on both backends
+
+Three things compile on both targets but behave differently unless you follow one rule:
+
+- **Pass values from the vertex to the pixel shader in one struct.** Vulkan matches the
+  stages' values by location, D3D12 by their position in the vertex output (`SV_Position`
+  included). A pixel shader that takes only part of the vertex output works on Vulkan and
+  fails at pipeline creation on D3D12 (`Semantic 'TEXCOORD', Index '0' is defined for
+  mismatched hardware registers`). Declare one struct, return it from the vertex shader and
+  take it in the pixel shader.
+- **Matrices in buffers are column-major.** A `float4x4` in a constant or structured buffer is
+  read column by column unless declared `row_major`, on both backends (the compile rule gives
+  both D3D12's layout). With `mul(matrix, vector)`, store the matrix column by column from
+  C++ (GLM's layout), or declare it `row_major float4x4` if your C++ matrices are stored row by
+  row. A wrong choice is silent: the image is just wrong.
+- **Clip space is D3D12's on both backends:** y up, depth from 0 (near) to 1 (far). Use
+  projection matrices for a 0-to-1 depth range (GLM: `GLM_FORCE_DEPTH_ZERO_TO_ONE`), not
+  OpenGL's -1-to-1 ([rendering](rendering.md#clip-space-points-up-on-both-backends)).
 
 ## What RI checks at pipeline creation
 

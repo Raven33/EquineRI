@@ -30,7 +30,7 @@ performance on some GPUs.
 | `eReadWrite` | write a `ReadWriteView` (`RWStructuredBuffer`, ...) | `STORAGE_BUFFER` | `ALLOW_UNORDERED_ACCESS` |
 | `eConstant` | write a `ConstantBufferView` (`ConstantBuffer<T>`) | `UNIFORM_BUFFER` | - |
 | `eCopySrc` / `eCopyDst` | copy from / to it ([`cmdCopyBuffer`](cmdCopyBuffer.md)) | `TRANSFER_SRC` / `TRANSFER_DST` | - |
-| `eIndirect` | read indirect arguments from it (later) | `INDIRECT_BUFFER` | - |
+| `eIndirect` | read indirect arguments from it ([indirect](indirect.md)) | `INDIRECT_BUFFER` | - |
 
 Every Vulkan buffer also gets `SHADER_DEVICE_ADDRESS`, for its GPU address. Combine flags
 with `|`.
@@ -110,6 +110,9 @@ Writing through a mapped buffer:
   of a destroyed buffer (in a descriptor or a copy) is a **programmer error**:
   `buffer was destroyed`.
 - Two buffers may share memory (aliasing) if they are never used at the same time.
+- A constant buffer's size should be a multiple of 256 bytes: a `ConstantBufferView` covers
+  a range rounded up to 256, and the rounded range must fit in the buffer
+  ([writeDescriptors](writeDescriptors.md#rules-and-errors)).
 
 ## Related decisions
 

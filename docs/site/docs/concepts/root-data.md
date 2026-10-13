@@ -2,8 +2,8 @@
 
 ## What it is
 
-**Root data** is a small block of values that you set from C++ for each dispatch (and later
-each draw), directly in the command list, without any buffer: heap slots, a scale factor, an
+**Root data** is a small block of values that you set from C++ for each dispatch or
+draw, directly in the command list, without any buffer: heap slots, a scale factor, an
 element count. It is the fastest way to pass a few values to a shader. Natively it is Vulkan's
 *push constants* and D3D12's *root constants*.
 
@@ -57,6 +57,17 @@ C++ struct matches both ([P54](../design-notes/decisions.md#p54),
 [P93](../design-notes/decisions.md#p93)). With that layout, a struct of 32-bit scalars, as
 above, maps one to one. Be careful with vectors: a `float3` followed by a `float` packs into
 16 bytes, but a `float3` does not start in the middle of a 16-byte row.
+
+The rule behind it: **a vector never crosses a 16-byte boundary.** A `float2` at offset 12
+moves to 16, so `uint, uint, uint, float2` is 24 bytes in HLSL but 20 in C++. The C++ struct
+does not move it for you: add the padding member yourself, or keep root data to 32-bit
+scalars (`uint`, `float`, `int`), which match one to one. The [size check](#rules-and-errors)
+catches a mismatch, but only the size, so a `static_assert(sizeof(MyRoot) == ...)` next to
+the C++ struct helps.
+
+A block the shader never reads is removed by the compiler and counts as **none**: a vertex
+shader that declares `EQ_ROOT_DATA` but does not use it has `rootDataSize` 0, and setting
+root data for it is an error. Set root data only for pipelines whose shaders read it.
 
 ## Rules and errors
 

@@ -37,7 +37,7 @@ The `usage` flags say everything the texture will be used for
 | `eStorage` | read and write it in shaders through a `ReadWriteView` (`RWTexture2D<T>`) |
 | `eRenderTarget` | render to it as a color attachment |
 | `eDepthStencil` | use it as the depth (and stencil) attachment |
-| `eCopySrc` / `eCopyDst` | copy from / to it (texture copies come later) |
+| `eCopySrc` / `eCopyDst` | copy from / to it ([copies](../reference/copies.md)) |
 | `eReadOnlyDepthSampling` | sample a depth texture during a [read-only depth section](rendering.md#read-only-depth) |
 
 Set every use you need and no more. Each flag can cost: it can turn off compression, change

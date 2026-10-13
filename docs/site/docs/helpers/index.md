@@ -18,6 +18,9 @@ Helpers:
 - [GPU profiler](profiler.md): nested timestamp scopes.
 - [Shader compiler](shader-compiler.md): HLSL at run time with RI's compile rule.
 
+The frame ring, the memory allocator and the profiler keep a pointer to the `Device` they
+were created with: keep the device at the same address, and alive, until you destroy them.
+
 Every helper except the GLFW window is in the library `EquineHelpersVulkan` or
 `EquineHelpersD3D12`, matching the backend you build.
 

@@ -75,7 +75,8 @@ misread it. Expected answers:
 
 Each verdict must match what RI can do. **Expect many skips and adapts**; RI v1 does not have:
 
-- compressed texture formats (BC, ETC2, ASTC): most samples load KTX textures in these;
+- compressed texture formats (BC, ETC2, ASTC): no sample needs them (every KTX file the
+  samples load is uncompressed RGBA; loading glTF and KTX at all is the real cost);
 - 3D textures and cube maps (textures are 2D, with layers);
 - geometry and tessellation shaders (vertex, pixel, task, mesh, compute only);
 - wireframe fill, depth bias, line width, dynamic state (P38: state is fixed in the pipeline);
@@ -140,6 +141,18 @@ rule.
   commit, so the next batch reads the fixed docs.
 
 ### 3.6 Next batch
+
+The pilot was reviewed on 2026-10-13: `docs/reviews/SamplePorts-2026-10-13.md`. Its lessons
+change the prompt of section 7 for every later batch; add these rules to it:
+
+- Before you finish a sample, close its window normally at least once under validation, on
+  every backend you ran: the shutdown path counts.
+- Remove debug code (probes, dumps, early exits, usage flags added for them) before you finish.
+- A README's run status says only what you saw: rendering checked or not, shutdown checked
+  or not.
+- Every friction entry that code or a README refers to is in `FRICTION.md`.
+- Cite only pages you opened; give the path as it is on disk.
+
 
 A **new** fresh agent each time, never the pilot agent (it has learned around the gaps).
 Give it the section 7 prompt with step 3 changed to the next samples from `TRIAGE.md` (the

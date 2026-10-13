@@ -42,6 +42,8 @@ struct MemoryAllocator {
 };
 
 // Blocks of `blockSize` bytes; larger requests get a block of their own.
+// Keeps &device: the device must stay at that address, alive, until
+// destroyMemoryAllocator.
 MemoryAllocator createMemoryAllocator(Device &device, uint64 blockSize = 64ull << 20);
 void destroyMemoryAllocator(MemoryAllocator &allocator);
 

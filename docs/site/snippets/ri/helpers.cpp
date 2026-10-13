@@ -97,10 +97,13 @@ void main(uint3 id : SV_DispatchThreadID) {
     RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = shader.bytecode});
     // --8<-- [end:compiler]
 
+    // --8<-- [start:frame-ring-shutdown]
+    // Waits for every frame still in flight: destroy the ring first, then what the frames used.
+    RI::Helpers::destroyFrameRing(ring);
     RI::destroyPipeline(device, pipeline);
+    // --8<-- [end:frame-ring-shutdown]
     RI::Helpers::destroyShaderCompiler(compiler);
     RI::Helpers::destroyProfiler(profiler);
-    RI::Helpers::destroyFrameRing(ring);
     RI::destroyTexture(device, texture);
     RI::Helpers::release(allocator, textureAllocation);
     RI::destroyBuffer(device, buffer);

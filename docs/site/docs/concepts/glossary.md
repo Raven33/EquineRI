@@ -4,6 +4,9 @@ A conversion chart: each Vulkan and D3D12 concept, its RI counterpart, and how R
 it to read RI with Vulkan or D3D12 in mind, or to port code to RI. "—" means the concept has
 no RI form: RI hides it, or leaves it to [native access](../native/index.md).
 
+Features RI v1 does not have at all, with what to do instead, are listed at the end:
+[Not in RI v1](#not-in-ri-v1).
+
 ## Devices and setup
 
 | Vulkan | D3D12 | RI | How RI maps it |
@@ -124,3 +127,25 @@ no RI form: RI hides it, or leaves it to [native access](../native/index.md).
 | Debug labels | PIX events | `cmdBeginMarker`, `cmdEndMarker` | |
 | Device fault | DRED | — | Printed when the device is lost (validation builds) ([P53](../design-notes/decisions.md#p53)). |
 | Any native handle | Any native object | `RI::Vk::native(...)`, `RI::D3D12::native(...)` | Through the backend's `Native.hpp` ([native access](../native/index.md)). |
+
+## Not in RI v1
+
+What a Vulkan or D3D12 program may use that RI v1 does not offer. "Native" means a
+[native pipeline](../native/import.md) (`importPipeline`) or a
+[native section](../native/sections.md), written once per backend.
+
+| Vulkan | D3D12 | Instead |
+|---|---|---|
+| Cube maps, 3D images | Texture cubes, 3D textures | A 2D array with 6 layers and the face chosen in the shader; 3D: a 2D array of slices. |
+| Compressed formats (BC, ETC2, ASTC) | BC formats | Uncompressed formats ([`Format`](../reference/texture.md)); decompress when loading. |
+| Geometry and tessellation shaders | GS, HS, DS | Mesh shaders, or native. |
+| Depth bias, depth clamp | `DepthBias`, `DepthClipEnable` | Offset the depth in the shader (a slope-scaled offset in the shadow comparison), or native. |
+| Polygon mode (wireframe) | `FillMode` wireframe | Draw the edges with `eLineList` and an index buffer, or native. |
+| Line width, point size | — (1 pixel only) | Quads: one per point or line segment. |
+| Alpha to coverage, sample mask, conservative rasterization, shading rate | The same | Native. |
+| `vkCmdBlitImage`, mip generation | — | A compute or pixel shader that downsamples; [`cmdCopyTexture`](../reference/copies.md) copies at the same size only. |
+| Specialization constants | — | Root data, or `#define`s with the [shader compiler helper](../helpers/shader-compiler.md). |
+| Multiview, viewport arrays, smaller viewports and scissors | View instancing, viewport arrays | One rendering section per view: a section covers its attachments ([rendering](rendering.md)). |
+| Recording on several threads | Recording on several threads | One thread in v1 ([timeline](timeline.md), [P56](../design-notes/decisions.md#p56)). |
+| Compute and transfer queues | Compute and copy queues | The graphics queue only ([P37](../design-notes/decisions.md#p37)). |
+| Ray tracing pipelines | State objects | Inline ray queries ([P49](../design-notes/decisions.md#p49)). |

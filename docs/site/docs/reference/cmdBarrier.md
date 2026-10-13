@@ -20,7 +20,7 @@ samples its result. Why barriers exist, and why RI's are coarse, is explained in
 |---|---|
 | `eCopy` | copies and clears |
 | `eCompute` | compute shaders |
-| `eIndirect` | reading indirect arguments (later) |
+| `eIndirect` | reading indirect arguments ([`cmdExecuteIndirect`](indirect.md)) |
 | `eVertex` | vertex shaders |
 | `ePixel` | pixel shaders |
 | `eRenderTarget` | color attachment reads and writes |

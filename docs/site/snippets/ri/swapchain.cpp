@@ -62,8 +62,9 @@ int main() {
         last = RI::submit(device.graphicsQueue, cmd);
         RI::present(device.graphicsQueue, swapchain); // after the work submitted before it
     }
-    // --8<-- [end:frame]
+    // Before destroying anything the frames used, wait for the last one.
     RI::wait(device.graphicsQueue, last);
+    // --8<-- [end:frame]
 
     RI::destroyCommandList(device, cmd);
     RI::destroySwapchain(device, swapchain);

@@ -14,6 +14,9 @@ milliseconds in begin order, and resets the profiler for the next frame. Up to
 One profiler serves one frame at a time: with several frames in flight, keep one per frame
 (index them with `frameIndex`).
 
+The profiler keeps a pointer to the `Device` it was created with: keep the device at the same
+address, and alive, until `destroyProfiler`.
+
 ## Example
 
 ```cpp
