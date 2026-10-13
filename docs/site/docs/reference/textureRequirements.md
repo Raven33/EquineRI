@@ -20,8 +20,8 @@ The answer is a [`MemoryRequirements`](bufferRequirements.md):
   `RI::fits(requirements, kind)`.
 
 On the GPUs RI supports, textures fit `eGPU` memory only. Plan on that: allocate `eGPU` blocks
-for textures, and upload texels through a buffer in `eUpload` memory (texture copies come
-later).
+for textures, and upload texels through a buffer in `eUpload` memory ([copies](copies.md), or the
+[transfer helpers](../helpers/transfers.md)).
 
 ## Signature
 

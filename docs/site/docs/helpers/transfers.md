@@ -10,6 +10,10 @@ Texture data is the view's texels (one mip, all its layers), rows **tightly pack
 `width * bytesPerTexel` bytes per row, layers one after the other. The helper turns that into
 the backend's row pitch ([copyLayout](../reference/copies.md)).
 
+RI reads no image files (KTX, PNG, DDS): decode them with a library of your choice (libktx,
+stb_image) into uncompressed texels, then upload them, one mip at a time through a view of that
+mip (`createView` with `baseMip` and `mipCount = 1`).
+
 Because it waits, it suits loading and tools, not per-frame streaming
 ([P47](../design-notes/decisions.md#p47)).
 

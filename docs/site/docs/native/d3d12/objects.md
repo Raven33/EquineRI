@@ -106,5 +106,5 @@ textures. Native code that moves a texture to another layout returns it there.
 - [P84](../../design-notes/decisions.md#p84): native access is gated.
 - [P22](../../design-notes/decisions.md#p22): native resources are always reachable.
 - [P27](../../design-notes/decisions.md#p27), [P70](../../design-notes/decisions.md#p70):
-  native sections (later).
+  [native sections](../sections.md).
 - [P67](../../design-notes/decisions.md#p67): RI builds the root signature from the DXIL.

@@ -28,7 +28,7 @@ in commands recorded later.
 |---|---|
 | `Stage::eCopy` | copy commands (`cmdCopyBuffer`) and clears (`cmdClearTexture`, `cmdClearBuffer`) |
 | `Stage::eCompute` | compute shaders (`cmdDispatch`) |
-| `Stage::eIndirect` | reading indirect arguments (later) |
+| `Stage::eIndirect` | reading indirect arguments ([`cmdExecuteIndirect`](../reference/indirect.md)) |
 | `Stage::eVertex` | vertex shaders (`cmdDraw`), including the buffers they pull vertices from |
 | `Stage::ePixel` | pixel shaders |
 | `Stage::eRenderTarget` | color attachment reads and writes in a rendering section |

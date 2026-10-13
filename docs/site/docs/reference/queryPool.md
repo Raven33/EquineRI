@@ -85,7 +85,8 @@ Write timestamps with [`cmdWriteTimestamp`](timestamps.md), copy their results t
 - `first` and `count` must be inside the pool (**programmer error** in validation builds).
 - Destroy a pool only when the GPU no longer uses it. `QueryPool` is a thin value: copies refer
   to the same pool ([P81](../design-notes/decisions.md#p81)).
-- Pipeline-statistics and occlusion queries come later.
+- Occlusion and pipeline-statistics queries are written with `cmdBeginQuery` and
+  `cmdEndQuery` ([queries](queries.md)).
 
 ## Related decisions
 

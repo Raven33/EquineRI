@@ -6,8 +6,9 @@ copies and queries, graphics completion, indirect execution, swapchain, native s
 import, inline ray tracing, work graphs (D3D12) and the helpers. All Linux tests pass.
 Since then: samplers (P99) and RI as a subproject (P100, `getting-started/use-in-your-project.md`),
 verified at `b82cab1` on Windows (138/138 on AMD and NVIDIA; an outside project builds and runs in
-Debug and Release) and Linux (86/86). Next: the sample ports, in a separate repository, by fresh
-agents (`docs/Plan.md`, "After v1"). Earlier, at `f63f7cd`: 136/136 on AMD and NVIDIA (work graphs included, on NVIDIA D3D12);
+Debug and Release) and Linux (86/86). The sample ports run in a separate repository, by fresh
+agents (`docs/Plan.md`, "After v1"). The pilot batch was reviewed on 2026-10-13 and the docs
+fixed from it (`docs/reviews/SamplePorts-2026-10-13.md`); its API questions wait for the user. Earlier, at `f63f7cd`: 136/136 on AMD and NVIDIA (work graphs included, on NVIDIA D3D12);
 ray tracing is off on AMD Windows Vulkan (P98 (8)). Pending review: P94 (partly reviewed), P95, P97, P98 reviewed 2026-10-11 (DGC off on
 NVIDIA under GPU-AV until the user's own investigation).
 
@@ -17,8 +18,10 @@ commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
 
 ## Where to read
 
-- `docs/SamplePortReview.md`: the next task's handoff, reviewing the sample-port pilot
-  (`Raven33/EquineRI-Samples`) and fixing the docs from it.
+- `docs/SamplePortReview.md`: how to review a batch of sample ports
+  (`Raven33/EquineRI-Samples`) and fix the docs from it; section 3.6 for the next batch.
+- `docs/reviews/SamplePorts-2026-10-13.md`: the pilot's review and the questions waiting for
+  the user.
 - `ARCHITECTURE.md`: the entry point for changing RI (layout, call flow, invariants,
   recipes, backend differences); `docs/CodeDocumentation.md` is the standard it follows.
 - `CONTEXT.md`: the decision log (P1–P98) and the open questions (§5). Start here.

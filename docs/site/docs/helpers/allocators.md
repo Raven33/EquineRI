@@ -25,6 +25,9 @@ When an allocation reuses a range that held another resource, `Allocation::needs
 set: the new texture's contents are undefined, so `cmdDiscard` it before its first use
 ([P69](../design-notes/decisions.md#p69)).
 
+The memory allocator keeps a pointer to the `Device` it was created with: keep the device at
+the same address, and alive, until `destroyMemoryAllocator`.
+
 ## Example
 
 ```cpp

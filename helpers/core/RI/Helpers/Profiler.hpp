@@ -35,6 +35,7 @@ struct Profiler {
     bool resolved = false;
 };
 
+// Keeps &device: the device must stay at that address, alive, until destroyProfiler.
 Profiler createProfiler(Device &device, uint32 maxScopes = 256);
 void destroyProfiler(Profiler &profiler);
 

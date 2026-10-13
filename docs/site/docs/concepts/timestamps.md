@@ -62,10 +62,11 @@ Resolving never resets queries, so a range can be resolved again until it is res
 frequency. It is a device value while RI has one queue
 ([P71](../design-notes/decisions.md#p71)).
 
-## Not yet
+## Other queries and the profiler
 
-Pipeline-statistics and occlusion queries, and a profiler that names scopes, come later
-([P51](../design-notes/decisions.md#p51)).
+Occlusion and pipeline-statistics queries use the same pools: see
+[queries](../reference/queries.md). The [profiler helper](../helpers/profiler.md) measures
+named, nested scopes with timestamps ([P51](../design-notes/decisions.md#p51)).
 
 ## Related decisions
 

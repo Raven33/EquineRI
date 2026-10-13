@@ -66,8 +66,13 @@ with a small helper:
 
 ## Rules and errors
 
-- Typical values: on D3D12, size and alignment are multiples of 64 KiB for every buffer; on
-  Vulkan, alignments are much smaller (often 16 to 256 bytes), so many buffers fit in a block.
+- Lay out a block with the returned values, never with `desc.size`: the next offset is the
+  previous offset plus the previous buffer's `size`, rounded up to the next buffer's
+  `alignment`. `createBuffer` checks the placement against `size`, not `desc.size`.
+- Typical values: on D3D12, size and alignment are multiples of 64 KiB for every buffer. On
+  Vulkan, RI rounds both up to the device's `bufferImageGranularity`, so that buffers and
+  textures can share a block without further care: 1 byte on AMD, 1 KiB on NVIDIA (a 72-byte
+  buffer then takes 1024 bytes).
 - In validation builds, [`createBuffer`](buffer.md) checks the placement: an offset that is
   not a multiple of `alignment`, or a buffer that does not fit, is a **programmer error**
   (`createBuffer: placing the buffer in memory: offset 100 is not a multiple of the required

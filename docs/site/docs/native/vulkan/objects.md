@@ -109,6 +109,6 @@ record the native command, and move it back:
 - [P84](../../design-notes/decisions.md#p84): native access is gated.
 - [P22](../../design-notes/decisions.md#p22): native resources are always reachable.
 - [P27](../../design-notes/decisions.md#p27), [P70](../../design-notes/decisions.md#p70):
-  native sections (later).
+  [native sections](../sections.md).
 - [P89](../../design-notes/decisions.md#p89): the per-device function table.
 - [P94](../../design-notes/decisions.md#p94): the heap's sets.

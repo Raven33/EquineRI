@@ -85,7 +85,7 @@ payload.
   layer reports a draw outside a section (RI does not check, so native sections may hold RI
   draws).
 - The pipeline's attachment formats and sample count must match the section's.
-- Indexed and indirect draws come later.
+- Indirect draws: [`cmdExecuteIndirect`](indirect.md).
 
 ## Related decisions
 

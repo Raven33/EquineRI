@@ -23,7 +23,9 @@ a [rendering section](../concepts/rendering.md), and destroy it with
   its own). Mesh shaders need `device.limits.meshShaders`;
 - `colorFormats`, `depthFormat`, `samples`: the formats and sample count of the attachments it
   renders to. They must match the rendering section's;
-- `topology`: `eTriangleList` (default), `eTriangleStrip`, `eLineList`, `ePointList`;
+- `topology`: `eTriangleList` (default), `eTriangleStrip`, `eLineList`, `ePointList`.
+  Points are one pixel and lines one pixel wide on both backends: D3D12 has no point size or
+  line width. For larger points (sprites), draw a quad per point;
 - `cull`: `eNone` (default), `eFront`, `eBack`; `frontCounterClockwise`: which winding faces
   the camera (clockwise by default, the same on both backends);
 - `depth`: `test` (compare against the depth attachment), `write` (store the new depth),
@@ -118,7 +120,8 @@ The shaders:
 ## Rules and errors
 
 - Both stages must declare the same root data, or none: a different size is a **programmer
-  error**. Root data larger than `device.limits.maxRootDataSize` is **unsupported**.
+  error**. A stage that declares root data but never reads it counts as none
+  ([root data](../concepts/root-data.md#one-c-struct-for-both-backends)). Root data larger than `device.limits.maxRootDataSize` is **unsupported**.
 - At most 8 color formats (**programmer error** on D3D12).
 - Shader bytecode that is not SPIR-V on Vulkan (or DXIL on D3D12) is a **programmer error**.
 - To write depth, set both `test` and `write`; to write depth unconditionally, compare with
