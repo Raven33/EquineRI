@@ -78,7 +78,9 @@ layers cannot see: **RI's own rules** ([P88](../design-notes/decisions.md#p88)).
 as the features arrive:
 
 - using an object after it was destroyed (RI objects are copyable values, so the native
-  layer cannot tell which copy is stale);
+  layer cannot tell which copy is stale). The message names the object when it was given a
+  name, at creation or with `setName`, for the last 4096 named objects destroyed
+  ([P106](../design-notes/decisions.md#p106));
 - the discard required after memory aliasing, the out map of a native section, root data
   marking and size, descriptor slot reuse, command-list reuse.
 

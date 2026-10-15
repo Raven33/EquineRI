@@ -13,7 +13,8 @@ Debugging aids that are **always on**, in every build ([P53](../design-notes/dec
   `GraphicsPipelineDesc`, `WorkGraphDesc`, `DescriptorHeapDesc`, `QueryPoolDesc`,
   `SwapchainDesc`), and `allocateMemory`, `createCommandList` and
   `createAccelerationStructure` take it as their last argument. GPU debuggers and captures
-  (RenderDoc, PIX, Nsight) and validation messages show it. RI copies it during the call, so a
+  (RenderDoc, PIX, Nsight), the native validation layers and RI's own use-after-destroy
+  messages show it. RI copies it during the call, so a
   temporary string is fine. An empty name, the default, names nothing. A swapchain's images are
   named `<name> [i]`, also after a resize.
 - `RI::setName(device, object, name)` renames an object later. It takes memory, buffers,

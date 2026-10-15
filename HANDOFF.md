@@ -24,6 +24,8 @@ Open, in order:
    - names in the descs, through `applyName` in each backend's `Debug.cpp`;
    - the buffer-view and group-count rules, with `maxBufferViewSize` and `maxConstantViewSize`;
    - the `groupGrid` helper and `<equine/grid.hlsli>`.
+   - names in RI's use-after-destroy messages (the validation tracker keeps names, and the last
+     4096 destroyed ones).
 
    Also fixed: the docs header extractor dropped functions with a `= {}` default argument
    (`endNative` was missing from the site). Work-graph input limits wait for a retail Agility

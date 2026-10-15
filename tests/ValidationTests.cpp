@@ -254,3 +254,30 @@ EQ_TEST(validation, device_thread) {
     std::thread([&] { other = RI::Validation::checkDeviceThread(here, "cmdDispatch"); }).join();
     EQ_CHECK(other && other->find("cmdDispatch: called from thread") != std::string::npos);
 }
+
+// Names (P106): a named object destroyed is reported by name; renaming
+// replaces the name; past kDestroyedNames, the oldest names are forgotten.
+EQ_TEST(validation, tracker_names) {
+    using namespace RI::Validation;
+    ObjectTracker tracker;
+    const uint64 unnamed = trackObject(tracker);
+    const uint64 named = trackObject(tracker);
+    setTrackedName(tracker, named, "first");
+    setTrackedName(tracker, named, "particles");
+    untrackObject(tracker, unnamed);
+    untrackObject(tracker, named);
+    const CheckResult byName = checkAlive(tracker, named, "buffer");
+    EQ_CHECK(byName && byName->find("this buffer 'particles' was destroyed") != std::string::npos);
+    const CheckResult byId = checkAlive(tracker, unnamed, "buffer");
+    EQ_CHECK(byId && byId->find("this buffer was destroyed") != std::string::npos);
+    EQ_CHECK(tracker.destroyed.size() == 1);
+
+    for (size_t i = 0; i < kDestroyedNames; ++i) {
+        const uint64 id = trackObject(tracker);
+        setTrackedName(tracker, id, "transient");
+        untrackObject(tracker, id);
+    }
+    EQ_CHECK(tracker.destroyed.size() == kDestroyedNames);
+    const CheckResult forgotten = checkAlive(tracker, named, "buffer");
+    EQ_CHECK(forgotten && forgotten->find("'particles'") == std::string::npos);
+}

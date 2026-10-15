@@ -47,37 +47,46 @@ void nameObject(void *object, std::string_view name) {
     }
 }
 
-void applyName(const DeviceState &, const Memory &memory, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const Memory &memory, std::string_view name) {
     nameObject(memory.internal.heap, name);
+    EQ_DX_TRACK_NAME(&state, memory.internal.id, name);
 }
-void applyName(const DeviceState &, const Buffer &buffer, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const Buffer &buffer, std::string_view name) {
     nameObject(buffer.internal.resource, name);
+    EQ_DX_TRACK_NAME(&state, buffer.internal.id, name);
 }
-void applyName(const DeviceState &, const Texture &texture, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const Texture &texture, std::string_view name) {
     nameObject(texture.internal.resource, name);
+    EQ_DX_TRACK_NAME(&state, texture.internal.id, name);
 }
 // Views are descriptors on D3D12, not objects: nothing to name.
-void applyName(const DeviceState &, const TextureView &, std::string_view) {}
-void applyName(const DeviceState &, const DescriptorHeap &heap, std::string_view name) {
+void applyName(DeviceState &, const TextureView &, std::string_view) {}
+void applyName([[maybe_unused]] DeviceState &state, const DescriptorHeap &heap, std::string_view name) {
     nameObject(heap.internal.resourceHeap, name);
     nameObject(heap.internal.samplerHeap, name);
+    EQ_DX_TRACK_NAME(&state, heap.internal.id, name);
 }
-void applyName(const DeviceState &, const QueryPool &pool, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const QueryPool &pool, std::string_view name) {
     nameObject(pool.internal.heap, name);
+    EQ_DX_TRACK_NAME(&state, pool.internal.id, name);
 }
-void applyName(const DeviceState &, const Pipeline &pipeline, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const Pipeline &pipeline, std::string_view name) {
     nameObject(pipeline.internal.pipelineState, name);
     nameObject(pipeline.internal.rootSignature, name);
+    EQ_DX_TRACK_NAME(&state, pipeline.internal.id, name);
 }
-void applyName(const DeviceState &, const CommandList &cmd, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const CommandList &cmd, std::string_view name) {
     nameObject(cmd.internal.list, name);
+    EQ_DX_TRACK_NAME(&state, cmd.internal.id, name);
 }
-void applyName(const DeviceState &, const AccelerationStructure &structure, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const AccelerationStructure &structure, std::string_view name) {
     nameObject(structure.internal.resource, name);
+    EQ_DX_TRACK_NAME(&state, structure.internal.id, name);
 }
-void applyName(const DeviceState &, const WorkGraph &graph, std::string_view name) {
+void applyName([[maybe_unused]] DeviceState &state, const WorkGraph &graph, std::string_view name) {
     nameObject(graph.internal.stateObject, name);
     nameObject(graph.internal.rootSignature, name);
+    EQ_DX_TRACK_NAME(&state, graph.internal.id, name);
 }
 
 void setName(Device &device, const Memory &memory, std::string_view name) {

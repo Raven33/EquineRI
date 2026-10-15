@@ -108,7 +108,8 @@ Writing through a mapped buffer:
 - `destroyBuffer` resets the struct to empty. `Buffer` is a thin value: copies refer to the
   same buffer ([P81](../design-notes/decisions.md#p81)). In validation builds, using any copy
   of a destroyed buffer (in a descriptor or a copy) is a **programmer error**:
-  `buffer was destroyed`.
+  `this buffer 'particles' was destroyed (object #42)` for a buffer named `particles`,
+  `this buffer was destroyed or belongs to another device (object #42)` without a name.
 - Two buffers may share memory (aliasing) if they are never used at the same time.
 - A constant buffer's size should be a multiple of 256 bytes: a `ConstantBufferView` covers
   a range rounded up to 256, and the rounded range must fit in the buffer

@@ -134,15 +134,15 @@ void loadDebugFunctions(DeviceState &state);
 // The native names of an object (debug utils), shared by setName and names
 // given at creation (P106); `nameNative` names one handle (0: nothing).
 void nameNative(const DeviceState &state, VkObjectType type, uint64 handle, std::string_view name);
-void applyName(const DeviceState &state, const Memory &memory, std::string_view name);
-void applyName(const DeviceState &state, const Buffer &buffer, std::string_view name);
-void applyName(const DeviceState &state, const Texture &texture, std::string_view name);
-void applyName(const DeviceState &state, const TextureView &view, std::string_view name);
-void applyName(const DeviceState &state, const DescriptorHeap &heap, std::string_view name);
-void applyName(const DeviceState &state, const QueryPool &pool, std::string_view name);
-void applyName(const DeviceState &state, const Pipeline &pipeline, std::string_view name);
-void applyName(const DeviceState &state, const CommandList &cmd, std::string_view name);
-void applyName(const DeviceState &state, const AccelerationStructure &structure, std::string_view name);
+void applyName(DeviceState &state, const Memory &memory, std::string_view name);
+void applyName(DeviceState &state, const Buffer &buffer, std::string_view name);
+void applyName(DeviceState &state, const Texture &texture, std::string_view name);
+void applyName(DeviceState &state, const TextureView &view, std::string_view name);
+void applyName(DeviceState &state, const DescriptorHeap &heap, std::string_view name);
+void applyName(DeviceState &state, const QueryPool &pool, std::string_view name);
+void applyName(DeviceState &state, const Pipeline &pipeline, std::string_view name);
+void applyName(DeviceState &state, const CommandList &cmd, std::string_view name);
+void applyName(DeviceState &state, const AccelerationStructure &structure, std::string_view name);
 // checkVk for queue submission and waits: a lost device reports the device
 // fault details when VK_EXT_device_fault is on.
 void checkQueueVk(DeviceState &state, VkResult result, std::string_view call);
@@ -184,6 +184,7 @@ void submitInternal(DeviceState &state);
 #if EQUINE_VALIDATION
 #define EQ_VK_TRACK(state) ::RI::Validation::trackObject((state)->objects)
 #define EQ_VK_UNTRACK(state, id) ::RI::Validation::untrackObject((state)->objects, id)
+#define EQ_VK_TRACK_NAME(state, id, name) ::RI::Validation::setTrackedName((state)->objects, id, name)
 #define EQ_VK_CHECK_ALIVE(state, id, kind) EQ_VALIDATE(::RI::Validation::checkAlive((state)->objects, id, kind))
 // Calls outside the any-thread list run on the device thread (P106). A null
 // state (a default-constructed object) is left to the liveness check.
@@ -193,6 +194,7 @@ void submitInternal(DeviceState &state);
 #else
 #define EQ_VK_TRACK(state) uint64{0}
 #define EQ_VK_UNTRACK(state, id) ((void)0)
+#define EQ_VK_TRACK_NAME(state, id, name) ((void)0)
 #define EQ_VK_CHECK_ALIVE(state, id, kind) ((void)0)
 #define EQ_VK_CHECK_THREAD(state) ((void)0)
 #endif
