@@ -24,7 +24,7 @@ D3D12 raytracing tier 1.1).
     | NVIDIA GeForce RTX 3080, Windows | 617.42 | on |
     | AMD Radeon 680M (RDNA2), Linux | Mesa 26.2.2 (RADV) | on |
 
-    Checked 2026-10-11 (logs: branch `m4-verify-windows-3f13bfb`, `heap_probe.txt`). D3D12 ray
+    Checked 2026-10-11 (logs: `docs/measurements/windows/verify/3f13bfb/heap_probe.txt` in the repository). D3D12 ray
     tracing on the same AMD GPU is unaffected. Newer drivers may lift this: RI asks the driver
     each time, so nothing changes in your code.
 

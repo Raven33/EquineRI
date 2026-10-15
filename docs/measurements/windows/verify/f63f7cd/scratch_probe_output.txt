@@ -1,0 +1,36 @@
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+NVIDIA GeForce RTX 3080: indirectRootData=0
+AMD Radeon(TM) Graphics: indirectRootData=1
+  dispatch maxCount=1: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  dispatch maxCount=3: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  dispatch maxCount=1024: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  drawIndexed maxCount=1: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  drawIndexed maxCount=3: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  drawIndexed maxCount=1024: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  draw maxCount=1: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  draw maxCount=3: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0
+  draw maxCount=1024: size=4 align=4 kinds=0x9 memoryTypes=0x5 fits(eGPU)=1 default eGPU type=0 allowed=1 with&need type=0

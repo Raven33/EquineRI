@@ -1,0 +1,2 @@
+NVIDIA GeForce RTX 3080: rayTracing=1 maxResourceDescriptors=1000000 maxSamplerDescriptors=2048 indirectRootData=0 meshShaders=1 workGraphs=0 samplerMinMax=1
+AMD Radeon(TM) Graphics: rayTracing=0 maxResourceDescriptors=1000000 maxSamplerDescriptors=2048 indirectRootData=1 meshShaders=0 workGraphs=0 samplerMinMax=1

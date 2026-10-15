@@ -1,0 +1,4 @@
+0 NVIDIA GeForce RTX 3080: WorkGraphsTier=10 (hr=0x00000000)
+1 AMD Radeon(TM) Graphics: WorkGraphsTier=0 (hr=0x00000000)
+2 NVIDIA GeForce RTX 3080: WorkGraphsTier=10 (hr=0x00000000)
+3 Microsoft Basic Render Driver: WorkGraphsTier=10 (hr=0x00000000)

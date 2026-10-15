@@ -1,0 +1,50 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 69
+    Start  69: vk.texture.samplers
+
+69: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.samplers"
+69: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+69: Environment variables: 
+69:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+69: Test timeout computed to be: 120
+69: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+69: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+69: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+69: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+69: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+69: 
+69: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+69: 
+69: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+69: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+69: 
+69: [PASS] texture.samplers
+1/2 Test  #69: vk.texture.samplers ..............   Passed    0.40 sec
+test 122
+    Start 122: d3d12.texture.samplers
+
+122: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.samplers"
+122: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+122: Environment variables: 
+122:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+122: Test timeout computed to be: 120
+122: [PASS] texture.samplers
+2/2 Test #122: d3d12.texture.samplers ...........   Passed    1.03 sec
+
+The following tests passed:
+	vk.texture.samplers
+	d3d12.texture.samplers
+
+100% tests passed, 0 tests failed out of 2
+
+Label Time Summary:
+gpu    =   1.42 sec*proc (2 tests)
+
+Total Test time (real) =   1.43 sec
