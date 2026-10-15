@@ -224,6 +224,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .gpuUploadMemory = state->gpuUploadHeap,
         .timestampFrequency = timestampFrequency,
         .meshShaders = meshShaders,
+        .geometryShaders = true, // every D3D12 device (P102)
+        .tessellation = true,
         .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
         .rayTracing = state->rayTracing,
         .workGraphs = workGraphs,

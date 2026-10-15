@@ -249,6 +249,10 @@ void requireFeatures(const DeviceSetup &setup, const DeviceFeatures &f) {
     need(f.core.pipelineStatisticsQuery, "pipelineStatisticsQuery");        // P71 (2)
     need(f.v12.drawIndirectCount, "drawIndirectCount");                     // P48
     need(f.core.multiDrawIndirect, "multiDrawIndirect");                     // P48
+    need(f.core.fillModeNonSolid, "fillModeNonSolid");                       // FillMode::eWireframe (P102)
+    need(f.core.depthClamp, "depthClamp");                                   // P102
+    need(f.core.depthBiasClamp, "depthBiasClamp");                           // P102
+    need(f.core.imageCubeArray, "imageCubeArray");                           // cube arrays (P102)
     if (!missing.empty()) {
         reportError(ErrorCategory::eUnsupported,
                     std::format("this GPU or your DeviceFeatures lack what RI needs: {}", missing));
@@ -587,6 +591,21 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     }
     state->faultEnabled = setup.fault && chain.f.fault.deviceFault == VK_TRUE;
     device.limits.meshShaders = setup.mesh && chain.f.mesh.meshShader == VK_TRUE && chain.f.mesh.taskShader == VK_TRUE;
+    device.limits.geometryShaders = chain.f.core.geometryShader == VK_TRUE;
+    device.limits.tessellation = chain.f.core.tessellationShader == VK_TRUE;
+    state->pipelineStatistics =
+        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT | VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT | VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+    if (device.limits.geometryShaders) {
+        state->pipelineStatistics |= VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT |
+                                     VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT;
+    }
+    if (device.limits.tessellation) {
+        state->pipelineStatistics |= VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT |
+                                     VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT;
+    }
     device.limits.indirectRootData =
         setup.generatedCommands && chain.f.generatedCommands.deviceGeneratedCommands == VK_TRUE;
     state->generatedCommands = device.limits.indirectRootData;

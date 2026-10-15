@@ -21,6 +21,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.macro_evaluates_only_when_on
     validation.texture_and_rendering_checks
     validation.stage_link
+    validation.graphics_stages
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -103,6 +104,12 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     raytracing.build_trace_update
     texture.samplers
     texture.stage_link
+    texture.line_strip
+    texture.wireframe
+    texture.depth_bias
+    texture.depth_clamp
+    texture.geometry_shader
+    texture.tessellation
     helpers.allocators
     helpers.transfers
     helpers.frame_ring_and_profiler
@@ -150,8 +157,13 @@ function(equine_add_gpu_test_shaders exe)
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
                        "${dir}/sample_texture.hlsl"
                        "${dir}/ray_query.hlsl")
-    equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl")
-    equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl" "${dir}/link_skip_ps.hlsl")
+    equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
+                       "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/point_vs.hlsl" "${dir}/patch_vs.hlsl")
+    equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl" "${dir}/link_skip_ps.hlsl"
+                       "${dir}/color_ps.hlsl")
+    equine_add_shaders(${exe} PROFILE gs_6_6 SOURCES "${dir}/fullscreen_gs.hlsl")
+    equine_add_shaders(${exe} PROFILE hs_6_6 SOURCES "${dir}/patch_hs.hlsl")
+    equine_add_shaders(${exe} PROFILE ds_6_6 SOURCES "${dir}/patch_ds.hlsl")
     equine_add_shaders(${exe} PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl" "${dir}/fullscreen_payload_ms.hlsl")
     equine_add_shaders(${exe} PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
 endfunction()

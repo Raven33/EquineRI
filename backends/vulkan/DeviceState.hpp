@@ -21,6 +21,7 @@
 #include <volk.h>
 
 #include <array>
+#include <bit>
 #include <map>
 #include <vector>
 #include <string_view>
@@ -73,6 +74,9 @@ struct DeviceState {
     uint32 maxSamplers = 0;      // maxSamplerAllocationCount
     float maxAnisotropy = 1.0f;  // maxSamplerAnisotropy
     bool samplerMinMax = false;  // samplerFilterMinmax
+    // The statistics counters RI asks for (P71): geometry and tessellation
+    // ones only where the GPU has those stages.
+    VkQueryPipelineStatisticFlags pipelineStatistics = 0;
     VkDeviceSize storageOffsetAlignment = 0;
     VkDeviceSize bufferImageGranularity = 1;
     VkDeviceSize uniformOffsetAlignment = 0;
@@ -111,15 +115,12 @@ inline MemoryRequirements withGranularity(const DeviceState &state, MemoryRequir
 // Every memory kind whose native type is in `typeBits`, as MemoryRequirements::kinds.
 uint32 kindsOf(const DeviceState &state, uint32 typeBits);
 
-// Queries (Resources.cpp, P71): the statistics RI asks for, and the bytes of
-// one query's result.
-inline constexpr VkQueryPipelineStatisticFlags kPipelineStatistics =
-    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT | VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
-    VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
-    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT | VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
-    VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
-inline uint64 queryResultSize(const DeviceState & /*state*/, QueryType type) {
-    return type == QueryType::ePipelineStatistics ? 7 * 8 : 8;
+// Queries (Resources.cpp, P71): the bytes of one query's result. Vulkan
+// writes one 64-bit value per counter in DeviceState::pipelineStatistics.
+inline uint64 queryResultSize(const DeviceState &state, QueryType type) {
+    return type == QueryType::ePipelineStatistics
+               ? 8ull * static_cast<uint64>(std::popcount(state.pipelineStatistics))
+               : 8;
 }
 
 void destroyIndirectLayouts(DeviceState &state);

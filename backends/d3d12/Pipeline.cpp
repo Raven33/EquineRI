@@ -9,7 +9,8 @@
 // Watch out: RI does not read root data from libraries, so WorkGraphDesc
 // gives its size (P62). The stencil reference is part of the pipeline (P38).
 // In validation builds the pixel shader's input signature is matched to the
-// previous stage's outputs by semantic and register (P101).
+// outputs of the stage before it (geometry, domain, vertex or mesh) by
+// semantic and register (P101).
 //
 // Vulkan counterpart: backends/vulkan/Pipeline.cpp and WorkGraph.cpp.
 
@@ -104,12 +105,16 @@ std::vector<Validation::StageValue> stageValues(const std::vector<Reflection::Dx
     return values;
 }
 
-// A vertex or mesh shader's outputs; per-primitive mesh outputs are numbered
-// apart from the pixel shader's registers, so only their semantic is matched.
-std::vector<Validation::StageValue> stageOutputs(const Reflection::DxilInfo &producer) {
+// The outputs of the stage before the pixel shader. Per-primitive mesh
+// outputs are numbered apart from the pixel shader's registers, so only their
+// semantic is matched; a domain shader's PSG1 part holds its patch-constant
+// inputs instead, and is left out.
+std::vector<Validation::StageValue> stageOutputs(const Reflection::DxilInfo &producer, bool mesh) {
     std::vector<Validation::StageValue> values = stageValues(producer.outputs, true);
-    for (Validation::StageValue &value : stageValues(producer.primitiveOutputs, false)) {
-        values.push_back(std::move(value));
+    if (mesh) {
+        for (Validation::StageValue &value : stageValues(producer.primitiveOutputs, false)) {
+            values.push_back(std::move(value));
+        }
     }
     return values;
 }
@@ -214,6 +219,37 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
     return out;
 }
 
+namespace {
+
+D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTypeOf(Topology topology) {
+    switch (topology) {
+    case Topology::eTriangleList:
+    case Topology::eTriangleStrip: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    case Topology::eLineList:
+    case Topology::eLineStrip: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+    case Topology::ePointList: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+    case Topology::ePatchList: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+    }
+    return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+}
+
+// What IASetPrimitiveTopology takes; patch lists name their control points.
+D3D_PRIMITIVE_TOPOLOGY topologyOf(Topology topology, uint32 patchControlPoints) {
+    switch (topology) {
+    case Topology::eTriangleList: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case Topology::eTriangleStrip: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    case Topology::eLineList: return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case Topology::eLineStrip: return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case Topology::ePointList: return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case Topology::ePatchList:
+        return static_cast<D3D_PRIMITIVE_TOPOLOGY>(D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST +
+                                                   (patchControlPoints - 1));
+    }
+    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+}
+
+} // namespace
+
 // Graphics pipelines (P38, P39): complete state up front, no input layout.
 // A pipeline-state stream subobject (mesh pipelines): its type, then its
 // value, aligned as D3D12 reads the stream.
@@ -250,6 +286,9 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         reportError(ErrorCategory::eUnsupported,
                     std::format("{}: this GPU has no mesh shaders (DeviceLimits::meshShaders)", call));
     }
+    EQ_VALIDATE(Validation::checkGraphicsStages(meshPipeline, !desc.hull.empty(), !desc.domain.empty(),
+                                                !desc.geometry.empty(), desc.topology == Topology::ePatchList,
+                                                desc.patchControlPoints));
     // One root data block for the whole pipeline (P44).
     Reflection::DxilInfo info{};
     const char *rootStage = nullptr;
@@ -275,11 +314,22 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     addStage(desc.task, "task");
     [[maybe_unused]] const Reflection::DxilInfo mesh = addStage(desc.mesh, "mesh");
     [[maybe_unused]] const Reflection::DxilInfo vertex = addStage(desc.vertex, "vertex");
+    addStage(desc.hull, "hull");
+    [[maybe_unused]] const Reflection::DxilInfo domain = addStage(desc.domain, "domain");
+    [[maybe_unused]] const Reflection::DxilInfo geometry = addStage(desc.geometry, "geometry");
     [[maybe_unused]] const Reflection::DxilInfo pixel = addStage(desc.pixel, "pixel");
     if (!desc.pixel.empty()) {
-        EQ_VALIDATE(Validation::checkStageLink(stageOutputs(meshPipeline ? mesh : vertex),
-                                               stageValues(pixel.inputs, true), meshPipeline ? "mesh" : "vertex",
-                                               "register"));
+        // The last stage before the pixel shader.
+        const bool hasGeometry = !desc.geometry.empty();
+        const bool hasDomain = !desc.domain.empty();
+        EQ_VALIDATE(Validation::checkStageLink(
+            stageOutputs(meshPipeline ? mesh : hasGeometry ? geometry : hasDomain ? domain : vertex, meshPipeline),
+            stageValues(pixel.inputs, true),
+            meshPipeline  ? "mesh"
+            : hasGeometry ? "geometry"
+            : hasDomain   ? "domain"
+                          : "vertex",
+            "register"));
     }
     checkRootDataSize(device, info.rootDataSize, call);
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
@@ -293,6 +343,9 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     pso.pRootSignature = rootSignature;
     if (!meshPipeline) {
         pso.VS = {desc.vertex.data(), desc.vertex.size()};
+        pso.HS = {desc.hull.data(), desc.hull.size()};
+        pso.DS = {desc.domain.data(), desc.domain.size()};
+        pso.GS = {desc.geometry.data(), desc.geometry.size()};
     }
     if (!desc.pixel.empty()) {
         pso.PS = {desc.pixel.data(), desc.pixel.size()};
@@ -324,12 +377,16 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
                                           .RenderTargetWriteMask = static_cast<UINT8>(b.writeMask)};
     }
     pso.SampleMask = UINT_MAX;
-    pso.RasterizerState = {.FillMode = D3D12_FILL_MODE_SOLID,
+    pso.RasterizerState = {.FillMode = desc.fill == FillMode::eWireframe ? D3D12_FILL_MODE_WIREFRAME
+                                                                         : D3D12_FILL_MODE_SOLID,
                            .CullMode = desc.cull == CullMode::eFront  ? D3D12_CULL_MODE_FRONT
                                        : desc.cull == CullMode::eBack ? D3D12_CULL_MODE_BACK
                                                                       : D3D12_CULL_MODE_NONE,
                            .FrontCounterClockwise = desc.frontCounterClockwise ? TRUE : FALSE,
-                           .DepthClipEnable = TRUE};
+                           .DepthBias = desc.depthBias.constant,
+                           .DepthBiasClamp = desc.depthBias.clamp,
+                           .SlopeScaledDepthBias = desc.depthBias.slope,
+                           .DepthClipEnable = desc.depthClamp ? FALSE : TRUE};
     // Writing depth needs the depth test on in D3D12; RI then compares with eAlways.
     const bool depthEnable = desc.depth.test || desc.depth.write;
     pso.DepthStencilState.DepthEnable = depthEnable ? TRUE : FALSE;
@@ -346,9 +403,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     pso.DepthStencilState.StencilWriteMask = desc.stencil.writeMask;
     pso.DepthStencilState.FrontFace = face(desc.stencil.front);
     pso.DepthStencilState.BackFace = face(desc.stencil.back);
-    pso.PrimitiveTopologyType = desc.topology == Topology::eLineList   ? D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE
-                                : desc.topology == Topology::ePointList ? D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT
-                                                                        : D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    pso.PrimitiveTopologyType = primitiveTypeOf(desc.topology);
     pso.NumRenderTargets = static_cast<UINT>(desc.colorFormats.size());
     for (size_t i = 0; i < desc.colorFormats.size(); ++i) {
         pso.RTVFormats[i] = dxgiFormat(desc.colorFormats[i]);
@@ -387,10 +442,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.depthWrite = desc.depth.write;
     out.internal.stencil = desc.stencil.test;
     out.internal.stencilReference = desc.stencil.reference;
-    out.internal.topology = desc.topology == Topology::eTriangleStrip ? D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
-                            : desc.topology == Topology::eLineList    ? D3D_PRIMITIVE_TOPOLOGY_LINELIST
-                            : desc.topology == Topology::ePointList   ? D3D_PRIMITIVE_TOPOLOGY_POINTLIST
-                                                                      : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    out.internal.topology = topologyOf(desc.topology, desc.patchControlPoints);
     out.internal.id = EQ_DX_TRACK(&state);
     return out;
 }

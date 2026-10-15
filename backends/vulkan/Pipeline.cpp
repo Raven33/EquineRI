@@ -7,8 +7,9 @@
 //
 // Watch out: the stencil reference is part of the pipeline (P38: no dynamic
 // state); root data must agree between stages. In validation builds the
-// pixel shader's inputs are matched to the previous stage's outputs by DXC's
-// interface names and locations (P101).
+// pixel shader's inputs are matched to the outputs of the stage before it
+// (geometry, domain, vertex or mesh) by DXC's interface names and locations
+// (P101).
 //
 // D3D12 counterpart: backends/d3d12/Pipeline.cpp.
 
@@ -227,7 +228,9 @@ VkPrimitiveTopology topologyOf(Topology topology) {
     case Topology::eTriangleList: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     case Topology::eTriangleStrip: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     case Topology::eLineList: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case Topology::eLineStrip: return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
     case Topology::ePointList: return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case Topology::ePatchList: return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
     }
     return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
@@ -270,6 +273,22 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
     return out;
 }
 
+namespace {
+
+// Stages the GPU may lack (P102), reported in every build.
+void checkStageSupport(const Device &device, const GraphicsPipelineDesc &desc, const char *call) {
+    if (!desc.geometry.empty() && !device.limits.geometryShaders) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("{}: this GPU has no geometry shaders (DeviceLimits::geometryShaders)", call));
+    }
+    if ((!desc.hull.empty() || !desc.domain.empty()) && !device.limits.tessellation) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("{}: this GPU has no tessellation (DeviceLimits::tessellation)", call));
+    }
+}
+
+} // namespace
+
 // Complete state up front (P38), no vertex input (P39), dynamic viewport and
 // scissor (set by cmdBeginRendering), dynamic rendering formats.
 Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc) {
@@ -285,6 +304,10 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         reportError(ErrorCategory::eUnsupported,
                     std::format("{}: this GPU has no mesh shaders (DeviceLimits::meshShaders)", kCall));
     }
+    checkStageSupport(device, desc, kCall);
+    EQ_VALIDATE(Validation::checkGraphicsStages(meshPipeline, !desc.hull.empty(), !desc.domain.empty(),
+                                                !desc.geometry.empty(), desc.topology == Topology::ePatchList,
+                                                desc.patchControlPoints));
     // Every stage, with its reflection; one root data block for the whole pipeline (P44).
     struct Stage {
         Bytecode code;
@@ -300,6 +323,18 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         stageList.push_back({desc.mesh, SPV_REFLECT_SHADER_STAGE_MESH_BIT_EXT, VK_SHADER_STAGE_MESH_BIT_EXT, "mesh"});
     } else {
         stageList.push_back({desc.vertex, SPV_REFLECT_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_VERTEX_BIT, "vertex"});
+        if (!desc.hull.empty()) {
+            stageList.push_back({desc.hull, SPV_REFLECT_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                                 VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "hull"});
+        }
+        if (!desc.domain.empty()) {
+            stageList.push_back({desc.domain, SPV_REFLECT_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+                                 VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "domain"});
+        }
+        if (!desc.geometry.empty()) {
+            stageList.push_back(
+                {desc.geometry, SPV_REFLECT_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_GEOMETRY_BIT, "geometry"});
+        }
     }
     if (!desc.pixel.empty()) {
         stageList.push_back({desc.pixel, SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, "pixel"});
@@ -307,13 +342,14 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     uint32 rootDataSize = 0;
     const char *rootStage = nullptr;
     [[maybe_unused]] std::vector<Validation::StageValue> producerOutputs;
+    [[maybe_unused]] const char *producer = "";
     for (const Stage &stage : stageList) {
         const ShaderInfo info = reflect(stage.code, stage.reflectStage, kCall, stage.name);
         if (stage.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
-            EQ_VALIDATE(Validation::checkStageLink(producerOutputs, info.inputs, meshPipeline ? "mesh" : "vertex",
-                                                   "location"));
-        } else {
+            EQ_VALIDATE(Validation::checkStageLink(producerOutputs, info.inputs, producer, "location"));
+        } else if (stage.stage != VK_SHADER_STAGE_TASK_BIT_EXT) {
             producerOutputs = info.outputs;
+            producer = stage.name;
         }
         if (!info.hasRootData) {
             continue;
@@ -359,11 +395,21 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, .topology = topologyOf(desc.topology)};
     const VkPipelineViewportStateCreateInfo viewport{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, .viewportCount = 1, .scissorCount = 1};
+    const VkPipelineTessellationStateCreateInfo tessellation{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+        .patchControlPoints = desc.patchControlPoints};
+    const DepthBias &bias = desc.depthBias;
+    const bool biased = bias.constant != 0 || bias.slope != 0.0f;
     const VkPipelineRasterizationStateCreateInfo rasterization{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .polygonMode = VK_POLYGON_MODE_FILL,
+        .depthClampEnable = desc.depthClamp ? VK_TRUE : VK_FALSE,
+        .polygonMode = desc.fill == FillMode::eWireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL,
         .cullMode = cullOf(desc.cull),
         .frontFace = desc.frontCounterClockwise ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE,
+        .depthBiasEnable = biased ? VK_TRUE : VK_FALSE,
+        .depthBiasConstantFactor = static_cast<float>(bias.constant),
+        .depthBiasClamp = bias.clamp,
+        .depthBiasSlopeFactor = bias.slope,
         .lineWidth = 1.0f,
     };
     const VkPipelineMultisampleStateCreateInfo multisample{
@@ -412,6 +458,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         // Mesh pipelines have no vertex input or input assembly.
         .pVertexInputState = meshPipeline ? nullptr : &vertexInput,
         .pInputAssemblyState = meshPipeline ? nullptr : &inputAssembly,
+        .pTessellationState = desc.hull.empty() ? nullptr : &tessellation,
         .pViewportState = &viewport,
         .pRasterizationState = &rasterization,
         .pMultisampleState = &multisample,

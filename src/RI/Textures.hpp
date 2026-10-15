@@ -155,12 +155,26 @@ struct SamplerWrite {
     SamplerDesc sampler;
 };
 enum class CullMode : uint8 { eNone, eFront, eBack };
-enum class Topology : uint8 { eTriangleList, eTriangleStrip, eLineList, ePointList };
+// ePatchList: tessellation patches of GraphicsPipelineDesc::patchControlPoints
+// control points, for pipelines with hull and domain shaders.
+enum class Topology : uint8 { eTriangleList, eTriangleStrip, eLineList, eLineStrip, ePointList, ePatchList };
+// eWireframe draws the edges of triangles as lines. Lines and points are one
+// pixel wide on every backend.
+enum class FillMode : uint8 { eSolid, eWireframe };
 
 struct DepthState {
     bool test = false;
     bool write = false;
     CompareOp compare = CompareOp::eLess;
+};
+
+// Added to each fragment's depth before the test:
+// constant * r + slope * (the triangle's depth slope), at most `clamp` in
+// size (0: no limit), where r is the smallest depth step of the format.
+struct DepthBias {
+    int32 constant = 0; // an integer, as D3D12 takes it
+    float slope = 0.0f;
+    float clamp = 0.0f;
 };
 
 enum class StencilOp : uint8 {
@@ -232,8 +246,15 @@ struct BlendState {
 
 // Complete state up front (P38). No vertex input: vertices are pulled from
 // buffers in the shader (P39), or produced by mesh shaders.
+// Stages run vertex -> hull -> domain -> geometry -> pixel.
 struct GraphicsPipelineDesc {
     Bytecode vertex; // entry point "main"; empty for mesh pipelines
+    // Tessellation (DeviceLimits::tessellation): hull and domain shaders
+    // together, with Topology::ePatchList. Vulkan: tessellation control and
+    // evaluation shaders.
+    Bytecode hull;
+    Bytecode domain;
+    Bytecode geometry; // DeviceLimits::geometryShaders
     Bytecode pixel;  // entry point "main"; may be empty for depth-only pipelines
     // Mesh pipelines (P39, DeviceLimits::meshShaders): a mesh shader instead
     // of `vertex`, and an optional task (amplification) shader before it.
@@ -244,9 +265,13 @@ struct GraphicsPipelineDesc {
     Format depthFormat = Format::eUndefined;
     uint32 samples = 1;
     Topology topology = Topology::eTriangleList;
+    uint32 patchControlPoints = 0; // 1..32 with Topology::ePatchList
+    FillMode fill = FillMode::eSolid;
     CullMode cull = CullMode::eNone;
     bool frontCounterClockwise = false;
     DepthState depth;
+    DepthBias depthBias;
+    bool depthClamp = false; // clamp depth to 0..1 instead of clipping
     StencilState stencil; // needs a depth format with stencil
     // One per color format, or empty: every target written as is.
     std::vector<BlendState> blend;
@@ -265,7 +290,9 @@ enum class QueryType : uint8 {
 
 // Where each counter of a pipeline-statistics result is (P71 (2)): byte
 // offsets of 64-bit values inside one query's result of `size` bytes. The
-// layouts differ per backend; RI reports them instead of converting.
+// layouts differ per backend; RI reports them instead of converting. A
+// counter of a stage the GPU lacks (DeviceLimits) is kNoCounter.
+inline constexpr uint32 kNoCounter = ~0u;
 struct PipelineStatisticsLayout {
     uint32 size = 0;                     // bytes per query result
     uint32 inputVertices = 0;            // vertices read by draws
@@ -275,6 +302,10 @@ struct PipelineStatisticsLayout {
     uint32 clippingPrimitives = 0;       // primitives leaving clipping
     uint32 pixelShaderInvocations = 0;
     uint32 computeShaderInvocations = 0;
+    uint32 geometryShaderInvocations = 0;
+    uint32 geometryShaderPrimitives = 0;
+    uint32 hullShaderInvocations = 0;   // Vulkan: tessellation control patches
+    uint32 domainShaderInvocations = 0; // Vulkan: tessellation evaluation invocations
 };
 
 // The staging layout of a texture view's texels in a buffer (P47), for
