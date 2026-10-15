@@ -1,0 +1,87 @@
+[0/2] Re-checking globbed directories...
+[1/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\WorkGraph.cpp.obj
+[2/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Indirect.cpp.obj
+[3/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Debug.cpp.obj
+[4/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\RayTracing.cpp.obj
+[5/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Indirect.cpp.obj
+[6/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Instance.cpp.obj
+[7/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Textures.cpp.obj
+[8/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Pipeline.cpp.obj
+[9/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Commands.cpp.obj
+[10/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Swapchain.cpp.obj
+[11/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Resources.cpp.obj
+[12/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Debug.cpp.obj
+[13/87] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Device.cpp.obj
+[14/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Device.cpp.obj
+[15/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\RayTracing.cpp.obj
+[16/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Resources.cpp.obj
+[17/87] Linking CXX static library backends\vulkan\EquineVulkanBackend.lib
+[18/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Swapchain.cpp.obj
+[19/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Adapter.cpp.obj
+[20/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Transfers.cpp.obj
+[21/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\FrameRing.cpp.obj
+[22/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Statistics.cpp.obj
+[23/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Profiler.cpp.obj
+[24/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Transfers.cpp.obj
+[25/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\FrameRing.cpp.obj
+[26/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Commands.cpp.obj
+[27/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\MemoryAllocator.cpp.obj
+[28/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Profiler.cpp.obj
+[29/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\SlotAllocator.cpp.obj
+[30/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Statistics.cpp.obj
+[31/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\MemoryAllocator.cpp.obj
+[32/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Pipeline.cpp.obj
+[33/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\SlotAllocator.cpp.obj
+[34/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Textures.cpp.obj
+[35/87] Building CXX object samples\CMakeFiles\compute_readback_Vulkan.dir\compute_readback\main.cpp.obj
+[36/87] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Rendering.cpp.obj
+[37/87] Linking CXX static library backends\d3d12\EquineD3D12Backend.lib
+[38/87] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\ShaderCompiler.cpp.obj
+[39/87] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_Vulkan.dir\BaselineVulkan.cpp.obj
+[40/87] Linking CXX static library helpers\EquineHelpersVulkan.lib
+[41/87] Building CXX object samples\CMakeFiles\compute_readback_D3D12.dir\compute_readback\main.cpp.obj
+[42/87] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\ShaderCompiler.cpp.obj
+[43/87] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\ComputeTests.cpp.obj
+[44/87] Linking CXX static library helpers\EquineHelpersD3D12.lib
+[45/87] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_D3D12.dir\BaselineD3D12.cpp.obj
+[46/87] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\vulkan\DeviceTests.cpp.obj
+[47/87] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\SwapchainTests.cpp.obj
+[48/87] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\HelperTests.cpp.obj
+[49/87] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\RayTracingTests.cpp.obj
+[50/87] Linking CXX executable samples\compute_readback_Vulkan.exe; Copying clang AddressSanitizer DLL to compute_readback_Vulkan output directory
+[51/87] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\TextureTests.cpp.obj
+[52/87] Linking CXX executable samples\compute_readback_D3D12.exe; Copying clang AddressSanitizer DLL to compute_readback_D3D12 output directory; Copying the D3D12 Agility SDK runtime to compute_readback_D3D12's output directory
+[53/87] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\ComputeTests.cpp.obj
+[54/87] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_Vulkan.dir\main.cpp.obj
+[55/87] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\SwapchainTests.cpp.obj
+[56/87] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\RayTracingTests.cpp.obj
+[57/87] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\HelperTests.cpp.obj
+[58/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\copies.cpp.obj
+[59/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\debugging.cpp.obj
+[60/87] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\TextureTests.cpp.obj
+[61/87] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\d3d12\DeviceTests.cpp.obj
+[62/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\errors.cpp.obj
+[63/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\device.cpp.obj
+[64/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\compute.cpp.obj
+[65/87] Linking CXX executable tools\layout_bench\layout_bench_Vulkan.exe; Copying clang AddressSanitizer DLL to layout_bench_Vulkan output directory
+[66/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\native-access.cpp.obj
+[67/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\helpers.cpp.obj
+[68/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\swapchain.cpp.obj
+[69/87] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_D3D12.dir\main.cpp.obj
+[70/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\copies.cpp.obj
+[71/87] Linking CXX executable tests\EquineRIVulkanTests.exe; Copying clang AddressSanitizer DLL to EquineRIVulkanTests output directory
+[72/87] Linking CXX executable tests\EquineRID3D12Tests.exe; Copying clang AddressSanitizer DLL to EquineRID3D12Tests output directory; Copying the D3D12 Agility SDK runtime to EquineRID3D12Tests's output directory
+[73/87] Linking CXX executable tools\layout_bench\layout_bench_D3D12.exe; Copying clang AddressSanitizer DLL to layout_bench_D3D12 output directory; Copying the D3D12 Agility SDK runtime to layout_bench_D3D12's output directory
+[74/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\debugging.cpp.obj
+[75/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\compute.cpp.obj
+[76/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\textures.cpp.obj
+[77/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\errors.cpp.obj
+[78/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\device.cpp.obj
+[79/87] Building CXX object tests\CMakeFiles\EquineConformanceVulkan.dir\conformance\Conformance.cpp.obj
+[80/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\helpers.cpp.obj
+[81/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsVulkan.dir\vulkan\native-device.cpp.obj
+[82/87] Building CXX object tests\CMakeFiles\EquineConformanceD3D12.dir\conformance\Conformance.cpp.obj
+[83/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\swapchain.cpp.obj
+[84/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\textures.cpp.obj
+[85/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsD3D12.dir\d3d12\native-device.cpp.obj
+[86/87] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\native-access.cpp.obj
