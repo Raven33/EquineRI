@@ -5,6 +5,7 @@
 // EQUINE_SHADER_DIR. No image layout appears anywhere: they are RI's business.
 
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -200,7 +201,7 @@ int main() {
     // --8<-- [end:begin-rendering]
     // --8<-- [start:draw]
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, DrawRoot{.color = {1.0f, 0.5f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(cmd, DrawRoot{.color = {1.0f, 0.5f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(cmd, 3); // three vertices, one instance
     // --8<-- [end:draw]
     // --8<-- [start:viewport]

@@ -18,3 +18,16 @@ void upload(ID3D12Device *device, ID3D12GraphicsCommandList *list, ID3D12Resourc
     list->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
 }
 // --8<-- [end:upload]
+
+// --8<-- [start:small-write]
+void resetCounter(ID3D12GraphicsCommandList2 *list, ID3D12Resource *counters, UINT64 start) {
+    // One parameter per 32-bit value, each with its own GPU address.
+    const D3D12_GPU_VIRTUAL_ADDRESS address = counters->GetGPUVirtualAddress();
+    const D3D12_WRITEBUFFERIMMEDIATE_PARAMETER words[2] = {
+        {address, static_cast<UINT>(start)},
+        {address + 4, static_cast<UINT>(start >> 32)},
+    };
+    list->WriteBufferImmediate(2, words, nullptr); // nullptr: the default mode
+    // Then a barrier from the copy to the shaders that read the counter.
+}
+// --8<-- [end:small-write]

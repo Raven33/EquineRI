@@ -7,6 +7,7 @@
 
 #include "Bench.hpp"
 
+#include <RI/Helpers/TypedCommands.hpp>
 #include <RI/RI.hpp>
 #if EQUINE_BACKEND_VULKAN
 #include <RI/Vk/Native.hpp>
@@ -232,7 +233,7 @@ Pass readPass(Context &c, const char *name, const Workload &w, uint32 t, uint32 
     const uint32 ms = tex.texture.samples > 1 ? 1u : 0u;
     return {name, PassKind::eCompute, {{t, Role::eSampled}}, [&c, slot, width, height, ms](RI::CommandList &cmd) {
                 RI::cmdSetPipeline(cmd, c.read);
-                RI::cmdSetRootData(cmd, ReadRoot{slot, kOutputSlot, width, height, ms, 0, 0, 0});
+                RI::Helpers::cmdSetRootData(cmd, ReadRoot{slot, kOutputSlot, width, height, ms, 0, 0, 0});
                 RI::cmdDispatch(cmd, (width + 7) / 8, (height + 7) / 8, 1);
             }};
 }
@@ -256,7 +257,7 @@ Workload renderThenSample(Context &c, Owned &owned, RI::Format format, uint32 sa
     wl.passes.push_back({"render", PassKind::eRender, {{0, depth ? Role::eDepthTarget : Role::eColorTarget, true}},
                          [pipeline](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, pipeline);
-                             RI::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 17, 0});
+                             RI::Helpers::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 17, 0});
                              RI::cmdDraw(cmd, 3, 8);
                          }});
     wl.passes.push_back(readPass(c, "sample", wl, 0, w, h));
@@ -272,7 +273,7 @@ Workload storageThenSample(Context &c) {
     const uint32 slot = wl.textures[0].storageSlot;
     wl.passes.push_back({"write", PassKind::eCompute, {{0, Role::eStorage, true}}, [&c, slot, w, h](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, c.write);
-                             RI::cmdSetRootData(cmd, WriteRoot{slot, w, h, 5});
+                             RI::Helpers::cmdSetRootData(cmd, WriteRoot{slot, w, h, 5});
                              RI::cmdDispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
                          }});
     wl.passes.push_back(readPass(c, "sample", wl, 0, w, h));
@@ -291,7 +292,7 @@ Workload depthThenHiz(Context &c, Owned &owned) {
     owned.pipelines.push_back(pipeline);
     wl.passes.push_back({"depth", PassKind::eRender, {{0, Role::eDepthTarget, true}}, [pipeline](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, pipeline);
-                             RI::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 3, 0});
+                             RI::Helpers::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 3, 0});
                              RI::cmdDraw(cmd, 3, 8);
                          }});
     const uint32 depthSlot = wl.textures[0].sampledSlot;
@@ -299,7 +300,7 @@ Workload depthThenHiz(Context &c, Owned &owned) {
     wl.passes.push_back({"hiz", PassKind::eCompute, {{0, Role::eSampled}, {1, Role::eStorage, true}},
                          [&c, depthSlot, outSlot, w, h](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, c.hiz);
-                             RI::cmdSetRootData(cmd, HizRoot{depthSlot, outSlot, w / 2, h / 2});
+                             RI::Helpers::cmdSetRootData(cmd, HizRoot{depthSlot, outSlot, w / 2, h / 2});
                              RI::cmdDispatch(cmd, (w / 2 + 7) / 8, (h / 2 + 7) / 8, 1);
                          }});
     return wl;
@@ -329,7 +330,7 @@ Workload realisticFrame(Context &c, Owned &owned) {
                          {{0, Role::eColorTarget, true}, {1, Role::eColorTarget, true}, {2, Role::eDepthTarget, true}},
                          [gbuffer](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, gbuffer);
-                             RI::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 29, 0});
+                             RI::Helpers::cmdSetRootData(cmd, DrawRoot{0.1f, 1.0f, 29, 0});
                              RI::cmdDraw(cmd, 3, 8);
                          }});
     const LightRoot light{wl.textures[0].sampledSlot, wl.textures[1].sampledSlot, wl.textures[2].sampledSlot,
@@ -339,21 +340,21 @@ Workload realisticFrame(Context &c, Owned &owned) {
                          {{0, Role::eSampled}, {1, Role::eSampled}, {2, Role::eSampled}, {3, Role::eStorage, true}},
                          [&c, light, w, h](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, c.light);
-                             RI::cmdSetRootData(cmd, light);
+                             RI::Helpers::cmdSetRootData(cmd, light);
                              RI::cmdDispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
                          }});
     const HizRoot hiz{wl.textures[2].sampledSlot, wl.textures[4].storageSlot, w / 2, h / 2};
     wl.passes.push_back({"hiz", PassKind::eCompute, {{2, Role::eSampled}, {4, Role::eStorage, true}},
                          [&c, hiz, w, h](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, c.hiz);
-                             RI::cmdSetRootData(cmd, hiz);
+                             RI::Helpers::cmdSetRootData(cmd, hiz);
                              RI::cmdDispatch(cmd, (w / 2 + 7) / 8, (h / 2 + 7) / 8, 1);
                          }});
     const uint32 litSlot = wl.textures[3].sampledSlot;
     wl.passes.push_back({"post", PassKind::eRender, {{5, Role::eColorTarget, true}, {3, Role::eSampled}},
                          [post, litSlot](RI::CommandList &cmd) {
                              RI::cmdSetPipeline(cmd, post);
-                             RI::cmdSetRootData(cmd, PostRoot{litSlot, 0, 0, 0});
+                             RI::Helpers::cmdSetRootData(cmd, PostRoot{litSlot, 0, 0, 0});
                              RI::cmdDraw(cmd, 3);
                          }});
     wl.passes.push_back(readPass(c, "present", wl, 5, w, h));

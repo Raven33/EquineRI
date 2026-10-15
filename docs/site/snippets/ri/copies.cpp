@@ -1,10 +1,22 @@
 // RI: uploading texels with a copy, reading them back, and occlusion and
 // pipeline-statistics queries (P47, P71). Compiled once per enabled backend.
 
+#include <RI/Helpers/TypedCommands.hpp>
 #include <RI/RI.hpp>
 
 #include <cstring>
 #include <vector>
+
+// --8<-- [start:small-write]
+// Resets a 64-bit counter at the start of the frame: a few bytes, so they go
+// into the command list itself; no upload buffer, no shader.
+void resetCounter(RI::CommandList &cmd, const RI::Buffer &counters, uint64 start) {
+    RI::Helpers::cmdWriteSmallData(cmd, counters, 0, start); // checked at compile time: 8 bytes
+    // The same bytes through core, for data built at run time:
+    // RI::cmdWriteSmallData(cmd, counters, 0, std::as_bytes(std::span(&start, 1)));
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute); // a small write counts as a copy
+}
+// --8<-- [end:small-write]
 
 int main() {
     const std::vector<RI::Gpu> gpus = RI::listGpus();

@@ -20,7 +20,7 @@ It runs nothing on the GPU and keeps no state.
 
 ```cpp
 const RI::DispatchIndirectArgs grid = RI::Helpers::groupGrid(itemCount, 64);
-RI::cmdSetRootData(cmd, Root{.count = itemCount});
+RI::Helpers::cmdSetRootData(cmd, Root{.count = itemCount});
 RI::cmdDispatch(cmd, grid.x, grid.y, grid.z);
 ```
 

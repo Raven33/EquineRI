@@ -324,15 +324,16 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     }
 }
 
-void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
+void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
-    EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
+    EQ_VALIDATE(Validation::checkRootDataSize(data.size(), cmd.internal.rootDataSize));
+    const auto size = static_cast<uint32>(data.size());
     // Kept for endNative (P70).
-    std::memcpy(cmd.internal.rootData, data, std::min<size_t>(size, sizeof(cmd.internal.rootData)));
+    std::memcpy(cmd.internal.rootData, data.data(), std::min<size_t>(size, sizeof(cmd.internal.rootData)));
     cmd.internal.rootDataBytes = size;
     fn(cmd).vkCmdPushConstants(native(cmd),
                                reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[bindIndex(cmd.internal.graphics)]),
-                               VK_SHADER_STAGE_ALL, 0, size, data);
+                               VK_SHADER_STAGE_ALL, 0, size, data.data());
 }
 
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
@@ -773,6 +774,15 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
         reportError(ErrorCategory::eProgrammerError, "cmdClearBuffer: the buffer needs BufferUsage::eCopyDst");
     }
     fn(cmd).vkCmdFillBuffer(native(cmd), native(buffer), 0, VK_WHOLE_SIZE, value);
+}
+
+void cmdWriteSmallData(CommandList &cmd, const Buffer &buffer, uint64 offset, std::span<const std::byte> data) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdWriteSmallData"));
+    EQ_VALIDATE(Validation::checkSmallWrite((buffer.usage & BufferUsage::eCopyDst) != BufferUsage::eNone, offset,
+                                            data.size(), buffer.size));
+    fn(cmd).vkCmdUpdateBuffer(native(cmd), native(buffer), offset, data.size(), data.data());
 }
 
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────

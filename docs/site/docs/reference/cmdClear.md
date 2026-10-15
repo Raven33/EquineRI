@@ -71,7 +71,8 @@ For barriers, **clears count as copies**: follow a clear with
 - **D3D12**: render targets and depth textures are cleared inside a switch to their attachment
   layout. Storage textures and buffers use an unordered-access clear with descriptors in **RI's
   own small heap**: RI sets that heap for the clear, then sets your heaps (and root signatures)
-  again, so your next commands see your heap and no slot of yours is used.
+  again, so your next commands see your heap and no slot of yours is used. A buffer larger than
+  one view (512 MiB, `kMaxBufferViewElements` words) is cleared in pieces.
 
 ## Rules and errors
 

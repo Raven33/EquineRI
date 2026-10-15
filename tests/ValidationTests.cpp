@@ -270,6 +270,21 @@ EQ_TEST(validation, group_counts) {
     EQ_CHECK(!checkGroupCounts(0, 0, 0, true, "cmdDrawMesh"));
 }
 
+// Small writes (P107): usage, alignment, the size limit and the range.
+EQ_TEST(validation, small_write) {
+    using RI::Validation::checkSmallWrite;
+    EQ_CHECK(!checkSmallWrite(true, 0, 64, 64));
+    EQ_CHECK(!checkSmallWrite(true, 60, 4, 64));
+    const RI::Validation::CheckResult usage = checkSmallWrite(false, 0, 4, 64);
+    EQ_CHECK(usage && usage->find("eCopyDst") != std::string::npos);
+    EQ_CHECK(checkSmallWrite(true, 2, 4, 64).has_value());
+    EQ_CHECK(checkSmallWrite(true, 0, 6, 64).has_value());
+    EQ_CHECK(checkSmallWrite(true, 0, 0, 64).has_value());
+    const RI::Validation::CheckResult large = checkSmallWrite(true, 0, 68, 256);
+    EQ_CHECK(large && large->find("kMaxSmallWriteSize") != std::string::npos);
+    EQ_CHECK(checkSmallWrite(true, 64, 4, 64).has_value());
+}
+
 // The device thread (P106): the same thread passes, another is named.
 EQ_TEST(validation, device_thread) {
     const std::thread::id here = std::this_thread::get_id();

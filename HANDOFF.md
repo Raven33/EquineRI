@@ -33,6 +33,15 @@ Open, in order:
    Also fixed: the docs header extractor dropped functions with a `= {}` default argument
    (`endNative` was missing from the site). Work-graph input limits wait for a retail Agility
    SDK. Mesh nodes: not now.
+0c. **Small writes and typed values in helpers** (P107, from the DX12 sandbox re-review,
+   2026-10-16). **Implemented, verified on Linux only** (128/128, release clean); the D3D12 code
+   is not compiled yet. `cmdWriteSmallData` (at most 64 bytes, `vkCmdUpdateBuffer` /
+   `WriteBufferImmediate`); `cmdSetRootData` now takes `std::span<const std::byte>`; the typed
+   forms are `RI/Helpers/TypedCommands.hpp`, constrained by concepts; `kMaxRootDataSize` = 256
+   caps Vulkan's limit. Windows to check: that `WriteBufferImmediate` is synchronized by
+   `Stage::eCopy` under enhanced barriers (GPU-based validation), and `compute.clear_large_buffer`
+   (the D3D12 clear in pieces, `7474999`). The sample-port repo must move to the new
+   `cmdSetRootData` (`RI::Helpers::cmdSetRootData`, or `std::as_bytes` on core).
 1. **The missing graphics features are in** (P102: cube and 3D textures, depth bias and clamp,
    line strips and wireframe, geometry and tessellation shaders), verified on Linux (102/102)
    and Windows (165/165 on NVIDIA and AMD, `docs/measurements/windows/verify/5505e42/`).
@@ -65,7 +74,7 @@ instructions. The Linux session (`linux-ri`) has the RADV GPU. Docs site: `docs/
   process and the pilot's review (ports stopped 2026-10-15).
 - `ARCHITECTURE.md`: the entry point for changing RI (layout, call flow, invariants,
   recipes, backend differences); `docs/CodeDocumentation.md` is the standard it follows.
-- `CONTEXT.md`: the decision log (P1–P102) and the open questions (§5). Start here.
+- `CONTEXT.md`: the decision log (P1–P107) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
 - Environment: `EQUINE_GPU=nvidia|amd|<index>` picks the test GPU; `EQUINE_GPU_VALIDATION=0`
   turns GPU-AV / GBV off in validation builds.

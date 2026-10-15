@@ -236,17 +236,18 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     }
 }
 
-void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
+void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
-    EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
+    EQ_VALIDATE(Validation::checkRootDataSize(data.size(), cmd.internal.rootDataSize));
+    const auto size = static_cast<uint32>(data.size());
     // Kept for endNative (P70).
-    std::memcpy(cmd.internal.rootData, data, std::min<size_t>(size, sizeof(cmd.internal.rootData)));
+    std::memcpy(cmd.internal.rootData, data.data(), std::min<size_t>(size, sizeof(cmd.internal.rootData)));
     cmd.internal.rootDataBytes = size;
     cmd.internal.rootDataGraphics = cmd.internal.graphics;
     if (cmd.internal.graphics) {
-        list(cmd)->SetGraphicsRoot32BitConstants(0, (size + 3) / 4, data, 0);
+        list(cmd)->SetGraphicsRoot32BitConstants(0, (size + 3) / 4, data.data(), 0);
     } else {
-        list(cmd)->SetComputeRoot32BitConstants(0, (size + 3) / 4, data, 0);
+        list(cmd)->SetComputeRoot32BitConstants(0, (size + 3) / 4, data.data(), 0);
     }
 }
 

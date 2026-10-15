@@ -1,18 +1,21 @@
 ---
-symbols: [RI::cmdSetRootData]
+symbols: [RI::cmdSetRootData, RI::kMaxRootDataSize]
 ---
 
 # RI::cmdSetRootData
 
 ## What it does
 
-`RI::cmdSetRootData(cmd, value)` sets the current pipeline's [root data](../concepts/root-data.md):
+`RI::cmdSetRootData(cmd, data)` sets the current pipeline's [root data](../concepts/root-data.md):
 a small struct of values (heap slots, constants) that the shader declares with
 `EQ_ROOT_DATA` and that the following dispatches read. The bytes are copied into the command
 list at once.
 
-There are two forms: a template that takes any struct and sends `sizeof(value)` bytes, and a
-pointer-and-size form for data you build yourself.
+Core takes bytes (`std::span<const std::byte>`). The typed form,
+[`RI::Helpers::cmdSetRootData(cmd, value)`](../helpers/typed-commands.md), takes the struct
+itself, sends `sizeof(value)` bytes, and checks at compile time that the size is a multiple
+of 4 and at most `kMaxRootDataSize` (256) bytes ([P107](../design-notes/decisions.md#p107)).
+To pass a struct to core, view its bytes: `std::as_bytes(std::span(&value, 1))`.
 
 ## Signature
 
@@ -76,3 +79,4 @@ The struct mirrors the shader's declaration:
 - [P44](../design-notes/decisions.md#p44): the size is the shader's.
 - [P24](../design-notes/decisions.md#p24): checked against reflection under validation.
 - [P94](../design-notes/decisions.md#p94): root data in Milestone 2.
+- [P107](../design-notes/decisions.md#p107): bytes in core, typed values in helpers; `kMaxRootDataSize`.

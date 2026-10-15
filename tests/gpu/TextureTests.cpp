@@ -9,6 +9,7 @@
 
 #include <RI/Helpers/Statistics.hpp>
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <cmath>
 #include <cstring>
@@ -95,7 +96,7 @@ struct Fixture {
         RI::writeDescriptors(device, heap, {{.slot = kTextureSlot, .descriptor = RI::ReadView{.texture = view}}});
         RI::cmdBarrier(cmd, RI::Stage::eAll, RI::Stage::eCompute);
         RI::cmdSetPipeline(cmd, read);
-        RI::cmdSetRootData(cmd, ReadRoot{.textureSlot = kTextureSlot,
+        RI::Helpers::cmdSetRootData(cmd, ReadRoot{.textureSlot = kTextureSlot,
                                          .outputSlot = kOutputSlot,
                                          .width = kSize,
                                          .height = kSize,
@@ -190,7 +191,7 @@ void gputest::renderThenSample(RI::Device &device) {
         RI::Pipeline pipeline = drawPipeline(f.device, format, RI::Format::eUndefined, 1, false, vs, ps);
         RI::cmdBeginRendering(f.cmd, {.colors = {{.view = texture.view, .load = RI::LoadOp::eClear}}});
         RI::cmdSetPipeline(f.cmd, pipeline);
-        RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.5f, 0.75f, 1.0f}, .depth = 0.5f});
+        RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.5f, 0.75f, 1.0f}, .depth = 0.5f});
         RI::cmdDraw(f.cmd, 3);
         RI::cmdEndRendering(f.cmd);
         const std::vector<float> texels = f.readBack(texture.view);
@@ -245,7 +246,7 @@ void gputest::depthWriteThenSample(RI::Device &device) {
                                                                     .stencilLoad = RI::LoadOp::eClear,
                                                                     .clear = {.depth = 1.0f}}});
         RI::cmdSetPipeline(f.cmd, pipeline);
-        RI::cmdSetRootData(f.cmd, DrawRoot{.color = {}, .depth = 0.25f});
+        RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {}, .depth = 0.25f});
         RI::cmdDraw(f.cmd, 3);
         RI::cmdEndRendering(f.cmd);
         const std::vector<float> texels = f.readBack(depthOnly);
@@ -306,7 +307,7 @@ EQ_TEST(texture, msaa_render_then_sample) {
     RI::Pipeline pipeline = drawPipeline(f.device, RI::Format::eRGBA16Float, RI::Format::eUndefined, 4, false, vs, ps);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = texture.view, .load = RI::LoadOp::eDontCare}}});
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.5f, 0.25f, 1.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.5f, 0.25f, 1.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     const std::vector<float> texels = f.readBack(texture.view, 3);
@@ -325,7 +326,7 @@ void gputest::storageWriteThenSample(RI::Device &device) {
     const std::vector<std::byte> shader = loadShader("write_storage");
     RI::Pipeline write = RI::createComputePipeline(f.device, {.shader = shader});
     RI::cmdSetPipeline(f.cmd, write);
-    RI::cmdSetRootData(f.cmd, WriteRoot{.textureSlot = 2, .width = kSize, .height = kSize, .value = 7.0f});
+    RI::Helpers::cmdSetRootData(f.cmd, WriteRoot{.textureSlot = 2, .width = kSize, .height = kSize, .value = 7.0f});
     RI::cmdDispatch(f.cmd, kSize / 8, kSize / 8, 1);
     const std::vector<float> texels = f.readBack(texture.view);
     EQ_CHECK(all(texels, 2, 7.0f));
@@ -630,7 +631,7 @@ EQ_TEST(texture, occlusion_and_statistics) {
     RI::cmdBeginQuery(f.cmd, statistics, 0);
     RI::cmdBeginQuery(f.cmd, occlusion, 0);
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndQuery(f.cmd, occlusion, 0);
     RI::cmdEndQuery(f.cmd, statistics, 0);
@@ -640,7 +641,7 @@ EQ_TEST(texture, occlusion_and_statistics) {
     RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCompute);
     RI::cmdBeginQuery(f.cmd, statistics, 1);
     RI::cmdSetPipeline(f.cmd, f.read);
-    RI::cmdSetRootData(f.cmd, ReadRoot{.textureSlot = kTextureSlot, .outputSlot = kOutputSlot, .width = kSize,
+    RI::Helpers::cmdSetRootData(f.cmd, ReadRoot{.textureSlot = kTextureSlot, .outputSlot = kOutputSlot, .width = kSize,
                                        .height = kSize, .multisampled = 0, .sampleIndex = 0});
     RI::cmdDispatch(f.cmd, kSize / 8, kSize / 8, 1);
     RI::cmdEndQuery(f.cmd, statistics, 1);
@@ -708,7 +709,7 @@ EQ_TEST(texture, indexed_draw_with_blending) {
         f.device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA16Float}, .blend = {additive}});
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
     RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
     RI::cmdDrawIndexed(f.cmd, 3, 2);
     RI::cmdEndRendering(f.cmd);
@@ -753,13 +754,13 @@ EQ_TEST(texture, stencil_test) {
                                                                .load = RI::LoadOp::eClear,
                                                                .stencilLoad = RI::LoadOp::eClear}});
     RI::cmdSetPipeline(f.cmd, write);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 0.0f, 0.0f, 0.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 0.0f, 0.0f, 0.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdSetPipeline(f.cmd, red);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdSetPipeline(f.cmd, green);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     const std::vector<float> texels = f.readBack(target.view);
@@ -807,10 +808,10 @@ EQ_TEST(texture, stencil_reference_command) {
                                                                .stencilLoad = RI::LoadOp::eClear}});
     RI::cmdSetStencilReference(f.cmd, 3);
     RI::cmdSetPipeline(f.cmd, write);
-    RI::cmdSetRootData(f.cmd, white);
+    RI::Helpers::cmdSetRootData(f.cmd, white);
     RI::cmdDraw(f.cmd, 3);
     RI::cmdSetPipeline(f.cmd, green);
-    RI::cmdSetRootData(f.cmd, white);
+    RI::Helpers::cmdSetRootData(f.cmd, white);
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eLoad}},
@@ -818,7 +819,7 @@ EQ_TEST(texture, stencil_reference_command) {
                                                                .load = RI::LoadOp::eLoad,
                                                                .stencilLoad = RI::LoadOp::eLoad}});
     RI::cmdSetPipeline(f.cmd, red);
-    RI::cmdSetRootData(f.cmd, white);
+    RI::Helpers::cmdSetRootData(f.cmd, white);
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     const std::vector<float> texels = f.readBack(target.view);
@@ -851,10 +852,10 @@ EQ_TEST(texture, mesh_shaders) {
     EQ_CHECK(meshOnly.rootDataSize == sizeof(DrawRoot) && taskMesh.rootDataSize == sizeof(DrawRoot));
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetPipeline(f.cmd, meshOnly);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDrawMesh(f.cmd, 1, 1, 1);
     RI::cmdSetPipeline(f.cmd, taskMesh);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDrawMesh(f.cmd, 1, 1, 1);
     RI::cmdEndRendering(f.cmd);
     const std::vector<float> texels = f.readBack(target.view);
@@ -902,7 +903,7 @@ EQ_TEST(texture, mesh_statistics) {
     }
     RI::cmdBeginQuery(f.cmd, stats, 0);
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDrawMesh(f.cmd, 1, 1, 1);
     RI::cmdEndQuery(f.cmd, stats, 0);
     if (primitives) {
@@ -949,7 +950,7 @@ EQ_TEST(texture, resolve_color) {
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = msaa.view, .load = RI::LoadOp::eClear,
                                               .resolveTo = resolved.view}}});
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.5f, 0.5f, 0.5f, 0.5f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.5f, 0.5f, 0.5f, 0.5f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     std::vector<float> texels = f.readBack(resolved.view);
@@ -1073,7 +1074,7 @@ EQ_TEST(texture, indirect_level1) {
 
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = t.target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetPipeline(f.cmd, t.pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
     RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
     RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDrawIndexed, args, 0, 2, &count, 0); // one draw: +0.25
     RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDraw, args, 64, 2);                  // two draws: +0.5
@@ -1092,7 +1093,7 @@ EQ_TEST(texture, indirect_level1) {
     const std::vector<std::byte> shader = loadShader("write_storage");
     RI::Pipeline write = RI::createComputePipeline(f.device, {.shader = shader});
     RI::cmdSetPipeline(f.cmd, write);
-    RI::cmdSetRootData(f.cmd, WriteRoot{.textureSlot = 2, .width = kSize, .height = kSize, .value = 3.0f});
+    RI::Helpers::cmdSetRootData(f.cmd, WriteRoot{.textureSlot = 2, .width = kSize, .height = kSize, .value = 3.0f});
     RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDispatch, args, 128, 1);
     texels = f.readBack(storage.view);
     EQ_CHECK(all(texels, 2, 3.0f));
@@ -1253,7 +1254,7 @@ EQ_TEST(texture, samplers) {
     };
     RI::cmdSetHeap(f.cmd, heap);
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, SampleRoot{.textureSlot = 1, .outputSlot = 0, .count = uint32(samplers.size())});
+    RI::Helpers::cmdSetRootData(f.cmd, SampleRoot{.textureSlot = 1, .outputSlot = 0, .count = uint32(samplers.size())});
     RI::cmdDispatch(f.cmd, 1, 1, 1);
     RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy);
     RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, samplers.size() * 16);
@@ -1317,7 +1318,7 @@ std::vector<float> drawAndRead(Fixture &f, RI::GraphicsPipelineDesc desc, uint32
     RI::Pipeline pipeline = RI::createGraphicsPipeline(f.device, desc);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = depth});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = depth});
     RI::cmdDraw(f.cmd, count);
     RI::cmdEndRendering(f.cmd);
     std::vector<float> texels = f.readBack(target.view);
@@ -1382,7 +1383,7 @@ EQ_TEST(texture, depth_bias) {
                                   .depth = RI::DepthAttachment{.view = depth.view, .load = RI::LoadOp::eClear}});
     for (RI::Pipeline *p : {&base, &plain, &biased}) {
         RI::cmdSetPipeline(f.cmd, *p);
-        RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+        RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
         RI::cmdDraw(f.cmd, 3);
     }
     RI::cmdEndRendering(f.cmd);
@@ -1430,7 +1431,7 @@ EQ_TEST(texture, geometry_shader) {
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdBeginQuery(f.cmd, statistics, 0);
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 1);
     RI::cmdEndQuery(f.cmd, statistics, 0);
     RI::cmdEndRendering(f.cmd);
@@ -1489,7 +1490,7 @@ void checkCubeFaces(Fixture &f, RI::DescriptorHeap &heap, const RI::Texture &cub
     const std::vector<std::byte> shader = loadShader("sample_cube");
     RI::Pipeline sample = RI::createComputePipeline(f.device, {.shader = shader});
     RI::cmdSetPipeline(f.cmd, sample);
-    RI::cmdSetRootData(f.cmd, SampleCubeRoot{.cubeSlot = 2, .samplerSlot = 0, .outputSlot = 0});
+    RI::Helpers::cmdSetRootData(f.cmd, SampleCubeRoot{.cubeSlot = 2, .samplerSlot = 0, .outputSlot = 0});
     RI::cmdDispatch(f.cmd, 1, 1, 1);
     RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy);
     RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, 6 * 16);
@@ -1525,7 +1526,7 @@ EQ_TEST(texture, cube_storage_then_sample) {
     };
     RI::cmdSetHeap(f.cmd, heap);
     RI::cmdSetPipeline(f.cmd, write);
-    RI::cmdSetRootData(f.cmd, WriteFacesRoot{.textureSlot = 1, .size = 16});
+    RI::Helpers::cmdSetRootData(f.cmd, WriteFacesRoot{.textureSlot = 1, .size = 16});
     RI::cmdDispatch(f.cmd, 2, 2, 6);
     RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCompute);
     checkCubeFaces(f, heap, cube);
@@ -1555,7 +1556,7 @@ EQ_TEST(texture, cube_layered_render) {
     RI::cmdSetHeap(f.cmd, heap);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = cube.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetPipeline(f.cmd, pipeline);
-    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 1);
     RI::cmdEndRendering(f.cmd);
     RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCompute);
@@ -1604,7 +1605,7 @@ EQ_TEST(texture, volume_copy_render_sample) {
     const std::vector<std::byte> shader = loadShader("read_volume");
     RI::Pipeline read = RI::createComputePipeline(f.device, {.shader = shader});
     RI::cmdSetPipeline(f.cmd, read);
-    RI::cmdSetRootData(f.cmd, ReadVolumeRoot{.textureSlot = kTextureSlot, .outputSlot = kOutputSlot, .size = kSide,
+    RI::Helpers::cmdSetRootData(f.cmd, ReadVolumeRoot{.textureSlot = kTextureSlot, .outputSlot = kOutputSlot, .size = kSide,
                                              .depth = kDepth});
     RI::cmdDispatch(f.cmd, kSide / 4, kSide / 4, kDepth / 4);
     RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy | RI::Stage::eRenderTarget);
@@ -1669,17 +1670,17 @@ EQ_TEST(texture, viewport_and_scissor) {
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
     RI::cmdSetViewport(f.cmd, {.width = kHalf, .height = float(kSize)});
     RI::cmdSetPipeline(f.cmd, red);
-    RI::cmdSetRootData(f.cmd, white);
+    RI::Helpers::cmdSetRootData(f.cmd, white);
     RI::cmdDraw(f.cmd, 3);
     RI::cmdSetViewport(f.cmd, {.width = float(kSize), .height = float(kSize)});
     RI::cmdSetScissor(f.cmd, {.x = kSize / 2, .y = 0, .width = kSize / 2, .height = kSize / 2});
     RI::cmdSetPipeline(f.cmd, green);
-    RI::cmdSetRootData(f.cmd, white);
+    RI::Helpers::cmdSetRootData(f.cmd, white);
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eLoad}}});
     RI::cmdSetPipeline(f.cmd, blue);
-    RI::cmdSetRootData(f.cmd, white);
+    RI::Helpers::cmdSetRootData(f.cmd, white);
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     const std::vector<float> texels = f.readBack(target.view);
@@ -1717,10 +1718,10 @@ EQ_TEST(texture, rendering_without_attachments) {
     RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::ePixel);
     RI::cmdBeginRendering(f.cmd, RI::RenderingSize{.width = kSize, .height = kSize});
     RI::cmdSetPipeline(f.cmd, raster);
-    RI::cmdSetRootData(f.cmd, RasterRoot{.bufferSlot = kBufferSlot, .width = kSize, .value = 7});
+    RI::Helpers::cmdSetRootData(f.cmd, RasterRoot{.bufferSlot = kBufferSlot, .width = kSize, .value = 7});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdSetViewport(f.cmd, {.width = kSize / 2.0f, .height = float(kSize)});
-    RI::cmdSetRootData(f.cmd, RasterRoot{.bufferSlot = kBufferSlot, .width = kSize, .value = 3});
+    RI::Helpers::cmdSetRootData(f.cmd, RasterRoot{.bufferSlot = kBufferSlot, .width = kSize, .value = 3});
     RI::cmdDraw(f.cmd, 3);
     RI::cmdEndRendering(f.cmd);
     RI::cmdBarrier(f.cmd, RI::Stage::ePixel, RI::Stage::eCopy);

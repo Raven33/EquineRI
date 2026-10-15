@@ -350,7 +350,7 @@ struct CommandList {
         // scissor (P103).
         void *pipelineState[2] = {nullptr, nullptr};
         uint32 topology = 0;
-        uint8 rootData[256] = {};
+        uint8 rootData[kMaxRootDataSize] = {};
         uint32 rootDataBytes = 0;
         bool rootDataGraphics = false;
         uint32 renderWidth = 0, renderHeight = 0;
@@ -374,13 +374,10 @@ void cmdEnd(CommandList &cmd);
 // Before the first cmdSetPipeline of the list (P94 (10)).
 void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap);
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline);
-// `size` is the pipeline's rootDataSize (checked in validation builds, P24).
-// Kept across draws and dispatches until set again.
-void cmdSetRootData(CommandList &cmd, const void *data, uint32 size);
-template <typename T>
-void cmdSetRootData(CommandList &cmd, const T &data) {
-    cmdSetRootData(cmd, &data, static_cast<uint32>(sizeof(T)));
-}
+// `data` is the pipeline's rootDataSize bytes (checked in validation builds,
+// P24). Kept across draws and dispatches until set again. Typed values:
+// RI::Helpers::cmdSetRootData (P107).
+void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data);
 // Outside rendering sections.
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z);
 // Every write made by `before` stages becomes visible to every access of
@@ -464,6 +461,12 @@ void cmdDiscard(CommandList &cmd, const TextureView &view);
 // need eCopyDst.
 void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value);
 void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value);
+// A few values only (counters, flags, indices), recorded into the command list
+// itself; larger data goes through an upload buffer and cmdCopyBuffer (P107).
+// `offset` and data.size() are multiples of 4, data.size() at most
+// kMaxSmallWriteSize. Outside rendering sections; counts as Stage::eCopy; the
+// buffer needs eCopyDst. Typed values: RI::Helpers::cmdWriteSmallData.
+void cmdWriteSmallData(CommandList &cmd, const Buffer &buffer, uint64 offset, std::span<const std::byte> data);
 
 // Timestamps (P51, P71): written once all earlier work has finished.
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index);

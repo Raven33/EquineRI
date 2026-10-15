@@ -32,6 +32,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.group_counts
     validation.device_thread
     validation.tracker_names
+    validation.small_write
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -138,6 +139,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     helpers.shader_compiler
     helpers.group_grid
     compute.clear_large_buffer
+    compute.write_small_data
     compute.names_at_creation
     threads.pipelines_on_other_threads
     texture.unlisted_view_format_reports
@@ -165,6 +167,7 @@ if (EQUINE_VALIDATION)
         texture.copy_without_usage_reports
         texture.stage_link_mismatch_reports
         compute.too_many_groups_reports
+        compute.small_write_too_large_reports
         threads.call_from_other_thread_reports
     )
     list(APPEND EQUINE_GPU_SHARED_ABORT_TESTS
@@ -180,6 +183,7 @@ if (EQUINE_VALIDATION)
         "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
         "texture.stage_link_mismatch_reports|programmer error: createGraphicsPipeline: the pixel shader reads NORMAL0 at"
         "compute.too_many_groups_reports|programmer error: cmdDispatch: 65536 x 1 x 1 groups"
+        "compute.small_write_too_large_reports|programmer error: cmdWriteSmallData: 68 bytes is more than kMaxSmallWriteSize"
         "threads.call_from_other_thread_reports|programmer error: createCommandList: called from thread"
     )
 endif()

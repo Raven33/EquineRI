@@ -53,6 +53,14 @@ struct DispatchIndirectArgs { // also mesh draws: task (or mesh) groups
 inline constexpr uint32 kMaxGroupsPerDimension = 65535;
 inline constexpr uint64 kMaxMeshGroups = uint64{1} << 22; // x * y * z of one mesh draw
 
+// The most root data any backend allows (P107; D3D12: 64 root constants). The
+// device's own limit, DeviceLimits::maxRootDataSize, may be lower.
+inline constexpr uint32 kMaxRootDataSize = 256;
+
+// The most bytes one cmdWriteSmallData may write (P107): it is for a few
+// values, recorded into the command list itself.
+inline constexpr uint32 kMaxSmallWriteSize = 64;
+
 // Bytes from one indirect record to the next (P48): the arguments of `kind`,
 // preceded at Level 2 by `rootDataSize` bytes of root data (rounded up to 4).
 constexpr uint32 indirectStride(IndirectKind kind, uint32 rootDataSize = 0) {

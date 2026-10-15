@@ -200,6 +200,7 @@ nav:
           - RI::cmdDiscard: reference/cmdDiscard.md
           - RI::cmdResolve, resolveTo: reference/resolve.md
           - RI::cmdClearTexture, RI::cmdClearBuffer: reference/cmdClear.md
+          - RI::cmdWriteSmallData: reference/cmdWriteSmallData.md
           - RI::cmdWriteTimestamp, RI::cmdResolveQueries, RI::cmdResetQueries: reference/timestamps.md
       - Queries:
           - RI::createQueryPool, RI::resetQueries: reference/queryPool.md
@@ -231,6 +232,7 @@ nav:
       - GPU profiler: helpers/profiler.md
       - Pipeline statistics: helpers/statistics.md
       - Group grids: helpers/grid.md
+      - Typed commands: helpers/typed-commands.md
       - Shader compiler: helpers/shader-compiler.md
   - Design notes:
       - design-notes/index.md

@@ -4,6 +4,7 @@
 // snippets/hlsl/doc_compute.hlsl, compiled to EQUINE_SHADER_DIR.
 
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -146,7 +147,7 @@ int main() {
     // --8<-- [start:set-state]
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, Root{.inputSlot = 0, .outputSlot = 1, .paramsSlot = 2, .scale = 3.0f, .count = kCount});
+    RI::Helpers::cmdSetRootData(cmd, Root{.inputSlot = 0, .outputSlot = 1, .paramsSlot = 2, .scale = 3.0f, .count = kCount});
     // --8<-- [end:set-state]
     // --8<-- [start:dispatch]
     RI::cmdDispatch(cmd, (kCount + 63) / 64, 1, 1); // 64 threads per group, see [numthreads]
@@ -176,7 +177,7 @@ int main() {
     RI::cmdBegin(cmd);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, Root{.inputSlot = 0, .outputSlot = 1, .paramsSlot = 2, .scale = 2.0f, .count = kCount});
+    RI::Helpers::cmdSetRootData(cmd, Root{.inputSlot = 0, .outputSlot = 1, .paramsSlot = 2, .scale = 2.0f, .count = kCount});
     RI::cmdDispatch(cmd, (kCount + 63) / 64, 1, 1);
     RI::cmdEnd(cmd);
     const RI::TimelinePoint again = RI::submit(queue, cmd);

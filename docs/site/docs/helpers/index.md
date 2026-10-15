@@ -19,6 +19,7 @@ Helpers:
 - [Pipeline statistics](statistics.md): a statistics query's counters in one struct.
 - [Shader compiler](shader-compiler.md): HLSL at run time with RI's compile rule.
 - [Group grids](grid.md): large dispatches folded within 65,535 groups per dimension.
+- [Typed commands](typed-commands.md): root data and small writes from a value, with the size checked at compile time.
 
 The frame ring, the memory allocator and the profiler keep a pointer to the `Device` they
 were created with: keep the device at the same address, and alive, until you destroy them.

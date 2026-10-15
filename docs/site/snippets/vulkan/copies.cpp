@@ -36,3 +36,20 @@ void upload(VkCommandBuffer commands, VkBuffer staging, VkImage image, uint32_t 
     vkCmdPipelineBarrier2(commands, &dependency);
 }
 // --8<-- [end:upload]
+
+// --8<-- [start:small-write]
+void resetCounter(VkCommandBuffer commands, VkBuffer counters, uint64_t start) {
+    // A transfer command: the buffer needs TRANSFER_DST; at most 65536 bytes,
+    // offset and size multiples of 4; not inside a render pass.
+    vkCmdUpdateBuffer(commands, counters, 0, sizeof(start), &start);
+    const VkMemoryBarrier2 barrier{.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+                                   .srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,
+                                   .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                   .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                                   .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT};
+    const VkDependencyInfo dependency{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                      .memoryBarrierCount = 1,
+                                      .pMemoryBarriers = &barrier};
+    vkCmdPipelineBarrier2(commands, &dependency);
+}
+// --8<-- [end:small-write]
