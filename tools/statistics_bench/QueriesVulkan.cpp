@@ -1,4 +1,4 @@
-// Statistics-cost measurement, Vulkan side (P105): variants B to E as native
+// Statistics-cost measurement, Vulkan side (P105): variants B to H as native
 // query pools, recorded in native sections (P70).
 //
 // Watch out: only the pixel, compute, task and mesh counters may be active
@@ -63,6 +63,20 @@ NativeQueries *createNativeQueries(RI::Device &device, Variant variant, uint32 c
                VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT;
         break;
     case Variant::eComputeOnly: bits = VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT; break;
+    case Variant::eStatsPrimitives:
+        if (!meshQueries) {
+            return nullptr;
+        }
+        bits = kMeshCompatible;
+        break;
+    case Variant::eStatsTask:
+    case Variant::eStatsMeshInvocations:
+        if (!meshQueries) {
+            return nullptr;
+        }
+        bits = kMeshCompatible | (variant == Variant::eStatsTask ? VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT
+                                                                 : VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT);
+        break;
     default: return nullptr;
     }
     auto *q = new NativeQueries{.variant = variant,
@@ -75,7 +89,7 @@ NativeQueries *createNativeQueries(RI::Device &device, Variant variant, uint32 c
                                           .queryCount = count,
                                           .pipelineStatistics = bits};
     q->fn->vkCreateQueryPool(q->device, &statsInfo, nullptr, &q->stats);
-    if (variant == Variant::eStatsMeshPrimitives) {
+    if (variant == Variant::eStatsMeshPrimitives || variant == Variant::eStatsPrimitives) {
         const VkQueryPoolCreateInfo primitivesInfo{.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
                                                    .queryType = VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT,
                                                    .queryCount = count};

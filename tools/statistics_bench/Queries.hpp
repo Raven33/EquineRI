@@ -15,6 +15,9 @@ enum class Variant : uint8 {
     eStatsMesh,           // C: B + task and mesh invocations (D3D12: PIPELINE_STATISTICS1)
     eStatsMeshPrimitives, // D: C + Vulkan's mesh-primitives query on mesh passes (Vulkan only)
     eComputeOnly,         // E: one counter, compute invocations, as the sandbox (Vulkan only)
+    eStatsPrimitives,     // F: B + the mesh-primitives query, without task and mesh counters (Vulkan only)
+    eStatsTask,           // G: B + task invocations only (Vulkan only)
+    eStatsMeshInvocations, // H: B + mesh invocations only (Vulkan only)
 };
 
 const char *variantName(Variant variant);
