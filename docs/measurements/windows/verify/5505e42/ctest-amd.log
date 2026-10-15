@@ -1,0 +1,338 @@
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+        Start   1: sample.compute_readback.Vulkan
+  1/165 Test   #1: sample.compute_readback.Vulkan ............................   Passed    0.31 sec
+        Start   2: sample.compute_readback.D3D12
+  2/165 Test   #2: sample.compute_readback.D3D12 .............................   Passed    0.71 sec
+        Start   3: ri.error.category_names
+  3/165 Test   #3: ri.error.category_names ...................................   Passed    0.01 sec
+        Start   4: ri.error.report_prints_and_aborts
+  4/165 Test   #4: ri.error.report_prints_and_aborts .........................   Passed    0.01 sec
+        Start   5: ri.validation.tracker_alive_then_destroyed
+  5/165 Test   #5: ri.validation.tracker_alive_then_destroyed ................   Passed    0.01 sec
+        Start   6: ri.validation.tracker_rejects_never_created
+  6/165 Test   #6: ri.validation.tracker_rejects_never_created ...............   Passed    0.01 sec
+        Start   7: ri.validation.tracker_rejects_other_device
+  7/165 Test   #7: ri.validation.tracker_rejects_other_device ................   Passed    0.01 sec
+        Start   8: ri.validation.macro_evaluates_only_when_on
+  8/165 Test   #8: ri.validation.macro_evaluates_only_when_on ................   Passed    0.01 sec
+        Start   9: ri.validation.texture_and_rendering_checks
+  9/165 Test   #9: ri.validation.texture_and_rendering_checks ................   Passed    0.01 sec
+        Start  10: ri.validation.stage_link
+ 10/165 Test  #10: ri.validation.stage_link ..................................   Passed    0.01 sec
+        Start  11: ri.validation.graphics_stages
+ 11/165 Test  #11: ri.validation.graphics_stages .............................   Passed    0.01 sec
+        Start  12: ri.validation.texture_shapes
+ 12/165 Test  #12: ri.validation.texture_shapes ..............................   Passed    0.01 sec
+        Start  13: ri.dxil.fill_heap_and_root_data
+ 13/165 Test  #13: ri.dxil.fill_heap_and_root_data ...........................   Passed    0.01 sec
+        Start  14: ri.dxil.root_data_4_bytes
+ 14/165 Test  #14: ri.dxil.root_data_4_bytes .................................   Passed    0.01 sec
+        Start  15: ri.dxil.root_data_64_bytes
+ 15/165 Test  #15: ri.dxil.root_data_64_bytes ................................   Passed    0.01 sec
+        Start  16: ri.dxil.root_data_with_arrays
+ 16/165 Test  #16: ri.dxil.root_data_with_arrays .............................   Passed    0.01 sec
+        Start  17: ri.dxil.declared_bindings
+ 17/165 Test  #17: ri.dxil.declared_bindings .................................   Passed    0.01 sec
+        Start  18: ri.dxil.sampler_heap_only
+ 18/165 Test  #18: ri.dxil.sampler_heap_only .................................   Passed    0.01 sec
+        Start  19: ri.dxil.space999_other_register_is_error
+ 19/165 Test  #19: ri.dxil.space999_other_register_is_error ..................   Passed    0.01 sec
+        Start  20: ri.dxil.space999_second_resource_is_error
+ 20/165 Test  #20: ri.dxil.space999_second_resource_is_error .................   Passed    0.01 sec
+        Start  21: ri.dxil.newer_psv_layout
+ 21/165 Test  #21: ri.dxil.newer_psv_layout ..................................   Passed    0.01 sec
+        Start  22: ri.dxil.oldest_psv_layout_numthreads_from_metadata
+ 22/165 Test  #22: ri.dxil.oldest_psv_layout_numthreads_from_metadata ........   Passed    0.01 sec
+        Start  23: ri.dxil.empty_input
+ 23/165 Test  #23: ri.dxil.empty_input .......................................   Passed    0.01 sec
+        Start  24: ri.dxil.not_a_container
+ 24/165 Test  #24: ri.dxil.not_a_container ...................................   Passed    0.01 sec
+        Start  25: ri.dxil.truncated_container
+ 25/165 Test  #25: ri.dxil.truncated_container ...............................   Passed    0.03 sec
+        Start  26: ri.dxil.missing_parts
+ 26/165 Test  #26: ri.dxil.missing_parts .....................................   Passed    0.01 sec
+        Start  27: ri.dxil.truncated_bitcode
+ 27/165 Test  #27: ri.dxil.truncated_bitcode .................................   Passed    0.07 sec
+        Start  28: ri.dxil.corrupted_bitcode
+ 28/165 Test  #28: ri.dxil.corrupted_bitcode .................................   Passed    6.41 sec
+        Start  29: ri.dxil.corrupted_container
+ 29/165 Test  #29: ri.dxil.corrupted_container ...............................   Passed    2.00 sec
+        Start  30: ri.dxil.garbage_bitcode
+ 30/165 Test  #30: ri.dxil.garbage_bitcode ...................................   Passed    0.02 sec
+        Start  31: ri.dxil.signatures
+ 31/165 Test  #31: ri.dxil.signatures ........................................   Passed    0.01 sec
+        Start  32: ri.dxil.pipeline_stages
+ 32/165 Test  #32: ri.dxil.pipeline_stages ...................................   Passed    0.02 sec
+        Start  33: ri.validation.macro_reports_failure
+ 33/165 Test  #33: ri.validation.macro_reports_failure .......................   Passed    0.01 sec
+        Start  34: ri.registry_matches
+ 34/165 Test  #34: ri.registry_matches .......................................   Passed    0.01 sec
+        Start  35: vk.list_gpus
+ 35/165 Test  #35: vk.list_gpus ..............................................   Passed    0.17 sec
+        Start  36: vk.create_destroy_device
+ 36/165 Test  #36: vk.create_destroy_device ..................................   Passed    0.38 sec
+        Start  37: vk.two_devices
+ 37/165 Test  #37: vk.two_devices ............................................   Passed    0.49 sec
+        Start  38: vk.native_features_turn_on_robustness
+ 38/165 Test  #38: vk.native_features_turn_on_robustness .....................   Passed    0.38 sec
+        Start  39: vk.native_extension_and_pnext
+ 39/165 Test  #39: vk.native_extension_and_pnext .............................   Passed    0.36 sec
+        Start  40: vk.list_gpus_while_device_alive
+ 40/165 Test  #40: vk.list_gpus_while_device_alive ...........................   Passed    0.40 sec
+        Start  41: vk.unknown_gpu_reports
+ 41/165 Test  #41: vk.unknown_gpu_reports ....................................   Passed    0.20 sec
+        Start  42: vk.layout_modes
+ 42/165 Test  #42: vk.layout_modes ...........................................   Passed    0.56 sec
+        Start  43: vk.sampled_depth_resting_layout
+ 43/165 Test  #43: vk.sampled_depth_resting_layout ...........................   Passed    0.27 sec
+        Start  44: vk.native_section
+ 44/165 Test  #44: vk.native_section .........................................   Passed    0.28 sec
+        Start  45: vk.import_objects
+ 45/165 Test  #45: vk.import_objects .........................................   Passed    0.28 sec
+        Start  46: vk.work_graph_unsupported_reports
+ 46/165 Test  #46: vk.work_graph_unsupported_reports .........................   Passed    0.27 sec
+        Start  47: vk.shader_printf
+ 47/165 Test  #47: vk.shader_printf ..........................................   Passed    0.28 sec
+        Start  48: vk.compute.buffer_compute_readback
+ 48/165 Test  #48: vk.compute.buffer_compute_readback ........................   Passed    0.28 sec
+        Start  49: vk.compute.command_list_reuse_and_timeline
+ 49/165 Test  #49: vk.compute.command_list_reuse_and_timeline ................   Passed    0.29 sec
+        Start  50: vk.compute.memory_kinds
+ 50/165 Test  #50: vk.compute.memory_kinds ...................................   Passed    0.27 sec
+        Start  51: vk.compute.names_and_markers
+ 51/165 Test  #51: vk.compute.names_and_markers ..............................   Passed    0.28 sec
+        Start  52: vk.texture.create_and_views
+ 52/165 Test  #52: vk.texture.create_and_views ...............................   Passed    0.29 sec
+        Start  53: vk.texture.render_then_sample
+ 53/165 Test  #53: vk.texture.render_then_sample .............................   Passed    0.30 sec
+        Start  54: vk.texture.clear_load_op
+ 54/165 Test  #54: vk.texture.clear_load_op ..................................   Passed    0.29 sec
+        Start  55: vk.texture.depth_write_then_sample
+ 55/165 Test  #55: vk.texture.depth_write_then_sample ........................   Passed    0.31 sec
+        Start  56: vk.texture.read_only_depth_section
+ 56/165 Test  #56: vk.texture.read_only_depth_section ........................   Passed    0.30 sec
+        Start  57: vk.texture.read_only_depth_section_sampling
+ 57/165 Test  #57: vk.texture.read_only_depth_section_sampling ...............   Passed    0.30 sec
+        Start  58: vk.texture.msaa_render_then_sample
+ 58/165 Test  #58: vk.texture.msaa_render_then_sample ........................   Passed    0.31 sec
+        Start  59: vk.texture.storage_write_then_sample
+ 59/165 Test  #59: vk.texture.storage_write_then_sample ......................   Passed    0.31 sec
+        Start  60: vk.texture.clear_commands
+ 60/165 Test  #60: vk.texture.clear_commands .................................   Passed    0.30 sec
+        Start  61: vk.texture.discard_after_aliasing
+ 61/165 Test  #61: vk.texture.discard_after_aliasing .........................   Passed    0.30 sec
+        Start  62: vk.texture.timestamps
+ 62/165 Test  #62: vk.texture.timestamps .....................................   Passed    0.30 sec
+        Start  63: vk.texture.copy_round_trip
+ 63/165 Test  #63: vk.texture.copy_round_trip ................................   Passed    0.31 sec
+        Start  64: vk.texture.copy_depth_upload
+ 64/165 Test  #64: vk.texture.copy_depth_upload ..............................   Passed    0.29 sec
+        Start  65: vk.texture.occlusion_and_statistics
+ 65/165 Test  #65: vk.texture.occlusion_and_statistics .......................   Passed    0.31 sec
+        Start  66: vk.texture.indexed_draw_with_blending
+ 66/165 Test  #66: vk.texture.indexed_draw_with_blending .....................   Passed    0.31 sec
+        Start  67: vk.texture.stencil_test
+ 67/165 Test  #67: vk.texture.stencil_test ...................................   Passed    0.31 sec
+        Start  68: vk.texture.mesh_shaders
+ 68/165 Test  #68: vk.texture.mesh_shaders ...................................   Passed    0.29 sec
+        Start  69: vk.texture.resolve_color
+ 69/165 Test  #69: vk.texture.resolve_color ..................................   Passed    0.30 sec
+        Start  70: vk.texture.resolve_depth
+ 70/165 Test  #70: vk.texture.resolve_depth ..................................   Passed    0.29 sec
+        Start  71: vk.texture.indirect_level1
+ 71/165 Test  #71: vk.texture.indirect_level1 ................................   Passed    0.30 sec
+        Start  72: vk.texture.indirect_level2
+ 72/165 Test  #72: vk.texture.indirect_level2 ................................   Passed    0.30 sec
+        Start  73: vk.raytracing.build_trace_update
+ 73/165 Test  #73: vk.raytracing.build_trace_update ..........................   Passed    0.29 sec
+        Start  74: vk.texture.samplers
+ 74/165 Test  #74: vk.texture.samplers .......................................   Passed    0.30 sec
+        Start  75: vk.texture.stage_link
+ 75/165 Test  #75: vk.texture.stage_link .....................................   Passed    0.27 sec
+        Start  76: vk.texture.line_strip
+ 76/165 Test  #76: vk.texture.line_strip .....................................   Passed    0.32 sec
+        Start  77: vk.texture.wireframe
+ 77/165 Test  #77: vk.texture.wireframe ......................................   Passed    0.32 sec
+        Start  78: vk.texture.depth_bias
+ 78/165 Test  #78: vk.texture.depth_bias .....................................   Passed    0.32 sec
+        Start  79: vk.texture.depth_clamp
+ 79/165 Test  #79: vk.texture.depth_clamp ....................................   Passed    0.31 sec
+        Start  80: vk.texture.geometry_shader
+ 80/165 Test  #80: vk.texture.geometry_shader ................................   Passed    0.31 sec
+        Start  81: vk.texture.tessellation
+ 81/165 Test  #81: vk.texture.tessellation ...................................   Passed    0.33 sec
+        Start  82: vk.texture.cube_storage_then_sample
+ 82/165 Test  #82: vk.texture.cube_storage_then_sample .......................   Passed    0.33 sec
+        Start  83: vk.texture.cube_layered_render
+ 83/165 Test  #83: vk.texture.cube_layered_render ............................   Passed    0.33 sec
+        Start  84: vk.texture.volume_copy_render_sample
+ 84/165 Test  #84: vk.texture.volume_copy_render_sample ......................   Passed    0.31 sec
+        Start  85: vk.helpers.allocators
+ 85/165 Test  #85: vk.helpers.allocators .....................................   Passed    0.29 sec
+        Start  86: vk.helpers.transfers
+ 86/165 Test  #86: vk.helpers.transfers ......................................   Passed    0.30 sec
+        Start  87: vk.helpers.frame_ring_and_profiler
+ 87/165 Test  #87: vk.helpers.frame_ring_and_profiler ........................   Passed    0.30 sec
+        Start  88: vk.helpers.shader_compiler
+ 88/165 Test  #88: vk.helpers.shader_compiler ................................   Passed    0.28 sec
+        Start  89: vk.texture.unlisted_view_format_reports
+ 89/165 Test  #89: vk.texture.unlisted_view_format_reports ...................   Passed    0.29 sec
+        Start  90: vk.window.swapchain
+ 90/165 Test  #90: vk.window.swapchain .......................................   Passed    0.41 sec
+        Start  91: vk.compute.root_data_size_mismatch_reports
+ 91/165 Test  #91: vk.compute.root_data_size_mismatch_reports ................   Passed    0.28 sec
+        Start  92: vk.compute.pipeline_before_heap_reports
+ 92/165 Test  #92: vk.compute.pipeline_before_heap_reports ...................   Passed    0.27 sec
+        Start  93: vk.compute.descriptor_slot_out_of_range_reports
+ 93/165 Test  #93: vk.compute.descriptor_slot_out_of_range_reports ...........   Passed    0.27 sec
+        Start  94: vk.compute.buffer_used_after_destroy_reports
+ 94/165 Test  #94: vk.compute.buffer_used_after_destroy_reports ..............   Passed    0.28 sec
+        Start  95: vk.compute.unclosed_marker_reports
+ 95/165 Test  #95: vk.compute.unclosed_marker_reports ........................   Passed    0.27 sec
+        Start  96: vk.texture.depth_write_in_read_only_section_reports
+ 96/165 Test  #96: vk.texture.depth_write_in_read_only_section_reports .......   Passed    0.29 sec
+        Start  97: vk.texture.missing_discard_reports
+ 97/165 Test  #97: vk.texture.missing_discard_reports ........................   Passed    0.28 sec
+        Start  98: vk.texture.read_only_depth_sampling_on_color_reports
+ 98/165 Test  #98: vk.texture.read_only_depth_sampling_on_color_reports ......   Passed    0.28 sec
+        Start  99: vk.texture.copy_without_usage_reports
+ 99/165 Test  #99: vk.texture.copy_without_usage_reports .....................   Passed    0.30 sec
+        Start 100: vk.texture.stage_link_mismatch_reports
+100/165 Test #100: vk.texture.stage_link_mismatch_reports ....................   Passed    0.27 sec
+        Start 101: vk.registry_matches
+101/165 Test #101: vk.registry_matches .......................................   Passed    0.01 sec
+        Start 102: d3d12.list_gpus
+102/165 Test #102: d3d12.list_gpus ...........................................   Passed    0.52 sec
+        Start 103: d3d12.create_destroy_device
+103/165 Test #103: d3d12.create_destroy_device ...............................   Passed    1.00 sec
+        Start 104: d3d12.agility_sdk_loaded
+104/165 Test #104: d3d12.agility_sdk_loaded ..................................   Passed    0.98 sec
+        Start 105: d3d12.two_devices
+105/165 Test #105: d3d12.two_devices .........................................   Passed    1.00 sec
+        Start 106: d3d12.native_hook_runs_before_creation
+106/165 Test #106: d3d12.native_hook_runs_before_creation ....................   Passed    0.94 sec
+        Start 107: d3d12.list_gpus_while_device_alive
+107/165 Test #107: d3d12.list_gpus_while_device_alive ........................   Passed    1.52 sec
+        Start 108: d3d12.unknown_gpu_reports
+108/165 Test #108: d3d12.unknown_gpu_reports .................................   Passed    0.04 sec
+        Start 109: d3d12.native_section
+109/165 Test #109: d3d12.native_section ......................................   Passed    0.65 sec
+        Start 110: d3d12.import_objects
+110/165 Test #110: d3d12.import_objects ......................................   Passed    0.64 sec
+        Start 111: d3d12.work_graph
+111/165 Test #111: d3d12.work_graph ..........................................   Passed    0.68 sec
+        Start 112: d3d12.compute.buffer_compute_readback
+112/165 Test #112: d3d12.compute.buffer_compute_readback .....................   Passed    0.69 sec
+        Start 113: d3d12.compute.command_list_reuse_and_timeline
+113/165 Test #113: d3d12.compute.command_list_reuse_and_timeline .............   Passed    0.67 sec
+        Start 114: d3d12.compute.memory_kinds
+114/165 Test #114: d3d12.compute.memory_kinds ................................   Passed    0.62 sec
+        Start 115: d3d12.compute.names_and_markers
+115/165 Test #115: d3d12.compute.names_and_markers ...........................   Passed    0.62 sec
+        Start 116: d3d12.texture.create_and_views
+116/165 Test #116: d3d12.texture.create_and_views ............................   Passed    0.66 sec
+        Start 117: d3d12.texture.render_then_sample
+117/165 Test #117: d3d12.texture.render_then_sample ..........................   Passed    0.74 sec
+        Start 118: d3d12.texture.clear_load_op
+118/165 Test #118: d3d12.texture.clear_load_op ...............................   Passed    0.64 sec
+        Start 119: d3d12.texture.depth_write_then_sample
+119/165 Test #119: d3d12.texture.depth_write_then_sample .....................   Passed    0.66 sec
+        Start 120: d3d12.texture.read_only_depth_section
+120/165 Test #120: d3d12.texture.read_only_depth_section .....................   Passed    0.70 sec
+        Start 121: d3d12.texture.read_only_depth_section_sampling
+121/165 Test #121: d3d12.texture.read_only_depth_section_sampling ............   Passed    0.65 sec
+        Start 122: d3d12.texture.msaa_render_then_sample
+122/165 Test #122: d3d12.texture.msaa_render_then_sample .....................   Passed    0.65 sec
+        Start 123: d3d12.texture.storage_write_then_sample
+123/165 Test #123: d3d12.texture.storage_write_then_sample ...................   Passed    0.75 sec
+        Start 124: d3d12.texture.clear_commands
+124/165 Test #124: d3d12.texture.clear_commands ..............................   Passed    0.67 sec
+        Start 125: d3d12.texture.discard_after_aliasing
+125/165 Test #125: d3d12.texture.discard_after_aliasing ......................   Passed    0.67 sec
+        Start 126: d3d12.texture.timestamps
+126/165 Test #126: d3d12.texture.timestamps ..................................   Passed    0.65 sec
+        Start 127: d3d12.texture.copy_round_trip
+127/165 Test #127: d3d12.texture.copy_round_trip .............................   Passed    0.68 sec
+        Start 128: d3d12.texture.copy_depth_upload
+128/165 Test #128: d3d12.texture.copy_depth_upload ...........................   Passed    0.72 sec
+        Start 129: d3d12.texture.occlusion_and_statistics
+129/165 Test #129: d3d12.texture.occlusion_and_statistics ....................   Passed    0.71 sec
+        Start 130: d3d12.texture.indexed_draw_with_blending
+130/165 Test #130: d3d12.texture.indexed_draw_with_blending ..................   Passed    0.69 sec
+        Start 131: d3d12.texture.stencil_test
+131/165 Test #131: d3d12.texture.stencil_test ................................   Passed    0.73 sec
+        Start 132: d3d12.texture.mesh_shaders
+132/165 Test #132: d3d12.texture.mesh_shaders ................................   Passed    0.65 sec
+        Start 133: d3d12.texture.resolve_color
+133/165 Test #133: d3d12.texture.resolve_color ...............................   Passed    0.72 sec
+        Start 134: d3d12.texture.resolve_depth
+134/165 Test #134: d3d12.texture.resolve_depth ...............................   Passed    0.69 sec
+        Start 135: d3d12.texture.indirect_level1
+135/165 Test #135: d3d12.texture.indirect_level1 .............................   Passed    0.67 sec
+        Start 136: d3d12.texture.indirect_level2
+136/165 Test #136: d3d12.texture.indirect_level2 .............................   Passed    0.75 sec
+        Start 137: d3d12.raytracing.build_trace_update
+137/165 Test #137: d3d12.raytracing.build_trace_update .......................   Passed    0.71 sec
+        Start 138: d3d12.texture.samplers
+138/165 Test #138: d3d12.texture.samplers ....................................   Passed    0.77 sec
+        Start 139: d3d12.texture.stage_link
+139/165 Test #139: d3d12.texture.stage_link ..................................   Passed    0.64 sec
+        Start 140: d3d12.texture.line_strip
+140/165 Test #140: d3d12.texture.line_strip ..................................   Passed    0.75 sec
+        Start 141: d3d12.texture.wireframe
+141/165 Test #141: d3d12.texture.wireframe ...................................   Passed    0.75 sec
+        Start 142: d3d12.texture.depth_bias
+142/165 Test #142: d3d12.texture.depth_bias ..................................   Passed    0.74 sec
+        Start 143: d3d12.texture.depth_clamp
+143/165 Test #143: d3d12.texture.depth_clamp .................................   Passed    0.67 sec
+        Start 144: d3d12.texture.geometry_shader
+144/165 Test #144: d3d12.texture.geometry_shader .............................   Passed    0.75 sec
+        Start 145: d3d12.texture.tessellation
+145/165 Test #145: d3d12.texture.tessellation ................................   Passed    0.70 sec
+        Start 146: d3d12.texture.cube_storage_then_sample
+146/165 Test #146: d3d12.texture.cube_storage_then_sample ....................   Passed    0.75 sec
+        Start 147: d3d12.texture.cube_layered_render
+147/165 Test #147: d3d12.texture.cube_layered_render .........................   Passed    0.75 sec
+        Start 148: d3d12.texture.volume_copy_render_sample
+148/165 Test #148: d3d12.texture.volume_copy_render_sample ...................   Passed    0.70 sec
+        Start 149: d3d12.helpers.allocators
+149/165 Test #149: d3d12.helpers.allocators ..................................   Passed    0.67 sec
+        Start 150: d3d12.helpers.transfers
+150/165 Test #150: d3d12.helpers.transfers ...................................   Passed    0.64 sec
+        Start 151: d3d12.helpers.frame_ring_and_profiler
+151/165 Test #151: d3d12.helpers.frame_ring_and_profiler .....................   Passed    0.64 sec
+        Start 152: d3d12.helpers.shader_compiler
+152/165 Test #152: d3d12.helpers.shader_compiler .............................   Passed    0.64 sec
+        Start 153: d3d12.texture.unlisted_view_format_reports
+153/165 Test #153: d3d12.texture.unlisted_view_format_reports ................   Passed    0.62 sec
+        Start 154: d3d12.window.swapchain
+154/165 Test #154: d3d12.window.swapchain ....................................   Passed    0.73 sec
+        Start 155: d3d12.compute.root_data_size_mismatch_reports
+155/165 Test #155: d3d12.compute.root_data_size_mismatch_reports .............   Passed    0.67 sec
+        Start 156: d3d12.compute.pipeline_before_heap_reports
+156/165 Test #156: d3d12.compute.pipeline_before_heap_reports ................   Passed    0.63 sec
+        Start 157: d3d12.compute.descriptor_slot_out_of_range_reports
+157/165 Test #157: d3d12.compute.descriptor_slot_out_of_range_reports ........   Passed    0.62 sec
+        Start 158: d3d12.compute.buffer_used_after_destroy_reports
+158/165 Test #158: d3d12.compute.buffer_used_after_destroy_reports ...........   Passed    0.62 sec
+        Start 159: d3d12.compute.unclosed_marker_reports
+159/165 Test #159: d3d12.compute.unclosed_marker_reports .....................   Passed    0.62 sec
+        Start 160: d3d12.texture.depth_write_in_read_only_section_reports
+160/165 Test #160: d3d12.texture.depth_write_in_read_only_section_reports ....   Passed    0.63 sec
+        Start 161: d3d12.texture.missing_discard_reports
+161/165 Test #161: d3d12.texture.missing_discard_reports .....................   Passed    0.65 sec
+        Start 162: d3d12.texture.read_only_depth_sampling_on_color_reports
+162/165 Test #162: d3d12.texture.read_only_depth_sampling_on_color_reports ...   Passed    0.65 sec
+        Start 163: d3d12.texture.copy_without_usage_reports
+163/165 Test #163: d3d12.texture.copy_without_usage_reports ..................   Passed    0.64 sec
+        Start 164: d3d12.texture.stage_link_mismatch_reports
+164/165 Test #164: d3d12.texture.stage_link_mismatch_reports .................   Passed    0.64 sec
+        Start 165: d3d12.registry_matches
+165/165 Test #165: d3d12.registry_matches ....................................   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 165
+
+Label Time Summary:
+gpu    =  65.16 sec*proc (131 tests)
+
+Total Test time (real) =  74.35 sec

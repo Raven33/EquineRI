@@ -1,0 +1,353 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 11
+      Start  11: ri.validation.graphics_stages
+
+11: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "validation.graphics_stages"
+11: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+11: Test timeout computed to be: 120
+11: [PASS] validation.graphics_stages
+ 1/21 Test  #11: ri.validation.graphics_stages .............   Passed    0.01 sec
+test 12
+      Start  12: ri.validation.texture_shapes
+
+12: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "validation.texture_shapes"
+12: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+12: Test timeout computed to be: 120
+12: [PASS] validation.texture_shapes
+ 2/21 Test  #12: ri.validation.texture_shapes ..............   Passed    0.01 sec
+test 32
+      Start  32: ri.dxil.pipeline_stages
+
+32: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "dxil.pipeline_stages"
+32: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+32: Test timeout computed to be: 120
+32: [PASS] dxil.pipeline_stages
+ 3/21 Test  #32: ri.dxil.pipeline_stages ...................   Passed    0.02 sec
+test 76
+      Start  76: vk.texture.line_strip
+
+76: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.line_strip"
+76: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+76: Environment variables: 
+76:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+76: Test timeout computed to be: 120
+76: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+76: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+76: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+76: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+76: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+76: 
+76: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+76: 
+76: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+76: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+76: 
+76: [PASS] texture.line_strip
+ 4/21 Test  #76: vk.texture.line_strip .....................   Passed    0.39 sec
+test 77
+      Start  77: vk.texture.wireframe
+
+77: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.wireframe"
+77: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+77: Environment variables: 
+77:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+77: Test timeout computed to be: 120
+77: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+77: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+77: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+77: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+77: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+77: 
+77: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+77: 
+77: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+77: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+77: 
+77: [PASS] texture.wireframe
+ 5/21 Test  #77: vk.texture.wireframe ......................   Passed    0.37 sec
+test 78
+      Start  78: vk.texture.depth_bias
+
+78: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.depth_bias"
+78: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+78: Environment variables: 
+78:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+78: Test timeout computed to be: 120
+78: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+78: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+78: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+78: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+78: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+78: 
+78: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+78: 
+78: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+78: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+78: 
+78: [PASS] texture.depth_bias
+ 6/21 Test  #78: vk.texture.depth_bias .....................   Passed    0.42 sec
+test 79
+      Start  79: vk.texture.depth_clamp
+
+79: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.depth_clamp"
+79: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+79: Environment variables: 
+79:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+79: Test timeout computed to be: 120
+79: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+79: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+79: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+79: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+79: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+79: 
+79: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+79: 
+79: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+79: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+79: 
+79: [PASS] texture.depth_clamp
+ 7/21 Test  #79: vk.texture.depth_clamp ....................   Passed    0.38 sec
+test 80
+      Start  80: vk.texture.geometry_shader
+
+80: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.geometry_shader"
+80: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+80: Environment variables: 
+80:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+80: Test timeout computed to be: 120
+80: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+80: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+80: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+80: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+80: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+80: 
+80: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+80: 
+80: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+80: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+80: 
+80: [PASS] texture.geometry_shader
+ 8/21 Test  #80: vk.texture.geometry_shader ................   Passed    0.37 sec
+test 81
+      Start  81: vk.texture.tessellation
+
+81: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.tessellation"
+81: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+81: Environment variables: 
+81:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+81: Test timeout computed to be: 120
+81: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+81: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+81: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+81: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+81: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+81: 
+81: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+81: 
+81: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+81: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+81: 
+81: [PASS] texture.tessellation
+ 9/21 Test  #81: vk.texture.tessellation ...................   Passed    0.38 sec
+test 82
+      Start  82: vk.texture.cube_storage_then_sample
+
+82: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.cube_storage_then_sample"
+82: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+82: Environment variables: 
+82:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+82: Test timeout computed to be: 120
+82: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+82: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+82: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+82: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+82: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+82: 
+82: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+82: 
+82: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+82: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+82: 
+82: [PASS] texture.cube_storage_then_sample
+10/21 Test  #82: vk.texture.cube_storage_then_sample .......   Passed    0.37 sec
+test 83
+      Start  83: vk.texture.cube_layered_render
+
+83: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.cube_layered_render"
+83: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+83: Environment variables: 
+83:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+83: Test timeout computed to be: 120
+83: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+83: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+83: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+83: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+83: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+83: 
+83: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+83: 
+83: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+83: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+83: 
+83: [PASS] texture.cube_layered_render
+11/21 Test  #83: vk.texture.cube_layered_render ............   Passed    0.37 sec
+test 84
+      Start  84: vk.texture.volume_copy_render_sample
+
+84: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.volume_copy_render_sample"
+84: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+84: Environment variables: 
+84:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+84: Test timeout computed to be: 120
+84: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+84: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+84: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+84: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+84: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+84: 
+84: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+84: 
+84: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+84: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+84: 
+84: [PASS] texture.volume_copy_render_sample
+12/21 Test  #84: vk.texture.volume_copy_render_sample ......   Passed    0.38 sec
+test 140
+      Start 140: d3d12.texture.line_strip
+
+140: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.line_strip"
+140: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+140: Environment variables: 
+140:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+140: Test timeout computed to be: 120
+140: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+140: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+140: [PASS] texture.line_strip
+13/21 Test #140: d3d12.texture.line_strip ..................   Passed    1.08 sec
+test 141
+      Start 141: d3d12.texture.wireframe
+
+141: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.wireframe"
+141: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+141: Environment variables: 
+141:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+141: Test timeout computed to be: 120
+141: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+141: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+141: [PASS] texture.wireframe
+14/21 Test #141: d3d12.texture.wireframe ...................   Passed    1.07 sec
+test 142
+      Start 142: d3d12.texture.depth_bias
+
+142: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.depth_bias"
+142: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+142: Environment variables: 
+142:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+142: Test timeout computed to be: 120
+142: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+142: [EquineRI] D3D12 warning: ID3D12CommandList::ClearDepthStencilView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+142: [PASS] texture.depth_bias
+15/21 Test #142: d3d12.texture.depth_bias ..................   Passed    0.99 sec
+test 143
+      Start 143: d3d12.texture.depth_clamp
+
+143: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.depth_clamp"
+143: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+143: Environment variables: 
+143:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+143: Test timeout computed to be: 120
+143: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+143: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+143: [PASS] texture.depth_clamp
+16/21 Test #143: d3d12.texture.depth_clamp .................   Passed    1.06 sec
+test 144
+      Start 144: d3d12.texture.geometry_shader
+
+144: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.geometry_shader"
+144: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+144: Environment variables: 
+144:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+144: Test timeout computed to be: 120
+144: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+144: [PASS] texture.geometry_shader
+17/21 Test #144: d3d12.texture.geometry_shader .............   Passed    0.97 sec
+test 145
+      Start 145: d3d12.texture.tessellation
+
+145: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.tessellation"
+145: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+145: Environment variables: 
+145:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+145: Test timeout computed to be: 120
+145: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+145: [PASS] texture.tessellation
+18/21 Test #145: d3d12.texture.tessellation ................   Passed    1.03 sec
+test 146
+      Start 146: d3d12.texture.cube_storage_then_sample
+
+146: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.cube_storage_then_sample"
+146: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+146: Environment variables: 
+146:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+146: Test timeout computed to be: 120
+146: [PASS] texture.cube_storage_then_sample
+19/21 Test #146: d3d12.texture.cube_storage_then_sample ....   Passed    1.14 sec
+test 147
+      Start 147: d3d12.texture.cube_layered_render
+
+147: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.cube_layered_render"
+147: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+147: Environment variables: 
+147:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+147: Test timeout computed to be: 120
+147: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+147: [PASS] texture.cube_layered_render
+20/21 Test #147: d3d12.texture.cube_layered_render .........   Passed    1.04 sec
+test 148
+      Start 148: d3d12.texture.volume_copy_render_sample
+
+148: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.volume_copy_render_sample"
+148: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+148: Environment variables: 
+148:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+148: Test timeout computed to be: 120
+148: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+148: [PASS] texture.volume_copy_render_sample
+21/21 Test #148: d3d12.texture.volume_copy_render_sample ...   Passed    1.03 sec
+
+The following tests passed:
+	ri.validation.graphics_stages
+	ri.validation.texture_shapes
+	ri.dxil.pipeline_stages
+	vk.texture.line_strip
+	vk.texture.wireframe
+	vk.texture.depth_bias
+	vk.texture.depth_clamp
+	vk.texture.geometry_shader
+	vk.texture.tessellation
+	vk.texture.cube_storage_then_sample
+	vk.texture.cube_layered_render
+	vk.texture.volume_copy_render_sample
+	d3d12.texture.line_strip
+	d3d12.texture.wireframe
+	d3d12.texture.depth_bias
+	d3d12.texture.depth_clamp
+	d3d12.texture.geometry_shader
+	d3d12.texture.tessellation
+	d3d12.texture.cube_storage_then_sample
+	d3d12.texture.cube_layered_render
+	d3d12.texture.volume_copy_render_sample
+
+100% tests passed, 0 tests failed out of 21
+
+Label Time Summary:
+gpu    =  12.84 sec*proc (18 tests)
+
+Total Test time (real) =  12.92 sec
