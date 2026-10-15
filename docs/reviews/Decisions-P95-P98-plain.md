@@ -118,7 +118,7 @@ On Vulkan, the CPU only sees what the GPU wrote after an extra barrier. D3D12 ne
 step. RI adds that barrier automatically at the end of every command list, so both backends
 behave the same. Measured: no measurable cost (2 µs at most).
 
-*Your call:* keep it automatic (today), or make you write it, as `Stage::eHost`.
+**Decided (2026-10-15):** it stays automatic.
 
 ---
 
