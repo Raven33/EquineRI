@@ -101,3 +101,23 @@ EQ_TEST(validation, stage_link) {
     const CheckResult absent = checkStageLink(outputs, missing, "vertex", "location");
     EQ_CHECK(absent && absent->find("reads COLOR0, which the vertex shader does not write") != std::string::npos);
 }
+
+// Hull and domain shaders come together with a patch list; mesh pipelines take
+// none of the new stages (P102).
+EQ_TEST(validation, graphics_stages) {
+    using namespace RI::Validation;
+    EQ_CHECK(!checkGraphicsStages(false, false, false, false, false, 0));
+    EQ_CHECK(!checkGraphicsStages(false, false, false, true, false, 0));
+    EQ_CHECK(!checkGraphicsStages(false, true, true, true, true, 3));
+    EQ_CHECK(!checkGraphicsStages(false, true, true, false, true, 32));
+    const CheckResult alone = checkGraphicsStages(false, true, false, false, true, 3);
+    EQ_CHECK(alone && alone->find("give the hull and domain shaders together") != std::string::npos);
+    const CheckResult noPatches = checkGraphicsStages(false, true, true, false, false, 3);
+    EQ_CHECK(noPatches && noPatches->find("need Topology::ePatchList") != std::string::npos);
+    const CheckResult patchesAlone = checkGraphicsStages(false, false, false, false, true, 3);
+    EQ_CHECK(patchesAlone && patchesAlone->find("needs hull and domain shaders") != std::string::npos);
+    const CheckResult points = checkGraphicsStages(false, true, true, false, true, 33);
+    EQ_CHECK(points && points->find("patchControlPoints is 33") != std::string::npos);
+    const CheckResult mesh = checkGraphicsStages(true, false, false, true, false, 0);
+    EQ_CHECK(mesh && mesh->find("mesh pipelines take no hull, domain or geometry shader") != std::string::npos);
+}

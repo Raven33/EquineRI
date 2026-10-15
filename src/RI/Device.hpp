@@ -54,6 +54,8 @@ struct DeviceLimits {
     bool gpuUploadMemory = false;      // MemoryKind::eGPUUpload is available (P32)
     uint64 timestampFrequency = 0;     // timestamp ticks per second (P71 (3))
     bool meshShaders = false;          // task and mesh shaders, cmdDrawMesh (P39)
+    bool geometryShaders = false;      // GraphicsPipelineDesc::geometry (P102)
+    bool tessellation = false;         // GraphicsPipelineDesc::hull and domain (P102)
     bool indirectRootData = false;     // indirect Level 2: cmdExecuteIndirectWithRootData (P48)
     bool rayTracing = false;           // acceleration structures and RayQuery (P49)
     bool workGraphs = false;           // work graphs, D3D12 only (P50)

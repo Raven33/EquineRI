@@ -73,6 +73,12 @@ CheckResult checkQueryKind(bool ok, std::string_view call);
 // and the stencil test needs a depth format with stencil.
 CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stencilTest, bool depthHasStencil);
 
+// Graphics pipeline stages (P102): hull and domain shaders come together, with
+// Topology::ePatchList and 1 to 32 control points; mesh pipelines take neither
+// them nor a geometry shader.
+CheckResult checkGraphicsStages(bool mesh, bool hull, bool domain, bool geometry, bool patchList,
+                                uint32 patchControlPoints);
+
 // One value passed from the vertex (or mesh) shader to the pixel shader (P101):
 // its semantic, normalized by stageSemantic, and where the backend places it
 // (Vulkan: location, component 0; D3D12: register and first component).

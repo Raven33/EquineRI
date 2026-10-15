@@ -506,7 +506,7 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     case QueryType::eOcclusion: info.queryType = VK_QUERY_TYPE_OCCLUSION; break;
     case QueryType::ePipelineStatistics:
         info.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
-        info.pipelineStatistics = kPipelineStatistics;
+        info.pipelineStatistics = state.pipelineStatistics;
         break;
     }
     VkQueryPool pool = VK_NULL_HANDLE;
@@ -532,15 +532,24 @@ void destroyQueryPool(Device &device, QueryPool &pool) {
 }
 
 // Vulkan writes only the enabled counters, in bit order (P71 (2)).
-PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
-    return {.size = 7 * 8,
-            .inputVertices = 0,
-            .inputPrimitives = 8,
-            .vertexShaderInvocations = 16,
-            .clippingInvocations = 24,
-            .clippingPrimitives = 32,
-            .pixelShaderInvocations = 40,
-            .computeShaderInvocations = 48};
+PipelineStatisticsLayout pipelineStatisticsLayout(Device &device) {
+    const VkQueryPipelineStatisticFlags enabled = device.internal.state->pipelineStatistics;
+    const auto offset = [enabled](VkQueryPipelineStatisticFlagBits bit) {
+        return (enabled & bit) == 0 ? kNoCounter : 8 * static_cast<uint32>(std::popcount(enabled & (bit - 1u)));
+    };
+    return {.size = 8 * static_cast<uint32>(std::popcount(enabled)),
+            .inputVertices = offset(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT),
+            .inputPrimitives = offset(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT),
+            .vertexShaderInvocations = offset(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT),
+            .clippingInvocations = offset(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT),
+            .clippingPrimitives = offset(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT),
+            .pixelShaderInvocations = offset(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT),
+            .computeShaderInvocations = offset(VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT),
+            .geometryShaderInvocations = offset(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT),
+            .geometryShaderPrimitives = offset(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT),
+            .hullShaderInvocations = offset(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT),
+            .domainShaderInvocations =
+                offset(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT)};
 }
 
 void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count) {

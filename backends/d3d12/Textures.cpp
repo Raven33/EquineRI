@@ -381,7 +381,11 @@ PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
             .clippingInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CInvocations),
             .clippingPrimitives = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CPrimitives),
             .pixelShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, PSInvocations),
-            .computeShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CSInvocations)};
+            .computeShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CSInvocations),
+            .geometryShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, GSInvocations),
+            .geometryShaderPrimitives = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, GSPrimitives),
+            .hullShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, HSInvocations),
+            .domainShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, DSInvocations)};
 }
 
 // ── Import (P77) ─────────────────────────────────────────────────────────────

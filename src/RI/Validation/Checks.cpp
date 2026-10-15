@@ -186,6 +186,28 @@ CheckResult checkGraphicsState(size_t colorCount, size_t blendCount, bool stenci
     return {};
 }
 
+CheckResult checkGraphicsStages(bool mesh, bool hull, bool domain, bool geometry, bool patchList,
+                                uint32 patchControlPoints) {
+    if (mesh && (hull || domain || geometry)) {
+        return std::string("createGraphicsPipeline: mesh pipelines take no hull, domain or geometry shader");
+    }
+    if (hull != domain) {
+        return std::string("createGraphicsPipeline: give the hull and domain shaders together (tessellation)");
+    }
+    if (hull && !patchList) {
+        return std::string("createGraphicsPipeline: hull and domain shaders need Topology::ePatchList");
+    }
+    if (!hull && patchList) {
+        return std::string("createGraphicsPipeline: Topology::ePatchList needs hull and domain shaders");
+    }
+    if (patchList && (patchControlPoints < 1 || patchControlPoints > 32)) {
+        return std::format("createGraphicsPipeline: patchControlPoints is {}; give 1 to 32 with "
+                           "Topology::ePatchList",
+                           patchControlPoints);
+    }
+    return {};
+}
+
 std::string stageSemantic(std::string_view semantic) {
     std::string result;
     for (const char c : semantic) {

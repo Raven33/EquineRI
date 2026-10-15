@@ -1164,6 +1164,182 @@ EQ_TEST(texture, stage_link) {
     RI::destroyDevice(device);
 }
 
+namespace {
+
+// Pixels whose red channel is set.
+uint32 lit(const std::vector<float> &texels) {
+    uint32 count = 0;
+    for (size_t i = 0; i < texels.size(); i += 4) {
+        count += texels[i] > 0.5f ? 1u : 0u;
+    }
+    return count;
+}
+
+// The texel at (x, y) of a kSize x kSize readback, channel `channel`.
+float texel(const std::vector<float> &texels, uint32 x, uint32 y, uint32 channel) {
+    return texels[(y * kSize + x) * 4 + channel];
+}
+
+// Draws `count` vertices of `vs` with `desc`'s other state into a cleared
+// render target and reads it back.
+std::vector<float> drawAndRead(Fixture &f, RI::GraphicsPipelineDesc desc, uint32 count, float depth) {
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    desc.colorFormats = {RI::Format::eRGBA8Unorm};
+    RI::Pipeline pipeline = RI::createGraphicsPipeline(f.device, desc);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = depth});
+    RI::cmdDraw(f.cmd, count);
+    RI::cmdEndRendering(f.cmd);
+    std::vector<float> texels = f.readBack(target.view);
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, target);
+    return texels;
+}
+
+} // namespace
+
+// Line strips (P102): three points draw two segments where a line list of the
+// same points draws one.
+EQ_TEST(texture, line_strip) {
+    Fixture f;
+    std::vector<std::byte> vs = loadShader("lines_vs"), ps = loadShader("solid_ps");
+    const std::vector<float> list = drawAndRead(f, {.vertex = vs, .pixel = ps, .topology = RI::Topology::eLineList}, 2, 0.5f);
+    const std::vector<float> strip = drawAndRead(f, {.vertex = vs, .pixel = ps, .topology = RI::Topology::eLineStrip}, 3, 0.5f);
+    EQ_CHECK(lit(list) >= kSize / 2 && lit(list) <= kSize + 2);
+    EQ_CHECK(lit(strip) > lit(list) + kSize / 4);
+}
+
+// Wireframe (P102): the triangle's edges are drawn, its inside is not.
+EQ_TEST(texture, wireframe) {
+    Fixture f;
+    std::vector<std::byte> vs = loadShader("triangle_vs"), ps = loadShader("solid_ps");
+    const std::vector<float> solid = drawAndRead(f, {.vertex = vs, .pixel = ps}, 3, 0.5f);
+    const std::vector<float> wire = drawAndRead(f, {.vertex = vs, .pixel = ps, .fill = RI::FillMode::eWireframe}, 3, 0.5f);
+    EQ_CHECK(texel(solid, kSize / 2, kSize / 2, 0) > 0.5f);
+    EQ_CHECK(texel(wire, kSize / 2, kSize / 2, 0) < 0.5f);
+    EQ_CHECK(lit(wire) > kSize && lit(wire) < lit(solid));
+}
+
+// Depth bias (P102): a second draw at the same depth fails eLess, unless
+// biased towards the viewer.
+EQ_TEST(texture, depth_bias) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    RI::Texture depth = placeTexture(f.device, f.gpu,
+                                     {.width = kSize, .height = kSize, .format = RI::Format::eD32Float,
+                                      .usage = RI::TextureUsage::eDepthStencil});
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const auto pipelineWith = [&](RI::DepthState state, RI::DepthBias bias, RI::ColorMask mask) {
+        return RI::createGraphicsPipeline(f.device, {.vertex = vs,
+                                                     .pixel = ps,
+                                                     .colorFormats = {RI::Format::eRGBA8Unorm},
+                                                     .depthFormat = RI::Format::eD32Float,
+                                                     .depth = state,
+                                                     .depthBias = bias,
+                                                     .blend = {{.writeMask = mask}}});
+    };
+    RI::Pipeline base = pipelineWith({.test = true, .write = true, .compare = RI::CompareOp::eAlways}, {},
+                                     RI::ColorMask::eNone);
+    RI::Pipeline plain = pipelineWith({.test = true, .compare = RI::CompareOp::eLess}, {}, RI::ColorMask::eR);
+    RI::Pipeline biased =
+        pipelineWith({.test = true, .compare = RI::CompareOp::eLess}, {.constant = -100}, RI::ColorMask::eG);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}},
+                                  .depth = RI::DepthAttachment{.view = depth.view, .load = RI::LoadOp::eClear}});
+    for (RI::Pipeline *p : {&base, &plain, &biased}) {
+        RI::cmdSetPipeline(f.cmd, *p);
+        RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+        RI::cmdDraw(f.cmd, 3);
+    }
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.0f) && all(texels, 1, 1.0f));
+    for (RI::Pipeline *p : {&base, &plain, &biased}) {
+        RI::destroyPipeline(f.device, *p);
+    }
+    RI::destroyTexture(f.device, depth);
+    RI::destroyTexture(f.device, target);
+}
+
+// Depth clamp (P102): a triangle beyond the far plane is clipped, unless
+// depth is clamped.
+EQ_TEST(texture, depth_clamp) {
+    Fixture f;
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const std::vector<float> clipped = drawAndRead(f, {.vertex = vs, .pixel = ps}, 3, 1.5f);
+    const std::vector<float> clamped = drawAndRead(f, {.vertex = vs, .pixel = ps, .depthClamp = true}, 3, 1.5f);
+    EQ_CHECK(all(clipped, 0, 0.0f));
+    EQ_CHECK(all(clamped, 0, 1.0f));
+}
+
+// A geometry shader (P102) turns one point into the full-screen triangle; the
+// pixel shader reads the geometry shader's outputs (P101), and the statistics
+// count one geometry shader run.
+EQ_TEST(texture, geometry_shader) {
+    Fixture f;
+    if (!f.device.limits.geometryShaders) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs = loadShader("point_vs"), gs = loadShader("fullscreen_gs"), ps = loadShader("color_ps");
+    RI::Pipeline pipeline = RI::createGraphicsPipeline(f.device, {.vertex = vs,
+                                                                  .geometry = gs,
+                                                                  .pixel = ps,
+                                                                  .colorFormats = {RI::Format::eRGBA8Unorm},
+                                                                  .topology = RI::Topology::ePointList});
+    RI::QueryPool statistics = RI::createQueryPool(f.device, {.type = RI::QueryType::ePipelineStatistics, .count = 1});
+    const RI::PipelineStatisticsLayout stats = RI::pipelineStatisticsLayout(f.device);
+    EQ_CHECK(stats.geometryShaderInvocations != RI::kNoCounter && stats.geometryShaderPrimitives != RI::kNoCounter);
+    RI::Buffer results = placeBuffer(f.device, f.readback, {.size = stats.size, .usage = RI::BufferUsage::eCopyDst});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdBeginQuery(f.cmd, statistics, 0);
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 1);
+    RI::cmdEndQuery(f.cmd, statistics, 0);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdResolveQueries(f.cmd, statistics, 0, 1, results, 0);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.0f) && all(texels, 1, 1.0f));
+    const auto *base = static_cast<const uint8 *>(results.mapped);
+    const auto value = [&](uint32 offset) { return *reinterpret_cast<const uint64 *>(base + offset); };
+    EQ_CHECK(value(stats.geometryShaderInvocations) == 1);
+    EQ_CHECK(value(stats.geometryShaderPrimitives) == 1);
+    RI::destroyBuffer(f.device, results);
+    RI::destroyQueryPool(f.device, statistics);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, target);
+}
+
+// Tessellation (P102): one three-point patch with factors of 1 becomes the
+// full-screen triangle; the pixel shader reads the domain shader's outputs.
+EQ_TEST(texture, tessellation) {
+    Fixture f;
+    if (!f.device.limits.tessellation) {
+        return;
+    }
+    std::vector<std::byte> vs = loadShader("patch_vs"), hs = loadShader("patch_hs"), ds = loadShader("patch_ds"),
+                           ps = loadShader("color_ps");
+    const std::vector<float> texels = drawAndRead(f,
+                                                  {.vertex = vs,
+                                                   .hull = hs,
+                                                   .domain = ds,
+                                                   .pixel = ps,
+                                                   .topology = RI::Topology::ePatchList,
+                                                   .patchControlPoints = 3},
+                                                  3, 0.5f);
+    EQ_CHECK(all(texels, 0, 1.0f) && all(texels, 3, 1.0f));
+}
+
 #if EQUINE_VALIDATION
 // A pixel shader that leaves out values before the one it reads (P101): RI
 // reports it on both backends, where Vulkan alone would read the wrong value.
