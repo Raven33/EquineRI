@@ -1,0 +1,53 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 78
+    Start  78: vk.window.swapchain
+
+78: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "window.swapchain"
+78: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+78: Environment variables: 
+78:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+78: Test timeout computed to be: 120
+78: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+78: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+78: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+78: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+78: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+78: 
+78: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+78: 
+78: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+78: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+78: 
+78: [EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+78: 	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+78: 
+78: [PASS] window.swapchain
+1/2 Test  #78: vk.window.swapchain ..............   Passed    0.42 sec
+test 133
+    Start 133: d3d12.window.swapchain
+
+133: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "window.swapchain"
+133: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+133: Environment variables: 
+133:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+133: Test timeout computed to be: 120
+133: [PASS] window.swapchain
+2/2 Test #133: d3d12.window.swapchain ...........   Passed    0.72 sec
+
+The following tests passed:
+	vk.window.swapchain
+	d3d12.window.swapchain
+
+100% tests passed, 0 tests failed out of 2
+
+Label Time Summary:
+gpu    =   1.14 sec*proc (2 tests)
+
+Total Test time (real) =   1.15 sec
