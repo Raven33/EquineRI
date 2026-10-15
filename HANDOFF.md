@@ -13,11 +13,9 @@ Open, in order:
 2. **P95 and P98**, never reviewed by the user. The user found the `CONTEXT.md` entries
    unreadable; `docs/reviews/Decisions-P95-P98-plain.md` says them in plain words, with
    "Your call" on the points to review. Ask them one at a time.
-3. **P94's measurement** (descriptor sets against `VK_EXT_descriptor_heap`):
-   `tools/descriptor_bench`, results in `docs/measurements/descriptor_heap/`. RADV done;
-   RTX 3080 requested from Windows. Blocked for adoption anyway: the AMD Windows driver lacks
-   the extension, and DXC 1.9.2609 (and its main branch) cannot compile heap access to
-   buffers or anything writable.
+3. **P94's measurement is done** (`docs/measurements/descriptor_heap/README.md`): descriptor
+   sets stay; `VK_EXT_descriptor_heap` is slower on NVIDIA, no faster on RADV, missing on AMD
+   Windows, and DXC cannot compile for it yet.
 4. Accepted limits, unchanged on purpose (user, 2026-10-15): ray tracing off on AMD Windows
    Vulkan; DGC off on NVIDIA under GPU-AV.
 5. X1 (error policy) stays open by design.
