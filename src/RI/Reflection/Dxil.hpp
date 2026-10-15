@@ -3,7 +3,8 @@
 // RI's own small DXIL reader (P67). It reads what the D3D12 backend needs to
 // build a root signature from compiled bytecode, without dxcompiler or LLVM:
 //
-//   - SFI0 part: whether the shader indexes the resource or sampler heap (P30);
+//   - SFI0 part: whether the shader indexes the resource or sampler heap (P30),
+//     and uses 64-bit atomics on heap resources or groupshared memory (P105);
 //   - PSV0 part: the declared resource ranges and the compute thread-group size;
 //   - DXIL part: the size of the root data constant buffer (P45), read from the
 //     module's `!dx.resources` metadata in the LLVM 3.7 bitcode. That metadata
@@ -54,6 +55,8 @@ inline constexpr uint32 kDxilSystemValuePosition = 1;
 struct DxilInfo {
     bool resourceHeapIndexing = false;     // SFI0: shader uses ResourceDescriptorHeap[]
     bool samplerHeapIndexing = false;      // SFI0: shader uses SamplerDescriptorHeap[]
+    bool int64HeapAtomics = false;         // SFI0: 64-bit atomics on heap-indexed resources (P105)
+    bool int64SharedAtomics = false;       // SFI0: 64-bit atomics on groupshared memory (P105)
     bool hasRootData = false;              // a CBV at register(b0, space999) (EQ_ROOT_DATA, P45)
     uint32 rootDataSize = 0;               // its size in bytes, from the DXIL part's dx.resources metadata
     std::vector<DxilBinding> bindings;     // every other declared resource (from PSV0), in PSV0 order
@@ -71,6 +74,8 @@ struct DxilReadResult {
 // SFI0 feature bits (D3D_SHADER_FEATURE_*), verified with DXC 1.9.2609.
 inline constexpr uint64 kDxilFeatureResourceDescriptorHeapIndexing = 0x2000000;
 inline constexpr uint64 kDxilFeatureSamplerDescriptorHeapIndexing = 0x4000000;
+inline constexpr uint64 kDxilFeatureAtomicInt64OnGroupShared = 0x800000;
+inline constexpr uint64 kDxilFeatureAtomicInt64OnDescriptorHeapResource = 0x10000000;
 
 // The register space reserved for EQ_ROOT_DATA (P45).
 inline constexpr uint32 kRootDataSpace = 999;

@@ -187,6 +187,21 @@ CheckResult checkRenderingSize(const RenderingSize &size) {
     return {};
 }
 
+CheckResult checkInt64Atomics(bool usesHeapAtomics, bool usesSharedAtomics, bool hasBufferAtomics,
+                              bool hasSharedAtomics, std::string_view call, std::string_view stage) {
+    if (usesHeapAtomics && !hasBufferAtomics) {
+        return std::format("{}: the {} shader uses 64-bit atomics on heap resources, which this GPU lacks "
+                           "(DeviceLimits::int64BufferAtomics)",
+                           call, stage);
+    }
+    if (usesSharedAtomics && !hasSharedAtomics) {
+        return std::format("{}: the {} shader uses 64-bit atomics on groupshared memory, which this GPU lacks "
+                           "(DeviceLimits::int64SharedAtomics)",
+                           call, stage);
+    }
+    return {};
+}
+
 CheckResult checkQueryNesting(QueryType beginning, uint32 openStatistics) {
     if (beginning == QueryType::eMeshPrimitives && openStatistics > 0) {
         return std::string("cmdBeginQuery: a mesh-primitives query begun inside an open statistics query counts "

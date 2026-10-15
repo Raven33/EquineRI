@@ -30,6 +30,11 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `workGraphs` | [work graphs](workgraphs.md) | never (D3D12 only) | `D3D12_OPTIONS21::WorkGraphsTier` at least 1.0 |
 | `depthResolveModes`, `stencilResolveModes` | the depth and stencil [resolve](resolve.md) modes, `resolveModeBit(mode)` each | `VkPhysicalDeviceDepthStencilResolveProperties` | programmable sample positions tier 2: depth average/min/max, stencil min/max |
 
+A shader that uses 64-bit atomics where `int64BufferAtomics` or `int64SharedAtomics` is false
+is a **programmer error** at pipeline creation in validation builds: RI reads it from the DXIL
+on D3D12 and names the stage, and the Vulkan validation layer reports it
+([P105](../design-notes/decisions.md#p105)).
+
 ## Signature
 
 --8<-- "generated/signatures/RI.DeviceLimits.md"

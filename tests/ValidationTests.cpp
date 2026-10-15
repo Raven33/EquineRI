@@ -168,6 +168,19 @@ EQ_TEST(validation, viewport_and_scissor) {
     EQ_CHECK(negative && negative->find("must be 0 or more") != std::string::npos);
 }
 
+// A shader's 64-bit atomics against the device's limits (P105).
+EQ_TEST(validation, int64_atomics) {
+    using namespace RI::Validation;
+    EQ_CHECK(!checkInt64Atomics(true, true, true, true, "createComputePipeline", "compute"));
+    EQ_CHECK(!checkInt64Atomics(false, false, false, false, "createComputePipeline", "compute"));
+    const CheckResult heap = checkInt64Atomics(true, false, false, true, "createComputePipeline", "compute");
+    EQ_CHECK(heap && heap->find("compute shader") != std::string::npos &&
+             heap->find("int64BufferAtomics") != std::string::npos);
+    const CheckResult shared = checkInt64Atomics(false, true, true, false, "createGraphicsPipeline", "mesh");
+    EQ_CHECK(shared && shared->find("mesh shader") != std::string::npos &&
+             shared->find("int64SharedAtomics") != std::string::npos);
+}
+
 // A mesh-primitives query is not begun inside an open statistics query (P105).
 EQ_TEST(validation, query_nesting) {
     using namespace RI::Validation;

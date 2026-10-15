@@ -182,6 +182,12 @@ CheckResult checkRenderingAttachments(size_t colorCount, bool hasDepth);
 // D3D12's render-target limit, within Vulkan's framebuffer limits on the floor).
 CheckResult checkRenderingSize(const RenderingSize &size);
 
+// A shader's 64-bit atomics are ones the device has (P105, DeviceLimits::
+// int64BufferAtomics and int64SharedAtomics). D3D12 only: Vulkan's validation
+// layer already reports them.
+CheckResult checkInt64Atomics(bool usesHeapAtomics, bool usesSharedAtomics, bool hasBufferAtomics,
+                              bool hasSharedAtomics, std::string_view call, std::string_view stage);
+
 // A mesh-primitives query is not begun inside an open statistics query (P105):
 // NVIDIA's D3D12 driver then counts no primitives, silently. Begun first, or
 // alone, it counts on both backends.

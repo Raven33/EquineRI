@@ -16,8 +16,8 @@ Open, in order:
    costs ~100 ms per frame on NVIDIA Vulkan). Part 2 also has a nesting rule (a
    mesh-primitives query is never begun inside an open statistics query: NVIDIA D3D12 counts
    nothing then, silently). All verified: Linux RADV 122/122, Windows 197/197 on NVIDIA and AMD
-   (`docs/measurements/windows/verify/20944e2/`). Not merged to master. Open: the D3D12 shader check for 64-bit atomics
-   (user to decide); no blit, a downsampler helper later; the review's helpers wait for the user.
+   (`docs/measurements/windows/verify/20944e2/`). Not merged to master. The D3D12 shader check for 64-bit atomics is added
+   (branch `p105-int64-check`); no blit, a downsampler helper later; the review's helpers wait for the user.
 0b. **Both sandboxes' review** (`docs/reviews/Sandboxes-2026-10-15.md`, P106), API in
    `docs/FeatureProposal-Sandboxes-2026-10-15.md`. **Implemented, verified on Linux only** (Vulkan
    debug and release, the thread tests also under ThreadSanitizer); the D3D12 code is not compiled
