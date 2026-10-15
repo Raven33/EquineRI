@@ -15,6 +15,13 @@ Open, in order:
    (`tools/statistics_bench`, `docs/measurements/statistics/`: RADV done, Windows not run) ; the
    shape is decided (two fixed counter sets, classic and mesh: Vulkan forbids RI's statistics
    queries around mesh draws), the primitive count's place waits for Windows. The helpers in the review wait for the user.
+0b. **Both sandboxes' review** (`docs/reviews/Sandboxes-2026-10-15.md`, P106), approved and
+   not implemented, API in `docs/FeatureProposal-Sandboxes-2026-10-15.md`:
+   - the any-thread list, with the device-thread check in validation builds;
+   - names in the descs;
+   - the buffer-view and group-count portable rules, with `maxConstantViewSize`.
+
+   Work-graph input limits wait for a retail Agility SDK. Mesh nodes: not now.
 1. **The missing graphics features are in** (P102: cube and 3D textures, depth bias and clamp,
    line strips and wireframe, geometry and tessellation shaders), verified on Linux (102/102)
    and Windows (165/165 on NVIDIA and AMD, `docs/measurements/windows/verify/5505e42/`).
