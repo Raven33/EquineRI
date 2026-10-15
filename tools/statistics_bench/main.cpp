@@ -5,7 +5,7 @@
 //
 // A frame is `passes` mesh-shader passes (1920x1080 color and depth) and one
 // compute pass, recorded last, with one query around each pass. The variants
-// (Queries.hpp) run interleaved frame by frame (frame f runs variant f % n), so
+// (Queries.hpp, A to H) run interleaved frame by frame (frame f runs variant f % n), so
 // they see the same clock and power states (P96). The frame's GPU time comes
 // from two timestamps. Prints per variant the median, p10 and p90 in ms, and
 // the comparisons that decide the shape of the statistics counters, with P79's
@@ -41,6 +41,9 @@ const char *variantName(Variant variant) {
     case Variant::eStatsMesh: return "C_stats_mesh";
     case Variant::eStatsMeshPrimitives: return "D_stats_mesh_primitives";
     case Variant::eComputeOnly: return "E_compute_only";
+    case Variant::eStatsPrimitives: return "F_stats_primitives";
+    case Variant::eStatsTask: return "G_stats_task";
+    case Variant::eStatsMeshInvocations: return "H_stats_mesh_invocations";
     }
     return "?";
 }
@@ -227,7 +230,8 @@ int main(int argc, char **argv) {
     // The variants this device can run, in order A..E.
     std::vector<Run> runs;
     for (Variant v : {Variant::eNone, Variant::eStats, Variant::eStatsMesh, Variant::eStatsMeshPrimitives,
-                      Variant::eComputeOnly}) {
+                      Variant::eComputeOnly, Variant::eStatsPrimitives, Variant::eStatsTask,
+                      Variant::eStatsMeshInvocations}) {
         Run run{.variant = v};
         if (v != Variant::eNone) {
             run.native = statbench::createNativeQueries(device, v, queryCount);
@@ -302,7 +306,7 @@ int main(int argc, char **argv) {
     std::printf("# %s (%s): %u mesh passes x %u task groups, %u frames per variant, interleaved\n", gpuName.c_str(),
                 backend, o.passes, o.tasks, o.frames);
     std::printf("%-26s %10s %10s %10s %12s\n", "variant", "median ms", "p10", "p90", "vs A");
-    double medians[5] = {-1, -1, -1, -1, -1};
+    double medians[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
     for (const Run &run : runs) {
         const Stats s = stats(run.times);
         medians[static_cast<int>(run.variant)] = s.median;
@@ -321,6 +325,9 @@ int main(int argc, char **argv) {
     compare(Variant::eStatsMesh, Variant::eStats, "the cost of adding task and mesh counters");
     compare(Variant::eStatsMeshPrimitives, Variant::eStatsMesh, "clearly more: the primitive count becomes its own query");
     compare(Variant::eStats, Variant::eComputeOnly, "clearly more: a pool should choose its counters");
+    compare(Variant::eStatsPrimitives, Variant::eStats, "the cost of the primitive count without task and mesh counters");
+    compare(Variant::eStatsTask, Variant::eStats, "the cost of the task counter alone");
+    compare(Variant::eStatsMeshInvocations, Variant::eStats, "the cost of the mesh counter alone");
 
     RI::destroyCommandList(device, cmd);
     for (Run &run : runs) {
