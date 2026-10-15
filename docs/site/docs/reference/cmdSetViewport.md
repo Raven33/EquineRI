@@ -1,8 +1,8 @@
 ---
-symbols: [RI::cmdSetViewport, RI::cmdSetScissor, RI::Viewport, RI::Rect]
+symbols: [RI::cmdSetViewport, RI::cmdSetScissor, RI::cmdSetStencilReference, RI::Viewport, RI::Rect]
 ---
 
-# RI::cmdSetViewport, RI::cmdSetScissor
+# RI::cmdSetViewport, RI::cmdSetScissor, RI::cmdSetStencilReference
 
 ## What it does
 
@@ -15,8 +15,13 @@ Inside a [rendering section](../concepts/rendering.md), these change where draws
   full-screen triangle drawn with a viewport over the left half fills the left half.
 - `RI::cmdSetScissor(cmd, rect)` sets the **scissor**: pixels outside this rectangle are not
   written. It cuts; it does not stretch.
+- `RI::cmdSetStencilReference(cmd, value)` sets the **stencil reference**, the value the
+  stencil test compares with and `StencilOp::eReplace` writes
+  ([P104](../design-notes/decisions.md#p104)). Each graphics pipeline brings its own
+  (`stencil.reference`); once you call this, your value holds across pipeline switches until
+  the section ends. Use it to tag objects (a material ID, an outline) with one pipeline.
 
-Both stay until the next call or the end of the section. Every
+Each stays until the next call or the end of the section. Every
 [`cmdBeginRendering`](cmdBeginRendering.md) sets them back to cover the attachments, so code
 that never calls them draws to the whole target. Uses: split-screen, the tiles of a shadow
 atlas, UI panels clipped to their rectangle.
@@ -30,6 +35,8 @@ target, while clip space keeps y pointing up
 --8<-- "generated/signatures/RI.cmdSetViewport.md"
 
 --8<-- "generated/signatures/RI.cmdSetScissor.md"
+
+--8<-- "generated/signatures/RI.cmdSetStencilReference.md"
 
 --8<-- "generated/signatures/RI.Viewport.md"
 
@@ -58,9 +65,11 @@ target, while clip space keeps y pointing up
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     const VkRect2D scissor{.offset = {0, 0}, .extent = {128, 128}};
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    vkCmdSetStencilReference(commandBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, 3);
     ```
 
-    What to watch for: viewport and scissor are dynamic state of the pipelines RI creates;
+    What to watch for: viewport, scissor and stencil reference are dynamic state of the
+    pipelines RI creates (RI sets the pipeline's reference when you set the pipeline);
     a negative height starts the viewport at its bottom edge.
 
 === "D3D12"
@@ -70,6 +79,7 @@ target, while clip space keeps y pointing up
     list->RSSetViewports(1, &viewport);
     const D3D12_RECT scissor{0, 0, 128, 128}; // left, top, right, bottom
     list->RSSetScissorRects(1, &scissor);
+    list->OMSetStencilRef(3);
     ```
 
     What to watch for: the scissor is given by its edges, not its size, and D3D12 always
@@ -87,4 +97,5 @@ target, while clip space keeps y pointing up
 
 - [P103](../design-notes/decisions.md#p103): viewport and scissor commands, with the
   attachments as the default.
+- [P104](../design-notes/decisions.md#p104): the stencil reference command.
 - [P38](../design-notes/decisions.md#p38): the rest of the state is fixed in the pipeline.

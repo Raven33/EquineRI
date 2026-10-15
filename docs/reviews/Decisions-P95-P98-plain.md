@@ -188,8 +188,8 @@ promoted to RI later, after the user's review.
 - **The stencil reference value is part of the pipeline.** A different reference value
   means a different pipeline. This follows P38: no state you can change while recording.
 
-*Your call:* the stencil reference. Engines often change it per object (for example to tag
-pixels with a material ID). Keeping it in the pipeline means one pipeline per value.
+**Decided (2026-10-15, P104):** `cmdSetStencilReference` overrides the pipeline's value for
+the rest of a section.
 
 ### 5. Indirect drawing where the GPU also writes root data ("level 2")
 

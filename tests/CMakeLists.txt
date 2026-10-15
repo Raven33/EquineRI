@@ -99,6 +99,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.occlusion_and_statistics
     texture.indexed_draw_with_blending
     texture.stencil_test
+    texture.stencil_reference_command
     texture.mesh_shaders
     texture.resolve_color
     texture.resolve_depth
