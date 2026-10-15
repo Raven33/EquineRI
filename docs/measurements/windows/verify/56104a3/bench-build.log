@@ -1,0 +1,78 @@
+[0/2] Re-checking globbed directories...
+[1/45] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Textures.cpp.obj
+[2/45] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Error.cpp.obj
+[3/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\WorkGraph.cpp.obj
+[4/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Indirect.cpp.obj
+[5/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\VkCheck.cpp.obj
+[6/45] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Validation\ObjectTracker.cpp.obj
+[7/45] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Validation\Placement.cpp.obj
+[8/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\RayTracing.cpp.obj
+[9/45] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Validation\Checks.cpp.obj
+[10/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Debug.cpp.obj
+[11/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Pipeline.cpp.obj
+[12/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Textures.cpp.obj
+[13/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Instance.cpp.obj
+[14/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Swapchain.cpp.obj
+[15/45] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Reflection\Dxil.cpp.obj
+[16/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Device.cpp.obj
+[17/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Resources.cpp.obj
+[18/45] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Commands.cpp.obj
+[19/45] Linking CXX static library EquineRI.lib
+[20/45] Linking CXX static library backends\vulkan\EquineVulkanBackend.lib
+[21/45] Compiling stat_as (as_6_6) to SPIR-V and DXIL
+[22/45] Compiling stat_ms (ms_6_6) to SPIR-V and DXIL
+[23/45] Compiling stat_ps (ps_6_6) to SPIR-V and DXIL
+[24/45] Compiling stat_cs (cs_6_6) to SPIR-V and DXIL
+[25/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Formats.cpp.obj
+[26/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\D3D12Check.cpp.obj
+[27/45] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_Vulkan.dir\QueriesVulkan.cpp.obj
+[28/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Indirect.cpp.obj
+[29/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Device.cpp.obj
+[30/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Commands.cpp.obj
+[31/45] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_Vulkan.dir\main.cpp.obj
+C:\Users\Arthu\Documents\GitHub\EquineNext\tools\statistics_bench\main.cpp(290,53): warning: 'fopen' is deprecated: This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details. [-Wdeprecated-declarations]
+  290 |     std::FILE *csv = o.out.empty() ? nullptr : std::fopen(o.out.c_str(), "w");
+      |                                                     ^
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\stdio.h(212,20): note: 'fopen' has been explicitly marked deprecated here
+  212 |     _Check_return_ _CRT_INSECURE_DEPRECATE(fopen_s)
+      |                    ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(368,55): note: expanded from macro '_CRT_INSECURE_DEPRECATE'
+  368 |         #define _CRT_INSECURE_DEPRECATE(_Replacement) _CRT_DEPRECATE_TEXT(    \
+      |                                                       ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(358,47): note: expanded from macro '_CRT_DEPRECATE_TEXT'
+  358 | #define _CRT_DEPRECATE_TEXT(_Text) __declspec(deprecated(_Text))
+      |                                               ^
+1 warning generated.
+[32/45] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_D3D12.dir\QueriesD3D12.cpp.obj
+[33/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Adapter.cpp.obj
+[34/45] Linking CXX executable tools\statistics_bench\statistics_bench_Vulkan.exe
+[35/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Debug.cpp.obj
+[36/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\RayTracing.cpp.obj
+[37/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Swapchain.cpp.obj
+[38/45] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_D3D12.dir\main.cpp.obj
+C:\Users\Arthu\Documents\GitHub\EquineNext\tools\statistics_bench\main.cpp(290,53): warning: 'fopen' is deprecated: This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details. [-Wdeprecated-declarations]
+  290 |     std::FILE *csv = o.out.empty() ? nullptr : std::fopen(o.out.c_str(), "w");
+      |                                                     ^
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\stdio.h(212,20): note: 'fopen' has been explicitly marked deprecated here
+  212 |     _Check_return_ _CRT_INSECURE_DEPRECATE(fopen_s)
+      |                    ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(368,55): note: expanded from macro '_CRT_INSECURE_DEPRECATE'
+  368 |         #define _CRT_INSECURE_DEPRECATE(_Replacement) _CRT_DEPRECATE_TEXT(    \
+      |                                                       ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(358,47): note: expanded from macro '_CRT_DEPRECATE_TEXT'
+  358 | #define _CRT_DEPRECATE_TEXT(_Text) __declspec(deprecated(_Text))
+      |                                               ^
+1 warning generated.
+[39/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Pipeline.cpp.obj
+C:\Users\Arthu\Documents\GitHub\EquineNext\backends\d3d12\Pipeline.cpp(323,20): warning: unused variable 'hasGeometry' [-Wunused-variable]
+  323 |         const bool hasGeometry = !desc.geometry.empty();
+      |                    ^~~~~~~~~~~
+C:\Users\Arthu\Documents\GitHub\EquineNext\backends\d3d12\Pipeline.cpp(324,20): warning: unused variable 'hasDomain' [-Wunused-variable]
+  324 |         const bool hasDomain = !desc.domain.empty();
+      |                    ^~~~~~~~~
+2 warnings generated.
+[40/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Resources.cpp.obj
+[41/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Textures.cpp.obj
+[42/45] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Rendering.cpp.obj
+[43/45] Linking CXX static library backends\d3d12\EquineD3D12Backend.lib
+[44/45] Linking CXX executable tools\statistics_bench\statistics_bench_D3D12.exe; Copying the D3D12 Agility SDK runtime to statistics_bench_D3D12's output directory

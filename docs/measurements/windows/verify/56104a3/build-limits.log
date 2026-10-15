@@ -1,0 +1,5 @@
+[0/2] Re-checking globbed directories...
+[1/5] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\ComputeTests.cpp.obj
+[2/5] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\ComputeTests.cpp.obj
+[3/5] Linking CXX executable tests\EquineRIVulkanTests.exe; Copying clang AddressSanitizer DLL to EquineRIVulkanTests output directory
+[4/5] Linking CXX executable tests\EquineRID3D12Tests.exe; Copying clang AddressSanitizer DLL to EquineRID3D12Tests output directory; Copying the D3D12 Agility SDK runtime to EquineRID3D12Tests's output directory
