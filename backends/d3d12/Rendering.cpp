@@ -569,13 +569,20 @@ namespace {
 D3D12_QUERY_TYPE queryTypeOf(QueryType type) {
     switch (type) {
     case QueryType::eOcclusion: return D3D12_QUERY_TYPE_OCCLUSION;
-    case QueryType::ePipelineStatistics: return D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
+    case QueryType::ePipelineStatistics:
+    case QueryType::eMeshPipelineStatistics: return D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
+    case QueryType::eMeshPrimitives: return D3D12_QUERY_TYPE_PIPELINE_STATISTICS1; // P105
     default: return D3D12_QUERY_TYPE_TIMESTAMP;
     }
 }
 
 [[maybe_unused]] uint64 resultSizeOf(QueryType type) {
-    return type == QueryType::ePipelineStatistics ? sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS) : 8;
+    switch (type) {
+    case QueryType::ePipelineStatistics:
+    case QueryType::eMeshPipelineStatistics: return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
+    case QueryType::eMeshPrimitives: return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS1);
+    default: return 8;
+    }
 }
 
 ID3D12QueryHeap *heapOf(const QueryPool &pool) { return static_cast<ID3D12QueryHeap *>(pool.internal.heap); }

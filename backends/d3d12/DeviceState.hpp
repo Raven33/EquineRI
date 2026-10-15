@@ -46,6 +46,7 @@ struct DeviceState {
     bool gpuUploadHeap = false;
     bool rayTracing = false; // inline ray tracing, RaytracingTier 1.1 (P49)
     bool samplerMinMax = false; // min/max filtering (TiledResourcesTier 2)
+    bool meshPrimitivesQuery = false; // MeshShaderPipelineStatsSupported: QueryType::eMeshPrimitives (P105)
     // Indirect execution (P48): RI's command signatures, per root signature
     // (null for Level 1), kind and root data size.
     struct SignatureKey {

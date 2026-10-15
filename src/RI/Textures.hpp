@@ -330,13 +330,19 @@ enum class IndexFormat : uint8 { eUint16, eUint32 };
 enum class QueryType : uint8 {
     eTimestamp,          // one 64-bit tick count per query; ticks per second in DeviceLimits
     eOcclusion,          // one 64-bit count of samples that passed the depth and stencil tests
-    ePipelineStatistics, // counters per query, laid out as pipelineStatisticsLayout says (P71 (2))
+    ePipelineStatistics, // the classic counters, laid out as pipelineStatisticsLayout says (P71 (2))
+    // P105: Vulkan forbids the classic counters during mesh draws. These two
+    // are the counters that cost nothing measurable there; task and mesh
+    // invocations stay native (they cost up to 65x on Vulkan).
+    eMeshPipelineStatistics, // pixel and compute invocations, allowed around mesh draws
+    eMeshPrimitives,         // primitives output by mesh shaders; D3D12 also counts task and mesh
+                             // invocations with it (+130% measured). Unsupported where the GPU lacks it.
 };
 
-// Where each counter of a pipeline-statistics result is (P71 (2)): byte
+// Where each counter of a counter query's result is (P71 (2), P105): byte
 // offsets of 64-bit values inside one query's result of `size` bytes. The
 // layouts differ per backend; RI reports them instead of converting. A
-// counter of a stage the GPU lacks (DeviceLimits) is kNoCounter.
+// counter the query type does not hold, or the GPU lacks, is kNoCounter.
 inline constexpr uint32 kNoCounter = ~0u;
 struct PipelineStatisticsLayout {
     uint32 size = 0;                     // bytes per query result
@@ -351,6 +357,7 @@ struct PipelineStatisticsLayout {
     uint32 geometryShaderPrimitives = 0;
     uint32 hullShaderInvocations = 0;   // Vulkan: tessellation control patches
     uint32 domainShaderInvocations = 0; // Vulkan: tessellation evaluation invocations
+    uint32 meshPrimitives = kNoCounter;  // QueryType::eMeshPrimitives (P105)
 };
 
 // The staging layout of a texture view's texels in a buffer (P47), for

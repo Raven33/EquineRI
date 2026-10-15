@@ -79,7 +79,8 @@ struct DeviceState {
     bool samplerMinMax = false;  // samplerFilterMinmax
     // The statistics counters RI asks for (P71): geometry and tessellation
     // ones only where the GPU has those stages.
-    VkQueryPipelineStatisticFlags pipelineStatistics = 0;
+    VkQueryPipelineStatisticFlags pipelineStatistics = 0; // the classic counters (QueryType::ePipelineStatistics)
+    bool meshPrimitivesQuery = false;                     // meshShaderQueries: QueryType::eMeshPrimitives (P105)
     VkDeviceSize storageOffsetAlignment = 0;
     VkDeviceSize bufferImageGranularity = 1;
     VkDeviceSize uniformOffsetAlignment = 0;
@@ -119,12 +120,21 @@ inline MemoryRequirements withGranularity(const DeviceState &state, MemoryRequir
 // Every memory kind whose native type is in `typeBits`, as MemoryRequirements::kinds.
 uint32 kindsOf(const DeviceState &state, uint32 typeBits);
 
+// The counters of a statistics pool (P71, P105): the classic set, or the mesh
+// set, which Vulkan allows during mesh draws (pixel and compute only).
+inline constexpr VkQueryPipelineStatisticFlags kMeshPipelineStatistics =
+    VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+inline VkQueryPipelineStatisticFlags statisticsOf(const DeviceState &state, QueryType type) {
+    return type == QueryType::ePipelineStatistics       ? state.pipelineStatistics
+           : type == QueryType::eMeshPipelineStatistics ? kMeshPipelineStatistics
+                                                        : 0;
+}
+
 // Queries (Resources.cpp, P71): the bytes of one query's result. Vulkan
-// writes one 64-bit value per counter in DeviceState::pipelineStatistics.
+// writes one 64-bit value per counter of the pool, and one for every other type.
 inline uint64 queryResultSize(const DeviceState &state, QueryType type) {
-    return type == QueryType::ePipelineStatistics
-               ? 8ull * static_cast<uint64>(std::popcount(state.pipelineStatistics))
-               : 8;
+    const VkQueryPipelineStatisticFlags counters = statisticsOf(state, type);
+    return counters != 0 ? 8ull * static_cast<uint64>(std::popcount(counters)) : 8;
 }
 
 void destroyIndirectLayouts(DeviceState &state);

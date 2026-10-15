@@ -371,8 +371,14 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     D3D12_QUERY_HEAP_TYPE type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
     if (desc.type == QueryType::eOcclusion) {
         type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
-    } else if (desc.type == QueryType::ePipelineStatistics) {
+    } else if (desc.type == QueryType::ePipelineStatistics || desc.type == QueryType::eMeshPipelineStatistics) {
         type = D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS;
+    } else if (desc.type == QueryType::eMeshPrimitives) {
+        if (!state.meshPrimitivesQuery) {
+            reportError(ErrorCategory::eUnsupported,
+                        "createQueryPool: this GPU cannot count mesh primitives (MeshShaderPipelineStatsSupported)");
+        }
+        type = D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS1;
     }
     const D3D12_QUERY_HEAP_DESC heapDesc{.Type = type, .Count = std::max(desc.count, 1u)};
     ID3D12QueryHeap *heap = nullptr;
@@ -404,8 +410,41 @@ void resetQueries([[maybe_unused]] Device &device, QueryPool &, uint32, uint32) 
     EQ_DX_CHECK_THREAD(device.internal.state);
 }
 
-// D3D12_QUERY_DATA_PIPELINE_STATISTICS, as D3D12 writes it (P71 (2)).
-PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
+// D3D12_QUERY_DATA_PIPELINE_STATISTICS(1), as D3D12 writes it (P71 (2)). The
+// mesh set is the same native query with only its pixel and compute counters
+// named; the primitive count is PIPELINE_STATISTICS1's MSPrimitives (P105).
+PipelineStatisticsLayout pipelineStatisticsLayout(Device &device, QueryType type) {
+    constexpr PipelineStatisticsLayout none{.inputVertices = kNoCounter,
+                                            .inputPrimitives = kNoCounter,
+                                            .vertexShaderInvocations = kNoCounter,
+                                            .clippingInvocations = kNoCounter,
+                                            .clippingPrimitives = kNoCounter,
+                                            .pixelShaderInvocations = kNoCounter,
+                                            .computeShaderInvocations = kNoCounter,
+                                            .geometryShaderInvocations = kNoCounter,
+                                            .geometryShaderPrimitives = kNoCounter,
+                                            .hullShaderInvocations = kNoCounter,
+                                            .domainShaderInvocations = kNoCounter};
+    if (type == QueryType::eMeshPipelineStatistics) {
+        PipelineStatisticsLayout layout = none;
+        layout.size = sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
+        layout.pixelShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, PSInvocations);
+        layout.computeShaderInvocations = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, CSInvocations);
+        return layout;
+    }
+    if (type == QueryType::eMeshPrimitives) {
+        PipelineStatisticsLayout layout = none;
+        layout.size = sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS1);
+        layout.meshPrimitives = device.internal.state->meshPrimitivesQuery
+                                    ? static_cast<uint32>(offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS1, MSPrimitives))
+                                    : kNoCounter;
+        return layout;
+    }
+    if (type != QueryType::ePipelineStatistics) {
+        PipelineStatisticsLayout layout = none;
+        layout.size = 8;
+        return layout;
+    }
     return {.size = sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS),
             .inputVertices = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, IAVertices),
             .inputPrimitives = offsetof(D3D12_QUERY_DATA_PIPELINE_STATISTICS, IAPrimitives),

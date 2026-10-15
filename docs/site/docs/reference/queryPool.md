@@ -12,9 +12,12 @@ A **query pool** holds `count` queries of one type that command lists write into
 - `QueryType::eTimestamp`: one 64-bit GPU tick count per query (see
   [Timestamps](../concepts/timestamps.md));
 - `QueryType::eOcclusion`: one 64-bit count of samples that passed the depth and stencil
-  tests, and `QueryType::ePipelineStatistics`: counters laid out as
-  [`pipelineStatisticsLayout`](queries.md) says. Both are measured with
-  [`cmdBeginQuery` / `cmdEndQuery`](queries.md).
+  tests, and the counter types `ePipelineStatistics` (classic draws and dispatches),
+  `eMeshPipelineStatistics` (mesh draws) and `eMeshPrimitives`
+  ([P105](../design-notes/decisions.md#p105)), whose results are laid out as
+  [`pipelineStatisticsLayout(device, type)`](queries.md) says. All are measured with
+  [`cmdBeginQuery` / `cmdEndQuery`](queries.md). `eMeshPrimitives` is reported unsupported
+  on a GPU that cannot count it.
 
 - `RI::createQueryPool(device, desc)` creates a pool, already **reset**: every query can be
   written;

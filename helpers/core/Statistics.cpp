@@ -1,4 +1,4 @@
-// Pipeline-statistics helper (P41, P71): reads each counter at the offset the
+// Pipeline-statistics helper (P41, P71, P105): reads each counter at the offset the
 // backend reports.
 
 #include <RI/Helpers/Statistics.hpp>
@@ -27,7 +27,8 @@ PipelineStatistics readPipelineStatistics(const PipelineStatisticsLayout &layout
             .geometryShaderInvocations = read(layout.geometryShaderInvocations),
             .geometryShaderPrimitives = read(layout.geometryShaderPrimitives),
             .hullShaderInvocations = read(layout.hullShaderInvocations),
-            .domainShaderInvocations = read(layout.domainShaderInvocations)};
+            .domainShaderInvocations = read(layout.domainShaderInvocations),
+            .meshPrimitives = read(layout.meshPrimitives)};
 }
 
 } // namespace RI::Helpers

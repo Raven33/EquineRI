@@ -256,8 +256,9 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc);
 void destroyQueryPool(Device &device, QueryPool &pool);
 // Resets queries on the CPU, after their results were read (P71 (1)). No GPU cost.
 void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count);
-// Where each counter is in a pipeline-statistics result (P71 (2)).
-PipelineStatisticsLayout pipelineStatisticsLayout(Device &device);
+// Where each counter is in a result of the counter query `type` (P71 (2),
+// P105); every counter is kNoCounter for timestamp and occlusion queries.
+PipelineStatisticsLayout pipelineStatisticsLayout(Device &device, QueryType type = QueryType::ePipelineStatistics);
 
 // ── Rendering (P40, P52, P75) ────────────────────────────────────────────────
 
@@ -462,8 +463,8 @@ void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint
 void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index);
 void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index);
 // Copies `count` results to `buffer` at `offset` (a multiple of 8): one
-// 64-bit value per timestamp or occlusion query, pipelineStatisticsLayout().size
-// bytes per statistics query.
+// 64-bit value per timestamp or occlusion query, pipelineStatisticsLayout(device,
+// type).size bytes per query of a counter type (P105).
 void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
                        uint64 offset);
 

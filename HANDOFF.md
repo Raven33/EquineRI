@@ -7,14 +7,15 @@ State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), p
 
 Open, in order:
 
-0. **Sandbox review** (`docs/reviews/Sandbox-2026-10-15.md`, P105): approved for core are
-   rendering without attachments, mesh and task statistics counters, and a 64-bit atomics
-   limit with a validation check; no blit (a downsampler helper instead). API in
-   `docs/FeatureProposal-Sandbox-2026-10-15.md`: (1) and (3) implemented, verified on Linux only
-   (D3D12 not compiled yet); (2) waits for the statistics-cost measurement
-   (`tools/statistics_bench`, `docs/measurements/statistics/`: RADV done, Windows not run) ; the
-   shape is decided (two fixed counter sets, classic and mesh: Vulkan forbids RI's statistics
-   queries around mesh draws), the primitive count's place waits for Windows. The helpers in the review wait for the user.
+0. **Sandbox review** (`docs/reviews/Sandbox-2026-10-15.md`, P105), API in
+   `docs/FeatureProposal-Sandbox-2026-10-15.md`, all three parts implemented on branch
+   `p105-sandbox-features`: rendering without attachments (`cmdBeginRendering(cmd,
+   RenderingSize)`), the 64-bit atomics limits, and statistics option 1
+   (`eMeshPipelineStatistics`, `eMeshPrimitives`, `pipelineStatisticsLayout(device, type)`),
+   chosen after `tools/statistics_bench` (`docs/measurements/statistics/`: the mesh counter
+   costs ~100 ms per frame on NVIDIA Vulkan). Parts 1 and 3 verified on Windows (56104a3);
+   part 2 verified on Linux, Windows asked. Open: the D3D12 shader check for 64-bit atomics
+   (user to decide); no blit, a downsampler helper later; the review's helpers wait for the user.
 0b. **Both sandboxes' review** (`docs/reviews/Sandboxes-2026-10-15.md`, P106), API in
    `docs/FeatureProposal-Sandboxes-2026-10-15.md`. **Implemented, verified on Linux only** (Vulkan
    debug and release, the thread tests also under ThreadSanitizer); the D3D12 code is not compiled

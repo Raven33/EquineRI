@@ -6,9 +6,12 @@
 // requirements), buffers placed in user memory (every buffer has a GPU
 // address), descriptor heaps as descriptor sets from one pool each, descriptor
 // writes, samplers (one VkSampler per distinct description, cached in
-// DeviceState until the device is destroyed, P99), query pools.
+// DeviceState until the device is destroyed, P99), query pools (the classic
+// and mesh statistics sets and the mesh-primitives query, P105).
 //
-// Watch out: eIndirectScratch buffers need VkBufferUsageFlags2 (the preprocess
+// Watch out: a statistics pool with the classic counters must not be active
+// during mesh draws (VUID-vkCmdDrawMeshTasksEXT-pipelineStatistics-07076);
+// that is why the mesh set exists (P105). eIndirectScratch buffers need VkBufferUsageFlags2 (the preprocess
 // usage has no legacy bit). Placing a resource in a type it does not allow is
 // reported (validation builds).
 //
@@ -528,8 +531,16 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     case QueryType::eTimestamp: info.queryType = VK_QUERY_TYPE_TIMESTAMP; break;
     case QueryType::eOcclusion: info.queryType = VK_QUERY_TYPE_OCCLUSION; break;
     case QueryType::ePipelineStatistics:
+    case QueryType::eMeshPipelineStatistics:
         info.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
-        info.pipelineStatistics = state.pipelineStatistics;
+        info.pipelineStatistics = statisticsOf(state, desc.type);
+        break;
+    case QueryType::eMeshPrimitives:
+        if (!state.meshPrimitivesQuery) {
+            reportError(ErrorCategory::eUnsupported,
+                        "createQueryPool: this GPU cannot count mesh primitives (meshShaderQueries)");
+        }
+        info.queryType = VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT;
         break;
     }
     VkQueryPool pool = VK_NULL_HANDLE;
@@ -559,8 +570,25 @@ void destroyQueryPool(Device &device, QueryPool &pool) {
 }
 
 // Vulkan writes only the enabled counters, in bit order (P71 (2)).
-PipelineStatisticsLayout pipelineStatisticsLayout(Device &device) {
-    const VkQueryPipelineStatisticFlags enabled = device.internal.state->pipelineStatistics;
+// The primitive count is a query type of its own (P105): one value.
+PipelineStatisticsLayout pipelineStatisticsLayout(Device &device, QueryType type) {
+    const DeviceState &state = *device.internal.state;
+    if (type == QueryType::eMeshPrimitives) {
+        return {.size = 8,
+                .inputVertices = kNoCounter,
+                .inputPrimitives = kNoCounter,
+                .vertexShaderInvocations = kNoCounter,
+                .clippingInvocations = kNoCounter,
+                .clippingPrimitives = kNoCounter,
+                .pixelShaderInvocations = kNoCounter,
+                .computeShaderInvocations = kNoCounter,
+                .geometryShaderInvocations = kNoCounter,
+                .geometryShaderPrimitives = kNoCounter,
+                .hullShaderInvocations = kNoCounter,
+                .domainShaderInvocations = kNoCounter,
+                .meshPrimitives = state.meshPrimitivesQuery ? 0 : kNoCounter};
+    }
+    const VkQueryPipelineStatisticFlags enabled = statisticsOf(state, type);
     const auto offset = [enabled](VkQueryPipelineStatisticFlagBits bit) {
         return (enabled & bit) == 0 ? kNoCounter : 8 * static_cast<uint32>(std::popcount(enabled & (bit - 1u)));
     };
