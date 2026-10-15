@@ -226,9 +226,12 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1))) &&
         options1.Int64ShaderOps;
     D3D12_FEATURE_DATA_D3D12_OPTIONS9 options9{};
-    const bool int64Shared =
-        int64 && SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS9, &options9, sizeof(options9))) &&
-        options9.AtomicInt64OnGroupSharedSupported;
+    const bool options9Known =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS9, &options9, sizeof(options9)));
+    const bool int64Shared = int64 && options9Known && options9.AtomicInt64OnGroupSharedSupported;
+    // The mesh-primitives query (P105) is PIPELINE_STATISTICS1, which also
+    // counts task and mesh invocations.
+    state->meshPrimitivesQuery = meshShaders && options9Known && options9.MeshShaderPipelineStatsSupported;
     D3D12_FEATURE_DATA_D3D12_OPTIONS11 options11{};
     const bool int64Buffer =
         int64 && SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS11, &options11, sizeof(options11))) &&

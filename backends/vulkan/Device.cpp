@@ -598,6 +598,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     device.limits.meshShaders = setup.mesh && chain.f.mesh.meshShader == VK_TRUE && chain.f.mesh.taskShader == VK_TRUE;
     device.limits.geometryShaders = chain.f.core.geometryShader == VK_TRUE;
     device.limits.tessellation = chain.f.core.tessellationShader == VK_TRUE;
+    state->meshPrimitivesQuery = device.limits.meshShaders && chain.f.mesh.meshShaderQueries == VK_TRUE;
     // 64-bit atomics (P105): Vulkan 1.2 features, on when the GPU has them (P60).
     const bool int64 = chain.f.core.shaderInt64 == VK_TRUE;
     device.limits.int64BufferAtomics = int64 && chain.f.v12.shaderBufferInt64Atomics == VK_TRUE;

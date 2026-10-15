@@ -230,6 +230,8 @@ Rules:
 
 #### Option 1: mesh set = pixel and compute; the primitive count is its own query type; task and mesh invocations stay native
 
+**Chosen by the user (2026-10-15).**
+
 ```cpp
 enum class QueryType : uint8 { ..., eMeshPipelineStatistics, eMeshPrimitives };
 struct PipelineStatisticsLayout { /* existing */ uint32 meshPrimitives = kNoCounter; };

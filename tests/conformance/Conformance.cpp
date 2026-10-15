@@ -155,7 +155,7 @@ EQ_SIGNATURE(cmdCopyTexture, void (*)(RI::CommandList &, const RI::TextureView &
 EQ_SIGNATURE(cmdResolve, void (*)(RI::CommandList &, const RI::TextureView &, const RI::TextureView &, RI::ResolveMode));
 EQ_FIELD(ColorAttachment, resolveTo, RI::TextureView);
 EQ_FIELD(DepthAttachment, resolveTo, RI::TextureView);
-EQ_SIGNATURE(pipelineStatisticsLayout, RI::PipelineStatisticsLayout (*)(RI::Device &));
+EQ_SIGNATURE(pipelineStatisticsLayout, RI::PipelineStatisticsLayout (*)(RI::Device &, RI::QueryType));
 EQ_SIGNATURE(cmdBeginQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdEndQuery, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdSetIndexBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint64, RI::IndexFormat));

@@ -108,6 +108,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.stencil_test
     texture.stencil_reference_command
     texture.mesh_shaders
+    texture.mesh_statistics
     texture.resolve_color
     texture.resolve_depth
     texture.indirect_level1

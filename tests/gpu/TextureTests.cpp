@@ -864,6 +864,71 @@ EQ_TEST(texture, mesh_shaders) {
     RI::destroyTexture(f.device, target);
 }
 
+// The mesh counter set and the mesh-primitives query (P105) around a mesh draw
+// of one full-screen triangle. Vulkan forbids the classic set there.
+EQ_TEST(texture, mesh_statistics) {
+    Fixture f;
+    if (!f.device.limits.meshShaders) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> ms = loadShader("fullscreen_ms"), ps = loadShader("solid_ps");
+    RI::Pipeline pipeline =
+        RI::createGraphicsPipeline(f.device, {.pixel = ps, .mesh = ms, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    const RI::PipelineStatisticsLayout meshLayout =
+        RI::pipelineStatisticsLayout(f.device, RI::QueryType::eMeshPipelineStatistics);
+    const RI::PipelineStatisticsLayout primitivesLayout =
+        RI::pipelineStatisticsLayout(f.device, RI::QueryType::eMeshPrimitives);
+    EQ_CHECK(meshLayout.pixelShaderInvocations != RI::kNoCounter && meshLayout.computeShaderInvocations != RI::kNoCounter);
+    EQ_CHECK(meshLayout.vertexShaderInvocations == RI::kNoCounter && meshLayout.clippingPrimitives == RI::kNoCounter &&
+             meshLayout.meshPrimitives == RI::kNoCounter);
+    EQ_CHECK(primitivesLayout.pixelShaderInvocations == RI::kNoCounter);
+    const bool primitives = primitivesLayout.meshPrimitives != RI::kNoCounter;
+
+    RI::QueryPool stats = RI::createQueryPool(f.device, {.type = RI::QueryType::eMeshPipelineStatistics, .count = 1});
+    RI::QueryPool prims{};
+    if (primitives) {
+        prims = RI::createQueryPool(f.device, {.type = RI::QueryType::eMeshPrimitives, .count = 1});
+    }
+    RI::Buffer results = placeBuffer(f.device, f.readback,
+                                     {.size = meshLayout.size + primitivesLayout.size, .usage = RI::BufferUsage::eCopyDst});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdBeginQuery(f.cmd, stats, 0);
+    if (primitives) {
+        RI::cmdBeginQuery(f.cmd, prims, 0);
+    }
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDrawMesh(f.cmd, 1, 1, 1);
+    if (primitives) {
+        RI::cmdEndQuery(f.cmd, prims, 0);
+    }
+    RI::cmdEndQuery(f.cmd, stats, 0);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdResolveQueries(f.cmd, stats, 0, 1, results, 0);
+    if (primitives) {
+        RI::cmdResolveQueries(f.cmd, prims, 0, 1, results, meshLayout.size);
+    }
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 1.0f));
+    const RI::Helpers::PipelineStatistics counts = RI::Helpers::readPipelineStatistics(meshLayout, results.mapped);
+    // AMD counts 2x2 quads (see occlusion_and_statistics).
+    EQ_CHECK(counts.pixelShaderInvocations >= kSize * kSize / 4 && counts.computeShaderInvocations == 0);
+    EQ_CHECK(counts.vertexShaderInvocations == 0 && counts.meshPrimitives == 0);
+    if (primitives) {
+        const RI::Helpers::PipelineStatistics generated = RI::Helpers::readPipelineStatistics(
+            primitivesLayout, static_cast<const std::byte *>(results.mapped) + meshLayout.size);
+        EQ_CHECK(generated.meshPrimitives == 1);
+        RI::destroyQueryPool(f.device, prims);
+    }
+    RI::destroyBuffer(f.device, results);
+    RI::destroyQueryPool(f.device, stats);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, target);
+}
+
 // Color resolves (P52): at cmdEndRendering through resolveTo, and with
 // cmdResolve outside a section.
 EQ_TEST(texture, resolve_color) {
