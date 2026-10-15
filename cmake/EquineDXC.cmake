@@ -73,6 +73,8 @@ function(equine_add_shaders target)
     if (NOT ARG_PROFILE OR NOT ARG_SOURCES)
         message(FATAL_ERROR "equine_add_shaders(<target> PROFILE <profile> SOURCES <files...>)")
     endif()
+    # RI's own includes (<equine/root.hlsli>, <equine/grid.hlsli>, ...): any change rebuilds.
+    file(GLOB equine_includes "${EQUINE_SHADER_INCLUDE_DIR}/equine/*.hlsli")
     set(out_dir "${CMAKE_BINARY_DIR}/shaders")
     foreach(source IN LISTS ARG_SOURCES)
         get_filename_component(source "${source}" ABSOLUTE)
@@ -86,7 +88,7 @@ function(equine_add_shaders target)
                 COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}"
                 COMMAND "${EQUINE_DXC_EXECUTABLE}" -T ${ARG_PROFILE} -HV 2021 -I "${EQUINE_SHADER_INCLUDE_DIR}" -WX
                         -Qstrip_reflect -Qstrip_debug -Fo "${out_dir}/${name}.dxil" "${source}"
-                DEPENDS "${source}" "${EQUINE_SHADER_INCLUDE_DIR}/equine/root.hlsli"
+                DEPENDS "${source}" ${equine_includes}
                 COMMENT "Compiling ${name} (${ARG_PROFILE}) to DXIL"
                 VERBATIM
             )
@@ -102,7 +104,7 @@ function(equine_add_shaders target)
                         ${spirv_rules} -Fo "${out_dir}/${name}.spv" "${source}"
                 COMMAND "${EQUINE_DXC_EXECUTABLE}" ${common} -Qstrip_reflect -Qstrip_debug
                         -Fo "${out_dir}/${name}.dxil" "${source}"
-                DEPENDS "${source}" "${EQUINE_SHADER_INCLUDE_DIR}/equine/root.hlsli"
+                DEPENDS "${source}" ${equine_includes}
                 COMMENT "Compiling ${name} (${ARG_PROFILE}) to SPIR-V and DXIL"
                 VERBATIM
             )

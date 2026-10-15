@@ -157,7 +157,8 @@ MemoryRequirements accelerationStructureRequirements(Device &device, uint64 size
 }
 
 AccelerationStructure createAccelerationStructure(Device &device, const Memory &memory, uint64 offset, uint64 size,
-                                                  bool topLevel) {
+                                                  bool topLevel, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     requireRayTracing(state, "createAccelerationStructure");
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
@@ -176,10 +177,14 @@ AccelerationStructure createAccelerationStructure(Device &device, const Memory &
     out.topLevel = topLevel;
     out.internal.resource = resource;
     out.internal.id = EQ_DX_TRACK(&state);
+    if (!name.empty()) {
+        applyName(*device.internal.state, out, name);
+    }
     return out;
 }
 
 void destroyAccelerationStructure(Device &device, AccelerationStructure &structure) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, structure.internal.id, "acceleration structure");
     EQ_DX_UNTRACK(&state, structure.internal.id);
@@ -190,12 +195,14 @@ void destroyAccelerationStructure(Device &device, AccelerationStructure &structu
 
 void cmdBuildBlas(CommandList &cmd, const AccelerationStructure &dst, const BlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     Inputs in = blasInputs(desc);
     build(cmd, dst, in, scratch, scratchOffset, update, "cmdBuildBlas");
 }
 
 void cmdBuildTlas(CommandList &cmd, const AccelerationStructure &dst, const TlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     Inputs in = tlasInputs(desc);
     build(cmd, dst, in, scratch, scratchOffset, update, "cmdBuildTlas");
 }

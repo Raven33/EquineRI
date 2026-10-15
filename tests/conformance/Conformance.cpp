@@ -25,7 +25,8 @@ EQ_FIELD(Device, limits, RI::DeviceLimits);
 EQ_FIELD(Device, graphicsQueue, RI::Queue);
 
 // Memory and buffers (P31, P32, P33, P58, P61)
-EQ_SIGNATURE(allocateMemory, RI::Memory (*)(RI::Device &, RI::MemoryKind, uint64, const RI::MemoryRequirements *));
+EQ_SIGNATURE(allocateMemory,
+             RI::Memory (*)(RI::Device &, RI::MemoryKind, uint64, const RI::MemoryRequirements *, std::string_view));
 EQ_SIGNATURE(freeMemory, void (*)(RI::Device &, RI::Memory &));
 EQ_SIGNATURE(bufferRequirements, RI::MemoryRequirements (*)(RI::Device &, const RI::BufferDesc &));
 EQ_SIGNATURE(createBuffer, RI::Buffer (*)(RI::Device &, const RI::Memory &, uint64, const RI::BufferDesc &));
@@ -67,7 +68,7 @@ EQ_SIGNATURE(destroyPipeline, void (*)(RI::Device &, RI::Pipeline &));
 EQ_FIELD(Pipeline, rootDataSize, uint32);
 
 // Command lists and submission (P20, P34, P36, P47, P56, P85)
-EQ_SIGNATURE(createCommandList, RI::CommandList (*)(RI::Device &));
+EQ_SIGNATURE(createCommandList, RI::CommandList (*)(RI::Device &, std::string_view));
 EQ_SIGNATURE(destroyCommandList, void (*)(RI::Device &, RI::CommandList &));
 EQ_SIGNATURE(resetCommandList, void (*)(RI::CommandList &));
 EQ_SIGNATURE(cmdBegin, void (*)(RI::CommandList &));
@@ -184,7 +185,7 @@ EQ_SIGNATURE(blasSizes, RI::AccelerationStructureSizes (*)(RI::Device &, const R
 EQ_SIGNATURE(tlasSizes, RI::AccelerationStructureSizes (*)(RI::Device &, const RI::TlasDesc &));
 EQ_SIGNATURE(accelerationStructureRequirements, RI::MemoryRequirements (*)(RI::Device &, uint64));
 EQ_SIGNATURE(createAccelerationStructure,
-             RI::AccelerationStructure (*)(RI::Device &, const RI::Memory &, uint64, uint64, bool));
+             RI::AccelerationStructure (*)(RI::Device &, const RI::Memory &, uint64, uint64, bool, std::string_view));
 EQ_SIGNATURE(destroyAccelerationStructure, void (*)(RI::Device &, RI::AccelerationStructure &));
 EQ_SIGNATURE(cmdBuildBlas, void (*)(RI::CommandList &, const RI::AccelerationStructure &, const RI::BlasDesc &,
                                     const RI::Buffer &, uint64, bool));

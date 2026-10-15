@@ -51,6 +51,12 @@ struct DeviceLimits {
     uint32 maxResourceDescriptors = 0; // per descriptor heap
     uint32 maxSamplerDescriptors = 0;  // per descriptor heap
     uint32 maxRootDataSize = 0;        // bytes of root data a pipeline may declare
+    // Bytes of one buffer view (P106), besides kMaxBufferViewElements. Read and
+    // read-write views: Vulkan maxStorageBufferRange; D3D12 has only the element
+    // limit. Constant views: at most 64 KiB (D3D12), lower where Vulkan's
+    // maxUniformBufferRange is.
+    uint64 maxBufferViewSize = 0;
+    uint32 maxConstantViewSize = 0;
     bool gpuUploadMemory = false;      // MemoryKind::eGPUUpload is available (P32)
     uint64 timestampFrequency = 0;     // timestamp ticks per second (P71 (3))
     bool meshShaders = false;          // task and mesh shaders, cmdDrawMesh (P39)

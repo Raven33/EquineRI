@@ -7,14 +7,18 @@
 // Keeps: the factory, adapter, device and queue; command signatures (P48); the
 // fence; RI's CPU heaps for RTV/DSV and its small shader-visible clear heap;
 // the internal command list; and in validation builds the object and
-// placement trackers. Everything is released with the device.
+// placement trackers and the device thread (P106). Everything is released
+// with the device.
 //
 // Vulkan counterpart: backends/vulkan/DeviceState.hpp.
 
 #include <RI/D3D12/Backend.hpp>
 #if EQUINE_VALIDATION
+#include <RI/Validation/Checks.hpp>
 #include <RI/Validation/ObjectTracker.hpp>
 #include <RI/Validation/Placement.hpp>
+
+#include <thread>
 #endif
 
 #include <compare>
@@ -79,6 +83,7 @@ struct DeviceState {
     ID3D12GraphicsCommandList7 *internalList = nullptr;
 
 #if EQUINE_VALIDATION
+    std::thread::id deviceThread; // the thread that called createDevice (P106)
     Validation::ObjectTracker objects;
     Validation::PlacementTracker placements;
 #endif
@@ -87,6 +92,19 @@ struct DeviceState {
 // Debugging (Debug.cpp, P53): a removed device is reported with DRED's
 // breadcrumbs and page-fault details (validation builds).
 void reportDeviceRemoved(DeviceState &state);
+// The native names of an object (SetName), shared by setName and names given
+// at creation (P106); `nameObject` names one ID3D12Object (null: nothing).
+void nameObject(void *object, std::string_view name);
+void applyName(const DeviceState &state, const Memory &memory, std::string_view name);
+void applyName(const DeviceState &state, const Buffer &buffer, std::string_view name);
+void applyName(const DeviceState &state, const Texture &texture, std::string_view name);
+void applyName(const DeviceState &state, const TextureView &view, std::string_view name);
+void applyName(const DeviceState &state, const DescriptorHeap &heap, std::string_view name);
+void applyName(const DeviceState &state, const QueryPool &pool, std::string_view name);
+void applyName(const DeviceState &state, const Pipeline &pipeline, std::string_view name);
+void applyName(const DeviceState &state, const CommandList &cmd, std::string_view name);
+void applyName(const DeviceState &state, const AccelerationStructure &structure, std::string_view name);
+void applyName(const DeviceState &state, const WorkGraph &graph, std::string_view name);
 // Views (Textures.cpp): a view with RI's RTV/DSV descriptors, and their release.
 TextureView makeTextureView(DeviceState &state, const Texture &texture, const TextureViewDesc &desc);
 void releaseTextureView(DeviceState &state, TextureView &view);
@@ -122,10 +140,16 @@ void submitInternal(DeviceState &state, F record) {
 #define EQ_DX_TRACK(state) ::RI::Validation::trackObject((state)->objects)
 #define EQ_DX_UNTRACK(state, id) ::RI::Validation::untrackObject((state)->objects, id)
 #define EQ_DX_CHECK_ALIVE(state, id, kind) EQ_VALIDATE(::RI::Validation::checkAlive((state)->objects, id, kind))
+// Calls outside the any-thread list run on the device thread (P106). A null
+// state (a default-constructed object) is left to the liveness check.
+#define EQ_DX_CHECK_THREAD(state)                                                                        \
+    EQ_VALIDATE((state) == nullptr ? ::RI::Validation::CheckResult{}                                     \
+                                   : ::RI::Validation::checkDeviceThread((state)->deviceThread, __func__))
 #else
 #define EQ_DX_TRACK(state) uint64{0}
 #define EQ_DX_UNTRACK(state, id) ((void)0)
 #define EQ_DX_CHECK_ALIVE(state, id, kind) ((void)0)
+#define EQ_DX_CHECK_THREAD(state) ((void)0)
 #endif
 
 } // namespace RI::D3D12

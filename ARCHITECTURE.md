@@ -39,6 +39,10 @@ User code includes `<RI/RI.hpp>` and links one backend library. That library def
 
 Inside a backend function, in order:
 
+0. **Thread:** `EQ_VK_CHECK_THREAD` / `EQ_DX_CHECK_THREAD` checks that the call runs on the
+   device thread, the one that called `createDevice` (validation builds only, P106). Every
+   public function has it, except the any-thread list: pipeline and work-graph creation,
+   `workGraphEntry`, `wait`, `isReached` and the pure queries.
 1. **Liveness:** `EQ_VK_CHECK_ALIVE` / `EQ_DX_CHECK_ALIVE` checks the object's id against the
    device's `ObjectTracker` (validation builds only, P81, P91).
 2. **RI's rules:** `EQ_VALIDATE(Validation::checkSomething(...))`. A check returns a message
@@ -89,6 +93,12 @@ Every change keeps these. The decision behind each is in `CONTEXT.md`.
 - **Native access stays possible** (P22) and is gated by the backend's `Native.hpp` (P84).
 - **Checks go where native layers cannot see** (P88): RI's own rules only, in
   `src/RI/Validation/`, written once for both backends.
+- **One device thread** (P56, P106): RI objects are not thread-safe. Only the any-thread list
+  runs elsewhere, and what it touches is either fixed after device creation or locked (the
+  validation object tracker). A function added to the list must touch no other `DeviceState`.
+- **Portable limits:** where the backends differ on a limit RI checks (buffer view elements,
+  group counts), the rule is the smaller one on every backend, so a program tested on one
+  backend never breaks on the other (P106).
 - **No frame concept, no deferred destruction:** the user waits on timeline points (P20).
   Convenience of that kind is a helper (P15, P41).
 - **The layer above RI does not shape RI** (P80).
@@ -169,7 +179,7 @@ mechanisms.
 | Ray tracing (P49) | `VK_KHR_acceleration_structure` + ray query; acceleration structures must be a mutable descriptor type (off on AMD Windows) | DXR tier 1.1 |
 | Work graphs (P50, P62) | Unsupported | State object, `SetProgram`, `DispatchGraph` |
 | Swapchain (P43, P63, P64) | `VK_KHR_swapchain`; prerecorded layout switches per image | DXGI flip model; back buffers rest in `COMMON` (= `PRESENT`), so acquire and present submit nothing; sRGB views on UNORM buffers |
-| Debugging (P53) | Debug utils names and labels; device fault | `SetName`, PIX events; DRED |
+| Debugging (P53, P106) | Debug utils names and labels; device fault; names given at creation go through the same `applyName` | `SetName`, PIX events; DRED; the same `applyName` for names at creation (views have none) |
 | Validation (P21) | Validation layer, GPU-AV, printf | Debug layer, GBV |
 
 ## 6. Keeping this true

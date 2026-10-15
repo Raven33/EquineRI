@@ -5,6 +5,7 @@
 #include <TestHarness.hpp>
 
 #include <RI/Helpers/FrameRing.hpp>
+#include <RI/Helpers/Grid.hpp>
 #include <RI/Helpers/MemoryAllocator.hpp>
 #include <RI/Helpers/Profiler.hpp>
 #include <RI/Helpers/ShaderCompiler.hpp>
@@ -16,6 +17,7 @@
 #include <vector>
 
 using gputest::createTestDevice;
+using gputest::loadShader;
 
 // Allocation, deferred release and reuse; slots reused after their point.
 EQ_TEST(helpers, allocators) {
@@ -141,5 +143,58 @@ void main(uint3 id : SV_DispatchThreadID) {
     EQ_CHECK(broken.bytecode.empty() && !broken.messages.empty());
     RI::destroyPipeline(device, pipeline);
     RI::Helpers::destroyShaderCompiler(compiler);
+    RI::destroyDevice(device);
+}
+
+// Group grids (P106): counts above kMaxGroupsPerDimension fold into rows, and
+// eqLinearGroup numbers every group once.
+EQ_TEST(helpers, group_grid) {
+    const RI::DispatchIndirectArgs small = RI::Helpers::groupGrid(100, 64);
+    EQ_CHECK(small.x == 2 && small.y == 1 && small.z == 1);
+    const RI::DispatchIndirectArgs exact = RI::Helpers::groupGrid(uint64{65535} * 64, 64);
+    EQ_CHECK(exact.x == 65535 && exact.y == 1);
+    const RI::DispatchIndirectArgs none = RI::Helpers::groupGrid(0, 64);
+    EQ_CHECK(none.x == 0);
+
+    constexpr uint32 kGroups = 70000;
+    const RI::DispatchIndirectArgs grid = RI::Helpers::groupGrid(kGroups, 1);
+    EQ_CHECK(grid.x == 65535 && grid.y == 2 && grid.z == 1);
+
+    RI::Device device = createTestDevice();
+    const RI::BufferDesc counterDesc{.size = 256,
+                                     .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc |
+                                              RI::BufferUsage::eCopyDst};
+    const RI::MemoryRequirements requirements = RI::bufferRequirements(device, counterDesc);
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, requirements.size, &requirements);
+    RI::Buffer counter = RI::createBuffer(device, memory, 0, counterDesc);
+    const uint32 zero[64] = {};
+    RI::Helpers::uploadBuffer(device, counter, 0, zero, sizeof(zero));
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::writeDescriptors(device, heap, {{.slot = 1, .descriptor = RI::ReadWriteView{.buffer = counter}}});
+    const std::vector<std::byte> bytecode = loadShader("grid_count");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = bytecode});
+
+    struct GridRoot {
+        uint32 counterSlot;
+        uint32 groups;
+    };
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdSetHeap(cmd, heap);
+    RI::cmdSetPipeline(cmd, pipeline);
+    RI::cmdSetRootData(cmd, GridRoot{.counterSlot = 1, .groups = kGroups});
+    RI::cmdDispatch(cmd, grid.x, grid.y, grid.z);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    const std::vector<std::byte> back = RI::Helpers::readbackBuffer(device, counter, 0, 4);
+    uint32 counted = 0;
+    std::memcpy(&counted, back.data(), sizeof(counted));
+    EQ_CHECK(counted == kGroups);
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyPipeline(device, pipeline);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, counter);
+    RI::freeMemory(device, memory);
     RI::destroyDevice(device);
 }

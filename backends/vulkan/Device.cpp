@@ -371,6 +371,8 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
     limits.maxSamplerDescriptors = std::min({2048u, v12.maxDescriptorSetUpdateAfterBindSamplers,
                                              v12.maxPerStageDescriptorUpdateAfterBindSamplers});
     limits.maxRootDataSize = l.maxPushConstantsSize;
+    limits.maxBufferViewSize = l.maxStorageBufferRange;
+    limits.maxConstantViewSize = std::min<uint32>(l.maxUniformBufferRange, 65536); // D3D12's limit (P106)
 
     state.mutableTypes = {
         VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -540,6 +542,9 @@ Device createDevice(const DeviceDesc &desc) { return createDevice(desc, {}); }
 
 Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additions) {
     auto *state = new DeviceState{};
+#if EQUINE_VALIDATION
+    state->deviceThread = std::this_thread::get_id();
+#endif
     const InstanceHandles instance = createInstance(InstancePurpose::eDevice);
     state->instance = instance.instance;
     state->messenger = instance.messenger;
@@ -671,6 +676,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
 }
 
 void destroyDevice(Device &device) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState *state = device.internal.state;
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");

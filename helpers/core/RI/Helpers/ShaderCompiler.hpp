@@ -24,6 +24,8 @@ struct ShaderCompiler {
 
 // `dxcLibrary`: the path of dxcompiler (libdxcompiler.so / dxcompiler.dll);
 // nullptr loads the pinned DXC of the build.
+// A compiler is used by one thread at a time; several may exist at once, one
+// per thread, to build pipelines in parallel (P106).
 ShaderCompiler createShaderCompiler(const char *dxcLibrary = nullptr);
 void destroyShaderCompiler(ShaderCompiler &compiler);
 

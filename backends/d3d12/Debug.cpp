@@ -1,6 +1,7 @@
 // Debugging on D3D12 (P53).
 //
-// Owns: setName for every object kind, cmdBeginMarker / cmdEndMarker (PIX
+// Owns: setName for every object kind, applyName (the names given at
+// creation, P106, and setName's), cmdBeginMarker / cmdEndMarker (PIX
 // events without the PIX runtime: BeginEvent with a UTF-16 string, the format
 // PIX and other tools read), and the device-removed path: reportDeviceRemoved
 // prints DRED's breadcrumbs and page-fault details in validation builds.
@@ -31,12 +32,6 @@ std::wstring wide(std::string_view text) {
     return result;
 }
 
-void nameObject(void *object, std::string_view name) {
-    if (object != nullptr) {
-        static_cast<ID3D12Object *>(object)->SetName(wide(name).c_str());
-    }
-}
-
 ID3D12GraphicsCommandList7 *listOf(const CommandList &cmd) {
     return static_cast<ID3D12GraphicsCommandList7 *>(cmd.internal.list);
 }
@@ -46,39 +41,87 @@ constexpr UINT kPixUnicode = 0;
 
 } // namespace
 
-void setName(Device & /*device*/, const Memory &memory, std::string_view name) {
+void nameObject(void *object, std::string_view name) {
+    if (object != nullptr) {
+        static_cast<ID3D12Object *>(object)->SetName(wide(name).c_str());
+    }
+}
+
+void applyName(const DeviceState &, const Memory &memory, std::string_view name) {
     nameObject(memory.internal.heap, name);
 }
-void setName(Device & /*device*/, const Buffer &buffer, std::string_view name) {
+void applyName(const DeviceState &, const Buffer &buffer, std::string_view name) {
     nameObject(buffer.internal.resource, name);
 }
-void setName(Device & /*device*/, const Texture &texture, std::string_view name) {
+void applyName(const DeviceState &, const Texture &texture, std::string_view name) {
     nameObject(texture.internal.resource, name);
 }
 // Views are descriptors on D3D12, not objects: nothing to name.
-void setName(Device & /*device*/, const TextureView & /*view*/, std::string_view /*name*/) {}
-void setName(Device & /*device*/, const DescriptorHeap &heap, std::string_view name) {
+void applyName(const DeviceState &, const TextureView &, std::string_view) {}
+void applyName(const DeviceState &, const DescriptorHeap &heap, std::string_view name) {
     nameObject(heap.internal.resourceHeap, name);
     nameObject(heap.internal.samplerHeap, name);
 }
-void setName(Device & /*device*/, const QueryPool &pool, std::string_view name) {
+void applyName(const DeviceState &, const QueryPool &pool, std::string_view name) {
     nameObject(pool.internal.heap, name);
 }
-void setName(Device & /*device*/, const Pipeline &pipeline, std::string_view name) {
+void applyName(const DeviceState &, const Pipeline &pipeline, std::string_view name) {
     nameObject(pipeline.internal.pipelineState, name);
     nameObject(pipeline.internal.rootSignature, name);
 }
-void setName(Device & /*device*/, const CommandList &cmd, std::string_view name) {
+void applyName(const DeviceState &, const CommandList &cmd, std::string_view name) {
     nameObject(cmd.internal.list, name);
+}
+void applyName(const DeviceState &, const AccelerationStructure &structure, std::string_view name) {
+    nameObject(structure.internal.resource, name);
+}
+void applyName(const DeviceState &, const WorkGraph &graph, std::string_view name) {
+    nameObject(graph.internal.stateObject, name);
+    nameObject(graph.internal.rootSignature, name);
+}
+
+void setName(Device &device, const Memory &memory, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, memory, name);
+}
+void setName(Device &device, const Buffer &buffer, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, buffer, name);
+}
+void setName(Device &device, const Texture &texture, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, texture, name);
+}
+void setName(Device &device, const TextureView &view, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, view, name);
+}
+void setName(Device &device, const DescriptorHeap &heap, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, heap, name);
+}
+void setName(Device &device, const QueryPool &pool, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, pool, name);
+}
+void setName(Device &device, const Pipeline &pipeline, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, pipeline, name);
+}
+void setName(Device &device, const CommandList &cmd, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, cmd, name);
 }
 
 void cmdBeginMarker(CommandList &cmd, std::string_view name) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     ++cmd.internal.markerDepth;
     const std::wstring text = wide(name);
     listOf(cmd)->BeginEvent(kPixUnicode, text.c_str(), static_cast<UINT>((text.size() + 1) * sizeof(wchar_t)));
 }
 
 void cmdEndMarker(CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkMarkerEnd(cmd.internal.markerDepth));
     --cmd.internal.markerDepth;
     listOf(cmd)->EndEvent();

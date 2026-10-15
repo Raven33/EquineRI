@@ -1,5 +1,5 @@
 ---
-symbols: [RI::writeDescriptors, RI::DescriptorWrite, RI::Descriptor, RI::ReadView, RI::ReadWriteView, RI::ConstantBufferView, RI::kWholeSize]
+symbols: [RI::writeDescriptors, RI::DescriptorWrite, RI::Descriptor, RI::ReadView, RI::ReadWriteView, RI::ConstantBufferView, RI::kWholeSize, RI::kMaxBufferViewElements]
 ---
 
 # RI::writeDescriptors
@@ -127,6 +127,11 @@ All checked in validation builds (**programmer error**):
 - **constant buffer views** start at a multiple of 256 bytes. Their size is **rounded up to
   256** on both backends, and the rounded size must fit in the buffer: give constant buffers a
   size that is a multiple of 256;
+- a read or read-write view covers at most `kMaxBufferViewElements` (2^27) elements, on every
+  backend ([P106](../design-notes/decisions.md#p106)): D3D12's limit, so a raw view covers at
+  most 512 MiB. It also covers at most `DeviceLimits::maxBufferViewSize` bytes, and a constant
+  view at most `maxConstantViewSize` (64 KiB, or less on some Vulkan GPUs). For more, use
+  several views, each in its own slot;
 - the buffer or texture is alive (not destroyed).
 
 Texture views:

@@ -262,6 +262,7 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc) 
 }
 
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
@@ -320,10 +321,14 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
                         .accessAfter = D3D12_BARRIER_ACCESS_NO_ACCESS,
                         .discard = true});
     });
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, texture, desc.name);
+    }
     return texture;
 }
 
 void destroyTexture(Device &device, Texture &texture) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, texture.internal.id, "texture");
     EQ_DX_UNTRACK(&state, texture.internal.id);
@@ -336,6 +341,7 @@ void destroyTexture(Device &device, Texture &texture) {
 }
 
 TextureView createView(Device &device, const Texture &texture, const TextureViewDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, texture.internal.id, "texture");
     const Format format = desc.format == Format::eUndefined ? texture.format : desc.format;
@@ -351,6 +357,7 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
 }
 
 void destroyView(Device &device, TextureView &view) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     releaseViewSlots(state, view);
     view = {};
@@ -359,6 +366,7 @@ void destroyView(Device &device, TextureView &view) {
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────
 
 QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     D3D12_QUERY_HEAP_TYPE type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
     if (desc.type == QueryType::eOcclusion) {
@@ -375,10 +383,14 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     pool.internal.device = &state;
     pool.internal.heap = heap;
     pool.internal.id = EQ_DX_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, pool, desc.name);
+    }
     return pool;
 }
 
 void destroyQueryPool(Device &device, QueryPool &pool) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, pool.internal.id, "query pool");
     EQ_DX_UNTRACK(&state, pool.internal.id);
@@ -388,7 +400,9 @@ void destroyQueryPool(Device &device, QueryPool &pool) {
 }
 
 // D3D12 query heaps need no reset (P71 (1)).
-void resetQueries(Device &, QueryPool &, uint32, uint32) {}
+void resetQueries([[maybe_unused]] Device &device, QueryPool &, uint32, uint32) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+}
 
 // D3D12_QUERY_DATA_PIPELINE_STATISTICS, as D3D12 writes it (P71 (2)).
 PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
@@ -409,6 +423,7 @@ PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
 // ── Import (P77) ─────────────────────────────────────────────────────────────
 
 Texture importTexture(Device &device, ID3D12Resource *resource, const TextureDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
     EQ_VALIDATE(Validation::checkTextureShape(desc));

@@ -153,6 +153,7 @@ void destroyIndirectLayouts(DeviceState &state) {
 
 void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,
                         const Buffer *count, uint64 countOffset) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     const uint32 stride = indirectStride(kind);
     checkIndirectCall(cmd, kind, args, offset, maxCount, count, countOffset, stride, false, "cmdExecuteIndirect");
     const VkCommandBuffer c = native(cmd);
@@ -186,6 +187,7 @@ void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args,
 
 MemoryRequirements indirectScratchRequirements(Device &device, const Pipeline &pipeline, IndirectKind kind,
                                                uint32 maxCount) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     if (!state.generatedCommands) {
         reportError(ErrorCategory::eUnsupported,
@@ -208,6 +210,7 @@ MemoryRequirements indirectScratchRequirements(Device &device, const Pipeline &p
 void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const Buffer &records, uint64 offset,
                                     uint32 maxCount, const Buffer *scratch, uint64 scratchOffset, const Buffer *count,
                                     uint64 countOffset) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     if (!state.generatedCommands) {
         reportError(ErrorCategory::eUnsupported,

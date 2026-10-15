@@ -207,7 +207,7 @@ def parse_header(path: Path) -> list[Decl]:
             template, text = m.group(1), m.group(2)
         head = text
         fm = re.match(
-            r"^(?P<ret>(?:\[\[[^\]]*\]\]\s*)?(?:inline\s+)?[\w:<>,&*\s]+?[\s*&])(?P<name>\w+)\s*\((?P<params>[^{]*?)\)\s*(?:;|\{.*\})$",
+            r"^(?P<ret>(?:\[\[[^\]]*\]\]\s*)?(?:inline\s+)?[\w:<>,&*\s]+?[\s*&])(?P<name>\w+)\s*\((?P<params>(?:[^{]|\{\})*?)\)\s*(?:;|\{.*\})$",
             text,
         )
         if fm:

@@ -179,7 +179,8 @@ MemoryRequirements accelerationStructureRequirements(Device &device, uint64 size
 }
 
 AccelerationStructure createAccelerationStructure(Device &device, const Memory &memory, uint64 offset, uint64 size,
-                                                  bool topLevel) {
+                                                  bool topLevel, std::string_view name) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     requireRayTracing(state, "createAccelerationStructure");
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
@@ -210,10 +211,14 @@ AccelerationStructure createAccelerationStructure(Device &device, const Memory &
     out.internal.handle = reinterpret_cast<uint64>(handle);
     out.internal.buffer = reinterpret_cast<uint64>(buffer);
     out.internal.id = EQ_VK_TRACK(&state);
+    if (!name.empty()) {
+        applyName(*device.internal.state, out, name);
+    }
     return out;
 }
 
 void destroyAccelerationStructure(Device &device, AccelerationStructure &structure) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, structure.internal.id, "acceleration structure");
     EQ_VK_UNTRACK(&state, structure.internal.id);
@@ -225,12 +230,14 @@ void destroyAccelerationStructure(Device &device, AccelerationStructure &structu
 
 void cmdBuildBlas(CommandList &cmd, const AccelerationStructure &dst, const BlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     Geometry g = blasGeometry(desc);
     build(cmd, dst, g, scratch, scratchOffset, update, "cmdBuildBlas");
 }
 
 void cmdBuildTlas(CommandList &cmd, const AccelerationStructure &dst, const TlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     Geometry g = tlasGeometry(desc);
     build(cmd, dst, g, scratch, scratchOffset, update, "cmdBuildTlas");
 }

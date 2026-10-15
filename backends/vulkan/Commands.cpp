@@ -199,7 +199,8 @@ uint64 completedValue(DeviceState &state) {
 
 // ── Command lists (P56) ──────────────────────────────────────────────────────
 
-CommandList createCommandList(Device &device) {
+CommandList createCommandList(Device &device, std::string_view name) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     const VkCommandPoolCreateInfo poolInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                                            .queueFamilyIndex = state.graphicsQueueFamily};
@@ -218,10 +219,14 @@ CommandList createCommandList(Device &device) {
     cmd.internal.commandBuffer = commandBuffer;
     cmd.internal.pool = reinterpret_cast<uint64>(pool);
     cmd.internal.id = EQ_VK_TRACK(&state);
+    if (!name.empty()) {
+        applyName(*device.internal.state, cmd, name);
+    }
     return cmd;
 }
 
 void destroyCommandList(Device &device, CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "destroying"));
@@ -231,6 +236,7 @@ void destroyCommandList(Device &device, CommandList &cmd) {
 }
 
 void resetCommandList(CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "resetting"));
@@ -241,6 +247,7 @@ void resetCommandList(CommandList &cmd) {
 // ── Recording (P34: each call writes the native command at once) ─────────────
 
 void cmdBegin(CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, cmd.internal.id, "command list");
     const VkCommandBufferBeginInfo info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                                         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
@@ -262,6 +269,7 @@ void cmdBegin(CommandList &cmd) {
 }
 
 void cmdEnd(CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdEnd"));
     EQ_VALIDATE(Validation::checkMarkersClosed(cmd.internal.markerDepth));
     // Writes become visible to the CPU once the submission's timeline point is
@@ -282,6 +290,7 @@ void cmdEnd(CommandList &cmd) {
 }
 
 void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, heap.internal.id, "descriptor heap");
     cmd.internal.heapResourceSet = heap.internal.resourceSet;
     cmd.internal.heapSamplerSet = heap.internal.samplerSet;
@@ -290,6 +299,7 @@ void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
 }
 
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapResourceSet != 0));
     EQ_VALIDATE(Validation::checkDepthWriteAllowed(cmd.internal.rendering && cmd.internal.depthReadOnly,
@@ -314,6 +324,7 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
 }
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
     // Kept for endNative (P70).
     std::memcpy(cmd.internal.rootData, data, std::min<size_t>(size, sizeof(cmd.internal.rootData)));
@@ -323,10 +334,15 @@ void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
                                VK_SHADER_STAGE_ALL, 0, size, data);
 }
 
-void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) { fn(cmd).vkCmdDispatch(native(cmd), x, y, z); }
+void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, false, "cmdDispatch"));
+    fn(cmd).vkCmdDispatch(native(cmd), x, y, z);
+}
 
 // Coarse stage -> stage barrier (P36): every write before, every access after.
 void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     if (((before | after) & Stage::eAccelerationStructure) != Stage::eNone && !cmd.internal.device->rayTracing) {
         reportError(ErrorCategory::eUnsupported,
                     "cmdBarrier: Stage::eAccelerationStructure needs ray tracing (DeviceLimits::rayTracing)");
@@ -353,6 +369,7 @@ void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
 
 void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const Buffer &dst, uint64 dstOffset,
                    uint64 size) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, src.internal.id, "buffer");
     EQ_VK_CHECK_ALIVE(cmd.internal.device, dst.internal.id, "buffer");
     const VkBufferCopy region{.srcOffset = srcOffset, .dstOffset = dstOffset, .size = size};
@@ -414,6 +431,7 @@ void openSection(CommandList &cmd, uint32 width, uint32 height) {
 } // namespace
 
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdBeginRendering"));
     constexpr size_t kMaxColors = std::size(CommandList{}.internal.colors);
@@ -560,6 +578,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
 }
 
 void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdBeginRendering"));
     EQ_VALIDATE(Validation::checkRenderingSize(size));
     cmd.internal.colorCount = 0;
@@ -577,6 +596,7 @@ void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
 }
 
 void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetViewport"));
     EQ_VALIDATE(Validation::checkViewport(viewport));
     cmd.internal.viewport = viewport;
@@ -584,6 +604,7 @@ void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
 }
 
 void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetScissor"));
     EQ_VALIDATE(Validation::checkScissor(scissor));
     cmd.internal.scissor = scissor;
@@ -591,6 +612,7 @@ void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
 }
 
 void cmdSetStencilReference(CommandList &cmd, uint8 reference) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetStencilReference"));
     cmd.internal.stencilReference = reference;
     cmd.internal.stencilOverride = true;
@@ -598,6 +620,7 @@ void cmdSetStencilReference(CommandList &cmd, uint8 reference) {
 }
 
 void cmdEndRendering(CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdEndRendering"));
     fn(cmd).vkCmdEndRendering(native(cmd));
 
@@ -655,10 +678,13 @@ void cmdEndRendering(CommandList &cmd) {
 }
 
 void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, true, "cmdDrawMesh"));
     fn(cmd).vkCmdDrawMeshTasksEXT(native(cmd), x, y, z);
 }
 
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkIndexBuffer((buffer.usage & BufferUsage::eIndex) != BufferUsage::eNone, offset,
                                              format == IndexFormat::eUint16 ? 2 : 4, buffer.size));
@@ -668,10 +694,12 @@ void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, In
 
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 vertexOffset,
                     uint32 firstInstance) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     fn(cmd).vkCmdDrawIndexed(native(cmd), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     // No RI section check: native rendering sections (escape hatch) may hold RI draws;
     // the validation layer reports a draw outside any section.
     fn(cmd).vkCmdDraw(native(cmd), vertexCount, instanceCount, firstVertex, firstInstance);
@@ -680,6 +708,7 @@ void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 
 // ── Discard and clears (P65, P69) ────────────────────────────────────────────
 
 void cmdDiscard(CommandList &cmd, const TextureView &view) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdDiscard"));
@@ -694,6 +723,7 @@ void cmdDiscard(CommandList &cmd, const TextureView &view) {
 }
 
 void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdClearTexture"));
@@ -735,6 +765,7 @@ void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue
 }
 
 void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdClearBuffer"));
     if ((buffer.usage & BufferUsage::eCopyDst) == BufferUsage::eNone) {
@@ -746,6 +777,7 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────
 
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type == QueryType::eTimestamp, "cmdWriteTimestamp"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdWriteTimestamp: the query"));
@@ -753,6 +785,7 @@ void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
 }
 
 void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResetQueries"));
     EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "cmdResetQueries: the query range"));
@@ -761,6 +794,7 @@ void cmdResetQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint
 
 void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
                        uint64 offset) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolveQueries"));
@@ -777,6 +811,7 @@ void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, ui
 }
 
 void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdBeginQuery"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdBeginQuery: the query"));
@@ -786,6 +821,7 @@ void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
 }
 
 void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdEndQuery"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdEndQuery: the query"));
@@ -916,6 +952,7 @@ CopyLayout copyLayout(Device &device, const TextureView &view) {
 }
 
 void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.id, "buffer");
     EQ_VK_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
@@ -944,6 +981,7 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
 }
 
 void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_VK_CHECK_ALIVE(&state, dst.internal.id, "buffer");
@@ -969,6 +1007,7 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
 }
 
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_VK_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
@@ -1012,6 +1051,7 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
 // An empty rendering section whose attachment resolves into `dst`: Vulkan's
 // resolve command handles color averages only, sections handle every mode.
 void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolve"));
     RenderingDesc desc;
     if (isDepthFormat(src.format)) {
@@ -1026,6 +1066,7 @@ void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst
 // ── Native sections (P27, P70) ───────────────────────────────────────────────
 
 NativeCommands beginNative(CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     if (cmd.internal.native) {
         reportError(ErrorCategory::eProgrammerError, "beginNative: a native section is already open");
     }
@@ -1034,6 +1075,7 @@ NativeCommands beginNative(CommandList &cmd) {
 }
 
 void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     if (!cmd.internal.native) {
         reportError(ErrorCategory::eProgrammerError, "endNative: no native section is open");
     }
@@ -1085,6 +1127,7 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
 // ── Submission (P20) ─────────────────────────────────────────────────────────
 
 TimelinePoint submit(Queue &queue, CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(queue.internal.device);
     DeviceState &state = *queue.internal.device;
     EQ_VK_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     const uint64 value = state.lastSignaled + 1;

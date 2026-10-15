@@ -14,6 +14,9 @@ tests at build time.
   found.
 - The result holds the bytecode (empty on failure) and DXC's messages.
 
+One compiler is used by one thread at a time. To compile on several threads, create one per
+thread; pipelines can then be created on those threads too ([threads](../concepts/threads.md)).
+
 ## Example
 
 ```cpp

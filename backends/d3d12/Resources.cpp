@@ -168,7 +168,9 @@ bool writeTextureView(DeviceState &state, const Descriptor &descriptor, D3D12_CP
 
 // D3D12 has one heap type per kind, and heap tier 2 holds every resource:
 // `forResource` changes nothing.
-Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *) {
+Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *,
+                      std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     if (kind == MemoryKind::eGPUUpload && !state.gpuUploadHeap) {
         reportError(ErrorCategory::eUnsupported,
@@ -202,10 +204,14 @@ Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const Memory
     }
     result.internal.heap = heap;
     result.internal.id = EQ_DX_TRACK(&state);
+    if (!name.empty()) {
+        applyName(*device.internal.state, result, name);
+    }
     return result;
 }
 
 void freeMemory(Device &device, Memory &memory) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_DX_UNTRACK(&state, memory.internal.id);
@@ -238,6 +244,7 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
 }
 
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
     [[maybe_unused]] const MemoryRequirements requirements = bufferRequirements(device, desc);
@@ -258,10 +265,14 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
     Validation::placeResource(state.placements, memory.internal.id, offset, requirements.size, result.internal.id,
                               false);
 #endif
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, result, desc.name);
+    }
     return result;
 }
 
 void destroyBuffer(Device &device, Buffer &buffer) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
     EQ_DX_UNTRACK(&state, buffer.internal.id);
@@ -275,6 +286,7 @@ void destroyBuffer(Device &device, Buffer &buffer) {
 // ── Descriptor heaps (P94) ───────────────────────────────────────────────────
 
 DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     if (desc.resourceCount > device.limits.maxResourceDescriptors ||
         desc.samplerCount > device.limits.maxSamplerDescriptors) {
@@ -301,10 +313,14 @@ DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &de
     heap.internal.resourceHeap = resources;
     heap.internal.samplerHeap = samplers;
     heap.internal.id = EQ_DX_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, heap, desc.name);
+    }
     return heap;
 }
 
 void destroyDescriptorHeap(Device &device, DescriptorHeap &heap) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     EQ_DX_UNTRACK(&state, heap.internal.id);
@@ -363,10 +379,12 @@ D3D12_SAMPLER_DESC samplerDescOf(const SamplerDesc &desc) {
 } // namespace
 
 void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     writeSamplers(device, heap, std::span<const SamplerWrite>(writes.begin(), writes.size()));
 }
 
 void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     const D3D12_CPU_DESCRIPTOR_HANDLE start =
@@ -380,10 +398,12 @@ void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const Sampler
 }
 
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     writeDescriptors(device, heap, std::span<const DescriptorWrite>(writes.begin(), writes.size()));
 }
 
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const DescriptorWrite> writes) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     const D3D12_CPU_DESCRIPTOR_HANDLE start =
@@ -413,6 +433,8 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
         EQ_DX_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
         const uint64 resolved = size == kWholeSize ? buffer.size - std::min(offset, buffer.size) : size;
         EQ_VALIDATE(Validation::checkBufferView(offset, resolved, buffer.size, stride, kind == 2));
+        EQ_VALIDATE(Validation::checkBufferViewSize(resolved, stride, kind == 2, device.limits.maxBufferViewSize,
+                                                    device.limits.maxConstantViewSize));
         auto *resource = static_cast<ID3D12Resource *>(buffer.internal.resource);
 
         // Raw views count 4-byte elements; structured views count `stride`.
@@ -451,6 +473,7 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
 // ── Import (P77) ─────────────────────────────────────────────────────────────
 
 Memory importMemory(Device &device, ID3D12Heap *heap, MemoryKind kind, uint64 size, void *mapped) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     Memory memory;
     memory.kind = kind;
@@ -463,6 +486,7 @@ Memory importMemory(Device &device, ID3D12Heap *heap, MemoryKind kind, uint64 si
 }
 
 Buffer importBuffer(Device &device, ID3D12Resource *resource, const BufferDesc &desc, void *mapped) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     Buffer buffer;
     buffer.size = desc.size;
@@ -476,6 +500,7 @@ Buffer importBuffer(Device &device, ID3D12Resource *resource, const BufferDesc &
 }
 
 void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, D3D12_CPU_DESCRIPTOR_HANDLE source) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     EQ_VALIDATE(Validation::checkSlot(slot, heap.resourceCount, "resource"));

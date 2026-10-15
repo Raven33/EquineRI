@@ -149,6 +149,7 @@ nav:
       - Descriptor heaps and bindless: concepts/descriptors.md
       - Root data: concepts/root-data.md
       - Timeline points and command-list reuse: concepts/timeline.md
+      - Threads: concepts/threads.md
       - Barriers: concepts/barriers.md
       - Compiling shaders for RI: concepts/shaders.md
       - Textures and views: concepts/textures.md
@@ -229,6 +230,7 @@ nav:
       - Frame ring: helpers/frame-ring.md
       - GPU profiler: helpers/profiler.md
       - Pipeline statistics: helpers/statistics.md
+      - Group grids: helpers/grid.md
       - Shader compiler: helpers/shader-compiler.md
   - Design notes:
       - design-notes/index.md

@@ -8,13 +8,22 @@ symbols: [RI::setName, RI::cmdBeginMarker, RI::cmdEndMarker]
 
 Debugging aids that are **always on**, in every build ([P53](../design-notes/decisions.md#p53)):
 
-- `RI::setName(device, object, name)` gives an object a name that GPU debuggers and captures
-  (RenderDoc, PIX, Nsight) and validation messages show. It takes memory, buffers, textures,
-  texture views, descriptor heaps, query pools, pipelines and command lists.
+- **Names at creation** ([P106](../design-notes/decisions.md#p106)): every creation desc has a
+  `name` field, its last (`BufferDesc`, `TextureDesc`, `TextureViewDesc`, `ComputePipelineDesc`,
+  `GraphicsPipelineDesc`, `WorkGraphDesc`, `DescriptorHeapDesc`, `QueryPoolDesc`,
+  `SwapchainDesc`), and `allocateMemory`, `createCommandList` and
+  `createAccelerationStructure` take it as their last argument. GPU debuggers and captures
+  (RenderDoc, PIX, Nsight) and validation messages show it. RI copies it during the call, so a
+  temporary string is fine. An empty name, the default, names nothing. A swapchain's images are
+  named `<name> [i]`, also after a resize.
+- `RI::setName(device, object, name)` renames an object later. It takes memory, buffers,
+  textures, texture views, descriptor heaps, query pools, pipelines and command lists, and runs on
+  the [device thread](../concepts/threads.md).
 - `RI::cmdBeginMarker(cmd, name)` / `RI::cmdEndMarker(cmd)` open and close a named region of
   commands in a capture. Regions nest.
 
-Names are UTF-8. They cost a driver call each, so name objects once, at creation.
+Names are UTF-8. They cost a driver call each, so name objects once, at creation, and rename
+only when the name must change.
 
 ## Signature
 
@@ -87,5 +96,6 @@ Names are UTF-8. They cost a driver call each, so name objects once, at creation
 ## Related decisions
 
 - [P53](../design-notes/decisions.md#p53): debugging aids; names and markers always on.
+- [P106](../design-notes/decisions.md#p106): names at creation; `setName` on the device thread.
 - [Debugging](../concepts/debugging.md): crash diagnostics, shader printf and GPU-assisted
   validation in validation builds.

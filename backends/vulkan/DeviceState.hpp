@@ -7,15 +7,18 @@
 //
 // Keeps: the instance, device and volk table; the chosen memory types; the heap
 // set layouts; DGC layouts; the timeline; the internal command buffer; and in
-// validation builds the object and placement trackers. Everything is
-// destroyed with the device.
+// validation builds the object and placement trackers and the device thread
+// (P106). Everything is destroyed with the device.
 //
 // D3D12 counterpart: backends/d3d12/DeviceState.hpp.
 
 #include <RI/Vk/Native.hpp>
 #if EQUINE_VALIDATION
+#include <RI/Validation/Checks.hpp>
 #include <RI/Validation/ObjectTracker.hpp>
 #include <RI/Validation/Placement.hpp>
+
+#include <thread>
 #endif
 
 #include <volk.h>
@@ -97,6 +100,7 @@ struct DeviceState {
     VkCommandBuffer internalCommands = VK_NULL_HANDLE;
 
 #if EQUINE_VALIDATION
+    std::thread::id deviceThread; // the thread that called createDevice (P106)
     Validation::ObjectTracker objects;
     Validation::PlacementTracker placements; // discard after aliasing (P69)
 #endif
@@ -127,6 +131,18 @@ void destroyIndirectLayouts(DeviceState &state);
 
 // Debugging (Debug.cpp, P53).
 void loadDebugFunctions(DeviceState &state);
+// The native names of an object (debug utils), shared by setName and names
+// given at creation (P106); `nameNative` names one handle (0: nothing).
+void nameNative(const DeviceState &state, VkObjectType type, uint64 handle, std::string_view name);
+void applyName(const DeviceState &state, const Memory &memory, std::string_view name);
+void applyName(const DeviceState &state, const Buffer &buffer, std::string_view name);
+void applyName(const DeviceState &state, const Texture &texture, std::string_view name);
+void applyName(const DeviceState &state, const TextureView &view, std::string_view name);
+void applyName(const DeviceState &state, const DescriptorHeap &heap, std::string_view name);
+void applyName(const DeviceState &state, const QueryPool &pool, std::string_view name);
+void applyName(const DeviceState &state, const Pipeline &pipeline, std::string_view name);
+void applyName(const DeviceState &state, const CommandList &cmd, std::string_view name);
+void applyName(const DeviceState &state, const AccelerationStructure &structure, std::string_view name);
 // checkVk for queue submission and waits: a lost device reports the device
 // fault details when VK_EXT_device_fault is on.
 void checkQueueVk(DeviceState &state, VkResult result, std::string_view call);
@@ -169,10 +185,16 @@ void submitInternal(DeviceState &state);
 #define EQ_VK_TRACK(state) ::RI::Validation::trackObject((state)->objects)
 #define EQ_VK_UNTRACK(state, id) ::RI::Validation::untrackObject((state)->objects, id)
 #define EQ_VK_CHECK_ALIVE(state, id, kind) EQ_VALIDATE(::RI::Validation::checkAlive((state)->objects, id, kind))
+// Calls outside the any-thread list run on the device thread (P106). A null
+// state (a default-constructed object) is left to the liveness check.
+#define EQ_VK_CHECK_THREAD(state)                                                                        \
+    EQ_VALIDATE((state) == nullptr ? ::RI::Validation::CheckResult{}                                     \
+                                   : ::RI::Validation::checkDeviceThread((state)->deviceThread, __func__))
 #else
 #define EQ_VK_TRACK(state) uint64{0}
 #define EQ_VK_UNTRACK(state, id) ((void)0)
 #define EQ_VK_CHECK_ALIVE(state, id, kind) ((void)0)
+#define EQ_VK_CHECK_THREAD(state) ((void)0)
 #endif
 
 } // namespace RI::Vk

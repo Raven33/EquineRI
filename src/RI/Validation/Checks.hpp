@@ -11,6 +11,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <thread>
 
 namespace RI::Validation {
 
@@ -41,6 +42,13 @@ CheckResult checkHeapSetBeforePipeline(bool heapSet);
 // buffer views start at a multiple of 256 and their size, rounded up to 256,
 // fits in the buffer. `size` is already resolved (no kWholeSize).
 CheckResult checkBufferView(uint64 offset, uint64 size, uint64 bufferSize, uint32 stride, bool constant);
+
+// A buffer view's size against the limits (P106): read and read-write views
+// cover at most kMaxBufferViewElements elements (4 bytes for raw views) and
+// `maxViewSize` bytes; constant views (size rounded up to 256) at most
+// `maxConstantSize` bytes. `size` is already resolved.
+CheckResult checkBufferViewSize(uint64 size, uint32 stride, bool constant, uint64 maxViewSize,
+                                uint64 maxConstantSize);
 
 // Rounds a constant buffer view's size up to the 256-byte block (both backends).
 inline constexpr uint64 constantViewSize(uint64 size) { return (size + 255) & ~uint64{255}; }
@@ -176,5 +184,13 @@ CheckResult checkRenderingSize(const RenderingSize &size);
 
 // A 3D texture's view that picks depth slices covers one mip (P102).
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
+
+// Group counts of a dispatch or mesh draw (P106): each at most
+// kMaxGroupsPerDimension, and for mesh draws x * y * z at most kMaxMeshGroups.
+CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::string_view call);
+
+// A call outside the any-thread list runs on the device thread, the one that
+// called createDevice (P106). `call` names it.
+CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view call);
 
 } // namespace RI::Validation

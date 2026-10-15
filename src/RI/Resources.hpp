@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <span>
+#include <string_view>
 
 namespace RI {
 
@@ -39,6 +40,7 @@ makeBitmask(BufferUsage)
 struct BufferDesc {
     uint64 size = 0;
     BufferUsage usage = BufferUsage::eNone;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 // Size, alignment and compatible memory kinds of a resource placed in memory
@@ -60,16 +62,24 @@ inline constexpr bool fits(const MemoryRequirements &requirements, MemoryKind ki
 struct DescriptorHeapDesc {
     uint32 resourceCount = 0; // read, read-write and constant-buffer views
     uint32 samplerCount = 0;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 // The rest of a buffer from `offset` (view sizes).
 inline constexpr uint64 kWholeSize = ~uint64{0};
+
+// The most elements one read or read-write buffer view covers, on both
+// backends (P106: D3D12's limit). Raw views count 4-byte elements, so at most
+// 512 MiB; structured views count `stride`. DeviceLimits::maxBufferViewSize
+// and maxConstantViewSize bound the bytes.
+inline constexpr uint64 kMaxBufferViewElements = uint64{1} << 27;
 
 // Shader bytecode: SPIR-V for Vulkan, DXIL for D3D12 (P29).
 using Bytecode = std::span<const std::byte>;
 
 struct ComputePipelineDesc {
     Bytecode shader; // entry point "main"
+    std::string_view name; // empty: unnamed (P106)
 };
 
 // Work graphs (P50, P62), D3D12 only: a DXIL library (lib_6_8) whose node
@@ -78,6 +88,7 @@ struct ComputePipelineDesc {
 struct WorkGraphDesc {
     Bytecode library;
     uint32 rootDataSize = 0;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 // Backing memory a work graph needs (P50): a range of a buffer with

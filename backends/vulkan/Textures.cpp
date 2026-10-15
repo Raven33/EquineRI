@@ -315,6 +315,7 @@ MemoryRequirements textureRequirements(Device &device, const TextureDesc &desc) 
 }
 
 Texture createTexture(Device &device, const Memory &memory, uint64 offset, const TextureDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
@@ -367,10 +368,14 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO, .imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &barrier};
     state.functions.vkCmdPipelineBarrier2(beginInternal(state), &dependency);
     submitInternal(state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, texture, desc.name);
+    }
     return texture;
 }
 
 void destroyTexture(Device &device, Texture &texture) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, texture.internal.id, "texture");
     EQ_VK_UNTRACK(&state, texture.internal.id);
@@ -389,6 +394,7 @@ void destroyTexture(Device &device, Texture &texture) {
 // ── Views (P73, P74) ─────────────────────────────────────────────────────────
 
 TextureView createView(Device &device, const Texture &texture, const TextureViewDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, texture.internal.id, "texture");
     const Format format = desc.format == Format::eUndefined ? texture.format : desc.format;
@@ -498,10 +504,14 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
     out.internal.restingLayout = texture.internal.restingLayout;
     out.internal.textureUsage = texture.usage;
     out.internal.textureId = texture.internal.id;
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, out, desc.name);
+    }
     return out;
 }
 
 void destroyView(Device &device, TextureView &view) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
     state.functions.vkDestroyImageView(state.device, native(view), nullptr);
@@ -512,6 +522,7 @@ void destroyView(Device &device, TextureView &view) {
 // ── Import (P77) ─────────────────────────────────────────────────────────────
 
 Texture importTexture(Device &device, VkImage image, const TextureDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
     EQ_VALIDATE(Validation::checkTextureShape(desc));

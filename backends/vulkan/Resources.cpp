@@ -104,7 +104,9 @@ uint32 kindsOf(const DeviceState &state, uint32 typeBits) {
 
 // ── Memory ───────────────────────────────────────────────────────────────────
 
-Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *forResource) {
+Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *forResource,
+                      std::string_view name) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     uint32 type = state.memoryTypes[kindIndex(kind)];
     if (type == UINT32_MAX) {
@@ -144,10 +146,14 @@ Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const Memory
     result.internal.memory = reinterpret_cast<uint64>(memory);
     result.internal.memoryType = type;
     result.internal.id = EQ_VK_TRACK(&state);
+    if (!name.empty()) {
+        applyName(*device.internal.state, result, name);
+    }
     return result;
 }
 
 void freeMemory(Device &device, Memory &memory) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_VK_UNTRACK(&state, memory.internal.id);
@@ -187,6 +193,7 @@ MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc) {
 }
 
 Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const BufferDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
     [[maybe_unused]] const MemoryRequirements requirements = bufferRequirements(device, desc);
@@ -214,10 +221,14 @@ Buffer createBuffer(Device &device, const Memory &memory, uint64 offset, const B
     Validation::placeResource(state.placements, memory.internal.id, offset, requirements.size, result.internal.id,
                               false);
 #endif
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, result, desc.name);
+    }
     return result;
 }
 
 void destroyBuffer(Device &device, Buffer &buffer) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
     EQ_VK_UNTRACK(&state, buffer.internal.id);
@@ -230,6 +241,7 @@ void destroyBuffer(Device &device, Buffer &buffer) {
 // ── Descriptor heaps (P94) ───────────────────────────────────────────────────
 
 DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     if (desc.resourceCount > device.limits.maxResourceDescriptors ||
         desc.samplerCount > device.limits.maxSamplerDescriptors) {
@@ -288,10 +300,14 @@ DescriptorHeap createDescriptorHeap(Device &device, const DescriptorHeapDesc &de
     heap.internal.resourceSet = reinterpret_cast<uint64>(sets[0]);
     heap.internal.samplerSet = reinterpret_cast<uint64>(sets[1]);
     heap.internal.id = EQ_VK_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, heap, desc.name);
+    }
     return heap;
 }
 
 void destroyDescriptorHeap(Device &device, DescriptorHeap &heap) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     EQ_VK_UNTRACK(&state, heap.internal.id);
@@ -300,10 +316,12 @@ void destroyDescriptorHeap(Device &device, DescriptorHeap &heap) {
 }
 
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     writeDescriptors(device, heap, std::span<const DescriptorWrite>(writes.begin(), writes.size()));
 }
 
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const DescriptorWrite> writes) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
 
@@ -380,6 +398,8 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
         const bool constant = type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         const uint64 resolved = size == kWholeSize ? buffer.size - std::min(offset, buffer.size) : size;
         EQ_VALIDATE(Validation::checkBufferView(offset, resolved, buffer.size, stride, constant));
+        EQ_VALIDATE(Validation::checkBufferViewSize(resolved, stride, constant, device.limits.maxBufferViewSize,
+                                                    device.limits.maxConstantViewSize));
 
         // Constant views cover whole 256-byte blocks on both backends.
         bufferInfos[i] = {.buffer = native(buffer),
@@ -472,10 +492,12 @@ VkSampler samplerFor(DeviceState &state, const SamplerDesc &desc) {
 } // namespace
 
 void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     writeSamplers(device, heap, std::span<const SamplerWrite>(writes.begin(), writes.size()));
 }
 
 void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     std::vector<VkDescriptorImageInfo> infos(writes.size());
@@ -499,6 +521,7 @@ void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const Sampler
 // ── Queries (P51, P71) ───────────────────────────────────────────────────────
 
 QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     VkQueryPoolCreateInfo info{.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, .queryCount = desc.count};
     switch (desc.type) {
@@ -520,10 +543,14 @@ QueryPool createQueryPool(Device &device, const QueryPoolDesc &desc) {
     out.internal.device = &state;
     out.internal.pool = reinterpret_cast<uint64>(pool);
     out.internal.id = EQ_VK_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, out, desc.name);
+    }
     return out;
 }
 
 void destroyQueryPool(Device &device, QueryPool &pool) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, pool.internal.id, "query pool");
     EQ_VK_UNTRACK(&state, pool.internal.id);
@@ -553,6 +580,7 @@ PipelineStatisticsLayout pipelineStatisticsLayout(Device &device) {
 }
 
 void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkRange(first, count, pool.count, 1, "resetQueries: the query range"));
@@ -562,6 +590,7 @@ void resetQueries(Device &device, QueryPool &pool, uint32 first, uint32 count) {
 // ── Import (P77) ─────────────────────────────────────────────────────────────
 
 Memory importMemory(Device &device, VkDeviceMemory memory, MemoryKind kind, uint64 size, void *mapped) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     Memory result;
     result.kind = kind;
@@ -575,6 +604,7 @@ Memory importMemory(Device &device, VkDeviceMemory memory, MemoryKind kind, uint
 }
 
 Buffer importBuffer(Device &device, VkBuffer buffer, const BufferDesc &desc, void *mapped) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     const VkBufferDeviceAddressInfo addressInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = buffer};
     Buffer result;
@@ -590,6 +620,7 @@ Buffer importBuffer(Device &device, VkBuffer buffer, const BufferDesc &desc, voi
 
 void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, VkDescriptorType type,
                            const VkDescriptorImageInfo *image, const VkDescriptorBufferInfo *buffer) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
     EQ_VALIDATE(Validation::checkSlot(slot, heap.resourceCount, "resource"));

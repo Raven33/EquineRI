@@ -11,6 +11,7 @@
 
 #include <array>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 namespace RI {
@@ -84,6 +85,7 @@ struct TextureDesc {
     // Other formats views may use (P74). Empty: views use `format` only, which
     // lets drivers keep compression.
     std::vector<Format> viewFormats;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 enum class Aspect : uint8 {
@@ -115,6 +117,7 @@ struct TextureViewDesc {
     uint32 baseLayer = 0;           // 3D: first depth slice
     uint32 layerCount = kAllLayers; // 3D: depth slices of the view's first mip
     Aspect aspect = Aspect::eDefault;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 // MSAA resolve (P52, P76): how the samples of a pixel become one value.
@@ -316,6 +319,7 @@ struct GraphicsPipelineDesc {
     StencilState stencil; // needs a depth format with stencil
     // One per color format, or empty: every target written as is.
     std::vector<BlendState> blend;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 // Index buffers (P39): 16- or 32-bit indices.
@@ -366,6 +370,7 @@ struct CopyLayout {
 struct QueryPoolDesc {
     QueryType type = QueryType::eTimestamp;
     uint32 count = 0;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 } // namespace RI

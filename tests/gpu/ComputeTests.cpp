@@ -290,6 +290,60 @@ EQ_TEST(compute, names_and_markers) {
     RI::destroyDevice(device);
 }
 
+// Names given at creation (P106): every kind with a desc or a name parameter.
+EQ_TEST(compute, names_at_creation) {
+    RI::Device device = createTestDevice();
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 20, nullptr, "named memory");
+    RI::Buffer buffer =
+        RI::createBuffer(device, memory, 0, {.size = 256, .usage = RI::BufferUsage::eCopyDst, .name = "named buffer"});
+    const RI::TextureDesc textureDesc{.width = 16,
+                                      .height = 16,
+                                      .format = RI::Format::eRGBA8Unorm,
+                                      .usage = RI::TextureUsage::eSampled,
+                                      .name = "named texture"};
+    const RI::MemoryRequirements textureReq = RI::textureRequirements(device, textureDesc);
+    RI::Memory textureMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, textureReq.size, &textureReq);
+    RI::Texture texture = RI::createTexture(device, textureMemory, 0, textureDesc);
+    RI::TextureView view = RI::createView(device, texture, {.name = "named view"});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8, .name = "named heap"});
+    RI::QueryPool pool = RI::createQueryPool(device, {.type = RI::QueryType::eTimestamp, .count = 2, .name = "named queries"});
+    const std::vector<std::byte> bytecode = loadShader("fill");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = bytecode, .name = "named pipeline"});
+    RI::CommandList cmd = RI::createCommandList(device, "named commands");
+    RI::cmdBegin(cmd);
+    RI::cmdClearBuffer(cmd, buffer, 0);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    RI::setName(device, cmd, "renamed commands");
+    RI::destroyCommandList(device, cmd);
+    RI::destroyPipeline(device, pipeline);
+    RI::destroyQueryPool(device, pool);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyView(device, view);
+    RI::destroyTexture(device, texture);
+    RI::freeMemory(device, textureMemory);
+    RI::destroyBuffer(device, buffer);
+    RI::freeMemory(device, memory);
+    RI::destroyDevice(device);
+}
+
+#if EQUINE_VALIDATION
+// More groups in one dimension than every backend allows (P106).
+EQ_TEST(compute, too_many_groups_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    const std::vector<std::byte> bytecode = loadShader("fill");
+    RI::Pipeline fill = RI::createComputePipeline(device, {.shader = bytecode});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdSetHeap(cmd, heap);
+    RI::cmdSetPipeline(cmd, fill);
+    RI::cmdSetRootData(cmd, FillRoot{});
+    RI::cmdDispatch(cmd, 65536, 1, 1);
+}
+#endif
+
 #if EQUINE_VALIDATION
 // A marker region left open at cmdEnd (P53).
 EQ_TEST(compute, unclosed_marker_reports) {
