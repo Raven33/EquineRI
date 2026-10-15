@@ -1,0 +1,23 @@
+gpu,NVIDIA GeForce RTX 3080
+driver,NVIDIA 617.42
+config,slots 65536,textures 256,buffers 256,threads 1048576,fetches 32,rounds 2
+heap,image descriptor 32 B,buffer descriptor 16 B,slot stride 32 B
+check,TEX_RANDOM,same,first 16.251 16.251
+check,TEX_UNIFORM,same,first 19.792 19.792
+check,BUF_RANDOM,same,first 4176.000 4176.000
+check,SAMPLED,same,first 16.251 16.251
+measure,unit,sets,heap,heap/sets
+gpu TEX_RANDOM,ms (median),6.9509,15.2226,2.190
+gpu TEX_UNIFORM,ms (median),0.1485,0.5342,3.598
+gpu BUF_RANDOM,ms (median),1.9661,3.4251,1.742
+gpu SAMPLED,ms (median),6.1552,15.6262,2.539
+write descriptors,ns per descriptor (median),431.7,370.9,0.859
+record pipeline+root+dispatch,ns (median),1696.2,1461.6,0.862
+raw gpu TEX_RANDOM sets,6.9509,6.1532
+raw gpu TEX_RANDOM heap,14.4456,15.2226
+raw gpu TEX_UNIFORM sets,0.1485,0.1484
+raw gpu TEX_UNIFORM heap,0.4945,0.5342
+raw gpu BUF_RANDOM sets,1.9651,1.9661
+raw gpu BUF_RANDOM heap,3.4251,3.4230
+raw gpu SAMPLED sets,6.1552,6.1542
+raw gpu SAMPLED heap,15.6262,14.4320
