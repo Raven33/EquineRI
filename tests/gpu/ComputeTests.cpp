@@ -204,6 +204,19 @@ EQ_TEST(compute, buffer_used_after_destroy_reports) {
     RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
     RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadView{.buffer = copy}}});
 }
+
+// The same with a name given at creation: the message names the buffer (P106).
+EQ_TEST(compute, named_buffer_used_after_destroy_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 16);
+    RI::Buffer buffer =
+        RI::createBuffer(device, memory, 0, {.size = 256, .usage = RI::BufferUsage::eRead, .name = "particles"});
+    const RI::Buffer copy = buffer;
+    RI::destroyBuffer(device, buffer);
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 8});
+    RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadView{.buffer = copy}}});
+}
 #endif
 
 // 64-bit atomics on a heap buffer and on groupshared memory (P105). Skipped

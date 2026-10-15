@@ -40,36 +40,44 @@ void nameNative(const DeviceState &state, VkObjectType type, uint64 handle, std:
     checkVk(state.setObjectName(state.device, &info), "vkSetDebugUtilsObjectNameEXT");
 }
 
-void applyName(const DeviceState &state, const Memory &memory, std::string_view name) {
+void applyName(DeviceState &state, const Memory &memory, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_DEVICE_MEMORY, memory.internal.memory, name);
+    EQ_VK_TRACK_NAME(&state, memory.internal.id, name);
 }
-void applyName(const DeviceState &state, const Buffer &buffer, std::string_view name) {
+void applyName(DeviceState &state, const Buffer &buffer, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_BUFFER, buffer.internal.buffer, name);
+    EQ_VK_TRACK_NAME(&state, buffer.internal.id, name);
 }
-void applyName(const DeviceState &state, const Texture &texture, std::string_view name) {
+void applyName(DeviceState &state, const Texture &texture, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_IMAGE, texture.internal.image, name);
     nameNative(state, VK_OBJECT_TYPE_IMAGE_VIEW, texture.view.internal.view, name);
+    EQ_VK_TRACK_NAME(&state, texture.internal.id, name);
 }
-void applyName(const DeviceState &state, const TextureView &view, std::string_view name) {
+void applyName(DeviceState &state, const TextureView &view, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_IMAGE_VIEW, view.internal.view, name);
 }
-void applyName(const DeviceState &state, const DescriptorHeap &heap, std::string_view name) {
+void applyName(DeviceState &state, const DescriptorHeap &heap, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_DESCRIPTOR_POOL, heap.internal.pool, name);
     nameNative(state, VK_OBJECT_TYPE_DESCRIPTOR_SET, heap.internal.resourceSet, name);
     nameNative(state, VK_OBJECT_TYPE_DESCRIPTOR_SET, heap.internal.samplerSet, name);
+    EQ_VK_TRACK_NAME(&state, heap.internal.id, name);
 }
-void applyName(const DeviceState &state, const QueryPool &pool, std::string_view name) {
+void applyName(DeviceState &state, const QueryPool &pool, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_QUERY_POOL, pool.internal.pool, name);
+    EQ_VK_TRACK_NAME(&state, pool.internal.id, name);
 }
-void applyName(const DeviceState &state, const Pipeline &pipeline, std::string_view name) {
+void applyName(DeviceState &state, const Pipeline &pipeline, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_PIPELINE, pipeline.internal.pipeline, name);
+    EQ_VK_TRACK_NAME(&state, pipeline.internal.id, name);
 }
-void applyName(const DeviceState &state, const CommandList &cmd, std::string_view name) {
+void applyName(DeviceState &state, const CommandList &cmd, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_COMMAND_BUFFER, reinterpret_cast<uint64>(cmd.internal.commandBuffer), name);
+    EQ_VK_TRACK_NAME(&state, cmd.internal.id, name);
 }
-void applyName(const DeviceState &state, const AccelerationStructure &structure, std::string_view name) {
+void applyName(DeviceState &state, const AccelerationStructure &structure, std::string_view name) {
     nameNative(state, VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, structure.internal.handle, name);
     nameNative(state, VK_OBJECT_TYPE_BUFFER, structure.internal.buffer, name);
+    EQ_VK_TRACK_NAME(&state, structure.internal.id, name);
 }
 
 void setName(Device &device, const Memory &memory, std::string_view name) {

@@ -29,6 +29,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.buffer_view_size
     validation.group_counts
     validation.device_thread
+    validation.tracker_names
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -151,6 +152,7 @@ if (EQUINE_VALIDATION)
         compute.pipeline_before_heap_reports
         compute.descriptor_slot_out_of_range_reports
         compute.buffer_used_after_destroy_reports
+        compute.named_buffer_used_after_destroy_reports
         compute.unclosed_marker_reports
         texture.depth_write_in_read_only_section_reports
         texture.missing_discard_reports
@@ -165,6 +167,7 @@ if (EQUINE_VALIDATION)
         "compute.pipeline_before_heap_reports|programmer error: cmdSetPipeline: set a descriptor heap with cmdSetHeap first"
         "compute.descriptor_slot_out_of_range_reports|programmer error: slot 8 is outside the resource heap"
         "compute.buffer_used_after_destroy_reports|programmer error: this buffer was destroyed"
+        "compute.named_buffer_used_after_destroy_reports|programmer error: this buffer 'particles' was destroyed"
         "compute.unclosed_marker_reports|programmer error: cmdEnd: 1 marker region(s) left open"
         "texture.depth_write_in_read_only_section_reports|programmer error: cmdSetPipeline: the pipeline writes depth"
         "texture.missing_discard_reports|programmer error: cmdBeginRendering: the texture was placed over memory"
