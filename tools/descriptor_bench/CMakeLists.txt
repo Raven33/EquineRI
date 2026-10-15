@@ -1,0 +1,25 @@
+# The P94 measurement: RI's descriptor sets against VK_EXT_descriptor_heap.
+# Raw Vulkan through volk; shaders from glslang (DXC's heap output is incomplete).
+if (NOT EQUINE_VULKAN_BACKEND)
+    return()
+endif()
+find_program(EQUINE_GLSLANG glslangValidator)
+if (NOT EQUINE_GLSLANG)
+    message(STATUS "descriptor_bench: glslangValidator not found, skipped")
+    return()
+endif()
+add_executable(descriptor_bench "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+target_link_libraries(descriptor_bench PRIVATE volk)
+set(source "${CMAKE_CURRENT_SOURCE_DIR}/bench.comp")
+foreach(workload IN ITEMS TEX_RANDOM TEX_UNIFORM BUF_RANDOM SAMPLED)
+    foreach(mode IN ITEMS sets heap)
+        set(output "$<TARGET_FILE_DIR:descriptor_bench>/bench_${workload}_${mode}.spv")
+        set(defines "-D${workload}")
+        if (mode STREQUAL "heap")
+            list(APPEND defines "-DHEAP")
+        endif()
+        add_custom_command(TARGET descriptor_bench POST_BUILD
+            COMMAND "${EQUINE_GLSLANG}" -V --target-env vulkan1.3 -S comp ${defines} "${source}" -o "${output}"
+            VERBATIM)
+    endforeach()
+endforeach()

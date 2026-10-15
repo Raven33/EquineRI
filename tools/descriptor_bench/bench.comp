@@ -1,0 +1,71 @@
+#version 460
+// The P94 measurement's compute shader: the same work through RI's emulated heap
+// (descriptor sets with mutable descriptors, HEAP undefined) or through
+// VK_EXT_descriptor_heap (HEAP defined). One of TEX_RANDOM, TEX_UNIFORM,
+// BUF_RANDOM or SAMPLED picks the workload.
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_samplerless_texture_functions : require
+#extension GL_EXT_buffer_reference : require
+#ifdef HEAP
+#extension GL_EXT_descriptor_heap : require
+#define RESOURCES layout(descriptor_heap)
+#define SAMPLERS layout(descriptor_heap)
+#else
+#define RESOURCES layout(set = 0, binding = 0)
+#define SAMPLERS layout(set = 1, binding = 0)
+#endif
+
+layout(local_size_x = 64) in;
+
+RESOURCES uniform texture2D textures[];
+RESOURCES readonly buffer Data { vec4 v[]; } buffers[];
+SAMPLERS uniform sampler samplers[];
+
+layout(buffer_reference, std430) writeonly buffer Out { vec4 v[]; };
+
+// Slots are `slotStride` bytes apart in both heaps. A heap array steps by its
+// own descriptor size, so slot s of a type is element s * scale.
+layout(push_constant) uniform Root {
+    Out dst;
+    uint count;       // fetches per thread
+    uint slotMask;    // texture slots: 0 .. slotMask; buffer slots: bufferBase + 0 .. slotMask
+    uint textureScale;
+    uint bufferScale;
+    uint bufferBase;
+    uint samplerMask;
+} root;
+
+uint hash(uint x) {
+    x ^= x >> 16;
+    x *= 0x7feb352du;
+    x ^= x >> 15;
+    x *= 0x846ca68bu;
+    x ^= x >> 16;
+    return x;
+}
+
+void main() {
+    const uint id = gl_GlobalInvocationID.x;
+    vec4 sum = vec4(0.0);
+    uint h = hash(id);
+    for (uint i = 0; i < root.count; ++i) {
+        const ivec2 texel = ivec2(id & 63u, i & 63u);
+#if defined(TEX_UNIFORM)
+        const uint slot = hash(gl_WorkGroupID.x * 977u + i) & root.slotMask;
+        sum += texelFetch(textures[slot * root.textureScale], texel, 0);
+#else
+        h = hash(h + i);
+        const uint slot = h & root.slotMask;
+#if defined(TEX_RANDOM)
+        sum += texelFetch(textures[nonuniformEXT(slot * root.textureScale)], texel, 0);
+#elif defined(BUF_RANDOM)
+        sum += buffers[nonuniformEXT((root.bufferBase + slot) * root.bufferScale)].v[(id + i) & 255u];
+#elif defined(SAMPLED)
+        const uint s = (h >> 20) & root.samplerMask;
+        sum += textureLod(sampler2D(textures[nonuniformEXT(slot * root.textureScale)], samplers[nonuniformEXT(s)]),
+                          (vec2(texel) + 0.5) / 64.0, 0.0);
+#endif
+#endif
+    }
+    root.dst.v[id] = sum;
+}
