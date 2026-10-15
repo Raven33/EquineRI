@@ -10,9 +10,10 @@ Open, in order:
 1. **The missing graphics features are in** (P102: cube and 3D textures, depth bias and clamp,
    line strips and wireframe, geometry and tessellation shaders), verified on Linux (102/102)
    and Windows (165/165 on NVIDIA and AMD, `docs/measurements/windows/verify/5505e42/`).
-2. **P95 and P98**, never reviewed by the user. The user found the `CONTEXT.md` entries
-   unreadable; `docs/reviews/Decisions-P95-P98-plain.md` says them in plain words, with
-   "Your call" on the points to review. Ask them one at a time.
+2. **P95 and P98 are reviewed** (2026-10-15, `docs/reviews/Decisions-P95-P98-plain.md`). From
+   the review: viewport and scissor commands (P103), the stencil reference command (P104), and
+   the helper `readPipelineStatistics`; clears stay `Stage::eCopy`, the host barrier stays
+   automatic, the work-graph bind keeps its wait.
 3. **P94's measurement is done** (`docs/measurements/descriptor_heap/README.md`): descriptor
    sets stay; `VK_EXT_descriptor_heap` is slower on NVIDIA, no faster on RADV, missing on AMD
    Windows, and DXC cannot compile for it yet.
