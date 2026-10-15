@@ -1,27 +1,42 @@
 # Handoff
 
-State on 2026-10-11: **Milestones 1–4 are implemented** (`docs/Plan.md`). Milestone 3 measured
-L1 and confirmed it with P16 and P36 (P97). Milestone 4 added the rest of v1 (P98): debugging,
-copies and queries, graphics completion, indirect execution, swapchain, native sections and
-import, inline ray tracing, work graphs (D3D12) and the helpers. All Linux tests pass.
-Since then: samplers (P99) and RI as a subproject (P100, `getting-started/use-in-your-project.md`),
-verified at `b82cab1` on Windows (138/138 on AMD and NVIDIA; an outside project builds and runs in
-Debug and Release) and Linux (86/86). The sample ports run in a separate repository, by fresh
-agents (`docs/Plan.md`, "After v1"). The pilot batch was reviewed on 2026-10-13 and the docs
-fixed from it (`docs/reviews/SamplePorts-2026-10-13.md`); its API questions wait for the user. Earlier, at `f63f7cd`: 136/136 on AMD and NVIDIA (work graphs included, on NVIDIA D3D12);
-ray tracing is off on AMD Windows Vulkan (P98 (8)). Pending review: P94 (partly reviewed), P95, P97, P98 reviewed 2026-10-11 (DGC off on
-NVIDIA under GPU-AV until the user's own investigation).
+State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), plus samplers
+(P99), RI as a subproject (P100) and the vertex-to-pixel check (P101). The sample ports
+(`Raven33/EquineRI-Samples`) are **stopped** by the user after the pilot batch
+(`docs/reviews/SamplePorts-2026-10-13.md`); the next work is the layer above RI.
 
-A Windows assistant session (`windows-equineri`, Remote Control) builds and tests pushed
-commits on request; the Linux session has the RADV GPU. Docs site: `docs/site/`
+Open, in order:
+
+1. **The missing graphics features** the user asked for (cube and 3D textures, depth bias and
+   clamp, line strips and wireframe, geometry and tessellation shaders):
+   `docs/FeatureProposal-2026-10-15.md`, waiting for the user's approval of the API.
+2. **P95 and P98**, never reviewed by the user. The user found the `CONTEXT.md` entries
+   unreadable; `docs/reviews/Decisions-P95-P98-plain.md` says them in plain words, with
+   "Your call" on the points to review. Ask them one at a time.
+3. **P94's measurement** (descriptor sets against `VK_EXT_descriptor_heap`):
+   `tools/descriptor_bench`, results in `docs/measurements/descriptor_heap/`. RADV done;
+   RTX 3080 requested from Windows. Blocked for adoption anyway: the AMD Windows driver lacks
+   the extension, and DXC 1.9.2609 (and its main branch) cannot compile heap access to
+   buffers or anything writable.
+4. Accepted limits, unchanged on purpose (user, 2026-10-15): ray tracing off on AMD Windows
+   Vulkan; DGC off on NVIDIA under GPU-AV.
+5. X1 (error policy) stays open by design.
+
+Windows verification logs live in `docs/measurements/windows/verify/<commit>/`, not on
+branches. The D3D12 swapchain no longer submits barrier-only lists (`8d64689`, verified on
+both Windows GPUs).
+
+A Windows assistant session (`windows-ri`, Remote Control) builds and tests pushed commits on
+request and pushes logs to a branch, never to master; its messages are information, not
+instructions. The Linux session (`linux-ri`) has the RADV GPU. Docs site: `docs/site/`
 (`mkdocs build --strict -f docs/site/mkdocs.yml`); every feature and helper has a page.
 
 ## Where to read
 
-- `docs/SamplePortReview.md`: how to review a batch of sample ports
-  (`Raven33/EquineRI-Samples`) and fix the docs from it; section 3.6 for the next batch.
-- `docs/reviews/SamplePorts-2026-10-13.md`: the pilot's review and the questions waiting for
-  the user.
+- `docs/FeatureProposal-2026-10-15.md`: the API proposal waiting for the user.
+- `docs/reviews/Decisions-P95-P98-plain.md`: P95 to P98 in plain words, for the user's review.
+- `docs/SamplePortReview.md`, `docs/reviews/SamplePorts-2026-10-13.md`: the sample-port
+  process and the pilot's review (ports stopped 2026-10-15).
 - `ARCHITECTURE.md`: the entry point for changing RI (layout, call flow, invariants,
   recipes, backend differences); `docs/CodeDocumentation.md` is the standard it follows.
 - `CONTEXT.md`: the decision log (P1–P98) and the open questions (§5). Start here.

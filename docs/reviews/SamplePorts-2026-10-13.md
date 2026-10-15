@@ -59,7 +59,7 @@ are agent errors, but they show where agents expect pages.
 | 6 | Vertex-to-pixel values must match by register on D3D12 | Doc missing | `concepts/shaders.md`, "HLSL that works on both backends" |
 | 7 | `bufferRequirements` "typical values" (16 to 256 bytes on Vulkan) | Doc wrong | RI rounds to `bufferImageGranularity` (1 KiB on NVIDIA); how to lay out a block |
 | 8 | Constant buffer views round up to 256 bytes | Hard to find | The rule was in `writeDescriptors.md`; now also in `buffer.md`, where the agent looked |
-| 9 | D3D12: two validator warnings per frame from RI's swapchain | RI defect | Waiting for the user (below) |
+| 9 | D3D12: two validator warnings per frame from RI's swapchain | RI defect | Fixed 2026-10-15 (`8d64689`) |
 | 10 | Root data packing between HLSL and C++ | Doc unclear | `root-data.md`: a vector never crosses a 16-byte boundary; scalars; `static_assert` |
 | 11 | Matrices column-major; clip-space depth 0 to 1 | Doc missing / hard to find | `concepts/shaders.md`: majorness, and a link to the clip-space section of `rendering.md` (depth 0 to 1 was there, under "Clip space points up") |
 
@@ -160,3 +160,8 @@ Ranked by samples affected:
 7. **The D3D12 swapchain warnings** (every D3D12 sample with a window): `acquire` and
    `present` each execute a command list holding only a barrier, and the D3D12 debug layer
    warns about it twice per frame. A backend fix, no API change, to be verified on Windows.
+   **Fixed 2026-10-15** (`8d64689`): back buffers rest in `COMMON`, which is `PRESENT`, so
+   `acquire` and `present` submit nothing; verified on both Windows GPUs.
+
+The user stopped the sample ports on 2026-10-15. Items 2, 4, 5 and 6 (and 3D textures, depth
+clamp, line strips) became `docs/FeatureProposal-2026-10-15.md`; item 1 is moot.
