@@ -168,6 +168,16 @@ EQ_TEST(dxil, fill_heap_and_root_data) {
     EQ_CHECK(threadGroupIs(result, 64, 1, 1));
 }
 
+// The 64-bit atomics bits (P105), as the pinned DXC sets them: atomic64.hlsl
+// uses them on a heap buffer and on groupshared memory; fill.hlsl uses none.
+EQ_TEST(dxil, int64_atomics) {
+    const DxilReadResult atomics = read(loadShader("atomic64"));
+    EQ_CHECK(atomics.error.empty());
+    EQ_CHECK(atomics.info.int64HeapAtomics && atomics.info.int64SharedAtomics);
+    const DxilReadResult none = read(loadShader("fill"));
+    EQ_CHECK(!none.info.int64HeapAtomics && !none.info.int64SharedAtomics);
+}
+
 EQ_TEST(dxil, root_data_4_bytes) {
     const DxilReadResult result = read(loadShader("root4"));
     EQ_CHECK(result.error.empty());

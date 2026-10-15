@@ -26,6 +26,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.viewport_and_scissor
     validation.rendering_without_attachments
     validation.query_nesting
+    validation.int64_atomics
     validation.tracker_across_threads
     validation.buffer_view_size
     validation.group_counts
@@ -35,6 +36,7 @@ set(EQUINE_RI_TEST_NAMES
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
     dxil.root_data_with_arrays
+    dxil.int64_atomics
     dxil.declared_bindings
     dxil.sampler_heap_only
     dxil.space999_other_register_is_error
@@ -337,6 +339,7 @@ equine_add_shaders(EquineRITests PROFILE cs_6_6 SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/sampler_heap.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_b1.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_extra.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/atomic64.hlsl"
 )
 equine_add_shaders(EquineRITests PROFILE vs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/link_vs.hlsl")
 equine_add_shaders(EquineRITests PROFILE ps_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/link_skip_ps.hlsl")

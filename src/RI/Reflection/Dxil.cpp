@@ -1112,6 +1112,8 @@ std::string readInto(std::span<const std::byte> bytecode, DxilInfo &info) {
     const uint64 features = loadU64(parts.sfi0, 0);
     info.resourceHeapIndexing = (features & kDxilFeatureResourceDescriptorHeapIndexing) != 0;
     info.samplerHeapIndexing = (features & kDxilFeatureSamplerDescriptorHeapIndexing) != 0;
+    info.int64HeapAtomics = (features & kDxilFeatureAtomicInt64OnDescriptorHeapResource) != 0;
+    info.int64SharedAtomics = (features & kDxilFeatureAtomicInt64OnGroupShared) != 0;
 
     std::vector<DxilBinding> resources;
     error = readPsv(parts.psv0, info, resources);

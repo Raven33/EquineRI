@@ -10,7 +10,8 @@
 // gives its size (P62). The stencil reference comes with the pipeline (P104).
 // In validation builds the pixel shader's input signature is matched to the
 // outputs of the stage before it (geometry, domain, vertex or mesh) by
-// semantic and register (P101).
+// semantic and register (P101), and 64-bit atomics are checked against
+// DeviceLimits (P105; on Vulkan the validation layer does it).
 //
 // Vulkan counterpart: backends/vulkan/Pipeline.cpp and WorkGraph.cpp.
 
@@ -70,12 +71,18 @@ ID3D12RootSignature *createRootSignature(DeviceState &state, const Reflection::D
     return rootSignature;
 }
 
-// Reads one stage's DXIL and rejects what RI does not set up yet.
-Reflection::DxilInfo reflectStage(Bytecode bytecode, const char *call) {
+// Reads one stage's DXIL and rejects what RI does not set up yet. In
+// validation builds, also what the device lacks: the D3D12 runtime's own error
+// for 64-bit atomics would not name them (P105).
+Reflection::DxilInfo reflectStage([[maybe_unused]] const Device &device, Bytecode bytecode, const char *call,
+                                  [[maybe_unused]] const char *stage) {
     const Reflection::DxilReadResult read = Reflection::readDxil(bytecode);
     if (!read.error.empty()) {
         reportError(ErrorCategory::eProgrammerError, std::format("{}: {} (the D3D12 backend takes DXIL)", call, read.error));
     }
+    EQ_VALIDATE(Validation::checkInt64Atomics(read.info.int64HeapAtomics, read.info.int64SharedAtomics,
+                                              device.limits.int64BufferAtomics, device.limits.int64SharedAtomics,
+                                              call, stage));
     if (!read.info.bindings.empty()) {
         const Reflection::DxilBinding &b = read.info.bindings.front();
         reportError(ErrorCategory::eProgrammerError,
@@ -199,7 +206,7 @@ D3D12_COMPARISON_FUNC compareOf(CompareOp op) {
 
 Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) {
     DeviceState &state = *device.internal.state;
-    const Reflection::DxilInfo info = reflectStage(desc.shader, "createComputePipeline");
+    const Reflection::DxilInfo info = reflectStage(device, desc.shader, "createComputePipeline", "compute");
     checkRootDataSize(device, info.rootDataSize, "createComputePipeline");
 
     ID3D12RootSignature *rootSignature = createRootSignature(state, info);
@@ -299,7 +306,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         if (code.empty()) {
             return {};
         }
-        Reflection::DxilInfo stage = reflectStage(code, call);
+        Reflection::DxilInfo stage = reflectStage(device, code, call, name);
         if (!stage.hasRootData) {
             return stage;
         }
