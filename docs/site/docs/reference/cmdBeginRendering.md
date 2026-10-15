@@ -1,5 +1,5 @@
 ---
-symbols: [RI::cmdBeginRendering, RI::cmdEndRendering, RI::RenderingDesc, RI::ColorAttachment, RI::DepthAttachment, RI::LoadOp, RI::StoreOp, RI::ClearValue]
+symbols: [RI::cmdBeginRendering, RI::cmdEndRendering, RI::RenderingDesc, RI::RenderingSize, RI::ColorAttachment, RI::DepthAttachment, RI::LoadOp, RI::StoreOp, RI::ClearValue]
 ---
 
 # RI::cmdBeginRendering, RI::cmdEndRendering
@@ -39,6 +39,29 @@ At `cmdBeginRendering`, RI:
 At `cmdEndRendering`, RI switches the attachments back to rest
 ([P68](../design-notes/decisions.md#p68)).
 
+### Sections without attachments
+
+`RI::cmdBeginRendering(cmd, RI::RenderingSize{width, height})` opens a section with no
+attachment ([P105](../design-notes/decisions.md#p105)). Rasterization covers `width` ×
+`height` pixels, and pixel shaders write only storage (`ReadWriteView`s): a shadow atlas
+written with `InterlockedMin`, voxelization, a visibility buffer built with atomics. The
+viewport and scissor start at the whole size. Pipelines used in it have no `colorFormats`,
+no `depthFormat`, and `samples = 1`.
+
+```cpp
+RI::cmdBeginRendering(cmd, RI::RenderingSize{.width = 4096, .height = 4096});
+RI::cmdSetPipeline(cmd, shadowPipeline); // no color or depth format
+RI::cmdSetViewport(cmd, tile);
+RI::cmdDrawMesh(cmd, groups, 1, 1);
+RI::cmdEndRendering(cmd);
+RI::cmdBarrier(cmd, RI::Stage::ePixel, RI::Stage::ePixel); // storage writes, then reads
+```
+
+The pixel shader's storage writes are ordered like any other: with your
+[barriers](cmdBarrier.md) (`Stage::ePixel`). Vulkan gives the size as the render area of a
+dynamic-rendering section with zero attachments; D3D12 binds no render target and bounds
+rasterization with the viewport and scissor alone.
+
 ## Signature
 
 --8<-- "generated/signatures/RI.cmdBeginRendering.md"
@@ -46,6 +69,8 @@ At `cmdEndRendering`, RI switches the attachments back to rest
 --8<-- "generated/signatures/RI.cmdEndRendering.md"
 
 --8<-- "generated/signatures/RI.RenderingDesc.md"
+
+--8<-- "generated/signatures/RI.RenderingSize.md"
 
 --8<-- "generated/signatures/RI.ColorAttachment.md"
 
@@ -110,7 +135,10 @@ A read-only depth section, sampling the depth texture while testing against it:
 
 ## Rules and errors
 
-- At least one attachment; at most 8 colors (**programmer error**).
+- A `RenderingDesc` has at least one attachment, and at most 8 colors (**programmer
+  error**, in every build); a section without attachments takes the `RenderingSize` form.
+- A `RenderingSize` is 1 to 16384 pixels wide and high (**programmer error** in validation
+  builds).
 - Color attachments need `eRenderTarget` usage, the depth attachment `eDepthStencil`. On D3D12
   RI reports a **programmer error** otherwise; on Vulkan the validation layer does.
 - Attachment views should cover one mip; a view with several layers renders to all of them
@@ -134,3 +162,4 @@ A read-only depth section, sampling the depth texture while testing against it:
 - [P68](../design-notes/decisions.md#p68): RI's switches around the section.
 - [P16](../design-notes/decisions.md#p16): no layouts in the API.
 - [P52](../design-notes/decisions.md#p52): MSAA resolve (later).
+- [P105](../design-notes/decisions.md#p105): sections without attachments.

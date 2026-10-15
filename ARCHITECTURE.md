@@ -25,7 +25,7 @@ Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md`
 | `helpers/` | Optional code built only on RI's public functions (P41): `core/` (allocators, transfers, frame ring, profiler, shader compiler; libraries `EquineHelpersVulkan` / `EquineHelpersD3D12`) and `glfw/` (`EquineGlfwWindow`). |
 | `tests/` | `*.cpp` at the top: GPU-free tests (`EquineRITests`). `gpu/`: portable GPU tests, compiled once per backend. `vulkan/`, `d3d12/`: backend-only GPU tests (native access, backend quirks). `conformance/`: both backends declare the same signatures. `shaders/`: the tests' HLSL. |
 | `samples/` | Small programs on RI. |
-| `tools/layout_bench/` | The L1 measurement harness (P96, P97). |
+| `tools/` | Measurement harnesses: `layout_bench/` (L1, P96, P97), `descriptor_bench/` (P94), `statistics_bench/` (statistics-query cost, P105). |
 | `cmake/` | The pinned DXC (`EquineDXC.cmake`, `equine_add_shaders`) and the Agility SDK (`EquineAgilitySDK.cmake`). |
 | `third_party/` | Pinned submodules: Vulkan-Headers, volk, SPIRV-Reflect, GLFW. |
 | `docs/site/` | The MkDocs site: `docs/` pages, `snippets/` (complete programs compiled with `-DEQUINE_BUILD_DOC_SNIPPETS=ON`), `scripts/` (header extraction, coverage, decision pages). |
@@ -161,7 +161,7 @@ mechanisms.
 | Shaders (P93, P94, P67) | SPIR-V from DXC with `-fvk-use-dx-layout -fvk-bind-sampler-heap 0 1`; SPIRV-Reflect (also the values passed to the pixel shader, P101) | DXIL; RI's own DXIL reader (also the signatures, P101) |
 | Layouts (P95, P97) | Modes: unified (`GENERAL` everywhere), T (resting layouts per usage), G; RI switches around rendering, clears, copies | Enhanced barriers; textures rest in `COMMON` or their attachment layout |
 | Barriers (P36) | One `VkMemoryBarrier2` from stage masks | One global barrier; attachment stages left to RI's switches |
-| Rendering (P40) | Dynamic rendering; negative viewport height so clip space is y-up | `OMSetRenderTargets` with RTV/DSV in RI's CPU heaps |
+| Rendering (P40, P105) | Dynamic rendering; negative viewport height so clip space is y-up; a section without attachments is a zero-attachment section with the size as render area | `OMSetRenderTargets` with RTV/DSV in RI's CPU heaps; a section without attachments binds none, and the viewport and scissor bound it |
 | Texture shapes (P102) | Cubes: `CUBE_COMPATIBLE` images, a cube view to read and a second 2D-array view (`internal.arrayView`) to write and render; 3D: slices are depth, barriers take every array layer, render targets are 2D-array views of `2D_ARRAY_COMPATIBLE` images | Cubes are 2D arrays with cube SRVs; 3D: `TEXTURE3D`, one subresource per mip, RTVs pick `WSlice`s |
 | Clears (P65, P95) | Native clear commands | `Clear*View`, UAV clears through RI's small shader-visible heap, then the user's heaps and root signature again |
 | Timeline (P20) | Timeline semaphore | Fence |

@@ -390,6 +390,10 @@ void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const 
 // Rendering sections (P40). RI switches attachment layouts around the section
 // when its backend needs to (A', P68); user code is the same everywhere (P16).
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc);
+// A section without attachments (P105): rasterization covers `size`, pixel
+// shaders write only storage, and pipelines have no color or depth format and
+// one sample.
+void cmdBeginRendering(CommandList &cmd, RenderingSize size);
 void cmdEndRendering(CommandList &cmd);
 // Inside a rendering section, until it ends or the next call (P103).
 void cmdSetViewport(CommandList &cmd, const Viewport &viewport);

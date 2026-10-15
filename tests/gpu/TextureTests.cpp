@@ -1631,6 +1631,53 @@ EQ_TEST(texture, viewport_and_scissor) {
     RI::destroyTexture(f.device, target);
 }
 
+// A section without attachments (P105): pixel shaders write only storage, the
+// size bounds rasterization, and the viewport starts at the whole size.
+struct RasterRoot {
+    uint32 bufferSlot;
+    uint32 width;
+    uint32 value;
+};
+
+EQ_TEST(texture, rendering_without_attachments) {
+    Fixture f;
+    constexpr uint32 kBufferSlot = 2;
+    RI::writeDescriptors(f.device, f.heap,
+                         {{.slot = kBufferSlot, .descriptor = RI::ReadWriteView{.buffer = f.output, .stride = 4}}});
+    std::vector<std::byte> vs = loadShader("storage_raster_vs"), ps = loadShader("storage_raster_ps");
+    RI::Pipeline raster = RI::createGraphicsPipeline(f.device, {.vertex = vs, .pixel = ps});
+    RI::cmdClearBuffer(f.cmd, f.output, ~0u);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::ePixel);
+    RI::cmdBeginRendering(f.cmd, RI::RenderingSize{.width = kSize, .height = kSize});
+    RI::cmdSetPipeline(f.cmd, raster);
+    RI::cmdSetRootData(f.cmd, RasterRoot{.bufferSlot = kBufferSlot, .width = kSize, .value = 7});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdSetViewport(f.cmd, {.width = kSize / 2.0f, .height = float(kSize)});
+    RI::cmdSetRootData(f.cmd, RasterRoot{.bufferSlot = kBufferSlot, .width = kSize, .value = 3});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBarrier(f.cmd, RI::Stage::ePixel, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, kSize * kSize * 4);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+    const auto *values = static_cast<const uint32 *>(f.result.mapped);
+    uint32 wrong = 0;
+    for (uint32 y = 0; y < kSize; ++y) {
+        for (uint32 x = 0; x < kSize; ++x) {
+            wrong += values[y * kSize + x] != (x < kSize / 2 ? 3u : 7u) ? 1 : 0;
+        }
+    }
+    EQ_CHECK(wrong == 0);
+    RI::destroyPipeline(f.device, raster);
+}
+
+// A RenderingDesc with no attachment points to the size form (P105), in every build.
+EQ_TEST(texture, rendering_desc_without_attachment_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    Fixture f;
+    RI::cmdBeginRendering(f.cmd, RI::RenderingDesc{});
+}
+
 #if EQUINE_VALIDATION
 // A pixel shader that leaves out values before the one it reads (P101): RI
 // reports it on both backends, where Vulkan alone would read the wrong value.

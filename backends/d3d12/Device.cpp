@@ -215,6 +215,21 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
                                             : 0;
     state->stencilResolveModes =
         depthResolve ? resolveModeBit(ResolveMode::eMin) | resolveModeBit(ResolveMode::eMax) : 0;
+    // 64-bit atomics (P105). RI shaders reach buffers through
+    // ResourceDescriptorHeap[] (P30), which has its own flag: shader model 6.6
+    // alone does not promise it. Both need 64-bit integer operations.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS1 options1{};
+    const bool int64 =
+        SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1))) &&
+        options1.Int64ShaderOps;
+    D3D12_FEATURE_DATA_D3D12_OPTIONS9 options9{};
+    const bool int64Shared =
+        int64 && SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS9, &options9, sizeof(options9))) &&
+        options9.AtomicInt64OnGroupSharedSupported;
+    D3D12_FEATURE_DATA_D3D12_OPTIONS11 options11{};
+    const bool int64Buffer =
+        int64 && SUCCEEDED(state->device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS11, &options11, sizeof(options11))) &&
+        options11.AtomicInt64OnDescriptorHeapResourceSupported;
 
     // Resource binding tier 3 and the root signature's 64-DWORD budget (P44).
     device.limits = {
@@ -230,6 +245,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .rayTracing = state->rayTracing,
         .workGraphs = workGraphs,
         .samplerMinMax = state->samplerMinMax,
+        .int64BufferAtomics = int64Buffer,
+        .int64SharedAtomics = int64Shared,
         .accelerationStructureScratchAlignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT,
         .depthResolveModes = state->depthResolveModes,
         .stencilResolveModes = state->stencilResolveModes,

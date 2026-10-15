@@ -24,6 +24,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.graphics_stages
     validation.texture_shapes
     validation.viewport_and_scissor
+    validation.rendering_without_attachments
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -118,6 +119,9 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.cube_layered_render
     texture.volume_copy_render_sample
     texture.viewport_and_scissor
+    texture.rendering_without_attachments
+    texture.rendering_desc_without_attachment_reports
+    compute.int64_atomics
     helpers.allocators
     helpers.transfers
     helpers.frame_ring_and_profiler
@@ -131,6 +135,7 @@ else()
 endif()
 set(EQUINE_GPU_SHARED_ABORT_TESTS
     "texture.unlisted_view_format_reports|programmer error: createView: format"
+    "texture.rendering_desc_without_attachment_reports|programmer error: cmdBeginRendering: the RenderingDesc has no attachment"
 )
 if (EQUINE_VALIDATION)
     list(APPEND EQUINE_GPU_SHARED_TEST_NAMES
@@ -165,11 +170,12 @@ function(equine_add_gpu_test_shaders exe)
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
                        "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl" "${dir}/write_faces.hlsl"
                        "${dir}/read_volume.hlsl"
-                       "${dir}/ray_query.hlsl")
+                       "${dir}/ray_query.hlsl" "${dir}/atomic64.hlsl")
     equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
-                       "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/point_vs.hlsl" "${dir}/patch_vs.hlsl")
+                       "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/point_vs.hlsl" "${dir}/patch_vs.hlsl"
+                       "${dir}/storage_raster_vs.hlsl")
     equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl" "${dir}/link_skip_ps.hlsl"
-                       "${dir}/color_ps.hlsl")
+                       "${dir}/color_ps.hlsl" "${dir}/storage_raster_ps.hlsl")
     equine_add_shaders(${exe} PROFILE gs_6_6 SOURCES "${dir}/fullscreen_gs.hlsl" "${dir}/layered_gs.hlsl")
     equine_add_shaders(${exe} PROFILE hs_6_6 SOURCES "${dir}/patch_hs.hlsl")
     equine_add_shaders(${exe} PROFILE ds_6_6 SOURCES "${dir}/patch_ds.hlsl")

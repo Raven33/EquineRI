@@ -206,6 +206,61 @@ EQ_TEST(compute, buffer_used_after_destroy_reports) {
 }
 #endif
 
+// 64-bit atomics on a heap buffer and on groupshared memory (P105). Skipped
+// where DeviceLimits says the GPU lacks them.
+EQ_TEST(compute, int64_atomics) {
+    RI::Device device = createTestDevice();
+    if (!device.limits.int64BufferAtomics || !device.limits.int64SharedAtomics) {
+        RI::destroyDevice(device);
+        return;
+    }
+    constexpr uint32 kThreads = 128; // two groups
+    const RI::BufferDesc desc{.size = 2 * sizeof(uint64),
+                              .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc |
+                                       RI::BufferUsage::eCopyDst};
+    const RI::MemoryRequirements req = RI::bufferRequirements(device, desc);
+    RI::Memory gpuMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, req.size);
+    RI::Memory readbackMemory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 16);
+    RI::Buffer values = RI::createBuffer(device, gpuMemory, 0, desc);
+    RI::Buffer result =
+        RI::createBuffer(device, readbackMemory, 0, {.size = desc.size, .usage = RI::BufferUsage::eCopyDst});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::writeDescriptors(device, heap,
+                         {{.slot = 1, .descriptor = RI::ReadWriteView{.buffer = values, .stride = sizeof(uint64)}}});
+    const std::vector<std::byte> bytecode = loadShader("atomic64");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = bytecode});
+
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdClearBuffer(cmd, values, 0);
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute);
+    RI::cmdSetHeap(cmd, heap);
+    RI::cmdSetPipeline(cmd, pipeline);
+    RI::cmdSetRootData(cmd, uint32{1});
+    RI::cmdDispatch(cmd, kThreads / 64, 1, 1);
+    RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(cmd, values, 0, result, 0, desc.size);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+
+    uint64 sum = 0;
+    for (uint64 i = 0; i < kThreads; ++i) {
+        sum += ((i + 1) << 32) | 7;
+    }
+    const auto *out = static_cast<const uint64 *>(result.mapped);
+    EQ_CHECK(out[0] == sum);
+    EQ_CHECK(out[1] == ((uint64{kThreads} << 32) | 7));
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyPipeline(device, pipeline);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, values);
+    RI::destroyBuffer(device, result);
+    RI::freeMemory(device, gpuMemory);
+    RI::freeMemory(device, readbackMemory);
+    RI::destroyDevice(device);
+}
+
 // Names and markers (P53): always on; nested regions close in the same list.
 EQ_TEST(compute, names_and_markers) {
     RI::Device device = createTestDevice();

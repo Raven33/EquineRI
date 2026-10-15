@@ -1,7 +1,7 @@
 // Rendering and other recorded work on D3D12 (P40, P47, P51, P52, P65, P68,
-// P69, P70, P71, P75, P76, P95).
+// P69, P70, P71, P75, P76, P95, P105).
 //
-// Owns: rendering sections and draws, discard, clears, native sections,
+// Owns: rendering sections (with attachments, or a size alone) and draws, discard, clears, native sections,
 // resolve, queries, and buffer-texture copies (CopyTextureRegion, rows
 // aligned to 256 bytes).
 //
@@ -111,6 +111,20 @@ void checkNotRendering(const CommandList &cmd, const char *call) {
     }
 }
 
+// The state every rendering section starts with. The viewport and scissor
+// cover the section until the user sets them (P103).
+void openSection(CommandList &cmd, uint32 width, uint32 height) {
+    ID3D12GraphicsCommandList7 *l = list(cmd);
+    cmd.internal.renderWidth = width;
+    cmd.internal.renderHeight = height;
+    cmd.internal.viewport = {.width = static_cast<float>(width), .height = static_cast<float>(height)};
+    cmd.internal.scissor = {.width = width, .height = height};
+    applyViewport(l, cmd.internal.viewport);
+    applyScissor(l, cmd.internal.scissor);
+    cmd.internal.stencilOverride = false;
+    cmd.internal.rendering = true;
+}
+
 [[maybe_unused]] Validation::ResolveCheck resolveCheckOf(const DeviceState &state, const TextureView &src,
                                                          const TextureView &dst, ResolveMode mode) {
     const TextureUsage attachment = isDepthFormat(dst.format) ? TextureUsage::eDepthStencil : TextureUsage::eRenderTarget;
@@ -167,6 +181,9 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
     checkNotRendering(cmd, "cmdBeginRendering");
     if (desc.colors.size() > 8) {
         reportError(ErrorCategory::eProgrammerError, "cmdBeginRendering: at most 8 color attachments");
+    }
+    if (const Validation::CheckResult r = Validation::checkRenderingAttachments(desc.colors.size(), desc.depth.has_value())) {
+        reportError(ErrorCategory::eProgrammerError, *r);
     }
     ID3D12GraphicsCommandList7 *l = list(cmd);
     uint32 width = ~0u;
@@ -250,17 +267,19 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
 
     l->OMSetRenderTargets(static_cast<UINT>(desc.colors.size()), desc.colors.empty() ? nullptr : rtvs, FALSE,
                           desc.depth ? &dsv : nullptr);
-    // The viewport and scissor cover the attachments until the user sets them (P103).
-    if (width != ~0u) {
-        cmd.internal.renderWidth = width;
-        cmd.internal.renderHeight = height;
-        cmd.internal.viewport = {.width = static_cast<float>(width), .height = static_cast<float>(height)};
-        cmd.internal.scissor = {.width = width, .height = height};
-        applyViewport(l, cmd.internal.viewport);
-        applyScissor(l, cmd.internal.scissor);
-    }
-    cmd.internal.stencilOverride = false;
-    cmd.internal.rendering = true;
+    openSection(cmd, width, height);
+}
+
+void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
+    checkNotRendering(cmd, "cmdBeginRendering");
+    EQ_VALIDATE(Validation::checkRenderingSize(size));
+    cmd.internal.colorCount = 0;
+    cmd.internal.depth = {};
+    cmd.internal.depthResolve = {};
+    cmd.internal.depthReadOnly = false;
+    // No render targets: the viewport and scissor alone bound rasterization.
+    list(cmd)->OMSetRenderTargets(0, nullptr, FALSE, nullptr);
+    openSection(cmd, size.width, size.height);
 }
 
 void cmdEndRendering(CommandList &cmd) {

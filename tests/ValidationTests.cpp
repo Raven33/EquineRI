@@ -161,3 +161,20 @@ EQ_TEST(validation, viewport_and_scissor) {
     const CheckResult negative = checkScissor({.x = -1, .y = 0, .width = 2, .height = 2});
     EQ_CHECK(negative && negative->find("must be 0 or more") != std::string::npos);
 }
+
+// Sections without attachments (P105): a RenderingDesc needs one, the size form
+// takes 1..16384.
+EQ_TEST(validation, rendering_without_attachments) {
+    using namespace RI::Validation;
+    using RI::RenderingSize;
+    EQ_CHECK(!checkRenderingAttachments(1, false));
+    EQ_CHECK(!checkRenderingAttachments(0, true));
+    const CheckResult none = checkRenderingAttachments(0, false);
+    EQ_CHECK(none && none->find("RenderingSize") != std::string::npos);
+    EQ_CHECK(!checkRenderingSize({.width = 1, .height = 16384}));
+    for (const RenderingSize size : {RenderingSize{.width = 0, .height = 4}, RenderingSize{.width = 16385, .height = 4},
+                                     RenderingSize{.width = 4, .height = 0}}) {
+        const CheckResult bad = checkRenderingSize(size);
+        EQ_CHECK(bad && bad->find("must be 1..16384") != std::string::npos);
+    }
+}

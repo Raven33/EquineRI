@@ -85,6 +85,8 @@ EQ_SIGNATURE(isReached, bool (*)(RI::Queue &, RI::TimelinePoint));
 
 // Limits and requirements (P58, P71)
 EQ_FIELD(DeviceLimits, timestampFrequency, uint64);
+EQ_FIELD(DeviceLimits, int64BufferAtomics, bool);
+EQ_FIELD(DeviceLimits, int64SharedAtomics, bool);
 EQ_FIELD(MemoryRequirements, kinds, uint32);
 
 // Textures and views (P58, P69, P73, P74)
@@ -133,6 +135,7 @@ EQ_FIELD(DepthAttachment, stencilReadOnly, bool);
 EQ_FIELD(RenderingDesc, colors, std::vector<RI::ColorAttachment>);
 EQ_FIELD(RenderingDesc, depth, std::optional<RI::DepthAttachment>);
 EQ_SIGNATURE(cmdBeginRendering, void (*)(RI::CommandList &, const RI::RenderingDesc &));
+EQ_SIGNATURE(cmdBeginRendering, void (*)(RI::CommandList &, RI::RenderingSize));
 EQ_SIGNATURE(cmdEndRendering, void (*)(RI::CommandList &));
 EQ_SIGNATURE(cmdDraw, void (*)(RI::CommandList &, uint32, uint32, uint32, uint32));
 EQ_SIGNATURE(cmdDiscard, void (*)(RI::CommandList &, const RI::TextureView &));

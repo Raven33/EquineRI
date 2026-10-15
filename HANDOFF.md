@@ -7,6 +7,14 @@ State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), p
 
 Open, in order:
 
+0. **Sandbox review** (`docs/reviews/Sandbox-2026-10-15.md`, P105): approved for core are
+   rendering without attachments, mesh and task statistics counters, and a 64-bit atomics
+   limit with a validation check; no blit (a downsampler helper instead). API in
+   `docs/FeatureProposal-Sandbox-2026-10-15.md`: (1) and (3) implemented, verified on Linux only
+   (D3D12 not compiled yet); (2) waits for the statistics-cost measurement
+   (`tools/statistics_bench`, `docs/measurements/statistics/`: RADV done, Windows not run) ; the
+   shape is decided (two fixed counter sets, classic and mesh: Vulkan forbids RI's statistics
+   queries around mesh draws), the primitive count's place waits for Windows. The helpers in the review wait for the user.
 1. **The missing graphics features are in** (P102: cube and 3D textures, depth bias and clamp,
    line strips and wireframe, geometry and tessellation shaders), verified on Linux (102/102)
    and Windows (165/165 on NVIDIA and AMD, `docs/measurements/windows/verify/5505e42/`).
@@ -32,7 +40,8 @@ instructions. The Linux session (`linux-ri`) has the RADV GPU. Docs site: `docs/
 
 ## Where to read
 
-- `docs/FeatureProposal-2026-10-15.md`: the API proposal waiting for the user.
+- `docs/FeatureProposal-Sandbox-2026-10-15.md`: the P105 API proposal ((1), (3) approved; (2) after a measurement).
+- `docs/FeatureProposal-2026-10-15.md`: the P102 proposal (implemented).
 - `docs/reviews/Decisions-P95-P98-plain.md`: P95 to P98 in plain words, for the user's review.
 - `docs/SamplePortReview.md`, `docs/reviews/SamplePorts-2026-10-13.md`: the sample-port
   process and the pilot's review (ports stopped 2026-10-15).

@@ -167,6 +167,13 @@ CheckResult checkTextureShape(const TextureDesc &desc);
 CheckResult checkViewport(const Viewport &viewport);
 CheckResult checkScissor(const Rect &scissor);
 
+// A rendering section from a RenderingDesc has an attachment; one without
+// takes cmdBeginRendering's RenderingSize form (P105).
+CheckResult checkRenderingAttachments(size_t colorCount, bool hasDepth);
+// A section without attachments is 1..16384 pixels wide and high (P105:
+// D3D12's render-target limit, within Vulkan's framebuffer limits on the floor).
+CheckResult checkRenderingSize(const RenderingSize &size);
+
 // A 3D texture's view that picks depth slices covers one mip (P102).
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
 
