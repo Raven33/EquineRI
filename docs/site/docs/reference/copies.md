@@ -23,6 +23,11 @@ A copy covers the **whole view**: one mip, every layer of the view. Make a
 time (a view with `Aspect::eDepth` or `Aspect::eStencil`); `RI::copyBytesPerTexel(format,
 aspect)` gives its size (4 bytes for depth, also for 24-bit depth; 1 for stencil).
 
+A [3D texture](texture.md#shapes) copies **slices** where a 2D array copies layers:
+`layout.layers` counts the view's slices, and in the buffer they follow each other with no
+padding (`layerPitch` is `rowPitch * height`, as D3D12 requires). A 3D view and a 2D-array
+view with as many layers copy into each other with `cmdCopyTexture`.
+
 Buffer-to-buffer copies are [`cmdCopyBuffer`](cmdCopyBuffer.md).
 
 ## Signature
@@ -84,7 +89,8 @@ Buffer-to-buffer copies are [`cmdCopyBuffer`](cmdCopyBuffer.md).
   `optimalBufferCopyOffsetAlignment` (at least the texel size and 4). A texture that rests in
   `GENERAL` is copied in place; others (mode T) switch to the transfer layout and back, with
   RI's exact/full halves ([P68](../design-notes/decisions.md#p68)).
-- **D3D12**: `CopyTextureRegion` per layer, rows on 256 bytes, layers on 512 bytes. Textures
+- **D3D12**: `CopyTextureRegion` per layer, rows on 256 bytes, layers on 512 bytes; one copy
+  for all the slices of a 3D view (texture to texture: one per slice). Textures
   with copy usage rest in `DIRECT_QUEUE_COMMON`, which allows copies: no switch.
 
 ## Rules and errors

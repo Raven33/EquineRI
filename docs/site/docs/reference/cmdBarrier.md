@@ -21,7 +21,7 @@ samples its result. Why barriers exist, and why RI's are coarse, is explained in
 | `eCopy` | copies and clears |
 | `eCompute` | compute shaders |
 | `eIndirect` | reading indirect arguments ([`cmdExecuteIndirect`](indirect.md)) |
-| `eVertex` | vertex shaders |
+| `eVertex` | vertex, hull, domain, geometry, task and mesh shaders |
 | `ePixel` | pixel shaders |
 | `eRenderTarget` | color attachment reads and writes |
 | `eDepthStencil` | depth and stencil tests and writes |

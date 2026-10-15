@@ -21,7 +21,10 @@ The description, all optional:
 - `format`: `eUndefined` (default) means the texture's format; any other must be the texture's
   format or one of its `viewFormats` ([P74](../design-notes/decisions.md#p74));
 - `baseMip`, `mipCount`: the mips, `kAllMips` (default) meaning "to the last mip";
-- `baseLayer`, `layerCount`: the array layers, `kAllLayers` (default) meaning "to the last";
+- `baseLayer`, `layerCount`: the array layers, `kAllLayers` (default) meaning "to the last".
+  For a [3D texture](texture.md#shapes) they are depth slices of the view's first mip, which
+  only render targets use; a view of some slices covers one mip. A cube texture's view
+  covering whole cubes reads as a cube ([shapes](texture.md#shapes));
 - `aspect`: what of a depth-stencil texture the view covers.
 
 | `Aspect` | Covers |

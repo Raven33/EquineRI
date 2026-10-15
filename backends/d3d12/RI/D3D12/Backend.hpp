@@ -110,7 +110,9 @@ struct TextureView {
         uint64 dsvReadOnly = 0;    // read-only depth (and stencil) DSV (P75)
         uint32 rtvSlot = ~0u, dsvSlot = ~0u, dsvReadOnlySlot = ~0u;
         uint32 dxgiFormat = 0;     // DXGI_FORMAT of the view
-        uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1;
+        uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1; // 3D: slices
+        TextureShape shape = TextureShape::e2D; // of the texture (P102)
+        bool cube = false;         // reads as TextureCube(Array): whole cubes
         uint32 planes = 1;         // bitmask of planes: 1 color/depth, 2 stencil
         uint32 restingLayout = 0;  // D3D12_BARRIER_LAYOUT the texture rests in (L1)
         uint32 textureMips = 1, textureLayers = 1;
@@ -122,8 +124,10 @@ struct TextureView {
 // A texture placed in user memory at `offset` (P31). It owns no memory. Its
 // image layouts are RI's business (P16, L1).
 struct Texture {
+    TextureShape shape = TextureShape::e2D;
     uint32 width = 0;
     uint32 height = 0;
+    uint32 depth = 1; // 3D textures
     uint32 layers = 1;
     uint32 mips = 1;
     uint32 samples = 1;

@@ -355,7 +355,7 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
                             "a view with Aspect::eDepth or Aspect::eStencil (P73)");
             }
             // Shaders access textures in their resting layout (L1): GENERAL for storage.
-            imageInfos[i] = {.imageView = native(*texture),
+            imageInfos[i] = {.imageView = storage ? storageViewOf(*texture) : native(*texture),
                              .imageLayout = storage ? VK_IMAGE_LAYOUT_GENERAL
                                                     : static_cast<VkImageLayout>(texture->internal.restingLayout)};
             natives[i].descriptorType = storage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;

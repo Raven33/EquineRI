@@ -20,6 +20,7 @@
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/Placement.hpp>
 
+#include <climits>
 #include <algorithm>
 #include <format>
 #include <tuple>
@@ -113,9 +114,13 @@ bool writeTextureView(DeviceState &state, const Descriptor &descriptor, D3D12_CP
     auto *resource = static_cast<ID3D12Resource *>(in.resource);
     const bool array = in.textureLayers > 1;
     const UINT planeSlice = (in.planes & 1u) != 0 ? 0u : 1u;
+    const bool volume = in.shape == TextureShape::e3D;
     if (readWrite) {
         D3D12_UNORDERED_ACCESS_VIEW_DESC uav{.Format = static_cast<DXGI_FORMAT>(in.dxgiFormat)};
-        if (array) {
+        if (volume) { // the whole volume, as on Vulkan (P102)
+            uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+            uav.Texture3D = {.MipSlice = in.baseMip, .FirstWSlice = 0, .WSize = UINT_MAX};
+        } else if (array) {
             uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
             uav.Texture2DArray = {.MipSlice = in.baseMip, .FirstArraySlice = in.baseLayer, .ArraySize = in.layerCount};
         } else {
@@ -127,7 +132,19 @@ bool writeTextureView(DeviceState &state, const Descriptor &descriptor, D3D12_CP
     }
     D3D12_SHADER_RESOURCE_VIEW_DESC srv{.Format = static_cast<DXGI_FORMAT>(in.dxgiFormat),
                                         .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING};
-    if (view->samples > 1) {
+    if (volume) {
+        srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+        srv.Texture3D = {.MostDetailedMip = in.baseMip, .MipLevels = in.mipCount};
+    } else if (in.cube && in.layerCount == 6) {
+        srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        srv.TextureCube = {.MostDetailedMip = in.baseMip, .MipLevels = in.mipCount};
+    } else if (in.cube) {
+        srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+        srv.TextureCubeArray = {.MostDetailedMip = in.baseMip,
+                                .MipLevels = in.mipCount,
+                                .First2DArrayFace = in.baseLayer,
+                                .NumCubes = in.layerCount / 6};
+    } else if (view->samples > 1) {
         srv.ViewDimension = array ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DMS;
         srv.Texture2DMSArray = {.FirstArraySlice = in.baseLayer, .ArraySize = in.layerCount};
     } else if (array) {

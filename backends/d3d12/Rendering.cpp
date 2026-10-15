@@ -23,6 +23,7 @@
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/Placement.hpp>
 
+#include <climits>
 #include <algorithm>
 #include <format>
 
@@ -367,7 +368,10 @@ void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue
     D3D12_GPU_DESCRIPTOR_HANDLE gpu = state.clearHeap->GetGPUDescriptorHandleForHeapStart();
     gpu.ptr += static_cast<UINT64>(slot) * increment;
     D3D12_UNORDERED_ACCESS_VIEW_DESC uav{.Format = static_cast<DXGI_FORMAT>(view.internal.dxgiFormat)};
-    if (view.internal.textureLayers > 1) {
+    if (view.internal.shape == TextureShape::e3D) {
+        uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+        uav.Texture3D = {.MipSlice = view.internal.baseMip, .FirstWSlice = 0, .WSize = UINT_MAX};
+    } else if (view.internal.textureLayers > 1) {
         uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
         uav.Texture2DArray = {.MipSlice = view.internal.baseMip,
                               .FirstArraySlice = view.internal.baseLayer,
@@ -569,11 +573,21 @@ void checkCopy([[maybe_unused]] const TextureView &view, [[maybe_unused]] bool b
 
 ID3D12Resource *resourceOf(const TextureView &view) { return static_cast<ID3D12Resource *>(view.internal.resource); }
 
-// The subresource of `layer` (counted from the view's first layer).
+bool isVolume(const TextureView &view) { return view.internal.shape == TextureShape::e3D; }
+
+// The subresource of `layer` (counted from the view's first layer). A 3D
+// texture has one subresource per mip; its slices are depth (P102).
 UINT subresourceOf(const TextureView &view, uint32 layer) {
     const UINT plane = view.internal.planes == 2 ? 1 : 0;
-    return view.internal.baseMip + (view.internal.baseLayer + layer) * view.internal.textureMips +
+    const uint32 arrayIndex = isVolume(view) ? 0 : view.internal.baseLayer + layer;
+    return view.internal.baseMip + arrayIndex * view.internal.textureMips +
            plane * view.internal.textureMips * view.internal.textureLayers;
+}
+
+// The z range of slice `layer` of a view: a 3D texture's slice, else z = 0.
+D3D12_BOX sliceBox(const TextureView &view, uint32 layer, uint32 count) {
+    const UINT z = isVolume(view) ? view.internal.baseLayer + layer : 0;
+    return {.left = 0, .top = 0, .front = z, .right = view.width, .bottom = view.height, .back = z + count};
 }
 
 // One layer's placed footprint at `offset`, as D3D12 describes it.
@@ -584,6 +598,8 @@ D3D12_TEXTURE_COPY_LOCATION bufferLocation(ID3D12Device *device, const TextureVi
     device->GetCopyableFootprints(&desc, subresourceOf(view, layer), 1, 0, &footprint, nullptr, nullptr, nullptr);
     footprint.Offset = offset + layer * layout.layerPitch;
     footprint.Footprint.RowPitch = static_cast<UINT>(layout.rowPitch);
+    // A 3D copy moves all of the view's slices at once (P102).
+    footprint.Footprint.Depth = isVolume(view) ? layout.layers : 1;
     D3D12_TEXTURE_COPY_LOCATION location{.pResource = buffer, .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
     location.PlacedFootprint = footprint;
     return location;
@@ -622,7 +638,8 @@ CopyLayout copyLayout(Device & /*device*/, const TextureView &view) {
     layout.alignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
     layout.rowPitch = roundUp(uint64{layout.width} * layout.bytesPerTexel, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
     const uint64 layerBytes = layout.rowPitch * layout.height;
-    layout.layerPitch = roundUp(layerBytes, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+    // 3D slices follow each other directly: D3D12 has no slice pitch (P102).
+    layout.layerPitch = isVolume(view) ? layerBytes : roundUp(layerBytes, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
     layout.size = layout.layerPitch * (layout.layers - 1) + layerBytes;
     return layout;
 }
@@ -641,12 +658,13 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
     Device device{.internal = {.state = &state}};
     const CopyLayout layout = copyLayout(device, dst);
     checkBufferCopyRange(src, srcOffset, layout, BufferUsage::eCopySrc, "cmdCopyBufferToTexture");
-    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+    const uint32 copies = isVolume(dst) ? 1 : layout.layers;
+    for (uint32 layer = 0; layer < copies; ++layer) {
         const D3D12_TEXTURE_COPY_LOCATION to = textureLocation(dst, layer);
         const D3D12_TEXTURE_COPY_LOCATION from =
             bufferLocation(state.device, dst, layer, static_cast<ID3D12Resource *>(src.internal.resource), srcOffset,
                            layout);
-        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, sliceBox(dst, layer, 1).front, &from, nullptr);
     }
 }
 
@@ -659,12 +677,15 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
     Device device{.internal = {.state = &state}};
     const CopyLayout layout = copyLayout(device, src);
     checkBufferCopyRange(dst, dstOffset, layout, BufferUsage::eCopyDst, "cmdCopyTextureToBuffer");
-    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+    const uint32 copies = isVolume(src) ? 1 : layout.layers;
+    for (uint32 layer = 0; layer < copies; ++layer) {
         const D3D12_TEXTURE_COPY_LOCATION to =
             bufferLocation(state.device, src, layer, static_cast<ID3D12Resource *>(dst.internal.resource), dstOffset,
                            layout);
         const D3D12_TEXTURE_COPY_LOCATION from = textureLocation(src, layer);
-        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+        // Depth and multisampled copies take no box: only 3D sources pass one.
+        const D3D12_BOX box = sliceBox(src, layer, layout.layers);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, isVolume(src) ? &box : nullptr);
     }
 }
 
@@ -681,10 +702,12 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
     EQ_VALIDATE(Validation::checkCopyTextureMatch(src.width, src.height, src.internal.layerCount, src.samples,
                                                   copyBytesOf(src), dst.width, dst.height, dst.internal.layerCount,
                                                   dst.samples, copyBytesOf(dst)));
+    // One slice or layer at a time, so 3D and 2D-array views copy into each other.
     for (uint32 layer = 0; layer < src.internal.layerCount; ++layer) {
         const D3D12_TEXTURE_COPY_LOCATION to = textureLocation(dst, layer);
         const D3D12_TEXTURE_COPY_LOCATION from = textureLocation(src, layer);
-        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, nullptr);
+        const D3D12_BOX box = sliceBox(src, layer, 1);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, sliceBox(dst, layer, 1).front, &from, isVolume(src) ? &box : nullptr);
     }
 }
 

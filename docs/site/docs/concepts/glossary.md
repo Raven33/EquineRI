@@ -31,6 +31,7 @@ Features RI v1 does not have at all, with what to do instead, are listed at the 
 | `vkGetBufferDeviceAddress` | `GetGPUVirtualAddress` | `buffer.gpuAddress` | Always available ([P61](../design-notes/decisions.md#p61)). |
 | `VkImage` + `vkBindImageMemory` | `CreatePlacedResource` (texture) | [`RI::Texture`](../reference/texture.md) | Usage flags decide its hidden resting layout ([P58](../design-notes/decisions.md#p58)). |
 | Buffer and image usage flags | Resource flags | `BufferUsage`, `TextureUsage` | Explicit; also select the resting layout. |
+| `VK_IMAGE_TYPE_3D`, `CUBE_COMPATIBLE` | `TEXTURE3D`, `TEXTURECUBE` views | `TextureShape::e3D`, `eCube` | Cubes are 6 layers per cube; views of whole cubes read as cubes ([shapes](../reference/texture.md#shapes)). |
 | `VkImageView` | SRV / UAV / RTV / DSV | [`RI::TextureView`](../reference/view.md) | One view object; RI makes the RTV/DSV descriptors it needs ([P73](../design-notes/decisions.md#p73)). |
 | Dedicated allocation | Committed resource | — | Not in RI; allocate a block for the one resource. |
 | Sparse binding | Reserved resources | — | Not in v1 (F1). |
@@ -60,6 +61,8 @@ Features RI v1 does not have at all, with what to do instead, are listed at the 
 | Compute pipeline | Compute PSO | [`createComputePipeline`](../reference/pipeline.md) | |
 | Graphics pipeline (dynamic rendering) | Graphics PSO | [`createGraphicsPipeline`](../reference/graphicsPipeline.md) | Formats, blend, depth, stencil (reference included), cull, topology. |
 | Mesh / task pipeline | Mesh shader PSO | `createGraphicsPipeline` with task and mesh shaders | `device.limits.meshShaders`. |
+| Tessellation, geometry shaders | HS, DS, GS | `hull`, `domain`, `geometry` in `GraphicsPipelineDesc` | `device.limits.tessellation`, `geometryShaders` ([P102](../design-notes/decisions.md#p102)). |
+| Polygon mode, depth bias, depth clamp | `FillMode`, `DepthBias`, `DepthClipEnable` | `fill`, `depthBias`, `depthClamp` | Fixed in the pipeline. |
 | Dynamic state | Command-list state | — | Fixed in the pipeline ([P38](../design-notes/decisions.md#p38)); viewport and scissor cover the attachments. |
 | Pipeline cache | Pipeline library | — | Not in RI. |
 | `vkCmdBindPipeline` | `SetPipelineState` + root signature | [`cmdSetPipeline`](../reference/cmdSetPipeline.md) | |
@@ -136,11 +139,7 @@ What a Vulkan or D3D12 program may use that RI v1 does not offer. "Native" means
 
 | Vulkan | D3D12 | Instead |
 |---|---|---|
-| Cube maps, 3D images | Texture cubes, 3D textures | A 2D array with 6 layers and the face chosen in the shader; 3D: a 2D array of slices. |
 | Compressed formats (BC, ETC2, ASTC) | BC formats | Uncompressed formats ([`Format`](../reference/texture.md)); decompress when loading. |
-| Geometry and tessellation shaders | GS, HS, DS | Mesh shaders, or native. |
-| Depth bias, depth clamp | `DepthBias`, `DepthClipEnable` | Offset the depth in the shader (a slope-scaled offset in the shadow comparison), or native. |
-| Polygon mode (wireframe) | `FillMode` wireframe | Draw the edges with `eLineList` and an index buffer, or native. |
 | Line width, point size | — (1 pixel only) | Quads: one per point or line segment. |
 | Alpha to coverage, sample mask, conservative rasterization, shading rate | The same | Native. |
 | `vkCmdBlitImage`, mip generation | — | A compute or pixel shader that downsamples; [`cmdCopyTexture`](../reference/copies.md) copies at the same size only. |

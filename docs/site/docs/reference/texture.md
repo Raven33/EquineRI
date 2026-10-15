@@ -1,12 +1,12 @@
 ---
-symbols: [RI::createTexture, RI::destroyTexture, RI::Texture, RI::TextureDesc, RI::TextureUsage, RI::Format, RI::isDepthFormat, RI::hasStencil, RI::bytesPerTexel]
+symbols: [RI::createTexture, RI::destroyTexture, RI::Texture, RI::TextureDesc, RI::TextureShape, RI::TextureUsage, RI::Format, RI::isDepthFormat, RI::hasStencil, RI::bytesPerTexel]
 ---
 
 # RI::createTexture, RI::destroyTexture
 
 ## What it does
 
-`RI::createTexture(device, memory, offset, desc)` creates a 2D texture (or 2D array) described
+`RI::createTexture(device, memory, offset, desc)` creates a 2D, cube or 3D texture described
 by `desc`, **placed** in `memory` at `offset` ([P31](../design-notes/decisions.md#p31)). Like a
 buffer, it allocates nothing: the bytes belong to the memory block. Get the size, alignment and
 memory kinds first with [`textureRequirements`](textureRequirements.md).
@@ -14,8 +14,9 @@ memory kinds first with [`textureRequirements`](textureRequirements.md).
 
 The description:
 
-- `width`, `height`, `layers` (array layers), `mips` (mip levels), `samples` (1, 2, 4 or 8 for
-  MSAA);
+- `shape`: `e2D` (default), `eCube` or `e3D` ([shapes](#shapes));
+- `width`, `height`, `depth` (3D only), `layers` (array layers; 6 per cube), `mips` (mip
+  levels), `samples` (1, 2, 4 or 8 for MSAA, 2D only);
 - `format`: one of the [formats](../concepts/textures.md#formats);
 - `usage`: everything the texture will be used for (below);
 - `viewFormats`: other formats views may use, such as the sRGB version of the format. Empty by
@@ -44,6 +45,26 @@ The flags also decide the layout the texture rests in between operations, inside
 more: unused flags can cost compression. On Vulkan, `eStorage`, `eRenderTarget` and
 `eDepthStencil` also add `TRANSFER_DST`, for [clears](cmdClear.md).
 
+## Shapes
+
+([P102](../design-notes/decisions.md#p102))
+
+- **2D**: one image per layer; `layers > 1` makes a 2D array (`Texture2DArray` in HLSL).
+- **Cube**: a 2D array whose layers are faces, 6 per cube in the order +X, −X, +Y, −Y, +Z, −Z
+  on both backends; `layers = 12` is an array of two cubes. Square, not multisampled. A view
+  covering whole cubes reads as `TextureCube` (6 layers) or `TextureCubeArray`; storage
+  writes (`RWTexture2DArray`) and render targets see its faces as a 2D array, so a geometry
+  shader can render all six in one draw. A view of some faces is a 2D array.
+- **3D**: `depth` slices of `width` × `height`; one layer, not multisampled, no depth formats.
+  Views read and write the whole volume (`Texture3D`, `RWTexture3D`). Where a 2D array counts
+  layers, a 3D texture counts slices: a view's `baseLayer` and `layerCount` pick slices of one
+  mip to render to, and [copies](copies.md) move slices.
+
+| | Vulkan | D3D12 |
+|---|---|---|
+| Cube | 2D image with `CUBE_COMPATIBLE`; a cube view to read, a 2D-array view to write and render | 2D array; `TEXTURECUBE(ARRAY)` shader views |
+| 3D | 3D image, with `2D_ARRAY_COMPATIBLE` when it is a render target; render targets are 2D-array views of slices | `TEXTURE3D`; render-target views pick `WSlice`s |
+
 `RI::isDepthFormat(format)` and `RI::hasStencil(format)` tell depth formats apart;
 `RI::bytesPerTexel(format)` gives the size of one texel of a color format (0 for depth formats).
 
@@ -56,6 +77,8 @@ more: unused flags can cost compression. On Vulkan, `eStorage`, `eRenderTarget` 
 --8<-- "generated/signatures/RI.Texture.md"
 
 --8<-- "generated/signatures/RI.TextureDesc.md"
+
+--8<-- "generated/signatures/RI.TextureShape.md"
 
 --8<-- "generated/signatures/RI.TextureUsage.md"
 
@@ -143,7 +166,11 @@ Two textures sharing memory (they need a [discard](cmdDiscard.md) before each fi
 - `Texture` is a thin value: copies refer to the same texture
   ([P81](../design-notes/decisions.md#p81)). Using a destroyed texture is a **programmer error**
   in validation builds.
-- 3D and cube textures come later.
+- A cube texture is square with 6 layers per cube; a 3D texture has one layer and no depth
+  format; only 2D textures are multisampled, and only 3D textures have a `depth` above 1
+  (**programmer error** in validation builds).
+- An imported cube image (Vulkan) must have been created with `CUBE_COMPATIBLE`, and an
+  imported 3D render target with `2D_ARRAY_COMPATIBLE`.
 
 ## Related decisions
 
@@ -154,3 +181,4 @@ Two textures sharing memory (they need a [discard](cmdDiscard.md) before each fi
 - [P74](../design-notes/decisions.md#p74): view formats.
 - [P69](../design-notes/decisions.md#p69): the initial reset and discard.
 - [P16](../design-notes/decisions.md#p16): no layouts in the API.
+- [P102](../design-notes/decisions.md#p102): cube and 3D textures.

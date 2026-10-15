@@ -1,8 +1,14 @@
 # Proposal: the missing graphics features (2026-10-15)
 
 The user asked for these on 2026-10-15: cube and 3D textures, depth bias, line primitives,
-geometry and tessellation shaders. This page proposes the API. Nothing is implemented until
-the user approves it (signatures change).
+geometry and tessellation shaders. This page proposes the API.
+
+**Approved by the user on 2026-10-15 and implemented as P102.** Differences found while
+implementing: a view of some faces of a cube is a 2D array (`Texture2DArray`), as every view
+of an array is; a 3D view's slice range only matters to render targets (shaders read and
+write the whole volume on both backends); `Texture` also reports `shape` and `depth`; a
+statistics counter of a stage the GPU lacks is `kNoCounter`; and Vulkan's `Stage::eVertex`
+now covers the new stages.
 
 Each part says what changes, how it maps to Vulkan and D3D12, and what stays out.
 
