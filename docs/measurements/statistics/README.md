@@ -35,8 +35,32 @@ rule: the vertex counters just stay 0.
 | GPU | Backend | A (ms) | B | C | D | E | Run |
 |---|---|---|---|---|---|---|---|
 | AMD Radeon 680M (RADV, Mesa 26.2.2, Linux) | Vulkan | 6.692 | −0.08% | n/a | n/a | −0.17% | `radv-680m-linux.txt` |
-| RTX 3080 (Windows) | Vulkan, D3D12 | | | | | | not run yet |
-| AMD RDNA2 iGPU (Windows) | Vulkan, D3D12 | | | | | | not run yet |
+| RTX 3080 (Windows, driver 617.42) | Vulkan | 1.567 | +2.3% | **+6553%** (104.2 ms) | +6519% | +2.2% | `windows_Vulkan_nvidia.txt`  |
+| RTX 3080 (Windows) | D3D12 | 1.574 | +4.4% (0.07 ms) | **+130%** (3.6 ms) | (in C) | n/a | `windows_D3D12_nvidia.txt` |
+| AMD RDNA2 iGPU (Windows) | Vulkan, D3D12 | | | | | | no mesh shaders on this GPU: nothing to measure |
 
 RADV does not report `meshShaderQueries`, so C and D cannot run there; RI's mesh counters
 would read `kNoCounter` on it. On RADV no variant costs anything measurable.
+
+On the RTX 3080, **the task and mesh counters are what costs**: the Vulkan frame goes from
+1.6 ms to 104 ms (65x), and the D3D12 frame from 1.6 ms to 3.6 ms. The counters that are
+allowed with mesh draws (pixel, compute) cost about 2% on Vulkan, and D3D12's classic
+statistics cost 4.4% (0.07 ms, just over P79's thresholds).
+
+### Which counter (RTX 3080, Vulkan, `4add8cd`, `windows_Vulkan_nvidia_4add8cd.txt`)
+
+| Variant | Median (ms) | vs B |
+|---|---|---|
+| A: no query | 1.575 | |
+| B: pixel + compute | 1.619 | |
+| F: B + mesh-primitives query | 1.622 | +0.2%, free |
+| G: B + task invocations | 3.199 | **+98%** (+1.6 ms) |
+| H: B + mesh invocations | 102.503 | **+6232%** (+101 ms) |
+| C: B + task + mesh invocations | 103.326 | as H |
+| D: C + mesh-primitives query | 103.921 | as C |
+| E: compute only | 1.617 | B costs the same |
+
+**The mesh-invocations counter alone is the 100 ms**, the task counter costs 1.6 ms, and
+the primitive count is free. On D3D12 the three come together in `PIPELINE_STATISTICS1`
+(+130%), so the primitive count cannot be had alone there. Validation runs of F, G and H on
+the RTX 3080 were clean.
