@@ -17,7 +17,8 @@ Occlusion and pipeline-statistics queries ([P71](../design-notes/decisions.md#p7
 - a **pipeline-statistics** query counts vertices, primitives and shader invocations. The
   layout of its result differs per backend, so `RI::pipelineStatisticsLayout(device)` gives
   the result's `size` and the byte offset of each 64-bit counter. RI does not convert. The
-  geometry, hull and domain counters are `kNoCounter` on a GPU without those stages (Vulkan);
+  geometry, hull and domain counters are `kNoCounter` on a GPU without those stages (Vulkan).
+  The [statistics helper](../helpers/statistics.md) reads them into one struct;
 
 Copy results to a buffer with [`cmdResolveQueries`](timestamps.md) (each statistics result
 takes `size` bytes), read them after the submission's timeline point, and reset with

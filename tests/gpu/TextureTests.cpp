@@ -7,6 +7,7 @@
 
 #include <TestHarness.hpp>
 
+#include <RI/Helpers/Statistics.hpp>
 #include <RI/RI.hpp>
 
 #include <cmath>
@@ -1314,6 +1315,10 @@ EQ_TEST(texture, geometry_shader) {
     const auto value = [&](uint32 offset) { return *reinterpret_cast<const uint64 *>(base + offset); };
     EQ_CHECK(value(stats.geometryShaderInvocations) == 1);
     EQ_CHECK(value(stats.geometryShaderPrimitives) == 1);
+    // The same counters through the helper's fixed struct.
+    const RI::Helpers::PipelineStatistics read = RI::Helpers::readPipelineStatistics(stats, results.mapped);
+    EQ_CHECK(read.geometryShaderInvocations == 1 && read.geometryShaderPrimitives == 1);
+    EQ_CHECK(read.inputPrimitives == 1 && read.computeShaderInvocations == 0);
     RI::destroyBuffer(f.device, results);
     RI::destroyQueryPool(f.device, statistics);
     RI::destroyPipeline(f.device, pipeline);
