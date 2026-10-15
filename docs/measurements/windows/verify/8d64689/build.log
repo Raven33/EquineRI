@@ -1,0 +1,6 @@
+[0/2] Re-checking globbed directories...
+[1/6] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Swapchain.cpp.obj
+[2/6] Linking CXX static library backends\d3d12\EquineD3D12Backend.lib
+[3/6] Linking CXX executable samples\compute_readback_D3D12.exe; Copying clang AddressSanitizer DLL to compute_readback_D3D12 output directory; Copying the D3D12 Agility SDK runtime to compute_readback_D3D12's output directory
+[4/6] Linking CXX executable tools\layout_bench\layout_bench_D3D12.exe; Copying clang AddressSanitizer DLL to layout_bench_D3D12 output directory; Copying the D3D12 Agility SDK runtime to layout_bench_D3D12's output directory
+[5/6] Linking CXX executable tests\EquineRID3D12Tests.exe; Copying clang AddressSanitizer DLL to EquineRID3D12Tests output directory; Copying the D3D12 Agility SDK runtime to EquineRID3D12Tests's output directory

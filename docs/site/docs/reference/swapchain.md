@@ -63,9 +63,11 @@ command list waited on each frame is the simplest correct loop.
   switch to `PRESENT_SRC` that signals the image's present semaphore, then presents. Both
   submissions run in order on the graphics queue, after your work, and count on its
   timeline. The default image count is the surface's minimum plus one.
-- **D3D12**: a flip-model DXGI swapchain (`FLIP_DISCARD`, 3 buffers by default). `acquire`
-  waits until the current back buffer's last frame is done and runs a switch to its resting
-  layout; `present` runs a switch to `PRESENT` and calls `Present`. sRGB formats use a UNORM
+- **D3D12**: a flip-model DXGI swapchain (`FLIP_DISCARD`, 3 buffers by default). Back
+  buffers rest in the `COMMON` layout, which is also `PRESENT`, so RI's switches around
+  rendering sections and clears leave them ready to present. `acquire` waits until the
+  current back buffer's last frame is done; `present` calls `Present`. Neither submits work
+  of its own. sRGB formats use a UNORM
   buffer with sRGB render-target views, as flip model requires. `eFifo` presents with sync
   interval 1, `eMailbox` with 0, `eImmediate` with tearing allowed.
 

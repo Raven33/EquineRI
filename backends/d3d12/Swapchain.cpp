@@ -2,15 +2,15 @@
 //
 // Owns: surface formats and present modes, create / resize / destroy, acquire
 // and present. acquire() takes the current back buffer once the GPU is done
-// with its last frame and runs a prerecorded switch from "undefined" to its
-// resting layout; present() runs the switch to PRESENT, then Present.
+// with its last frame; present() calls Present. Neither submits work: back
+// buffers rest in COMMON, which is PRESENT, so RI's switches around rendering
+// sections and clears return them ready to present.
 //
 // Watch out: sRGB formats use a UNORM buffer with sRGB render-target views,
 // as flip model requires.
 //
 // Vulkan counterpart: backends/vulkan/Swapchain.cpp.
 
-#include "Barriers.hpp"
 #include "D3D12Check.hpp"
 #include "DeviceState.hpp"
 #include "Formats.hpp"
@@ -27,10 +27,7 @@ struct SwapchainState {
     SwapchainDesc desc;
     IDXGISwapChain3 *swapchain = nullptr;
     bool tearing = false; // created with ALLOW_TEARING
-    ID3D12CommandAllocator *allocator = nullptr;
     std::vector<Texture> textures;
-    std::vector<ID3D12GraphicsCommandList7 *> toRest;
-    std::vector<ID3D12GraphicsCommandList7 *> toPresent;
     std::vector<uint64> imageUse; // fence value after each buffer's last present
     uint32 current = UINT32_MAX;
 };
@@ -96,16 +93,6 @@ void waitFence(DeviceState &state, uint64 value) {
     }
 }
 
-ID3D12GraphicsCommandList7 *recordSwitch(DeviceState &state, ID3D12CommandAllocator *allocator, const TextureView &view,
-                                         const TextureBarrier &barrier) {
-    ID3D12GraphicsCommandList7 *list = nullptr;
-    checkHr(state.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator, nullptr, IID_PPV_ARGS(&list)),
-            "CreateCommandList (swapchain)");
-    textureBarrier(list, view, barrier);
-    checkHr(list->Close(), "ID3D12GraphicsCommandList::Close");
-    return list;
-}
-
 void releaseBuffers(DeviceState &state, SwapchainState &s) {
     for (Texture &texture : s.textures) {
         EQ_DX_UNTRACK(&state, texture.internal.id);
@@ -113,25 +100,14 @@ void releaseBuffers(DeviceState &state, SwapchainState &s) {
         auto *resource = static_cast<ID3D12Resource *>(texture.internal.resource);
         release(resource);
     }
-    for (ID3D12GraphicsCommandList7 *&list : s.toRest) {
-        release(list);
-    }
-    for (ID3D12GraphicsCommandList7 *&list : s.toPresent) {
-        release(list);
-    }
     s.textures.clear();
-    s.toRest.clear();
-    s.toPresent.clear();
     s.imageUse.clear();
-    release(s.allocator);
 }
 
 void buildBuffers(DeviceState &state, Swapchain &swapchain) {
     SwapchainState &s = *swapchain.internal.state;
     DXGI_SWAP_CHAIN_DESC1 desc{};
     checkHr(s.swapchain->GetDesc1(&desc), "IDXGISwapChain1::GetDesc1");
-    checkHr(state.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&s.allocator)),
-            "CreateCommandAllocator (swapchain)");
     const TextureUsage usage = TextureUsage::eRenderTarget | TextureUsage::eCopyDst;
     for (UINT i = 0; i < desc.BufferCount; ++i) {
         ID3D12Resource *buffer = nullptr;
@@ -142,26 +118,10 @@ void buildBuffers(DeviceState &state, Swapchain &swapchain) {
         texture.format = s.desc.format.format;
         texture.usage = usage;
         texture.internal.resource = buffer;
-        texture.internal.restingLayout = static_cast<uint32>(restingLayout(usage));
+        texture.internal.restingLayout = static_cast<uint32>(D3D12_BARRIER_LAYOUT_COMMON); // = PRESENT; allows copies
         texture.internal.viewFormats = uint64{1} << static_cast<uint32>(texture.format);
         texture.internal.id = EQ_DX_TRACK(&state);
         texture.view = makeTextureView(state, texture, {});
-        const auto resting = static_cast<D3D12_BARRIER_LAYOUT>(texture.internal.restingLayout);
-        s.toRest.push_back(recordSwitch(state, s.allocator, texture.view,
-                                        {.before = D3D12_BARRIER_LAYOUT_UNDEFINED,
-                                         .after = resting,
-                                         .syncBefore = D3D12_BARRIER_SYNC_NONE,
-                                         .syncAfter = D3D12_BARRIER_SYNC_ALL,
-                                         .accessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS,
-                                         .accessAfter = D3D12_BARRIER_ACCESS_COMMON,
-                                         .discard = true}));
-        s.toPresent.push_back(recordSwitch(state, s.allocator, texture.view,
-                                           {.before = resting,
-                                            .after = D3D12_BARRIER_LAYOUT_PRESENT,
-                                            .syncBefore = D3D12_BARRIER_SYNC_ALL,
-                                            .syncAfter = D3D12_BARRIER_SYNC_NONE,
-                                            .accessBefore = D3D12_BARRIER_ACCESS_COMMON,
-                                            .accessAfter = D3D12_BARRIER_ACCESS_NO_ACCESS}));
         s.textures.push_back(texture);
     }
     s.imageUse.assign(desc.BufferCount, 0);
@@ -273,8 +233,6 @@ Texture acquire(Device &device, Swapchain &swapchain) {
     }
     const UINT index = s.swapchain->GetCurrentBackBufferIndex();
     waitFence(state, s.imageUse[index]); // blocks while the buffer is still in use
-    ID3D12CommandList *lists[] = {s.toRest[index]};
-    state.graphicsQueue->ExecuteCommandLists(1, lists);
     s.current = index;
     return s.textures[index];
 }
@@ -288,8 +246,6 @@ void present(Queue &queue, Swapchain &swapchain) {
     }
     const uint32 index = s.current;
     s.current = UINT32_MAX;
-    ID3D12CommandList *lists[] = {s.toPresent[index]};
-    state.graphicsQueue->ExecuteCommandLists(1, lists);
     // eFifo: wait for vertical blank. eMailbox: flip model without waiting
     // drops queued frames. eImmediate: tearing.
     const UINT interval = s.desc.presentMode == PresentMode::eFifo ? 1 : 0;
