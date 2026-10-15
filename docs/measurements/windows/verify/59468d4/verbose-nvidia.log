@@ -1,0 +1,121 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 68
+    Start  68: vk.texture.stencil_test
+
+68: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.stencil_test"
+68: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+68: Environment variables: 
+68:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+68: Test timeout computed to be: 120
+68: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+68: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+68: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+68: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+68: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+68: 
+68: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+68: 
+68: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+68: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+68: 
+68: [PASS] texture.stencil_test
+1/6 Test  #68: vk.texture.stencil_test ...................   Passed    0.40 sec
+test 69
+    Start  69: vk.texture.stencil_reference_command
+
+69: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.stencil_reference_command"
+69: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+69: Environment variables: 
+69:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+69: Test timeout computed to be: 120
+69: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+69: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+69: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+69: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+69: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+69: 
+69: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+69: 
+69: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+69: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+69: 
+69: [PASS] texture.stencil_reference_command
+2/6 Test  #69: vk.texture.stencil_reference_command ......   Passed    0.40 sec
+test 82
+    Start  82: vk.texture.geometry_shader
+
+82: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.geometry_shader"
+82: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+82: Environment variables: 
+82:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+82: Test timeout computed to be: 120
+82: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+82: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+82: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+82: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+82: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+82: 
+82: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+82: 
+82: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+82: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+82: 
+82: [PASS] texture.geometry_shader
+3/6 Test  #82: vk.texture.geometry_shader ................   Passed    0.38 sec
+test 134
+    Start 134: d3d12.texture.stencil_test
+
+134: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.stencil_test"
+134: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+134: Environment variables: 
+134:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+134: Test timeout computed to be: 120
+134: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+134: [EquineRI] D3D12 warning: ID3D12CommandList::ClearDepthStencilView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+134: [PASS] texture.stencil_test
+4/6 Test #134: d3d12.texture.stencil_test ................   Passed    1.02 sec
+test 135
+    Start 135: d3d12.texture.stencil_reference_command
+
+135: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.stencil_reference_command"
+135: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+135: Environment variables: 
+135:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+135: Test timeout computed to be: 120
+135: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+135: [EquineRI] D3D12 warning: ID3D12CommandList::ClearDepthStencilView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+135: [PASS] texture.stencil_reference_command
+5/6 Test #135: d3d12.texture.stencil_reference_command ...   Passed    1.01 sec
+test 148
+    Start 148: d3d12.texture.geometry_shader
+
+148: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.geometry_shader"
+148: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+148: Environment variables: 
+148:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+148: Test timeout computed to be: 120
+148: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+148: [PASS] texture.geometry_shader
+6/6 Test #148: d3d12.texture.geometry_shader .............   Passed    1.03 sec
+
+The following tests passed:
+	vk.texture.stencil_test
+	vk.texture.stencil_reference_command
+	vk.texture.geometry_shader
+	d3d12.texture.stencil_test
+	d3d12.texture.stencil_reference_command
+	d3d12.texture.geometry_shader
+
+100% tests passed, 0 tests failed out of 6
+
+Label Time Summary:
+gpu    =   4.25 sec*proc (6 tests)
+
+Total Test time (real) =   4.27 sec
