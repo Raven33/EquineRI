@@ -1,0 +1,9 @@
+# C_stats_mesh: not supported on this device, skipped
+# D_stats_mesh_primitives: not supported on this device, skipped
+# AMD Radeon 680M (RADV REMBRANDT) (vulkan): 6 mesh passes x 512 task groups, 600 frames per variant, interleaved
+variant                     median ms        p10        p90         vs A
+A_none                         6.6923     6.6356     8.0372       +0.00%
+B_stats                        6.6871     6.6345     8.0237       -0.08%
+E_compute_only                 6.6811     6.6324     8.1106       -0.17%
+B_stats vs A_none: -0.0052 ms (-0.08%), not clearly more -> the cost of a statistics query
+B_stats vs E_compute_only: +0.0060 ms (+0.09%), not clearly more -> clearly more: a pool should choose its counters

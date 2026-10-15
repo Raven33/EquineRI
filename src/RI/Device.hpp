@@ -60,6 +60,8 @@ struct DeviceLimits {
     bool rayTracing = false;           // acceleration structures and RayQuery (P49)
     bool workGraphs = false;           // work graphs, D3D12 only (P50)
     bool samplerMinMax = false;        // Reduction::eMin and eMax samplers
+    bool int64BufferAtomics = false;   // 64-bit integer atomics on buffers reached through the heap (P105)
+    bool int64SharedAtomics = false;   // 64-bit integer atomics on groupshared memory (P105)
     uint32 accelerationStructureScratchAlignment = 0; // scratch buffer offsets (P49)
     // Depth and stencil resolve modes (P76): resolveModeBit(mode) per mode.
     uint32 depthResolveModes = 0;

@@ -166,6 +166,23 @@ CheckResult checkScissor(const Rect &scissor) {
     return {};
 }
 
+CheckResult checkRenderingAttachments(size_t colorCount, bool hasDepth) {
+    if (colorCount == 0 && !hasDepth) {
+        return std::string("cmdBeginRendering: the RenderingDesc has no attachment; for a section without "
+                           "attachments, call cmdBeginRendering(cmd, RenderingSize{width, height})");
+    }
+    return {};
+}
+
+CheckResult checkRenderingSize(const RenderingSize &size) {
+    constexpr uint32 kMax = 16384;
+    if (size.width == 0 || size.height == 0 || size.width > kMax || size.height > kMax) {
+        return std::format("cmdBeginRendering: the size is {}x{}; width and height must be 1..{}", size.width,
+                           size.height, kMax);
+    }
+    return {};
+}
+
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices) {
     if (someSlices && mipCount != 1) {
         return std::format("createView: a view of some depth slices of a 3D texture covers one mip; this one "

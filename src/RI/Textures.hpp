@@ -149,6 +149,13 @@ struct Rect {
     uint32 height = 0;
 };
 
+// The size a rendering section without attachments rasterizes (P105):
+// cmdBeginRendering(cmd, RenderingSize{...}); 1..16384 each.
+struct RenderingSize {
+    uint32 width = 0;
+    uint32 height = 0;
+};
+
 // Clear values: color for color textures, depth and stencil otherwise.
 struct ClearValue {
     std::array<float, 4> color{0.0f, 0.0f, 0.0f, 0.0f};

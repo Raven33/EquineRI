@@ -1,7 +1,8 @@
 // Command lists and recording on Vulkan (P20, P34, P36, P56, P85).
 //
 // Owns: command lists (one VkCommandPool each), heap, pipeline and root data
-// binding, barriers, rendering sections and draws, discard and clears,
+// binding, barriers, rendering sections (with attachments, or a size alone,
+// P105) and draws, discard and clears,
 // queries, buffer-texture copies, resolve, native sections, submit and wait.
 //
 // Keeps: what is bound, in CommandList::internal (heap sets, pipeline layout,
@@ -397,6 +398,19 @@ void applyScissor(CommandList &cmd) {
     fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
 }
 
+// The state every rendering section starts with. The viewport and scissor
+// cover the section until the user sets them (P103).
+void openSection(CommandList &cmd, uint32 width, uint32 height) {
+    cmd.internal.renderWidth = width;
+    cmd.internal.renderHeight = height;
+    cmd.internal.viewport = {.width = static_cast<float>(width), .height = static_cast<float>(height)};
+    cmd.internal.scissor = {.width = width, .height = height};
+    applyViewport(cmd);
+    applyScissor(cmd);
+    cmd.internal.stencilOverride = false;
+    cmd.internal.rendering = true;
+}
+
 } // namespace
 
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
@@ -407,8 +421,8 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         reportError(ErrorCategory::eProgrammerError,
                     std::format("cmdBeginRendering: {} color attachments; at most {}", desc.colors.size(), kMaxColors));
     }
-    if (desc.colors.empty() && !desc.depth) {
-        reportError(ErrorCategory::eProgrammerError, "cmdBeginRendering: a rendering section needs an attachment");
+    if (const Validation::CheckResult r = Validation::checkRenderingAttachments(desc.colors.size(), desc.depth.has_value())) {
+        reportError(ErrorCategory::eProgrammerError, *r);
     }
     const bool transitions = state.layoutMode == LayoutMode::eTransitions;
     std::vector<VkImageMemoryBarrier2> barriers;
@@ -542,16 +556,24 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         .pStencilAttachment = stencilAspect ? &stencilInfo : nullptr,
     };
     fn(cmd).vkCmdBeginRendering(native(cmd), &info);
+    openSection(cmd, width, height);
+}
 
-    // The viewport and scissor cover the attachments until the user sets them (P103).
-    cmd.internal.renderWidth = width;
-    cmd.internal.renderHeight = height;
-    cmd.internal.viewport = {.width = static_cast<float>(width), .height = static_cast<float>(height)};
-    cmd.internal.scissor = {.width = width, .height = height};
-    applyViewport(cmd);
-    applyScissor(cmd);
-    cmd.internal.stencilOverride = false;
-    cmd.internal.rendering = true;
+void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdBeginRendering"));
+    EQ_VALIDATE(Validation::checkRenderingSize(size));
+    cmd.internal.colorCount = 0;
+    cmd.internal.depth = {};
+    cmd.internal.depthResolve = {};
+    cmd.internal.depthReadOnly = false;
+    // Dynamic rendering takes zero attachments; the render area gives the size.
+    const VkRenderingInfo info{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea = {.offset = {0, 0}, .extent = {size.width, size.height}},
+        .layerCount = 1,
+    };
+    fn(cmd).vkCmdBeginRendering(native(cmd), &info);
+    openSection(cmd, size.width, size.height);
 }
 
 void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
