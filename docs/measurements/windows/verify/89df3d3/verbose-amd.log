@@ -1,0 +1,63 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 13
+    Start  13: ri.validation.viewport_and_scissor
+
+13: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "validation.viewport_and_scissor"
+13: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+13: Test timeout computed to be: 120
+13: [PASS] validation.viewport_and_scissor
+1/3 Test  #13: ri.validation.viewport_and_scissor ...   Passed    0.01 sec
+test 86
+    Start  86: vk.texture.viewport_and_scissor
+
+86: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.viewport_and_scissor"
+86: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+86: Environment variables: 
+86:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+86: Test timeout computed to be: 120
+86: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+86: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+86: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+86: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+86: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+86: 
+86: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+86: 
+86: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+86: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+86: 
+86: [EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+86: 	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+86: 
+86: [PASS] texture.viewport_and_scissor
+2/3 Test  #86: vk.texture.viewport_and_scissor ......   Passed    0.29 sec
+test 151
+    Start 151: d3d12.texture.viewport_and_scissor
+
+151: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.viewport_and_scissor"
+151: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+151: Environment variables: 
+151:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+151: Test timeout computed to be: 120
+151: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+151: [PASS] texture.viewport_and_scissor
+3/3 Test #151: d3d12.texture.viewport_and_scissor ...   Passed    0.71 sec
+
+The following tests passed:
+	ri.validation.viewport_and_scissor
+	vk.texture.viewport_and_scissor
+	d3d12.texture.viewport_and_scissor
+
+100% tests passed, 0 tests failed out of 3
+
+Label Time Summary:
+gpu    =   1.00 sec*proc (2 tests)
+
+Total Test time (real) =   1.03 sec
