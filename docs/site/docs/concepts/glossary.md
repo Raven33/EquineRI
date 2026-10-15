@@ -63,7 +63,7 @@ Features RI v1 does not have at all, with what to do instead, are listed at the 
 | Mesh / task pipeline | Mesh shader PSO | `createGraphicsPipeline` with task and mesh shaders | `device.limits.meshShaders`. |
 | Tessellation, geometry shaders | HS, DS, GS | `hull`, `domain`, `geometry` in `GraphicsPipelineDesc` | `device.limits.tessellation`, `geometryShaders` ([P102](../design-notes/decisions.md#p102)). |
 | Polygon mode, depth bias, depth clamp | `FillMode`, `DepthBias`, `DepthClipEnable` | `fill`, `depthBias`, `depthClamp` | Fixed in the pipeline. |
-| Dynamic state | Command-list state | — | Fixed in the pipeline ([P38](../design-notes/decisions.md#p38)); viewport and scissor cover the attachments. |
+| Dynamic state | Command-list state | — | Fixed in the pipeline ([P38](../design-notes/decisions.md#p38)), except the viewport and scissor: they cover the attachments until [`cmdSetViewport`, `cmdSetScissor`](../reference/cmdSetViewport.md) change them. |
 | Pipeline cache | Pipeline library | — | Not in RI. |
 | `vkCmdBindPipeline` | `SetPipelineState` + root signature | [`cmdSetPipeline`](../reference/cmdSetPipeline.md) | |
 
@@ -144,7 +144,7 @@ What a Vulkan or D3D12 program may use that RI v1 does not offer. "Native" means
 | Alpha to coverage, sample mask, conservative rasterization, shading rate | The same | Native. |
 | `vkCmdBlitImage`, mip generation | — | A compute or pixel shader that downsamples; [`cmdCopyTexture`](../reference/copies.md) copies at the same size only. |
 | Specialization constants | — | Root data, or `#define`s with the [shader compiler helper](../helpers/shader-compiler.md). |
-| Multiview, viewport arrays, smaller viewports and scissors | View instancing, viewport arrays | One rendering section per view: a section covers its attachments ([rendering](rendering.md)). |
+| Multiview, viewport arrays | View instancing, viewport arrays | One viewport per draw: [`cmdSetViewport`](../reference/cmdSetViewport.md) between draws, or one section per view. |
 | Recording on several threads | Recording on several threads | One thread in v1 ([timeline](timeline.md), [P56](../design-notes/decisions.md#p56)). |
 | Compute and transfer queues | Compute and copy queues | The graphics queue only ([P37](../design-notes/decisions.md#p37)). |
 | Ray tracing pipelines | State objects | Inline ray queries ([P49](../design-notes/decisions.md#p49)). |

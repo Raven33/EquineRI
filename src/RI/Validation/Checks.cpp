@@ -145,6 +145,27 @@ CheckResult checkTextureShape(const TextureDesc &desc) {
     return {};
 }
 
+CheckResult checkViewport(const Viewport &viewport) {
+    if (!(viewport.width > 0.0f) || !(viewport.height > 0.0f)) {
+        return std::format("cmdSetViewport: the viewport is {}x{}; give a width and height above 0", viewport.width,
+                           viewport.height);
+    }
+    const auto inRange = [](float depth) { return depth >= 0.0f && depth <= 1.0f; };
+    if (!inRange(viewport.minDepth) || !inRange(viewport.maxDepth)) {
+        return std::format("cmdSetViewport: the depth range {}..{} is outside 0..1", viewport.minDepth,
+                           viewport.maxDepth);
+    }
+    return {};
+}
+
+CheckResult checkScissor(const Rect &scissor) {
+    if (scissor.x < 0 || scissor.y < 0) {
+        return std::format("cmdSetScissor: the scissor starts at ({}, {}); x and y must be 0 or more", scissor.x,
+                           scissor.y);
+    }
+    return {};
+}
+
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices) {
     if (someSlices && mipCount != 1) {
         return std::format("createView: a view of some depth slices of a 3D texture covers one mip; this one "

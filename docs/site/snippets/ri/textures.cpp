@@ -203,6 +203,13 @@ int main() {
     RI::cmdSetRootData(cmd, DrawRoot{.color = {1.0f, 0.5f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(cmd, 3); // three vertices, one instance
     // --8<-- [end:draw]
+    // --8<-- [start:viewport]
+    // Draw again into the top-left quarter only; the next section starts with
+    // the whole attachments again.
+    RI::cmdSetViewport(cmd, {.x = 0.0f, .y = 0.0f, .width = 128.0f, .height = 128.0f});
+    RI::cmdSetScissor(cmd, {.x = 0, .y = 0, .width = 128, .height = 128});
+    RI::cmdDraw(cmd, 3);
+    // --8<-- [end:viewport]
     // --8<-- [start:end-rendering]
     RI::cmdEndRendering(cmd);
     // --8<-- [end:end-rendering]

@@ -23,6 +23,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.stage_link
     validation.graphics_stages
     validation.texture_shapes
+    validation.viewport_and_scissor
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -115,6 +116,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.cube_storage_then_sample
     texture.cube_layered_render
     texture.volume_copy_render_sample
+    texture.viewport_and_scissor
     helpers.allocators
     helpers.transfers
     helpers.frame_ring_and_profiler

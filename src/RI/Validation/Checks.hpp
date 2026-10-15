@@ -162,6 +162,11 @@ CheckResult checkTextureUsage(Format format, TextureUsage usage);
 // textures have a depth above 1.
 CheckResult checkTextureShape(const TextureDesc &desc);
 
+// A viewport has a size and a depth range inside 0..1; a scissor starts at
+// x, y >= 0 (P103).
+CheckResult checkViewport(const Viewport &viewport);
+CheckResult checkScissor(const Rect &scissor);
+
 // A 3D texture's view that picks depth slices covers one mip (P102).
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
 

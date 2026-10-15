@@ -33,7 +33,8 @@ At `cmdBeginRendering`, RI:
    "undefined" when the load operation does not keep the contents);
 2. clears the attachments whose load operation is `eClear`;
 3. sets the viewport and scissor to cover the smallest attachment, with clip-space y pointing
-   up on both backends.
+   up on both backends ([`cmdSetViewport`, `cmdSetScissor`](cmdSetViewport.md) change them
+   until the section ends).
 
 At `cmdEndRendering`, RI switches the attachments back to rest
 ([P68](../design-notes/decisions.md#p68)).
