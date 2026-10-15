@@ -442,24 +442,31 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
         reportError(ErrorCategory::eProgrammerError,
                     "cmdClearBuffer: the buffer needs BufferUsage::eCopyDst (or eReadWrite) and eGPU or eGPUUpload memory");
     }
-    const uint32 slot = state.clearNext++ % kClearHeapSize;
-    const UINT increment = state.resourceDescriptorSize;
-    D3D12_CPU_DESCRIPTOR_HANDLE cpu = state.clearCpuHeap->GetCPUDescriptorHandleForHeapStart();
-    cpu.ptr += static_cast<SIZE_T>(slot) * increment;
-    D3D12_CPU_DESCRIPTOR_HANDLE shaderCpu = state.clearHeap->GetCPUDescriptorHandleForHeapStart();
-    shaderCpu.ptr += static_cast<SIZE_T>(slot) * increment;
-    D3D12_GPU_DESCRIPTOR_HANDLE gpu = state.clearHeap->GetGPUDescriptorHandleForHeapStart();
-    gpu.ptr += static_cast<UINT64>(slot) * increment;
-    const D3D12_UNORDERED_ACCESS_VIEW_DESC uav{
-        .Format = DXGI_FORMAT_R32_TYPELESS,
-        .ViewDimension = D3D12_UAV_DIMENSION_BUFFER,
-        .Buffer = {.FirstElement = 0, .NumElements = static_cast<UINT>(buffer.size / 4), .Flags = D3D12_BUFFER_UAV_FLAG_RAW}};
-    state.device->CreateUnorderedAccessView(resource, nullptr, &uav, cpu);
-    state.device->CreateUnorderedAccessView(resource, nullptr, &uav, shaderCpu);
     ID3D12DescriptorHeap *heaps[] = {state.clearHeap};
     list(cmd)->SetDescriptorHeaps(1, heaps);
     const UINT values[4] = {value, value, value, value};
-    list(cmd)->ClearUnorderedAccessViewUint(gpu, cpu, resource, values, 0, nullptr);
+    const UINT increment = state.resourceDescriptorSize;
+    // One view covers at most kMaxBufferViewElements (512 MiB raw, P106), so
+    // larger buffers are cleared in pieces.
+    const uint64 elements = buffer.size / 4;
+    for (uint64 first = 0; first < elements; first += kMaxBufferViewElements) {
+        const uint32 slot = state.clearNext++ % kClearHeapSize;
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu = state.clearCpuHeap->GetCPUDescriptorHandleForHeapStart();
+        cpu.ptr += static_cast<SIZE_T>(slot) * increment;
+        D3D12_CPU_DESCRIPTOR_HANDLE shaderCpu = state.clearHeap->GetCPUDescriptorHandleForHeapStart();
+        shaderCpu.ptr += static_cast<SIZE_T>(slot) * increment;
+        D3D12_GPU_DESCRIPTOR_HANDLE gpu = state.clearHeap->GetGPUDescriptorHandleForHeapStart();
+        gpu.ptr += static_cast<UINT64>(slot) * increment;
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC uav{
+            .Format = DXGI_FORMAT_R32_TYPELESS,
+            .ViewDimension = D3D12_UAV_DIMENSION_BUFFER,
+            .Buffer = {.FirstElement = first,
+                       .NumElements = static_cast<UINT>(std::min(elements - first, kMaxBufferViewElements)),
+                       .Flags = D3D12_BUFFER_UAV_FLAG_RAW}};
+        state.device->CreateUnorderedAccessView(resource, nullptr, &uav, cpu);
+        state.device->CreateUnorderedAccessView(resource, nullptr, &uav, shaderCpu);
+        list(cmd)->ClearUnorderedAccessViewUint(gpu, cpu, resource, values, 0, nullptr);
+    }
     restoreUserState(cmd);
 }
 
