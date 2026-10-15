@@ -7,9 +7,9 @@ State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), p
 
 Open, in order:
 
-1. **The missing graphics features** (P102: cube and 3D textures, depth bias and clamp, line
-   strips and wireframe, geometry and tessellation shaders): implemented on branch
-   `graphics-features`, all Linux tests pass; the D3D12 half waits for Windows.
+1. **The missing graphics features are in** (P102: cube and 3D textures, depth bias and clamp,
+   line strips and wireframe, geometry and tessellation shaders), verified on Linux (102/102)
+   and Windows (165/165 on NVIDIA and AMD, `docs/measurements/windows/verify/5505e42/`).
 2. **P95 and P98**, never reviewed by the user. The user found the `CONTEXT.md` entries
    unreadable; `docs/reviews/Decisions-P95-P98-plain.md` says them in plain words, with
    "Your call" on the points to review. Ask them one at a time.
