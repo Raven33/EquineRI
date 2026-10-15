@@ -17,6 +17,7 @@
 #include "Queries.hpp"
 
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <algorithm>
 #include <cstdio>
@@ -260,7 +261,7 @@ int main(int argc, char **argv) {
             RI::cmdBeginRendering(cmd, {.colors = {{.view = color.view, .load = load}},
                                         .depth = RI::DepthAttachment{.view = depth.view, .load = load}});
             RI::cmdSetPipeline(cmd, meshPipeline);
-            RI::cmdSetRootData(cmd, MeshRoot{.gridSize = kGridSize, .pass = pass, .meshletsPerTask = kMeshletsPerTask});
+            RI::Helpers::cmdSetRootData(cmd, MeshRoot{.gridSize = kGridSize, .pass = pass, .meshletsPerTask = kMeshletsPerTask});
             RI::cmdDrawMesh(cmd, o.tasks, 1, 1);
             RI::cmdEndRendering(cmd);
             end(run, cmd, pass, true);
@@ -268,7 +269,7 @@ int main(int argc, char **argv) {
         begin(run, cmd, o.passes, false);
         RI::cmdBarrier(cmd, RI::Stage::eAll, RI::Stage::eCompute);
         RI::cmdSetPipeline(cmd, computePipeline);
-        RI::cmdSetRootData(cmd, ComputeRoot{.bufferSlot = 0, .count = kComputeCount});
+        RI::Helpers::cmdSetRootData(cmd, ComputeRoot{.bufferSlot = 0, .count = kComputeCount});
         RI::cmdDispatch(cmd, kComputeCount / 64, 1, 1);
         end(run, cmd, o.passes, false);
         RI::cmdWriteTimestamp(cmd, timestampPool, 1);

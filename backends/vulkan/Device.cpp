@@ -370,7 +370,8 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
                                               v12.maxPerStageUpdateAfterBindResources});
     limits.maxSamplerDescriptors = std::min({2048u, v12.maxDescriptorSetUpdateAfterBindSamplers,
                                              v12.maxPerStageDescriptorUpdateAfterBindSamplers});
-    limits.maxRootDataSize = l.maxPushConstantsSize;
+    // One rule on both backends (P107): no more than D3D12's root constants.
+    limits.maxRootDataSize = std::min(l.maxPushConstantsSize, kMaxRootDataSize);
     limits.maxBufferViewSize = l.maxStorageBufferRange;
     limits.maxConstantViewSize = std::min<uint32>(l.maxUniformBufferRange, 65536); // D3D12's limit (P106)
 

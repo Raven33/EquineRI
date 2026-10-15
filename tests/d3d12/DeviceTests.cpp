@@ -8,6 +8,7 @@
 
 #include <RI/RI.hpp>
 #include <RI/D3D12/Native.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <algorithm>
 #include <array>
@@ -189,7 +190,7 @@ EQ_TEST(d3d12, native_section) {
     runOnce(device, [&](RI::CommandList &cmd) {
         RI::cmdSetHeap(cmd, heap);
         RI::cmdSetPipeline(cmd, write);
-        RI::cmdSetRootData(cmd, WriteRoot{.textureSlot = 2, .width = 16, .height = 16, .value = 9.0f});
+        RI::Helpers::cmdSetRootData(cmd, WriteRoot{.textureSlot = 2, .width = 16, .height = 16, .value = 9.0f});
         const RI::D3D12::NativeCommands n = RI::D3D12::beginNative(cmd);
         const WriteRoot wrong{.textureSlot = 2, .width = 16, .height = 16, .value = 1.0f};
         n.list->SetComputeRoot32BitConstants(0, sizeof(wrong) / 4, &wrong, 0);
@@ -378,7 +379,7 @@ EQ_TEST(d3d12, work_graph) {
         RI::cmdSetHeap(cmd, heap);
         for (int launch = 0; launch < 2; ++launch) {
             RI::cmdSetWorkGraph(cmd, graph);
-            RI::cmdSetRootData(cmd, GraphRoot{.outputSlot = 0});
+            RI::Helpers::cmdSetRootData(cmd, GraphRoot{.outputSlot = 0});
             const RI::GraphInput input{.entry = entry, .records = &multiplier, .recordCount = 1, .recordStride = 4};
             RI::cmdDispatchGraph(cmd, {&input, 1});
             RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCompute);

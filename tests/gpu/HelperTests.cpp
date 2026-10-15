@@ -11,13 +11,31 @@
 #include <RI/Helpers/ShaderCompiler.hpp>
 #include <RI/Helpers/SlotAllocator.hpp>
 #include <RI/Helpers/Transfers.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 #include <RI/RI.hpp>
 
+#include <array>
 #include <cstring>
 #include <vector>
 
 using gputest::createTestDevice;
 using gputest::loadShader;
+
+// The typed commands' constraints (P107), at compile time.
+namespace {
+struct Bytes12 {
+    uint32 a, b, c;
+};
+struct Bytes6 {
+    uint16 a, b, c;
+};
+} // namespace
+static_assert(RI::Helpers::SmallWriteValue<uint32> && RI::Helpers::SmallWriteValue<std::array<uint32, 16>>);
+static_assert(!RI::Helpers::SmallWriteValue<std::array<uint32, 17>>);
+static_assert(!RI::Helpers::SmallWriteValue<Bytes6> && !RI::Helpers::SmallWriteValue<uint32 *>);
+static_assert(RI::Helpers::RootDataValue<Bytes12> && RI::Helpers::RootDataValue<std::array<uint32, 64>>);
+static_assert(!RI::Helpers::RootDataValue<std::array<uint32, 65>>);
+static_assert(!RI::Helpers::RootDataValue<std::span<const std::byte>> && !RI::Helpers::RootDataValue<std::span<const uint32>>);
 
 // Allocation, deferred release and reuse; slots reused after their point.
 EQ_TEST(helpers, allocators) {
@@ -182,7 +200,7 @@ EQ_TEST(helpers, group_grid) {
     RI::cmdBegin(cmd);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, GridRoot{.counterSlot = 1, .groups = kGroups});
+    RI::Helpers::cmdSetRootData(cmd, GridRoot{.counterSlot = 1, .groups = kGroups});
     RI::cmdDispatch(cmd, grid.x, grid.y, grid.z);
     RI::cmdEnd(cmd);
     RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));

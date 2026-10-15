@@ -24,6 +24,7 @@
 #include <RI/Validation/Placement.hpp>
 
 #include <climits>
+#include <cstring>
 #include <algorithm>
 #include <format>
 
@@ -468,6 +469,22 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
         list(cmd)->ClearUnorderedAccessViewUint(gpu, cpu, resource, values, 0, nullptr);
     }
     restoreUserState(cmd);
+}
+
+void cmdWriteSmallData(CommandList &cmd, const Buffer &buffer, uint64 offset, std::span<const std::byte> data) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdWriteSmallData"));
+    EQ_VALIDATE(Validation::checkSmallWrite((buffer.usage & BufferUsage::eCopyDst) != BufferUsage::eNone, offset,
+                                            data.size(), buffer.size));
+    // One 32-bit value per parameter.
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER params[kMaxSmallWriteSize / 4];
+    const auto count = static_cast<UINT>(std::min<size_t>(data.size(), kMaxSmallWriteSize) / 4);
+    for (UINT i = 0; i < count; ++i) {
+        params[i].Dest = buffer.gpuAddress + offset + (uint64{i} * 4);
+        std::memcpy(&params[i].Value, data.data() + (size_t{i} * 4), 4);
+    }
+    list(cmd)->WriteBufferImmediate(count, params, nullptr);
 }
 
 // ── Native sections (P27, P70) ───────────────────────────────────────────────

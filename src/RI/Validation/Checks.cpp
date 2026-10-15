@@ -510,4 +510,20 @@ CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view cal
                        call, threads.str());
 }
 
+CheckResult checkSmallWrite(bool hasUsage, uint64 offset, uint64 size, uint64 bufferSize) {
+    if (!hasUsage) {
+        return std::string("cmdWriteSmallData: the buffer needs BufferUsage::eCopyDst");
+    }
+    if (size == 0 || size % 4 != 0 || offset % 4 != 0) {
+        return std::format("cmdWriteSmallData: offset {} and size {} must be multiples of 4, and size non-zero", offset,
+                           size);
+    }
+    if (size > kMaxSmallWriteSize) {
+        return std::format("cmdWriteSmallData: {} bytes is more than kMaxSmallWriteSize ({}); write larger data "
+                           "through an upload buffer and cmdCopyBuffer (P107)",
+                           size, kMaxSmallWriteSize);
+    }
+    return checkRange(offset, size, bufferSize, 4, "cmdWriteSmallData");
+}
+
 } // namespace RI::Validation

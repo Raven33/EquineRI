@@ -204,4 +204,9 @@ CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::strin
 // called createDevice (P106). `call` names it.
 CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view call);
 
+// cmdWriteSmallData (P107): a buffer with eCopyDst; `offset` and `size`
+// multiples of 4, `size` non-zero and at most kMaxSmallWriteSize; the range
+// inside the buffer.
+CheckResult checkSmallWrite(bool hasUsage, uint64 offset, uint64 size, uint64 bufferSize);
+
 } // namespace RI::Validation

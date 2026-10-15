@@ -50,7 +50,7 @@ struct DeviceDesc {
 struct DeviceLimits {
     uint32 maxResourceDescriptors = 0; // per descriptor heap
     uint32 maxSamplerDescriptors = 0;  // per descriptor heap
-    uint32 maxRootDataSize = 0;        // bytes of root data a pipeline may declare
+    uint32 maxRootDataSize = 0;        // bytes of root data a pipeline may declare, at most kMaxRootDataSize (P107)
     // Bytes of one buffer view (P106), besides kMaxBufferViewElements. Read and
     // read-write views: Vulkan maxStorageBufferRange; D3D12 has only the element
     // limit. Constant views: at most 64 KiB (D3D12), lower where Vulkan's

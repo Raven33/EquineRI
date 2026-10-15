@@ -10,6 +10,7 @@
 
 #include <RI/RI.hpp>
 #include <RI/Vk/Native.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <algorithm>
 #include <array>
@@ -235,7 +236,7 @@ EQ_TEST(vk, native_section) {
     runOnce(device, [&](RI::CommandList &cmd) {
         RI::cmdSetHeap(cmd, heap);
         RI::cmdSetPipeline(cmd, write);
-        RI::cmdSetRootData(cmd, WriteRoot{.textureSlot = 2, .width = 16, .height = 16, .value = 9.0f});
+        RI::Helpers::cmdSetRootData(cmd, WriteRoot{.textureSlot = 2, .width = 16, .height = 16, .value = 9.0f});
         const RI::Vk::NativeCommands n = RI::Vk::beginNative(cmd);
         const WriteRoot wrong{.textureSlot = 2, .width = 16, .height = 16, .value = 1.0f};
         n.functions->vkCmdPushConstants(n.commandBuffer, RI::Vk::native(write).layout, VK_SHADER_STAGE_ALL, 0,

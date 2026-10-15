@@ -64,7 +64,7 @@ RI::bindWorkGraphMemory(device, graph, backing, 0, graph.backing.minSize); // on
 // ... then, while recording:
 RI::cmdSetHeap(cmd, heap);
 RI::cmdSetWorkGraph(cmd, graph);
-RI::cmdSetRootData(cmd, GraphRoot{.outputSlot = 0});
+RI::Helpers::cmdSetRootData(cmd, GraphRoot{.outputSlot = 0});
 const RI::GraphInput input{.entry = RI::workGraphEntry(graph, "entry"), .records = &record, .recordCount = 1,
                            .recordStride = sizeof(record)};
 RI::cmdDispatchGraph(cmd, {&input, 1});

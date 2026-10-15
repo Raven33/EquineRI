@@ -7,6 +7,7 @@
 #include <TestHarness.hpp>
 
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <atomic>
 #include <csignal>
@@ -103,7 +104,7 @@ EQ_TEST(threads, pipelines_on_other_threads) {
         EQ_CHECK(pipelines.size() == kPerThread);
         for (const RI::Pipeline &pipeline : pipelines) {
             RI::cmdSetPipeline(cmd, pipeline);
-            RI::cmdSetRootData(cmd, FillRoot{.count = 0}); // every thread returns at once
+            RI::Helpers::cmdSetRootData(cmd, FillRoot{.count = 0}); // every thread returns at once
             RI::cmdDispatch(cmd, 1, 1, 1);
         }
     }

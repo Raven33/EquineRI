@@ -75,7 +75,7 @@ EQ_SIGNATURE(cmdBegin, void (*)(RI::CommandList &));
 EQ_SIGNATURE(cmdEnd, void (*)(RI::CommandList &));
 EQ_SIGNATURE(cmdSetHeap, void (*)(RI::CommandList &, const RI::DescriptorHeap &));
 EQ_SIGNATURE(cmdSetPipeline, void (*)(RI::CommandList &, const RI::Pipeline &));
-EQ_SIGNATURE(cmdSetRootData, void (*)(RI::CommandList &, const void *, uint32));
+EQ_SIGNATURE(cmdSetRootData, void (*)(RI::CommandList &, std::span<const std::byte>));
 EQ_SIGNATURE(cmdDispatch, void (*)(RI::CommandList &, uint32, uint32, uint32));
 EQ_SIGNATURE(cmdBarrier, void (*)(RI::CommandList &, RI::Stage, RI::Stage));
 EQ_SIGNATURE(cmdCopyBuffer,
@@ -142,6 +142,7 @@ EQ_SIGNATURE(cmdDraw, void (*)(RI::CommandList &, uint32, uint32, uint32, uint32
 EQ_SIGNATURE(cmdDiscard, void (*)(RI::CommandList &, const RI::TextureView &));
 EQ_SIGNATURE(cmdClearTexture, void (*)(RI::CommandList &, const RI::TextureView &, const RI::ClearValue &));
 EQ_SIGNATURE(cmdClearBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint32));
+EQ_SIGNATURE(cmdWriteSmallData, void (*)(RI::CommandList &, const RI::Buffer &, uint64, std::span<const std::byte>));
 EQ_SIGNATURE(cmdWriteTimestamp, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdResetQueries, void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32));
 EQ_SIGNATURE(cmdResolveQueries,
@@ -237,7 +238,8 @@ struct Root {
     RI::cmdBegin(cmd);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, Root{1.0f});
+    const Root root{1.0f};
+    RI::cmdSetRootData(cmd, std::as_bytes(std::span(&root, 1)));
     RI::cmdDispatch(cmd, 1, 1, 1);
     RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy | RI::Stage::eIndirect);
     RI::cmdEnd(cmd);

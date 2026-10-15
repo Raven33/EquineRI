@@ -6,6 +6,7 @@
 #include <TestHarness.hpp>
 
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -95,7 +96,7 @@ EQ_TEST(raytracing, build_trace_update) {
         RI::cmdBarrier(cmd, RI::Stage::eAccelerationStructure, RI::Stage::eCompute);
         RI::cmdSetHeap(cmd, heap);
         RI::cmdSetPipeline(cmd, trace);
-        RI::cmdSetRootData(cmd, TraceRoot{.tlasSlot = 0, .outputSlot = 1, .width = kSize, .height = kSize});
+        RI::Helpers::cmdSetRootData(cmd, TraceRoot{.tlasSlot = 0, .outputSlot = 1, .width = kSize, .height = kSize});
         RI::cmdDispatch(cmd, kSize / 8, kSize / 8, 1);
         RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
         RI::cmdCopyBuffer(cmd, output, 0, result, 0, output.size);

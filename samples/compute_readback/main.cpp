@@ -8,6 +8,7 @@
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -129,7 +130,8 @@ int main() {
     RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, Root{.inputSlot = 0, .outputSlot = 1, .paramsSlot = 2, .scale = 3.0f, .count = kCount});
+    const Root root{.inputSlot = 0, .outputSlot = 1, .paramsSlot = 2, .scale = 3.0f, .count = kCount};
+    RI::cmdSetRootData(cmd, std::as_bytes(std::span(&root, 1)));
     RI::cmdDispatch(cmd, (kCount + 63) / 64, 1, 1);
     RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
     RI::cmdCopyBuffer(cmd, output, 0, result, 0, kBytes);

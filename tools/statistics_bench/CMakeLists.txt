@@ -10,7 +10,7 @@ foreach(backend IN ITEMS Vulkan D3D12)
         "${CMAKE_CURRENT_SOURCE_DIR}/Queries${backend}.cpp"
     )
     target_include_directories(${exe} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_link_libraries(${exe} PRIVATE Equine${backend}Backend)
+    target_link_libraries(${exe} PRIVATE Equine${backend}Backend EquineHelpers${backend})
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
     equine_add_shaders(${exe} PROFILE as_6_6 SOURCES "${dir}/stat_as.hlsl")
     equine_add_shaders(${exe} PROFILE ms_6_6 SOURCES "${dir}/stat_ms.hlsl")

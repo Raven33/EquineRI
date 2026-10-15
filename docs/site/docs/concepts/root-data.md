@@ -46,8 +46,10 @@ and set it after the pipeline, before the dispatch:
 --8<-- "snippets/ri/compute.cpp:set-state"
 ```
 
-`cmdSetRootData(cmd, value)` sends `sizeof(value)` bytes. The bytes are recorded into the
-command list at once, so you may change the struct afterwards.
+`RI::Helpers::cmdSetRootData(cmd, value)` sends `sizeof(value)` bytes through the core
+`RI::cmdSetRootData(cmd, bytes)`, which takes a `std::span<const std::byte>`; the helper also
+checks the size at compile time ([P107](../design-notes/decisions.md#p107)). The bytes are
+recorded into the command list at once, so you may change the struct afterwards.
 
 ## One C++ struct for both backends
 
@@ -77,7 +79,8 @@ root data for it is an error. Set root data only for pipelines whose shaders rea
   Setting root data for a pipeline whose shader declares none is also an error.
 - **Size limit** ([P44](../design-notes/decisions.md#p44)): a shader may declare up to
   `device.limits.maxRootDataSize` bytes: 256 on D3D12 (64 root constants), the GPU's
-  push-constant limit on Vulkan (at least 128). A larger shader fails
+  push-constant limit on Vulkan (at least 128), never more than `kMaxRootDataSize` (256) on
+  any backend ([P107](../design-notes/decisions.md#p107)). A larger shader fails
   `createComputePipeline` with an **unsupported** error.
 - Set the pipeline first: root data is checked against the pipeline currently set.
 

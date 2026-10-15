@@ -6,12 +6,15 @@
 #include "GpuTestCommon.hpp"
 
 #include <RI/RI.hpp>
+#include <RI/Helpers/TypedCommands.hpp>
 
+#include <array>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -85,7 +88,7 @@ EQ_TEST(compute, buffer_compute_readback) {
     RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, fill);
-    RI::cmdSetRootData(cmd, FillRoot{.inputSlot = 3, .outputSlot = 7, .paramsSlot = 9, .scale = 2.0f, .count = kCount});
+    RI::Helpers::cmdSetRootData(cmd, FillRoot{.inputSlot = 3, .outputSlot = 7, .paramsSlot = 9, .scale = 2.0f, .count = kCount});
     RI::cmdDispatch(cmd, (kCount + 63) / 64, 1, 1);
     RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
     RI::cmdCopyBuffer(cmd, output, 0, result, 0, kBytes);
@@ -172,7 +175,7 @@ EQ_TEST(compute, root_data_size_mismatch_reports) {
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, fill);
     const uint32 tooSmall[2] = {1, 2};
-    RI::cmdSetRootData(cmd, tooSmall);
+    RI::Helpers::cmdSetRootData(cmd, tooSmall);
 }
 
 EQ_TEST(compute, pipeline_before_heap_reports) {
@@ -249,7 +252,7 @@ EQ_TEST(compute, int64_atomics) {
     RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, pipeline);
-    RI::cmdSetRootData(cmd, uint32{1});
+    RI::Helpers::cmdSetRootData(cmd, uint32{1});
     RI::cmdDispatch(cmd, kThreads / 64, 1, 1);
     RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
     RI::cmdCopyBuffer(cmd, values, 0, result, 0, desc.size);
@@ -335,6 +338,49 @@ EQ_TEST(compute, clear_large_buffer) {
     RI::destroyDevice(device);
 }
 
+// Small writes (P107): typed values through the helper and bytes through core
+// land at their offsets; the bytes around them keep the clear value.
+EQ_TEST(compute, write_small_data) {
+    RI::Device device = createTestDevice();
+    const RI::BufferDesc desc{.size = 64, .usage = RI::BufferUsage::eCopyDst | RI::BufferUsage::eCopySrc};
+    const RI::MemoryRequirements req = RI::bufferRequirements(device, desc);
+    RI::Memory gpuMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, req.size);
+    RI::Memory readbackMemory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 16);
+    RI::Buffer buffer = RI::createBuffer(device, gpuMemory, 0, desc);
+    RI::Buffer result = RI::createBuffer(device, readbackMemory, 0, {.size = 64, .usage = RI::BufferUsage::eCopyDst});
+
+    struct Quad {
+        uint32 a, b, c, d;
+    };
+    const uint32 word = 0xabcd0123u;
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdClearBuffer(cmd, buffer, ~0u);
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::Helpers::cmdWriteSmallData(cmd, buffer, 8, uint64{0x1122334455667788ull});
+    RI::Helpers::cmdWriteSmallData(cmd, buffer, 32, Quad{1, 2, 3, 4});
+    RI::cmdWriteSmallData(cmd, buffer, 60, std::as_bytes(std::span(&word, 1)));
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(cmd, buffer, 0, result, 0, 64);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+
+    const auto *out = static_cast<const uint32 *>(result.mapped);
+    EQ_CHECK(out[0] == ~0u && out[1] == ~0u);
+    EQ_CHECK(out[2] == 0x55667788u && out[3] == 0x11223344u);
+    EQ_CHECK(out[4] == ~0u);
+    EQ_CHECK(out[8] == 1 && out[9] == 2 && out[10] == 3 && out[11] == 4);
+    EQ_CHECK(out[14] == ~0u);
+    EQ_CHECK(out[15] == word);
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyBuffer(device, buffer);
+    RI::destroyBuffer(device, result);
+    RI::freeMemory(device, gpuMemory);
+    RI::freeMemory(device, readbackMemory);
+    RI::destroyDevice(device);
+}
+
 // Names given at creation (P106): every kind with a desc or a name parameter.
 EQ_TEST(compute, names_at_creation) {
     RI::Device device = createTestDevice();
@@ -384,8 +430,22 @@ EQ_TEST(compute, too_many_groups_reports) {
     RI::cmdBegin(cmd);
     RI::cmdSetHeap(cmd, heap);
     RI::cmdSetPipeline(cmd, fill);
-    RI::cmdSetRootData(cmd, FillRoot{});
+    RI::Helpers::cmdSetRootData(cmd, FillRoot{});
     RI::cmdDispatch(cmd, 65536, 1, 1);
+}
+#endif
+
+#if EQUINE_VALIDATION
+// More bytes than kMaxSmallWriteSize through the span form (P107).
+EQ_TEST(compute, small_write_too_large_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 16);
+    RI::Buffer buffer = RI::createBuffer(device, memory, 0, {.size = 256, .usage = RI::BufferUsage::eCopyDst});
+    const std::array<uint32, 17> values{};
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdWriteSmallData(cmd, buffer, 0, std::as_bytes(std::span(values)));
 }
 #endif
 

@@ -84,6 +84,7 @@ RI::Device device = RI::createDevice({.gpu = chosen});
 | [`RI::cmdDraw`](cmdDraw.md) | Draw vertices in a rendering section. |
 | [`RI::cmdDiscard`](cmdDiscard.md) | Reset a texture that takes over another resource's memory. |
 | [`RI::cmdClearTexture`, `RI::cmdClearBuffer`](cmdClear.md) | Clears outside rendering sections. |
+| [`RI::cmdWriteSmallData`](cmdWriteSmallData.md) | A few values written into a buffer from the command list. |
 | [`RI::cmdWriteTimestamp`, `RI::cmdResolveQueries`, `RI::cmdResetQueries`](timestamps.md) | Measure GPU time. |
 
 ## Queries
