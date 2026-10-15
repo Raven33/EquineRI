@@ -28,6 +28,7 @@ set(EQUINE_HELPER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/FrameRing.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Profiler.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ShaderCompiler.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/Statistics.cpp"
 )
 foreach(backend IN ITEMS Vulkan D3D12)
     if (TARGET Equine${backend}Backend)

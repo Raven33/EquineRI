@@ -16,6 +16,7 @@ Helpers:
 - [Transfers](transfers.md): one-call uploads and readbacks.
 - [Frame ring](frame-ring.md): frames in flight.
 - [GPU profiler](profiler.md): nested timestamp scopes.
+- [Pipeline statistics](statistics.md): a statistics query's counters in one struct.
 - [Shader compiler](shader-compiler.md): HLSL at run time with RI's compile rule.
 
 The frame ring, the memory allocator and the profiler keep a pointer to the `Device` they

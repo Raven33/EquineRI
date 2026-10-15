@@ -176,8 +176,9 @@ code, ray tracing, work graphs, helpers. This is only the order it was built in.
   lay out the counters differently.** RI tells you where each counter is
   (`pipelineStatisticsLayout`) rather than converting them.
 
-*Your call:* keep reporting where the counters are (today), or have RI convert them to one
-layout (an extra copy on the GPU).
+**Decided (2026-10-15):** RI keeps reporting the offsets; the helper
+`readPipelineStatistics` converts a result to one fixed struct on the CPU. Helpers may be
+promoted to RI later, after the user's review.
 
 ### 4. The rest of graphics
 
