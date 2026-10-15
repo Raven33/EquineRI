@@ -1,0 +1,4 @@
+nvidia Vulkan: LIMITS int64BufferAtomics=1 int64SharedAtomics=1 [PASS] compute.int64_atomics 
+nvidia D3D12: LIMITS int64BufferAtomics=1 int64SharedAtomics=1 [PASS] compute.int64_atomics 
+amd Vulkan: LIMITS int64BufferAtomics=1 int64SharedAtomics=1 [PASS] compute.int64_atomics 
+amd D3D12: LIMITS int64BufferAtomics=1 int64SharedAtomics=1 [PASS] compute.int64_atomics 

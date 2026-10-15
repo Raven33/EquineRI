@@ -1,0 +1,61 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 77
+    Start  77: vk.texture.mesh_statistics
+
+77: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.mesh_statistics"
+77: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+77: Environment variables: 
+77:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+77: Test timeout computed to be: 120
+77: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+77: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+77: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+77: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+77: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+77: 
+77: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+77: 
+77: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+77: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+77: 
+77: [PASS] texture.mesh_statistics
+1/2 Test  #77: vk.texture.mesh_statistics .......   Passed    0.37 sec
+test 153
+    Start 153: d3d12.texture.mesh_statistics
+
+153: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.mesh_statistics"
+153: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+153: Environment variables: 
+153:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+153: Test timeout computed to be: 120
+153: [EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+153:   FAILED: generated.meshPrimitives == 1
+153:     at C:\Users\Arthu\Documents\GitHub\EquineNext\tests\gpu\TextureTests.cpp:923
+153: [FAIL] texture.mesh_statistics
+2/2 Test #153: d3d12.texture.mesh_statistics ....***Failed    1.05 sec
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+  FAILED: generated.meshPrimitives == 1
+    at C:\Users\Arthu\Documents\GitHub\EquineNext\tests\gpu\TextureTests.cpp:923
+[FAIL] texture.mesh_statistics
+
+
+The following tests passed:
+	vk.texture.mesh_statistics
+
+50% tests passed, 1 tests failed out of 2
+
+Label Time Summary:
+gpu    =   1.42 sec*proc (2 tests)
+
+Total Test time (real) =   1.43 sec
+
+The following tests FAILED:
+	153 - d3d12.texture.mesh_statistics (Failed)            gpu
+Errors while running CTest

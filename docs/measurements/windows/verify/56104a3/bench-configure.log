@@ -1,0 +1,12 @@
+-- Equine generator: Ninja
+-- Equine C++ compiler: Clang 22.1.3
+-- Equine C++ exceptions: enabled
+-- Equine sanitizers: disabled (EQUINE_SANITIZERS=OFF)
+-- Equine clang-tidy: C:/Program Files/LLVM/bin/clang-tidy.exe;--header-filter=^C:[/\\]Users[/\\]Arthu[/\\]Documents[/\\]GitHub[/\\]EquineNext[/\\](src|backends|third_party[/\\]RavenLib)[/\\];--extra-arg=/EHsc
+-- Equine validation: FALSE
+-- Equine DXC: v1.9.2609 at C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-bench/_deps/dxc-v1.9.2609/bin/x64/dxc.exe
+-- Equine Agility SDK: 1.619.6 at C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-bench/_deps/agility_sdk-1.619.6
+-- Including Win32 support
+-- Configuring done (0.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-bench

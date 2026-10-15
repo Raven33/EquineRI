@@ -1,0 +1,262 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 14
+    Start  14: ri.validation.rendering_without_attachments
+
+14: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "validation.rendering_without_attachments"
+14: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+14: Test timeout computed to be: 120
+14: [PASS] validation.rendering_without_attachments
+1/7 Test  #14: ri.validation.rendering_without_attachments ...............   Passed    0.01 sec
+test 89
+    Start  89: vk.texture.rendering_without_attachments
+
+89: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.rendering_without_attachments"
+89: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+89: Environment variables: 
+89:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+89: Test timeout computed to be: 120
+89: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+89: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+89: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+89: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+89: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+89: 
+89: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+89: 
+89: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+89: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+89: 
+89: [PASS] texture.rendering_without_attachments
+2/7 Test  #89: vk.texture.rendering_without_attachments ..................   Passed    0.36 sec
+test 90
+    Start  90: vk.texture.rendering_desc_without_attachment_reports
+
+90: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "texture.rendering_desc_without_attachment_reports"
+90: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+90: Environment variables: 
+90:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+90: Test timeout computed to be: 120
+90: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+90: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+90: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+90: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+90: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+90: 
+90: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+90: 
+90: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+90: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+90: 
+90: [EquineRI] programmer error: cmdBeginRendering: the RenderingDesc has no attachment; for a section without attachments, call cmdBeginRendering(cmd, RenderingSize{width, height})
+90:   at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Commands.cpp:425 (void __cdecl RI::Vk::cmdBeginRendering(CommandList &, const RenderingDesc &))
+3/7 Test  #90: vk.texture.rendering_desc_without_attachment_reports ......   Passed    0.36 sec
+test 91
+    Start  91: vk.compute.int64_atomics
+
+91: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "compute.int64_atomics"
+91: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+91: Environment variables: 
+91:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+91: Test timeout computed to be: 120
+91: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+91: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+91: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+91: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+91: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+91: 
+91: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+91: 
+91: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+91: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+91: 
+91: [PASS] compute.int64_atomics
+4/7 Test  #91: vk.compute.int64_atomics ..................................   Passed    0.38 sec
+test 158
+    Start 158: d3d12.texture.rendering_without_attachments
+
+158: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.rendering_without_attachments"
+158: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+158: Environment variables: 
+158:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+158: Test timeout computed to be: 120
+158: [PASS] texture.rendering_without_attachments
+5/7 Test #158: d3d12.texture.rendering_without_attachments ...............   Passed    0.99 sec
+test 159
+    Start 159: d3d12.texture.rendering_desc_without_attachment_reports
+
+159: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.rendering_desc_without_attachment_reports"
+159: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+159: Environment variables: 
+159:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+159: Test timeout computed to be: 120
+159: [EquineRI] programmer error: cmdBeginRendering: the RenderingDesc has no attachment; for a section without attachments, call cmdBeginRendering(cmd, RenderingSize{width, height})
+159:   at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\d3d12\Rendering.cpp:186 (void __cdecl RI::D3D12::cmdBeginRendering(CommandList &, const RenderingDesc &))
+159: [EquineRI] D3D12 warning: Process is terminating. Using simple reporting. Please call ReportLiveObjects() at runtime for standard reporting.
+159: [EquineRI] D3D12 warning: Live Producer at 0x0000018C83431908, Refcount: 21.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BA4B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2B0130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CEFC2B5530, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CEFC2B6930, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BA4B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BA7B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011C2FC2DB8B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BAAB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BADB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BB0B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BB3B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BB6B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BB9B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BBCB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BBFB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BC2B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BC5B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BC8B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BCBB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BCEB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BD1B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BD4B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BD7B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BDAB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BDDB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BB2B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BE0B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BC0B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2B4130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2B8130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CEFC2B7D30, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BCEB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BE3B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BDCB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BE6B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BEAB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BE9B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2BF8B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C06B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BECB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C14B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C22B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C30B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C3EB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C4CB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C5AB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C68B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C76B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C84B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2C92B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CA0B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CAEB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CBCB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CCAB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CD8B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CE6B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2CF4B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D02B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D10B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BEFB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D1EB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BF2B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2BC130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CEFC2B9130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BF5B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011C2FC2E3DB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BF8B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011C2FC2E44B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BFBB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2BFEB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C01B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C04B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C07B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C0AB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C0DB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C10B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C13B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C16B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C19B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C1CB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C1FB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C22B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C25B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C28B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C2BB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C2EB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C31B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D2CB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C34B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D3AB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2C0130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C37B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C3AB0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C3DB0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C40B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D48B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C43B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C46B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C49B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2C4130, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2C8130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D56B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C4CB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D64B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C4FB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D72B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C52B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D80B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C55B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D8EB0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C58B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2D9CB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C5BB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C5EB0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2DAAB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C61B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2DB8B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2DC6B0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2CC130, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2D0130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CEFC2BCD30, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CEFC2BE130, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C6AB0, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2D4130, Refcount: 1.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011DCFC2D8130, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2DE2B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C6DB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2DFEB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C70B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2E0CB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011B8FC2C73B0, Refcount: 0.
+159: [EquineRI] D3D12 warning: 	Live Object at 0x000011CAFC2E1AB0, Refcount: 0.
+159: [EquineRI] D3D12 warning: Live                         Object :    132
+6/7 Test #159: d3d12.texture.rendering_desc_without_attachment_reports ...   Passed    0.94 sec
+test 160
+    Start 160: d3d12.compute.int64_atomics
+
+160: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "compute.int64_atomics"
+160: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+160: Environment variables: 
+160:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+160: Test timeout computed to be: 120
+160: [PASS] compute.int64_atomics
+7/7 Test #160: d3d12.compute.int64_atomics ...............................   Passed    0.97 sec
+
+The following tests passed:
+	ri.validation.rendering_without_attachments
+	vk.texture.rendering_without_attachments
+	vk.texture.rendering_desc_without_attachment_reports
+	vk.compute.int64_atomics
+	d3d12.texture.rendering_without_attachments
+	d3d12.texture.rendering_desc_without_attachment_reports
+	d3d12.compute.int64_atomics
+
+100% tests passed, 0 tests failed out of 7
+
+Label Time Summary:
+gpu    =   4.00 sec*proc (6 tests)
+
+Total Test time (real) =   4.03 sec
