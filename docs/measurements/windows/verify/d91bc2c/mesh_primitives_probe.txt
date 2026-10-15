@@ -1,0 +1,55 @@
+mesh primitives probe, RTX 3080, D3D12, d91bc2c (temporary local edit to tests/gpu/TextureTests.cpp, reverted, not committed)
+STATISTICS1 columns printed from D3D12_QUERY_DATA_PIPELINE_STATISTICS1 via the eMeshPrimitives pool: PS, AS(ASInvocations), MS(MSInvocations), MSPrimitives.
+STATISTICS(...) is the PS and CS of the eMeshPipelineStatistics pool, when that query is in the variant.
+Debug layer was on in every run. Only message: the usual ClearRenderTargetView clear-value hint; nothing else.
+GBV: first run is the default (EQUINE_GPU_VALIDATION unset = on); second run EQUINE_GPU_VALIDATION=0 (off). Results identical.
+Variants: a 1 group / a2 4 groups: primitives query only. b: stats query around draw 1, then primitives query around draw 2 (two sections). d: current test order (stats begun first, primitives inside, primitives ended first). c: primitives begun first, stats inside, stats ended first.
+
+### GBV ON (default, EQUINE_GPU_VALIDATION unset), debug layer ON, RTX 3080 D3D12
+PROBE >>> variant a_prims_alone_1group
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE a_prims_alone_1group: STATISTICS1 PS=1024 AS=0 MS=3 MSPrimitives=1 | STATISTICS(PS=0 CS=0)
+PROBE <<< variant a_prims_alone_1group
+PROBE >>> variant a2_prims_alone_4groups
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE a2_prims_alone_4groups: STATISTICS1 PS=4096 AS=0 MS=12 MSPrimitives=4 | STATISTICS(PS=0 CS=0)
+PROBE <<< variant a2_prims_alone_4groups
+PROBE >>> variant b_sequential
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE b_sequential: STATISTICS1 PS=1024 AS=0 MS=3 MSPrimitives=1 | STATISTICS(PS=1024 CS=0)
+PROBE <<< variant b_sequential
+PROBE >>> variant d_control_stats_outer_prims_inner
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE d_control_stats_outer_prims_inner: STATISTICS1 PS=1024 AS=0 MS=0 MSPrimitives=0 | STATISTICS(PS=1024 CS=0)
+PROBE <<< variant d_control_stats_outer_prims_inner
+PROBE >>> variant c_prims_outer_stats_inner
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE c_prims_outer_stats_inner: STATISTICS1 PS=1024 AS=0 MS=3 MSPrimitives=1 | STATISTICS(PS=1024 CS=0)
+PROBE <<< variant c_prims_outer_stats_inner
+[PASS] texture.mesh_stats_probe
+exit=0
+
+### GBV OFF (EQUINE_GPU_VALIDATION=0), debug layer ON
+PROBE >>> variant a_prims_alone_1group
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE a_prims_alone_1group: STATISTICS1 PS=1024 AS=0 MS=3 MSPrimitives=1 | STATISTICS(PS=0 CS=0)
+PROBE <<< variant a_prims_alone_1group
+PROBE >>> variant a2_prims_alone_4groups
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE a2_prims_alone_4groups: STATISTICS1 PS=4096 AS=0 MS=12 MSPrimitives=4 | STATISTICS(PS=0 CS=0)
+PROBE <<< variant a2_prims_alone_4groups
+PROBE >>> variant b_sequential
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE b_sequential: STATISTICS1 PS=1024 AS=0 MS=3 MSPrimitives=1 | STATISTICS(PS=1024 CS=0)
+PROBE <<< variant b_sequential
+PROBE >>> variant d_control_stats_outer_prims_inner
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE d_control_stats_outer_prims_inner: STATISTICS1 PS=1024 AS=0 MS=0 MSPrimitives=0 | STATISTICS(PS=1024 CS=0)
+PROBE <<< variant d_control_stats_outer_prims_inner
+PROBE >>> variant c_prims_outer_stats_inner
+[EquineRI] D3D12 warning: ID3D12CommandList::ClearRenderTargetView: The application did not pass any clear value to resource creation. The clear operation is typically slower as a result; but will still clear to the desired value.
+PROBE c_prims_outer_stats_inner: STATISTICS1 PS=1024 AS=0 MS=3 MSPrimitives=1 | STATISTICS(PS=1024 CS=0)
+PROBE <<< variant c_prims_outer_stats_inner
+[PASS] texture.mesh_stats_probe

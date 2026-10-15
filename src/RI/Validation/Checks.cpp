@@ -187,6 +187,14 @@ CheckResult checkRenderingSize(const RenderingSize &size) {
     return {};
 }
 
+CheckResult checkQueryNesting(QueryType beginning, uint32 openStatistics) {
+    if (beginning == QueryType::eMeshPrimitives && openStatistics > 0) {
+        return std::string("cmdBeginQuery: a mesh-primitives query begun inside an open statistics query counts "
+                           "nothing on some GPUs; begin it before the statistics query, or measure it alone");
+    }
+    return {};
+}
+
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices) {
     if (someSlices && mipCount != 1) {
         return std::format("createView: a view of some depth slices of a 3D texture covers one mip; this one "

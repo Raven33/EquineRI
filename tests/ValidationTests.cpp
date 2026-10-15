@@ -168,6 +168,17 @@ EQ_TEST(validation, viewport_and_scissor) {
     EQ_CHECK(negative && negative->find("must be 0 or more") != std::string::npos);
 }
 
+// A mesh-primitives query is not begun inside an open statistics query (P105).
+EQ_TEST(validation, query_nesting) {
+    using namespace RI::Validation;
+    using RI::QueryType;
+    EQ_CHECK(!checkQueryNesting(QueryType::eMeshPrimitives, 0));
+    EQ_CHECK(!checkQueryNesting(QueryType::eMeshPipelineStatistics, 0));
+    EQ_CHECK(!checkQueryNesting(QueryType::eOcclusion, 1));
+    const CheckResult nested = checkQueryNesting(QueryType::eMeshPrimitives, 1);
+    EQ_CHECK(nested && nested->find("begin it before the statistics query") != std::string::npos);
+}
+
 // Sections without attachments (P105): a RenderingDesc needs one, the size form
 // takes 1..16384.
 EQ_TEST(validation, rendering_without_attachments) {

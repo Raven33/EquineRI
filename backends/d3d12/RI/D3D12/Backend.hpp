@@ -344,6 +344,7 @@ struct CommandList {
         ResolveMode depthResolveMode = ResolveMode::eMin;
         uint32 depthLayout = 0; // D3D12_BARRIER_LAYOUT used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
+        uint32 openStatistics = 0; // open ePipelineStatistics/eMeshPipelineStatistics queries (P105)
         // Restored by endNative (P70): the last pipeline per bind point, the
         // last root data, the topology and the open section's viewport and
         // scissor (P103).

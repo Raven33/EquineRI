@@ -25,6 +25,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.texture_shapes
     validation.viewport_and_scissor
     validation.rendering_without_attachments
+    validation.query_nesting
     validation.tracker_across_threads
     validation.buffer_view_size
     validation.group_counts

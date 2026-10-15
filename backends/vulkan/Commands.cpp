@@ -257,6 +257,7 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.graphics = false;
     cmd.internal.rendering = false;
     cmd.internal.markerDepth = 0;
+    cmd.internal.openStatistics = 0;
     cmd.internal.pipeline = 0;
     cmd.internal.boundPipeline[0] = 0;
     cmd.internal.boundPipeline[1] = 0;
@@ -815,6 +816,10 @@ void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdBeginQuery"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdBeginQuery: the query"));
+    EQ_VALIDATE(Validation::checkQueryNesting(pool.type, cmd.internal.openStatistics));
+    if (pool.type == QueryType::ePipelineStatistics || pool.type == QueryType::eMeshPipelineStatistics) {
+        ++cmd.internal.openStatistics;
+    }
     // Occlusion counts are exact (occlusionQueryPrecise), as on D3D12.
     const VkQueryControlFlags flags = pool.type == QueryType::eOcclusion ? VK_QUERY_CONTROL_PRECISE_BIT : 0;
     fn(cmd).vkCmdBeginQuery(native(cmd), native(pool), index, flags);
@@ -825,6 +830,10 @@ void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
     EQ_VK_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdEndQuery"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdEndQuery: the query"));
+    if ((pool.type == QueryType::ePipelineStatistics || pool.type == QueryType::eMeshPipelineStatistics) &&
+        cmd.internal.openStatistics > 0) {
+        --cmd.internal.openStatistics;
+    }
     fn(cmd).vkCmdEndQuery(native(cmd), native(pool), index);
 }
 

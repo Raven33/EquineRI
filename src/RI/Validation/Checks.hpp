@@ -182,6 +182,11 @@ CheckResult checkRenderingAttachments(size_t colorCount, bool hasDepth);
 // D3D12's render-target limit, within Vulkan's framebuffer limits on the floor).
 CheckResult checkRenderingSize(const RenderingSize &size);
 
+// A mesh-primitives query is not begun inside an open statistics query (P105):
+// NVIDIA's D3D12 driver then counts no primitives, silently. Begun first, or
+// alone, it counts on both backends.
+CheckResult checkQueryNesting(QueryType beginning, uint32 openStatistics);
+
 // A 3D texture's view that picks depth slices covers one mip (P102).
 CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
 
