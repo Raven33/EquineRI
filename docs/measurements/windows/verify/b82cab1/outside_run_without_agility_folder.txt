@@ -1,0 +1,1 @@
+[EquineRI] Agility SDK not loaded (0 GPU(s) listed): D3D12Core.dll is not in the executable's D3D12 folder: call equine_deploy_agility_sdk(<target>) in CMake

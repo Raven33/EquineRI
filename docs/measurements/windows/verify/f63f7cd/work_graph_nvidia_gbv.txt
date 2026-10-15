@@ -1,0 +1,28 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 94
+    Start 94: d3d12.work_graph
+
+94: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "d3d12.work_graph"
+94: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+94: Environment variables: 
+94:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+94: Test timeout computed to be: 120
+94: [PASS] d3d12.work_graph
+1/1 Test #94: d3d12.work_graph .................   Passed    1.01 sec
+
+The following tests passed:
+	d3d12.work_graph
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+gpu    =   1.01 sec*proc (1 test)
+
+Total Test time (real) =   1.02 sec

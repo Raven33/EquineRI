@@ -1,0 +1,6 @@
+NVIDIA GeForce RTX 3080: vkCreateDevice=0
+  mutable heap without AS: max supported count = 16777216
+  mutable heap WITH AS: max supported count = 16777216
+AMD Radeon(TM) Graphics: vkCreateDevice=0
+  mutable heap without AS: max supported count = 16777216
+  mutable heap WITH AS: max supported count = 0

@@ -1,0 +1,1 @@
+(no output, exit code 0: listGpus returned no GPUs without .\D3D12\ next to the exe)

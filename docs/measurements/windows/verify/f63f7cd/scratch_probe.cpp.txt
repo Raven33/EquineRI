@@ -1,0 +1,68 @@
+// Throwaway: indirectScratchRequirements memory types vs the default eGPU type (Vulkan).
+#include <RI/RI.hpp>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <vector>
+static std::vector<std::byte> load(const char *name) {
+    std::ifstream file(std::string("C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/shaders/") + name + ".spv", std::ios::binary);
+    const std::vector<char> bytes{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    std::vector<std::byte> out(bytes.size());
+    std::memcpy(out.data(), bytes.data(), bytes.size());
+    return out;
+}
+static void report(RI::Device &device, const RI::Pipeline &pipeline, RI::IndirectKind kind, const char *label) {
+    for (const uint32 maxCount : {1u, 3u, 1024u}) {
+        const RI::MemoryRequirements need = RI::indirectScratchRequirements(device, pipeline, kind, maxCount);
+        RI::Memory plain = RI::allocateMemory(device, RI::MemoryKind::eGPU, need.size);
+        const bool defaultAllowed = (need.internal.memoryTypes & (1u << plain.internal.memoryType)) != 0;
+        RI::Memory chosen = RI::allocateMemory(device, RI::MemoryKind::eGPU, need.size, &need);
+        std::printf("  %s maxCount=%u: size=%llu align=%llu kinds=0x%x memoryTypes=0x%x fits(eGPU)=%d default eGPU type=%u allowed=%d with&need type=%u\n",
+                    label, maxCount, (unsigned long long)need.size, (unsigned long long)need.alignment, need.kinds,
+                    need.internal.memoryTypes, (int)RI::fits(need, RI::MemoryKind::eGPU), plain.internal.memoryType,
+                    (int)defaultAllowed, chosen.internal.memoryType);
+        RI::freeMemory(device, chosen);
+        RI::freeMemory(device, plain);
+    }
+}
+int main() {
+    std::ifstream file("C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/shaders/write_storage.spv", std::ios::binary);
+    const std::vector<char> bytes{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    std::vector<std::byte> shader(bytes.size());
+    std::memcpy(shader.data(), bytes.data(), bytes.size());
+    for (const RI::Gpu &gpu : RI::listGpus()) {
+        RI::Device device = RI::createDevice({.gpu = gpu});
+        std::printf("%s: indirectRootData=%d\n", gpu.name.c_str(), (int)device.limits.indirectRootData);
+        if (device.limits.indirectRootData) {
+            RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = shader});
+            for (const uint32 maxCount : {1u, 3u, 1024u}) {
+                const RI::MemoryRequirements need =
+                    RI::indirectScratchRequirements(device, pipeline, RI::IndirectKind::eDispatch, maxCount);
+                RI::Memory plain = RI::allocateMemory(device, RI::MemoryKind::eGPU, need.size > 0 ? need.size : 4);
+                const bool defaultAllowed = (need.internal.memoryTypes & (1u << plain.internal.memoryType)) != 0;
+                std::printf("  dispatch maxCount=%u: size=%llu align=%llu kinds=0x%x memoryTypes=0x%x fits(eGPU)=%d "
+                            "default eGPU type=%u allowed=%d",
+                            maxCount, (unsigned long long)need.size, (unsigned long long)need.alignment, need.kinds,
+                            need.internal.memoryTypes, (int)RI::fits(need, RI::MemoryKind::eGPU),
+                            plain.internal.memoryType, (int)defaultAllowed);
+                if (need.size > 0) {
+                    RI::Memory chosen = RI::allocateMemory(device, RI::MemoryKind::eGPU, need.size, &need);
+                    std::printf(" with&need type=%u", chosen.internal.memoryType);
+                    RI::freeMemory(device, chosen);
+                }
+                std::printf("\n");
+                RI::freeMemory(device, plain);
+            }
+            RI::destroyPipeline(device, pipeline);
+            const std::vector<std::byte> vs = load("fullscreen_vs"), ps = load("solid_ps");
+            RI::Pipeline graphics = RI::createGraphicsPipeline(
+                device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA16Float}});
+            report(device, graphics, RI::IndirectKind::eDrawIndexed, "drawIndexed");
+            report(device, graphics, RI::IndirectKind::eDraw, "draw");
+            RI::destroyPipeline(device, graphics);
+        }
+        RI::destroyDevice(device);
+    }
+}

@@ -1,0 +1,1181 @@
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+        Start   1: sample.compute_readback.Vulkan
+  1/138 Test   #1: sample.compute_readback.Vulkan ............................***Failed    0.49 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start   2: sample.compute_readback.D3D12
+  2/138 Test   #2: sample.compute_readback.D3D12 .............................   Passed    0.74 sec
+        Start   3: ri.error.category_names
+  3/138 Test   #3: ri.error.category_names ...................................   Passed    0.03 sec
+        Start   4: ri.error.report_prints_and_aborts
+  4/138 Test   #4: ri.error.report_prints_and_aborts .........................   Passed    0.01 sec
+        Start   5: ri.validation.tracker_alive_then_destroyed
+  5/138 Test   #5: ri.validation.tracker_alive_then_destroyed ................   Passed    0.01 sec
+        Start   6: ri.validation.tracker_rejects_never_created
+  6/138 Test   #6: ri.validation.tracker_rejects_never_created ...............   Passed    0.01 sec
+        Start   7: ri.validation.tracker_rejects_other_device
+  7/138 Test   #7: ri.validation.tracker_rejects_other_device ................   Passed    0.01 sec
+        Start   8: ri.validation.macro_evaluates_only_when_on
+  8/138 Test   #8: ri.validation.macro_evaluates_only_when_on ................   Passed    0.01 sec
+        Start   9: ri.validation.texture_and_rendering_checks
+  9/138 Test   #9: ri.validation.texture_and_rendering_checks ................   Passed    0.01 sec
+        Start  10: ri.dxil.fill_heap_and_root_data
+ 10/138 Test  #10: ri.dxil.fill_heap_and_root_data ...........................   Passed    0.02 sec
+        Start  11: ri.dxil.root_data_4_bytes
+ 11/138 Test  #11: ri.dxil.root_data_4_bytes .................................   Passed    0.02 sec
+        Start  12: ri.dxil.root_data_64_bytes
+ 12/138 Test  #12: ri.dxil.root_data_64_bytes ................................   Passed    0.02 sec
+        Start  13: ri.dxil.root_data_with_arrays
+ 13/138 Test  #13: ri.dxil.root_data_with_arrays .............................   Passed    0.02 sec
+        Start  14: ri.dxil.declared_bindings
+ 14/138 Test  #14: ri.dxil.declared_bindings .................................   Passed    0.02 sec
+        Start  15: ri.dxil.sampler_heap_only
+ 15/138 Test  #15: ri.dxil.sampler_heap_only .................................   Passed    0.02 sec
+        Start  16: ri.dxil.space999_other_register_is_error
+ 16/138 Test  #16: ri.dxil.space999_other_register_is_error ..................   Passed    0.02 sec
+        Start  17: ri.dxil.space999_second_resource_is_error
+ 17/138 Test  #17: ri.dxil.space999_second_resource_is_error .................   Passed    0.02 sec
+        Start  18: ri.dxil.newer_psv_layout
+ 18/138 Test  #18: ri.dxil.newer_psv_layout ..................................   Passed    0.01 sec
+        Start  19: ri.dxil.oldest_psv_layout_numthreads_from_metadata
+ 19/138 Test  #19: ri.dxil.oldest_psv_layout_numthreads_from_metadata ........   Passed    0.01 sec
+        Start  20: ri.dxil.empty_input
+ 20/138 Test  #20: ri.dxil.empty_input .......................................   Passed    0.01 sec
+        Start  21: ri.dxil.not_a_container
+ 21/138 Test  #21: ri.dxil.not_a_container ...................................   Passed    0.01 sec
+        Start  22: ri.dxil.truncated_container
+ 22/138 Test  #22: ri.dxil.truncated_container ...............................   Passed    0.03 sec
+        Start  23: ri.dxil.missing_parts
+ 23/138 Test  #23: ri.dxil.missing_parts .....................................   Passed    0.01 sec
+        Start  24: ri.dxil.truncated_bitcode
+ 24/138 Test  #24: ri.dxil.truncated_bitcode .................................   Passed    0.07 sec
+        Start  25: ri.dxil.corrupted_bitcode
+ 25/138 Test  #25: ri.dxil.corrupted_bitcode .................................   Passed    7.05 sec
+        Start  26: ri.dxil.corrupted_container
+ 26/138 Test  #26: ri.dxil.corrupted_container ...............................   Passed    2.14 sec
+        Start  27: ri.dxil.garbage_bitcode
+ 27/138 Test  #27: ri.dxil.garbage_bitcode ...................................   Passed    0.02 sec
+        Start  28: ri.validation.macro_reports_failure
+ 28/138 Test  #28: ri.validation.macro_reports_failure .......................   Passed    0.01 sec
+        Start  29: ri.registry_matches
+ 29/138 Test  #29: ri.registry_matches .......................................   Passed    0.01 sec
+        Start  30: vk.list_gpus
+ 30/138 Test  #30: vk.list_gpus ..............................................   Passed    0.25 sec
+        Start  31: vk.create_destroy_device
+ 31/138 Test  #31: vk.create_destroy_device ..................................   Passed    0.41 sec
+        Start  32: vk.two_devices
+ 32/138 Test  #32: vk.two_devices ............................................   Passed    0.49 sec
+        Start  33: vk.native_features_turn_on_robustness
+ 33/138 Test  #33: vk.native_features_turn_on_robustness .....................   Passed    0.38 sec
+        Start  34: vk.native_extension_and_pnext
+ 34/138 Test  #34: vk.native_extension_and_pnext .............................   Passed    0.34 sec
+        Start  35: vk.list_gpus_while_device_alive
+ 35/138 Test  #35: vk.list_gpus_while_device_alive ...........................   Passed    0.39 sec
+        Start  36: vk.unknown_gpu_reports
+ 36/138 Test  #36: vk.unknown_gpu_reports ....................................   Passed    0.21 sec
+        Start  37: vk.layout_modes
+ 37/138 Test  #37: vk.layout_modes ...........................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  38: vk.sampled_depth_resting_layout
+ 38/138 Test  #38: vk.sampled_depth_resting_layout ...........................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  39: vk.native_section
+ 39/138 Test  #39: vk.native_section .........................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  40: vk.import_objects
+ 40/138 Test  #40: vk.import_objects .........................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  41: vk.work_graph_unsupported_reports
+ 41/138 Test  #41: vk.work_graph_unsupported_reports .........................***Failed  Required regular expression not found. Regex=[\[EquineRI\] unsupported: createWorkGraph: work graphs are D3D12 only
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  42: vk.shader_printf
+ 42/138 Test  #42: vk.shader_printf ..........................................***Failed  Required regular expression not found. Regex=[EquineRI printf 42 0
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  43: vk.compute.buffer_compute_readback
+ 43/138 Test  #43: vk.compute.buffer_compute_readback ........................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  44: vk.compute.command_list_reuse_and_timeline
+ 44/138 Test  #44: vk.compute.command_list_reuse_and_timeline ................***Failed    0.28 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  45: vk.compute.memory_kinds
+ 45/138 Test  #45: vk.compute.memory_kinds ...................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  46: vk.compute.names_and_markers
+ 46/138 Test  #46: vk.compute.names_and_markers ..............................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  47: vk.texture.create_and_views
+ 47/138 Test  #47: vk.texture.create_and_views ...............................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  48: vk.texture.render_then_sample
+ 48/138 Test  #48: vk.texture.render_then_sample .............................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  49: vk.texture.clear_load_op
+ 49/138 Test  #49: vk.texture.clear_load_op ..................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  50: vk.texture.depth_write_then_sample
+ 50/138 Test  #50: vk.texture.depth_write_then_sample ........................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  51: vk.texture.read_only_depth_section
+ 51/138 Test  #51: vk.texture.read_only_depth_section ........................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  52: vk.texture.read_only_depth_section_sampling
+ 52/138 Test  #52: vk.texture.read_only_depth_section_sampling ...............***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  53: vk.texture.msaa_render_then_sample
+ 53/138 Test  #53: vk.texture.msaa_render_then_sample ........................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  54: vk.texture.storage_write_then_sample
+ 54/138 Test  #54: vk.texture.storage_write_then_sample ......................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  55: vk.texture.clear_commands
+ 55/138 Test  #55: vk.texture.clear_commands .................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  56: vk.texture.discard_after_aliasing
+ 56/138 Test  #56: vk.texture.discard_after_aliasing .........................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  57: vk.texture.timestamps
+ 57/138 Test  #57: vk.texture.timestamps .....................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  58: vk.texture.copy_round_trip
+ 58/138 Test  #58: vk.texture.copy_round_trip ................................***Failed    0.28 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  59: vk.texture.copy_depth_upload
+ 59/138 Test  #59: vk.texture.copy_depth_upload ..............................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  60: vk.texture.occlusion_and_statistics
+ 60/138 Test  #60: vk.texture.occlusion_and_statistics .......................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  61: vk.texture.indexed_draw_with_blending
+ 61/138 Test  #61: vk.texture.indexed_draw_with_blending .....................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  62: vk.texture.stencil_test
+ 62/138 Test  #62: vk.texture.stencil_test ...................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  63: vk.texture.mesh_shaders
+ 63/138 Test  #63: vk.texture.mesh_shaders ...................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  64: vk.texture.resolve_color
+ 64/138 Test  #64: vk.texture.resolve_color ..................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  65: vk.texture.resolve_depth
+ 65/138 Test  #65: vk.texture.resolve_depth ..................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  66: vk.texture.indirect_level1
+ 66/138 Test  #66: vk.texture.indirect_level1 ................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  67: vk.texture.indirect_level2
+ 67/138 Test  #67: vk.texture.indirect_level2 ................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  68: vk.raytracing.build_trace_update
+ 68/138 Test  #68: vk.raytracing.build_trace_update ..........................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  69: vk.helpers.allocators
+ 69/138 Test  #69: vk.helpers.allocators .....................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  70: vk.helpers.transfers
+ 70/138 Test  #70: vk.helpers.transfers ......................................***Failed    0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  71: vk.helpers.frame_ring_and_profiler
+ 71/138 Test  #71: vk.helpers.frame_ring_and_profiler ........................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  72: vk.helpers.frame_graph
+ 72/138 Test  #72: vk.helpers.frame_graph ....................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  73: vk.helpers.shader_compiler
+ 73/138 Test  #73: vk.helpers.shader_compiler ................................***Failed    0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  74: vk.texture.unlisted_view_format_reports
+ 74/138 Test  #74: vk.texture.unlisted_view_format_reports ...................***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: createView: format
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  75: vk.window.swapchain
+ 75/138 Test  #75: vk.window.swapchain .......................................***Failed    0.30 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  76: vk.compute.root_data_size_mismatch_reports
+ 76/138 Test  #76: vk.compute.root_data_size_mismatch_reports ................***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: root data is 8 bytes, but the pipeline's shader declares 20 bytes
+]  0.28 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  77: vk.compute.pipeline_before_heap_reports
+ 77/138 Test  #77: vk.compute.pipeline_before_heap_reports ...................***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: cmdSetPipeline: set a descriptor heap with cmdSetHeap first
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  78: vk.compute.descriptor_slot_out_of_range_reports
+ 78/138 Test  #78: vk.compute.descriptor_slot_out_of_range_reports ...........***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: slot 8 is outside the resource heap
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  79: vk.compute.buffer_used_after_destroy_reports
+ 79/138 Test  #79: vk.compute.buffer_used_after_destroy_reports ..............***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: this buffer was destroyed
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  80: vk.compute.unclosed_marker_reports
+ 80/138 Test  #80: vk.compute.unclosed_marker_reports ........................***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: cmdEnd: 1 marker region\(s\) left open
+]  0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  81: vk.texture.depth_write_in_read_only_section_reports
+ 81/138 Test  #81: vk.texture.depth_write_in_read_only_section_reports .......***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: cmdSetPipeline: the pipeline writes depth
+]  0.26 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  82: vk.texture.missing_discard_reports
+ 82/138 Test  #82: vk.texture.missing_discard_reports ........................***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: cmdBeginRendering: the texture was placed over memory
+]  0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  83: vk.texture.read_only_depth_sampling_on_color_reports
+ 83/138 Test  #83: vk.texture.read_only_depth_sampling_on_color_reports ......***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: createTexture: eReadOnlyDepthSampling needs a depth format
+]  0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  84: vk.texture.copy_without_usage_reports
+ 84/138 Test  #84: vk.texture.copy_without_usage_reports .....................***Failed  Required regular expression not found. Regex=[\[EquineRI\] programmer error: cmdCopyTextureToBuffer: the texture needs TextureUsage::eCopySrc
+]  0.27 sec
+[EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+[EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+[EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+- Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+
+- The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+
+[EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+
+[EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+
+[EquineRI] unsupported: the GPU cannot hold a resource descriptor heap of 0 slots
+  at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\vulkan\Device.cpp:376 (auto __cdecl RI::Vk::(anonymous namespace)::createHeapLayouts(DeviceState &, DeviceLimits &)::(lambda)::operator()(VkDescriptorType, uint32, const void *, const char *) const)
+
+        Start  85: vk.registry_matches
+ 85/138 Test  #85: vk.registry_matches .......................................   Passed    0.02 sec
+        Start  86: d3d12.list_gpus
+ 86/138 Test  #86: d3d12.list_gpus ...........................................   Passed    0.54 sec
+        Start  87: d3d12.create_destroy_device
+ 87/138 Test  #87: d3d12.create_destroy_device ...............................   Passed    0.90 sec
+        Start  88: d3d12.agility_sdk_loaded
+ 88/138 Test  #88: d3d12.agility_sdk_loaded ..................................   Passed    0.90 sec
+        Start  89: d3d12.two_devices
+ 89/138 Test  #89: d3d12.two_devices .........................................   Passed    0.93 sec
+        Start  90: d3d12.native_hook_runs_before_creation
+ 90/138 Test  #90: d3d12.native_hook_runs_before_creation ....................   Passed    0.90 sec
+        Start  91: d3d12.list_gpus_while_device_alive
+ 91/138 Test  #91: d3d12.list_gpus_while_device_alive ........................   Passed    1.41 sec
+        Start  92: d3d12.unknown_gpu_reports
+ 92/138 Test  #92: d3d12.unknown_gpu_reports .................................   Passed    0.04 sec
+        Start  93: d3d12.native_section
+ 93/138 Test  #93: d3d12.native_section ......................................   Passed    0.66 sec
+        Start  94: d3d12.import_objects
+ 94/138 Test  #94: d3d12.import_objects ......................................   Passed    0.64 sec
+        Start  95: d3d12.work_graph
+ 95/138 Test  #95: d3d12.work_graph ..........................................   Passed    0.61 sec
+        Start  96: d3d12.compute.buffer_compute_readback
+ 96/138 Test  #96: d3d12.compute.buffer_compute_readback .....................   Passed    0.67 sec
+        Start  97: d3d12.compute.command_list_reuse_and_timeline
+ 97/138 Test  #97: d3d12.compute.command_list_reuse_and_timeline .............   Passed    0.64 sec
+        Start  98: d3d12.compute.memory_kinds
+ 98/138 Test  #98: d3d12.compute.memory_kinds ................................   Passed    0.62 sec
+        Start  99: d3d12.compute.names_and_markers
+ 99/138 Test  #99: d3d12.compute.names_and_markers ...........................   Passed    0.64 sec
+        Start 100: d3d12.texture.create_and_views
+100/138 Test #100: d3d12.texture.create_and_views ............................   Passed    0.64 sec
+        Start 101: d3d12.texture.render_then_sample
+101/138 Test #101: d3d12.texture.render_then_sample ..........................   Passed    0.73 sec
+        Start 102: d3d12.texture.clear_load_op
+102/138 Test #102: d3d12.texture.clear_load_op ...............................   Passed    0.70 sec
+        Start 103: d3d12.texture.depth_write_then_sample
+103/138 Test #103: d3d12.texture.depth_write_then_sample .....................   Passed    0.72 sec
+        Start 104: d3d12.texture.read_only_depth_section
+104/138 Test #104: d3d12.texture.read_only_depth_section .....................   Passed    0.78 sec
+        Start 105: d3d12.texture.read_only_depth_section_sampling
+105/138 Test #105: d3d12.texture.read_only_depth_section_sampling ............   Passed    0.75 sec
+        Start 106: d3d12.texture.msaa_render_then_sample
+106/138 Test #106: d3d12.texture.msaa_render_then_sample .....................   Passed    0.76 sec
+        Start 107: d3d12.texture.storage_write_then_sample
+107/138 Test #107: d3d12.texture.storage_write_then_sample ...................   Passed    0.68 sec
+        Start 108: d3d12.texture.clear_commands
+108/138 Test #108: d3d12.texture.clear_commands ..............................   Passed    0.75 sec
+        Start 109: d3d12.texture.discard_after_aliasing
+109/138 Test #109: d3d12.texture.discard_after_aliasing ......................   Passed    0.67 sec
+        Start 110: d3d12.texture.timestamps
+110/138 Test #110: d3d12.texture.timestamps ..................................   Passed    0.67 sec
+        Start 111: d3d12.texture.copy_round_trip
+111/138 Test #111: d3d12.texture.copy_round_trip .............................   Passed    0.65 sec
+        Start 112: d3d12.texture.copy_depth_upload
+112/138 Test #112: d3d12.texture.copy_depth_upload ...........................   Passed    0.73 sec
+        Start 113: d3d12.texture.occlusion_and_statistics
+113/138 Test #113: d3d12.texture.occlusion_and_statistics ....................   Passed    0.75 sec
+        Start 114: d3d12.texture.indexed_draw_with_blending
+114/138 Test #114: d3d12.texture.indexed_draw_with_blending ..................   Passed    0.75 sec
+        Start 115: d3d12.texture.stencil_test
+115/138 Test #115: d3d12.texture.stencil_test ................................   Passed    0.75 sec
+        Start 116: d3d12.texture.mesh_shaders
+116/138 Test #116: d3d12.texture.mesh_shaders ................................   Passed    0.66 sec
+        Start 117: d3d12.texture.resolve_color
+117/138 Test #117: d3d12.texture.resolve_color ...............................   Passed    0.77 sec
+        Start 118: d3d12.texture.resolve_depth
+118/138 Test #118: d3d12.texture.resolve_depth ...............................   Passed    0.73 sec
+        Start 119: d3d12.texture.indirect_level1
+119/138 Test #119: d3d12.texture.indirect_level1 .............................   Passed    0.71 sec
+        Start 120: d3d12.texture.indirect_level2
+120/138 Test #120: d3d12.texture.indirect_level2 .............................   Passed    0.66 sec
+        Start 121: d3d12.raytracing.build_trace_update
+121/138 Test #121: d3d12.raytracing.build_trace_update .......................   Passed    0.75 sec
+        Start 122: d3d12.helpers.allocators
+122/138 Test #122: d3d12.helpers.allocators ..................................   Passed    0.70 sec
+        Start 123: d3d12.helpers.transfers
+123/138 Test #123: d3d12.helpers.transfers ...................................   Passed    0.65 sec
+        Start 124: d3d12.helpers.frame_ring_and_profiler
+124/138 Test #124: d3d12.helpers.frame_ring_and_profiler .....................   Passed    0.67 sec
+        Start 125: d3d12.helpers.frame_graph
+125/138 Test #125: d3d12.helpers.frame_graph .................................   Passed    0.67 sec
+        Start 126: d3d12.helpers.shader_compiler
+126/138 Test #126: d3d12.helpers.shader_compiler .............................   Passed    0.96 sec
+        Start 127: d3d12.texture.unlisted_view_format_reports
+127/138 Test #127: d3d12.texture.unlisted_view_format_reports ................   Passed    0.70 sec
+        Start 128: d3d12.window.swapchain
+128/138 Test #128: d3d12.window.swapchain ....................................   Passed    1.40 sec
+        Start 129: d3d12.compute.root_data_size_mismatch_reports
+129/138 Test #129: d3d12.compute.root_data_size_mismatch_reports .............   Passed    0.72 sec
+        Start 130: d3d12.compute.pipeline_before_heap_reports
+130/138 Test #130: d3d12.compute.pipeline_before_heap_reports ................   Passed    0.66 sec
+        Start 131: d3d12.compute.descriptor_slot_out_of_range_reports
+131/138 Test #131: d3d12.compute.descriptor_slot_out_of_range_reports ........   Passed    0.67 sec
+        Start 132: d3d12.compute.buffer_used_after_destroy_reports
+132/138 Test #132: d3d12.compute.buffer_used_after_destroy_reports ...........   Passed    0.65 sec
+        Start 133: d3d12.compute.unclosed_marker_reports
+133/138 Test #133: d3d12.compute.unclosed_marker_reports .....................   Passed    0.65 sec
+        Start 134: d3d12.texture.depth_write_in_read_only_section_reports
+134/138 Test #134: d3d12.texture.depth_write_in_read_only_section_reports ....   Passed    0.65 sec
+        Start 135: d3d12.texture.missing_discard_reports
+135/138 Test #135: d3d12.texture.missing_discard_reports .....................   Passed    0.68 sec
+        Start 136: d3d12.texture.read_only_depth_sampling_on_color_reports
+136/138 Test #136: d3d12.texture.read_only_depth_sampling_on_color_reports ...   Passed    0.71 sec
+        Start 137: d3d12.texture.copy_without_usage_reports
+137/138 Test #137: d3d12.texture.copy_without_usage_reports ..................   Passed    0.67 sec
+        Start 138: d3d12.registry_matches
+138/138 Test #138: d3d12.registry_matches ....................................   Passed    0.02 sec
+
+64% tests passed, 49 tests failed out of 138
+
+Label Time Summary:
+gpu    =  54.18 sec*proc (109 tests)
+
+Total Test time (real) =  64.24 sec
+
+The following tests FAILED:
+	  1 - sample.compute_readback.Vulkan (Failed)           gpu
+	 37 - vk.layout_modes (Failed)                          gpu
+	 38 - vk.sampled_depth_resting_layout (Failed)          gpu
+	 39 - vk.native_section (Failed)                        gpu
+	 40 - vk.import_objects (Failed)                        gpu
+	 41 - vk.work_graph_unsupported_reports (Failed)        gpu
+	 42 - vk.shader_printf (Failed)                         gpu
+	 43 - vk.compute.buffer_compute_readback (Failed)       gpu
+	 44 - vk.compute.command_list_reuse_and_timeline (Failed) gpu
+	 45 - vk.compute.memory_kinds (Failed)                  gpu
+	 46 - vk.compute.names_and_markers (Failed)             gpu
+	 47 - vk.texture.create_and_views (Failed)              gpu
+	 48 - vk.texture.render_then_sample (Failed)            gpu
+	 49 - vk.texture.clear_load_op (Failed)                 gpu
+	 50 - vk.texture.depth_write_then_sample (Failed)       gpu
+	 51 - vk.texture.read_only_depth_section (Failed)       gpu
+	 52 - vk.texture.read_only_depth_section_sampling (Failed) gpu
+	 53 - vk.texture.msaa_render_then_sample (Failed)       gpu
+	 54 - vk.texture.storage_write_then_sample (Failed)     gpu
+	 55 - vk.texture.clear_commands (Failed)                gpu
+	 56 - vk.texture.discard_after_aliasing (Failed)        gpu
+	 57 - vk.texture.timestamps (Failed)                    gpu
+	 58 - vk.texture.copy_round_trip (Failed)               gpu
+	 59 - vk.texture.copy_depth_upload (Failed)             gpu
+	 60 - vk.texture.occlusion_and_statistics (Failed)      gpu
+	 61 - vk.texture.indexed_draw_with_blending (Failed)    gpu
+	 62 - vk.texture.stencil_test (Failed)                  gpu
+	 63 - vk.texture.mesh_shaders (Failed)                  gpu
+	 64 - vk.texture.resolve_color (Failed)                 gpu
+	 65 - vk.texture.resolve_depth (Failed)                 gpu
+	 66 - vk.texture.indirect_level1 (Failed)               gpu
+	 67 - vk.texture.indirect_level2 (Failed)               gpu
+	 68 - vk.raytracing.build_trace_update (Failed)         gpu
+	 69 - vk.helpers.allocators (Failed)                    gpu
+	 70 - vk.helpers.transfers (Failed)                     gpu
+	 71 - vk.helpers.frame_ring_and_profiler (Failed)       gpu
+	 72 - vk.helpers.frame_graph (Failed)                   gpu
+	 73 - vk.helpers.shader_compiler (Failed)               gpu
+	 74 - vk.texture.unlisted_view_format_reports (Failed)  gpu
+	 75 - vk.window.swapchain (Failed)                      gpu
+	 76 - vk.compute.root_data_size_mismatch_reports (Failed) gpu
+	 77 - vk.compute.pipeline_before_heap_reports (Failed)  gpu
+	 78 - vk.compute.descriptor_slot_out_of_range_reports (Failed) gpu
+	 79 - vk.compute.buffer_used_after_destroy_reports (Failed) gpu
+	 80 - vk.compute.unclosed_marker_reports (Failed)       gpu
+	 81 - vk.texture.depth_write_in_read_only_section_reports (Failed) gpu
+	 82 - vk.texture.missing_discard_reports (Failed)       gpu
+	 83 - vk.texture.read_only_depth_sampling_on_color_reports (Failed) gpu
+	 84 - vk.texture.copy_without_usage_reports (Failed)    gpu
+Errors while running CTest

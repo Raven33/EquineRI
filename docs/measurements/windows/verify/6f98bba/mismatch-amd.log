@@ -1,0 +1,137 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 143
+    Start 143: d3d12.texture.stage_link_mismatch_reports
+
+143: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "texture.stage_link_mismatch_reports"
+143: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+143: Environment variables: 
+143:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+143: Test timeout computed to be: 120
+143: [EquineRI] programmer error: createGraphicsPipeline: the pixel shader reads NORMAL0 at register 0, but the vertex shader writes it at register 2: the pixel shader must take the vertex shader's values in the same order, leaving none out before the last one it reads; pass them in one struct (P101)
+143:   at C:\Users\Arthu\Documents\GitHub\EquineNext\backends\d3d12\Pipeline.cpp:282 (Pipeline __cdecl RI::D3D12::createGraphicsPipeline(Device &, const GraphicsPipelineDesc &))
+143: [EquineRI] D3D12 warning: Process is terminating. Using simple reporting. Please call ReportLiveObjects() at runtime for standard reporting.
+143: [EquineRI] D3D12 warning: Live Producer at 0x000011AE3D0BC908, Refcount: 10.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B8CB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D0F0AB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x0000118E3D0AA930, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x0000118E3D0AC530, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1198B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1190B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011943D0A3130, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B8FB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B92B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B95B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B98B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B9BB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0B9EB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BA1B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BA4B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BA7B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BAAB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BADB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BB0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BB3B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BB6B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BB9B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BBCB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BBFB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BC2B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11A8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11A0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11B0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x00000148098B1830, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011883D0A20B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x0000118E3D0AE130, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11C0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11B8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11D0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11C8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11E0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11D8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D0FD2B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11F0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11E8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D11F8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D0FDCB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D0FE6B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D0FF0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D0FFAB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1004B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D100EB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1018B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1022B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D102CB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1036B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1040B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D104AB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1054B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D105EB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1068B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D1072B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011823D107CB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1208B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1200B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1218B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1210B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011883D0A30B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x0000118E3D0AFD30, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BC5B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x0000118C3D0A1930, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BC8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011963D0AA930, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BCBB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BCEB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BD1B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BD4B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BD7B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BDAB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BDDB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BE0B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BE3B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BE6B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BE9B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BECB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BEFB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BF2B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BF5B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BF8B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BFBB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0BFEB0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0C01B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1228B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1220B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1230B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000001480A9D1830, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0C04B0, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x00000148128F1830, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000001480AD61830, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011A23D0A0430, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1240B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1238B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011AE3D0D8830, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011743D0C07B0, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000001480ADB1830, Refcount: 1.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x0000014813211830, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1250B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1248B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1260B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: 	Live Object at 0x000011803D1258B0, Refcount: 0.
+143: [EquineRI] D3D12 warning: Live                         Object :    105
+1/1 Test #143: d3d12.texture.stage_link_mismatch_reports ...   Passed    0.62 sec
+
+The following tests passed:
+	d3d12.texture.stage_link_mismatch_reports
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+gpu    =   0.62 sec*proc (1 test)
+
+Total Test time (real) =   0.62 sec

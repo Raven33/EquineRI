@@ -103,7 +103,7 @@ Linux tests pass (RADV 680M, Vulkan). Windows: RTX 3080 passed every test up to 
 (`e1221b8`) and all 138 at `3f13bfb`, including `d3d12.work_graph`; AMD D3D12 passes all.
 AMD Vulkan failed at `3f13bfb` (no mutable heap with acceleration structures, P98 (8)); with
 the fix (ray tracing off there), `e1363bc` passes 138/138 on both AMD and NVIDIA with GPU
-validation on (logs on branch `m4-verify-windows-e1363bc`). AMD Vulkan keeps 1,000,000 heap
+validation on (logs in `docs/measurements/windows/verify/e1363bc/`). AMD Vulkan keeps 1,000,000 heap
 slots. After the review, `f63f7cd` passes 136/136 on both Windows GPUs (GPU validation on; work
 graphs on NVIDIA with no debug-layer message) and all 85 Linux tests. AMD Windows needs
 no indirect scratch for the tested pipelines (4-byte floor), so a large scratch was only
