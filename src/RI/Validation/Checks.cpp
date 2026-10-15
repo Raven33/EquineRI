@@ -116,6 +116,44 @@ CheckResult checkTextureUsage(Format format, TextureUsage usage) {
     return {};
 }
 
+CheckResult checkTextureShape(const TextureDesc &desc) {
+    if (desc.shape != TextureShape::e3D && desc.depth != 1) {
+        return std::format("createTexture: depth is {}; only 3D textures (TextureShape::e3D) have a depth",
+                           desc.depth);
+    }
+    if (desc.shape == TextureShape::eCube) {
+        if (desc.width != desc.height) {
+            return std::format("createTexture: a cube texture is square; this one is {}x{}", desc.width,
+                               desc.height);
+        }
+        if (desc.layers == 0 || desc.layers % 6 != 0) {
+            return std::format("createTexture: a cube texture has 6 layers per cube; this one has {}", desc.layers);
+        }
+    }
+    if (desc.shape == TextureShape::e3D) {
+        if (desc.layers != 1) {
+            return std::format("createTexture: a 3D texture has depth slices, not layers; layers is {}",
+                               desc.layers);
+        }
+        if (isDepthFormat(desc.format)) {
+            return std::string("createTexture: a 3D texture cannot have a depth format");
+        }
+    }
+    if (desc.shape != TextureShape::e2D && desc.samples != 1) {
+        return std::string("createTexture: cube and 3D textures are not multisampled");
+    }
+    return {};
+}
+
+CheckResult checkVolumeView(uint32 mipCount, bool someSlices) {
+    if (someSlices && mipCount != 1) {
+        return std::format("createView: a view of some depth slices of a 3D texture covers one mip; this one "
+                           "covers {}",
+                           mipCount);
+    }
+    return {};
+}
+
 CheckResult checkMarkerEnd(uint32 depth) {
     if (depth == 0) {
         return std::string("cmdEndMarker: no marker region is open (P53)");

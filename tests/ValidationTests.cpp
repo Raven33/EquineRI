@@ -121,3 +121,30 @@ EQ_TEST(validation, graphics_stages) {
     const CheckResult mesh = checkGraphicsStages(true, false, false, true, false, 0);
     EQ_CHECK(mesh && mesh->find("mesh pipelines take no hull, domain or geometry shader") != std::string::npos);
 }
+
+// Cube and 3D texture shapes (P102).
+EQ_TEST(validation, texture_shapes) {
+    using namespace RI::Validation;
+    using RI::TextureShape;
+    EQ_CHECK(!checkTextureShape({.width = 4, .height = 2}));
+    EQ_CHECK(!checkTextureShape({.shape = TextureShape::eCube, .width = 4, .height = 4, .layers = 12}));
+    EQ_CHECK(!checkTextureShape({.shape = TextureShape::e3D, .width = 4, .height = 2, .depth = 8}));
+    const CheckResult flat = checkTextureShape({.width = 4, .height = 4, .depth = 2});
+    EQ_CHECK(flat && flat->find("only 3D textures") != std::string::npos);
+    const CheckResult notSquare = checkTextureShape({.shape = TextureShape::eCube, .width = 4, .height = 2, .layers = 6});
+    EQ_CHECK(notSquare && notSquare->find("square") != std::string::npos);
+    const CheckResult faces = checkTextureShape({.shape = TextureShape::eCube, .width = 4, .height = 4, .layers = 4});
+    EQ_CHECK(faces && faces->find("6 layers per cube") != std::string::npos);
+    const CheckResult layered = checkTextureShape({.shape = TextureShape::e3D, .depth = 4, .layers = 2});
+    EQ_CHECK(layered && layered->find("not layers") != std::string::npos);
+    const CheckResult depth =
+        checkTextureShape({.shape = TextureShape::e3D, .depth = 4, .format = RI::Format::eD32Float});
+    EQ_CHECK(depth && depth->find("cannot have a depth format") != std::string::npos);
+    const CheckResult msaa =
+        checkTextureShape({.shape = TextureShape::eCube, .width = 4, .height = 4, .layers = 6, .samples = 4});
+    EQ_CHECK(msaa && msaa->find("not multisampled") != std::string::npos);
+    EQ_CHECK(!checkVolumeView(3, false));
+    EQ_CHECK(!checkVolumeView(1, true));
+    const CheckResult slices = checkVolumeView(2, true);
+    EQ_CHECK(slices && slices->find("covers one mip") != std::string::npos);
+}

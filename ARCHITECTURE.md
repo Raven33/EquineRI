@@ -162,12 +162,13 @@ mechanisms.
 | Layouts (P95, P97) | Modes: unified (`GENERAL` everywhere), T (resting layouts per usage), G; RI switches around rendering, clears, copies | Enhanced barriers; textures rest in `COMMON` or their attachment layout |
 | Barriers (P36) | One `VkMemoryBarrier2` from stage masks | One global barrier; attachment stages left to RI's switches |
 | Rendering (P40) | Dynamic rendering; negative viewport height so clip space is y-up | `OMSetRenderTargets` with RTV/DSV in RI's CPU heaps |
+| Texture shapes (P102) | Cubes: `CUBE_COMPATIBLE` images, a cube view to read and a second 2D-array view (`internal.arrayView`) to write and render; 3D: slices are depth, barriers take every array layer, render targets are 2D-array views of `2D_ARRAY_COMPATIBLE` images | Cubes are 2D arrays with cube SRVs; 3D: `TEXTURE3D`, one subresource per mip, RTVs pick `WSlice`s |
 | Clears (P65, P95) | Native clear commands | `Clear*View`, UAV clears through RI's small shader-visible heap, then the user's heaps and root signature again |
 | Timeline (P20) | Timeline semaphore | Fence |
 | Indirect (P48) | Level 1 native; Level 2 `VK_EXT_device_generated_commands` with the user's scratch | `ExecuteIndirect`, command signatures cached per root signature |
 | Ray tracing (P49) | `VK_KHR_acceleration_structure` + ray query; acceleration structures must be a mutable descriptor type (off on AMD Windows) | DXR tier 1.1 |
 | Work graphs (P50, P62) | Unsupported | State object, `SetProgram`, `DispatchGraph` |
-| Swapchain (P43, P63, P64) | `VK_KHR_swapchain`; prerecorded layout switches per image | DXGI flip model; sRGB views on UNORM buffers |
+| Swapchain (P43, P63, P64) | `VK_KHR_swapchain`; prerecorded layout switches per image | DXGI flip model; back buffers rest in `COMMON` (= `PRESENT`), so acquire and present submit nothing; sRGB views on UNORM buffers |
 | Debugging (P53) | Debug utils names and labels; device fault | `SetName`, PIX events; DRED |
 | Validation (P21) | Validation layer, GPU-AV, printf | Debug layer, GBV |
 

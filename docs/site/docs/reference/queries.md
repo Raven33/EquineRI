@@ -1,5 +1,5 @@
 ---
-symbols: [RI::cmdBeginQuery, RI::cmdEndQuery, RI::pipelineStatisticsLayout, RI::PipelineStatisticsLayout]
+symbols: [RI::cmdBeginQuery, RI::cmdEndQuery, RI::pipelineStatisticsLayout, RI::PipelineStatisticsLayout, RI::kNoCounter]
 ---
 
 # RI::cmdBeginQuery, RI::cmdEndQuery, RI::pipelineStatisticsLayout
@@ -16,7 +16,8 @@ Occlusion and pipeline-statistics queries ([P71](../design-notes/decisions.md#p7
   count on both backends): one 64-bit value;
 - a **pipeline-statistics** query counts vertices, primitives and shader invocations. The
   layout of its result differs per backend, so `RI::pipelineStatisticsLayout(device)` gives
-  the result's `size` and the byte offset of each 64-bit counter. RI does not convert.
+  the result's `size` and the byte offset of each 64-bit counter. RI does not convert. The
+  geometry, hull and domain counters are `kNoCounter` on a GPU without those stages (Vulkan);
 
 Copy results to a buffer with [`cmdResolveQueries`](timestamps.md) (each statistics result
 takes `size` bytes), read them after the submission's timeline point, and reset with
@@ -31,6 +32,8 @@ takes `size` bytes), read them after the submission's timeline point, and reset 
 --8<-- "generated/signatures/RI.pipelineStatisticsLayout.md"
 
 --8<-- "generated/signatures/RI.PipelineStatisticsLayout.md"
+
+--8<-- "generated/signatures/RI.kNoCounter.md"
 
 ## Example
 

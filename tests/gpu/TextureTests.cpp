@@ -1340,6 +1340,182 @@ EQ_TEST(texture, tessellation) {
     EQ_CHECK(all(texels, 0, 1.0f) && all(texels, 3, 1.0f));
 }
 
+namespace {
+
+struct SampleCubeRoot {
+    uint32 cubeSlot, samplerSlot, outputSlot;
+};
+
+// Samples `cube` along the six axes with a heap of its own (slot 2, sampler 0),
+// after `record` has written it, and checks face f holds the color the
+// write_faces and layered_gs shaders give it.
+void checkCubeFaces(Fixture &f, RI::DescriptorHeap &heap, const RI::Texture &cube) {
+    RI::writeSamplers(f.device, heap,
+                      {{.slot = 0, .sampler = {.minFilter = RI::Filter::eNearest, .magFilter = RI::Filter::eNearest,
+                                               .mipFilter = RI::Filter::eNearest}}});
+    RI::writeDescriptors(f.device, heap, {{.slot = 0, .descriptor = RI::ReadWriteView{.buffer = f.output, .stride = 16}},
+                                          {.slot = 2, .descriptor = RI::ReadView{.texture = cube.view}}});
+    const std::vector<std::byte> shader = loadShader("sample_cube");
+    RI::Pipeline sample = RI::createComputePipeline(f.device, {.shader = shader});
+    RI::cmdSetPipeline(f.cmd, sample);
+    RI::cmdSetRootData(f.cmd, SampleCubeRoot{.cubeSlot = 2, .samplerSlot = 0, .outputSlot = 0});
+    RI::cmdDispatch(f.cmd, 1, 1, 1);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, 6 * 16);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+    const auto *r = static_cast<const float *>(f.result.mapped);
+    for (uint32 face = 0; face < 6; ++face) {
+        EQ_CHECK(near(r[face * 4 + 0], face / 8.0f + 1.0f / 16.0f) && near(r[face * 4 + 1], 1.0f - face / 8.0f));
+    }
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyPipeline(f.device, sample);
+}
+
+} // namespace
+
+// A cube texture (P102): a compute shader writes its faces as a 2D array,
+// then reads them back as a cube along each axis, in +X, -X, +Y, -Y, +Z, -Z
+// order on both backends.
+EQ_TEST(texture, cube_storage_then_sample) {
+    Fixture f;
+    RI::Texture cube = placeTexture(f.device, f.gpu,
+                                    {.shape = RI::TextureShape::eCube, .width = 16, .height = 16, .layers = 6,
+                                     .format = RI::Format::eRGBA8Unorm,
+                                     .usage = RI::TextureUsage::eStorage | RI::TextureUsage::eSampled});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(f.device, {.resourceCount = 4, .samplerCount = 1});
+    RI::writeDescriptors(f.device, heap, {{.slot = 1, .descriptor = RI::ReadWriteView{.texture = cube.view}}});
+    const std::vector<std::byte> shader = loadShader("write_faces");
+    RI::Pipeline write = RI::createComputePipeline(f.device, {.shader = shader});
+    struct WriteFacesRoot {
+        uint32 textureSlot, size;
+    };
+    RI::cmdSetHeap(f.cmd, heap);
+    RI::cmdSetPipeline(f.cmd, write);
+    RI::cmdSetRootData(f.cmd, WriteFacesRoot{.textureSlot = 1, .size = 16});
+    RI::cmdDispatch(f.cmd, 2, 2, 6);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCompute);
+    checkCubeFaces(f, heap, cube);
+    RI::destroyPipeline(f.device, write);
+    RI::destroyDescriptorHeap(f.device, heap);
+    RI::destroyTexture(f.device, cube);
+}
+
+// Rendering into all six faces of a cube in one draw (P102): a geometry shader
+// picks the layer of each triangle (SV_RenderTargetArrayIndex).
+EQ_TEST(texture, cube_layered_render) {
+    Fixture f;
+    if (!f.device.limits.geometryShaders) {
+        return;
+    }
+    RI::Texture cube = placeTexture(f.device, f.gpu,
+                                    {.shape = RI::TextureShape::eCube, .width = 16, .height = 16, .layers = 6,
+                                     .format = RI::Format::eRGBA8Unorm,
+                                     .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs = loadShader("point_vs"), gs = loadShader("layered_gs"), ps = loadShader("color_ps");
+    RI::Pipeline pipeline = RI::createGraphicsPipeline(f.device, {.vertex = vs,
+                                                                  .geometry = gs,
+                                                                  .pixel = ps,
+                                                                  .colorFormats = {RI::Format::eRGBA8Unorm},
+                                                                  .topology = RI::Topology::ePointList});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(f.device, {.resourceCount = 4, .samplerCount = 1});
+    RI::cmdSetHeap(f.cmd, heap);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = cube.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 1);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCompute);
+    checkCubeFaces(f, heap, cube);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyDescriptorHeap(f.device, heap);
+    RI::destroyTexture(f.device, cube);
+}
+
+// A 3D texture (P102): uploaded slice by slice, read back in a shader as a
+// volume, then one slice rendered to and the whole volume copied out.
+EQ_TEST(texture, volume_copy_render_sample) {
+    Fixture f;
+    constexpr uint32 kSide = 8, kDepth = 4;
+    RI::Texture volume = placeTexture(f.device, f.gpu,
+                                      {.shape = RI::TextureShape::e3D, .width = kSide, .height = kSide,
+                                       .depth = kDepth, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eRenderTarget |
+                                                RI::TextureUsage::eCopySrc | RI::TextureUsage::eCopyDst});
+    const RI::CopyLayout layout = RI::copyLayout(f.device, volume.view);
+    EQ_CHECK(layout.layers == kDepth && layout.layerPitch == layout.rowPitch * kSide);
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)};
+    RI::Buffer staging = placeBuffer(f.device, upload, {.size = layout.size, .usage = RI::BufferUsage::eCopySrc});
+    RI::Buffer copied = placeBuffer(f.device, f.readback, {.size = layout.size, .usage = RI::BufferUsage::eCopyDst});
+    const auto texelAt = [&](const void *base, uint32 x, uint32 y, uint32 z) {
+        return static_cast<const uint8 *>(base) + z * layout.layerPitch + y * layout.rowPitch + x * 4;
+    };
+    for (uint32 z = 0; z < kDepth; ++z) {
+        for (uint32 y = 0; y < kSide; ++y) {
+            for (uint32 x = 0; x < kSide; ++x) {
+                auto *t = const_cast<uint8 *>(texelAt(staging.mapped, x, y, z));
+                t[0] = static_cast<uint8>(40 * z + 10);
+                t[1] = static_cast<uint8>(16 * x);
+                t[2] = static_cast<uint8>(16 * y);
+                t[3] = 255;
+            }
+        }
+    }
+    RI::cmdCopyBufferToTexture(f.cmd, staging, 0, volume.view);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCompute);
+
+    struct ReadVolumeRoot {
+        uint32 textureSlot, outputSlot, size, depth;
+    };
+    RI::writeDescriptors(f.device, f.heap, {{.slot = kTextureSlot, .descriptor = RI::ReadView{.texture = volume.view}}});
+    const std::vector<std::byte> shader = loadShader("read_volume");
+    RI::Pipeline read = RI::createComputePipeline(f.device, {.shader = shader});
+    RI::cmdSetPipeline(f.cmd, read);
+    RI::cmdSetRootData(f.cmd, ReadVolumeRoot{.textureSlot = kTextureSlot, .outputSlot = kOutputSlot, .size = kSide,
+                                             .depth = kDepth});
+    RI::cmdDispatch(f.cmd, kSide / 4, kSide / 4, kDepth / 4);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy | RI::Stage::eRenderTarget);
+    RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, kSide * kSide * kDepth * 16);
+
+    RI::TextureView slice = RI::createView(f.device, volume, {.mipCount = 1, .baseLayer = 2, .layerCount = 1});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = slice, .load = RI::LoadOp::eClear,
+                                              .clear = {.color = {1.0f, 0.0f, 1.0f, 1.0f}}}}});
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCopy);
+    RI::cmdCopyTextureToBuffer(f.cmd, volume.view, copied, 0);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    const auto *shaderTexels = static_cast<const float *>(f.result.mapped);
+    bool shaderOk = true, copyOk = true;
+    for (uint32 z = 0; z < kDepth; ++z) {
+        for (uint32 y = 0; y < kSide; ++y) {
+            for (uint32 x = 0; x < kSide; ++x) {
+                const float *s = shaderTexels + ((z * kSide + y) * kSide + x) * 4;
+                shaderOk = shaderOk && near(s[0], (40.0f * z + 10.0f) / 255.0f) && near(s[1], 16.0f * x / 255.0f) &&
+                           near(s[2], 16.0f * y / 255.0f);
+                const uint8 *c = texelAt(copied.mapped, x, y, z);
+                copyOk = copyOk && (z == 2 ? c[0] == 255 && c[1] == 0 && c[2] == 255
+                                           : c[0] == 40 * z + 10 && c[1] == 16 * x && c[2] == 16 * y);
+            }
+        }
+    }
+    EQ_CHECK(shaderOk);
+    EQ_CHECK(copyOk);
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyView(f.device, slice);
+    RI::destroyPipeline(f.device, read);
+    RI::destroyBuffer(f.device, copied);
+    RI::destroyBuffer(f.device, staging);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyTexture(f.device, volume);
+}
+
 #if EQUINE_VALIDATION
 // A pixel shader that leaves out values before the one it reads (P101): RI
 // reports it on both backends, where Vulkan alone would read the wrong value.

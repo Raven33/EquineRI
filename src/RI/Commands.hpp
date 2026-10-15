@@ -15,7 +15,7 @@ enum class Stage : uint32 {
     eCopy = rvl::eBit(0),
     eCompute = rvl::eBit(1),
     eIndirect = rvl::eBit(2), // reading indirect arguments (P48)
-    eVertex = rvl::eBit(3),   // vertex shading (and vertex pulling)
+    eVertex = rvl::eBit(3),   // every shader before rasterization: vertex, hull, domain, geometry, task, mesh
     ePixel = rvl::eBit(4),    // pixel shading
     eRenderTarget = rvl::eBit(5),  // color attachment reads and writes
     eDepthStencil = rvl::eBit(6),  // depth/stencil tests and writes

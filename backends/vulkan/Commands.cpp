@@ -51,7 +51,8 @@ VkPipelineStageFlags2 stagesOf(Stage stage) {
         flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
     }
     if ((stage & Stage::eVertex) != Stage::eNone) {
-        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+        // Every stage before rasterization, as D3D12's VERTEX_SHADING (P102).
+        flags |= VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT;
     }
     if ((stage & Stage::ePixel) != Stage::eNone) {
         flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
@@ -418,7 +419,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         VkClearValue clear{};
         clear.color = clearColorOf(a.view.format, a.clear);
         colors.push_back({.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                          .imageView = native(a.view),
+                          .imageView = attachmentViewOf(a.view),
                           .imageLayout = layout,
                           .loadOp = loadOf(a.load),
                           .storeOp = storeOf(a.store, false),
@@ -435,7 +436,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
                                                  "cmdBeginRendering"));
             barriers.push_back(resolveTargetIn(a.resolveTo, layout));
             colors.back().resolveMode = resolveModeOf(a.resolveMode);
-            colors.back().resolveImageView = native(a.resolveTo);
+            colors.back().resolveImageView = attachmentViewOf(a.resolveTo);
             colors.back().resolveImageLayout = layout;
             cmd.internal.resolves[i] = a.resolveTo;
         }
@@ -474,7 +475,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         VkClearValue clear{};
         clear.depthStencil = {.depth = d.clear.depth, .stencil = d.clear.stencil};
         depthInfo = {.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                     .imageView = native(d.view),
+                     .imageView = attachmentViewOf(d.view),
                      .imageLayout = layout,
                      .loadOp = loadOf(d.load),
                      .storeOp = storeOf(d.store, d.depthReadOnly),
@@ -491,7 +492,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
                 state.layoutMode == LayoutMode::eTransitions ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
             barriers.push_back(resolveTargetIn(d.resolveTo, resolveLayout));
             depthInfo.resolveMode = resolveModeOf(d.resolveMode);
-            depthInfo.resolveImageView = native(d.resolveTo);
+            depthInfo.resolveImageView = attachmentViewOf(d.resolveTo);
             depthInfo.resolveImageLayout = resolveLayout;
             cmd.internal.depthResolve = d.resolveTo;
         }
@@ -747,12 +748,21 @@ void checkCopy([[maybe_unused]] const TextureView &view, [[maybe_unused]] bool b
                                           call));
 }
 
-// The image subresource of a one-mip view.
+// The image subresource of a one-mip view; a 3D texture's slices are its
+// depth (sliceOffset and sliceExtent), not array layers.
 VkImageSubresourceLayers layersOf(const TextureView &view) {
     return {.aspectMask = view.internal.aspectMask,
             .mipLevel = view.internal.baseMip,
-            .baseArrayLayer = view.internal.baseLayer,
-            .layerCount = view.internal.layerCount};
+            .baseArrayLayer = view.internal.volume ? 0 : view.internal.baseLayer,
+            .layerCount = view.internal.volume ? 1 : view.internal.layerCount};
+}
+
+VkOffset3D sliceOffset(const TextureView &view) {
+    return {0, 0, view.internal.volume ? static_cast<int32_t>(view.internal.baseLayer) : 0};
+}
+
+VkExtent3D sliceExtent(const TextureView &view) {
+    return {view.width, view.height, view.internal.volume ? view.internal.layerCount : 1};
 }
 
 // The layout a copy uses: in place for textures resting in GENERAL, else the
@@ -808,7 +818,8 @@ VkBufferImageCopy2 regionOf(const TextureView &view, uint64 offset, const CopyLa
             .bufferRowLength = static_cast<uint32>(layout.rowPitch / layout.bytesPerTexel),
             .bufferImageHeight = static_cast<uint32>(layout.layerPitch / layout.rowPitch),
             .imageSubresource = layersOf(view),
-            .imageExtent = {view.width, view.height, 1}};
+            .imageOffset = sliceOffset(view),
+            .imageExtent = sliceExtent(view)};
 }
 
 } // namespace
@@ -830,7 +841,8 @@ CopyLayout copyLayout(Device &device, const TextureView &view) {
     layout.alignment = std::max<uint64>({state.copyOffsetAlignment, texel, 4});
     layout.rowPitch = roundUp(roundUp(uint64{layout.width} * texel, state.copyRowPitchAlignment), texel);
     const uint64 layerBytes = layout.rowPitch * layout.height;
-    layout.layerPitch = roundUp(layerBytes, layout.alignment);
+    // 3D slices follow each other directly, as D3D12 requires (P102).
+    layout.layerPitch = view.internal.volume ? layerBytes : roundUp(layerBytes, layout.alignment);
     // layerPitch must be whole rows for bufferImageHeight.
     while (layout.layerPitch % layout.rowPitch != 0) {
         layout.layerPitch += layout.alignment;
@@ -911,8 +923,12 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
     pipelineBarrier(cmd, barriers);
     const VkImageCopy2 region{.sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
                               .srcSubresource = layersOf(src),
+                              .srcOffset = sliceOffset(src),
                               .dstSubresource = layersOf(dst),
-                              .extent = {src.width, src.height, 1}};
+                              .dstOffset = sliceOffset(dst),
+                              // A 3D side copies as many slices as the other side has layers.
+                              .extent = {src.width, src.height,
+                                         src.internal.volume || dst.internal.volume ? src.internal.layerCount : 1}};
     const VkCopyImageInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
                                 .srcImage = reinterpret_cast<VkImage>(src.internal.image),
                                 .srcImageLayout = copyLayoutFor(src, false),

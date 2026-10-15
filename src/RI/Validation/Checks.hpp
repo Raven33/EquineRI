@@ -157,4 +157,12 @@ CheckResult checkMarkersClosed(uint32 depth);
 // eReadOnlyDepthSampling (P97) goes with eSampled, eDepthStencil and a depth format.
 CheckResult checkTextureUsage(Format format, TextureUsage usage);
 
+// A texture's shape (P102): cubes are square with 6 layers per cube; 3D
+// textures have one layer, no depth format; neither is multisampled; only 3D
+// textures have a depth above 1.
+CheckResult checkTextureShape(const TextureDesc &desc);
+
+// A 3D texture's view that picks depth slices covers one mip (P102).
+CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
+
 } // namespace RI::Validation

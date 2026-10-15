@@ -103,10 +103,14 @@ struct TextureView {
     uint32 height = 0;
     uint32 samples = 1;
     struct {
-        uint64 view = 0;       // VkImageView
+        uint64 view = 0;       // VkImageView, for reading (a cube view for whole cubes)
+        // A 2D-array VkImageView for storage writes and rendering where `view`
+        // is a cube or 3D view (P102); 0 otherwise.
+        uint64 arrayView = 0;
         uint64 image = 0;      // VkImage of the texture
         uint32 aspectMask = 0; // VkImageAspectFlags
-        uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1;
+        uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1; // 3D: slices
+        bool volume = false;      // a 3D texture: barriers and copies take array layer 0
         uint32 restingLayout = 0; // VkImageLayout the texture rests in (L1)
         TextureUsage textureUsage = TextureUsage::eNone; // checked by copies (P47)
         uint64 textureId = 0;     // validation builds (P91)
@@ -116,8 +120,10 @@ struct TextureView {
 // A texture placed in user memory at `offset` (P31). It owns no memory. Its
 // image layouts are RI's business (P16, L1).
 struct Texture {
+    TextureShape shape = TextureShape::e2D;
     uint32 width = 0;
     uint32 height = 0;
+    uint32 depth = 1; // 3D textures
     uint32 layers = 1;
     uint32 mips = 1;
     uint32 samples = 1;

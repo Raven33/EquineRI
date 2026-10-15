@@ -1,5 +1,5 @@
 // Textures, views and their layouts on Vulkan (P16, P58, P69, P73, P74, P78,
-// P95, P97).
+// P95, P97, P102).
 //
 // Owns: format support, texture requirements and creation in user memory,
 // views, import of native images (P77), the resting layout of each texture
@@ -9,7 +9,8 @@
 //
 // Watch out: layouts never reach the user; a texture changes layout only
 // around RI's own operations. A texture with only copy usages gets no image
-// view (none would be valid).
+// view (none would be valid). A view of whole cubes, or of a 3D render target,
+// has a second 2D-array image view for writes and rendering (arrayView).
 //
 // D3D12 counterpart: backends/d3d12/Textures.cpp.
 
@@ -107,11 +108,12 @@ struct ImageInfo {
 };
 
 void fillImageInfo(const TextureDesc &desc, ImageInfo &out) {
+    const bool volume = desc.shape == TextureShape::e3D;
     out.info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .imageType = VK_IMAGE_TYPE_2D,
+        .imageType = volume ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D,
         .format = toVkFormat(desc.format),
-        .extent = {desc.width, desc.height, 1},
+        .extent = {desc.width, desc.height, volume ? desc.depth : 1},
         .mipLevels = desc.mips,
         .arrayLayers = desc.layers,
         .samples = static_cast<VkSampleCountFlagBits>(desc.samples),
@@ -120,6 +122,13 @@ void fillImageInfo(const TextureDesc &desc, ImageInfo &out) {
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
+    // Cubes are read through cube views; 3D render targets are 2D-array views
+    // of slices (P102).
+    if (desc.shape == TextureShape::eCube) {
+        out.info.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    } else if (volume && has(desc.usage, TextureUsage::eRenderTarget)) {
+        out.info.flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+    }
     if (desc.viewFormats.empty()) {
         return;
     }
@@ -195,12 +204,14 @@ VkImageLayout restingLayoutOf(LayoutMode mode, Format format, TextureUsage usage
     return VK_IMAGE_LAYOUT_GENERAL;
 }
 
+// A 3D texture's slices are not array layers: its range is every slice, which
+// VK_REMAINING_ARRAY_LAYERS names with or without maintenance9.
 VkImageSubresourceRange rangeOf(const TextureView &view) {
     return {.aspectMask = view.internal.aspectMask,
             .baseMipLevel = view.internal.baseMip,
             .levelCount = view.internal.mipCount,
-            .baseArrayLayer = view.internal.baseLayer,
-            .layerCount = view.internal.layerCount};
+            .baseArrayLayer = view.internal.volume ? 0 : view.internal.baseLayer,
+            .layerCount = view.internal.volume ? VK_REMAINING_ARRAY_LAYERS : view.internal.layerCount};
 }
 
 VkImageMemoryBarrier2 imageBarrier(const TextureView &view, const ImageTransition &t) {
@@ -307,6 +318,7 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    EQ_VALIDATE(Validation::checkTextureShape(desc));
     ImageInfo image;
     fillImageInfo(desc, image);
     VkImage vkImage = VK_NULL_HANDLE;
@@ -327,8 +339,10 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
     checkVk(state.functions.vkBindImageMemory(state.device, vkImage, native(memory), offset), "vkBindImageMemory");
 
     Texture texture;
+    texture.shape = desc.shape;
     texture.width = desc.width;
     texture.height = desc.height;
+    texture.depth = desc.depth;
     texture.layers = desc.layers;
     texture.mips = desc.mips;
     texture.samples = desc.samples;
@@ -364,6 +378,8 @@ void destroyTexture(Device &device, Texture &texture) {
     Validation::markDiscarded(state.placements, texture.internal.id);
 #endif
     state.functions.vkDestroyImageView(state.device, native(texture.view), nullptr);
+    state.functions.vkDestroyImageView(state.device, reinterpret_cast<VkImageView>(texture.view.internal.arrayView),
+                                       nullptr);
     if (!texture.internal.imported) { // P77: an imported image stays the user's
         state.functions.vkDestroyImage(state.device, native(texture).image, nullptr);
     }
@@ -389,10 +405,17 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
                     std::format("createView: the texture's format {} has no such aspect", formatName(texture.format)));
     }
     const uint32 mipCount = desc.mipCount == kAllMips ? texture.mips - std::min(desc.baseMip, texture.mips) : desc.mipCount;
+    // A 3D texture's layers are the depth slices of the view's first mip.
+    const bool volume = texture.shape == TextureShape::e3D;
+    const uint32 layers = volume ? std::max(1u, texture.depth >> std::min(desc.baseMip, 31u)) : texture.layers;
     const uint32 layerCount =
-        desc.layerCount == kAllLayers ? texture.layers - std::min(desc.baseLayer, texture.layers) : desc.layerCount;
-    EQ_VALIDATE(Validation::checkViewRange(desc.baseMip, mipCount, texture.mips, desc.baseLayer, layerCount,
-                                           texture.layers));
+        desc.layerCount == kAllLayers ? layers - std::min(desc.baseLayer, layers) : desc.layerCount;
+    EQ_VALIDATE(Validation::checkViewRange(desc.baseMip, mipCount, texture.mips, desc.baseLayer, layerCount, layers));
+    if (volume) {
+        EQ_VALIDATE(Validation::checkVolumeView(mipCount, desc.baseLayer != 0 || layerCount != layers));
+    }
+    const bool wholeCubes =
+        texture.shape == TextureShape::eCube && desc.baseLayer % 6 == 0 && layerCount % 6 == 0 && layerCount > 0;
 
     // A reinterpreting view keeps only the usages its own format supports
     // (e.g. no storage for sRGB).
@@ -410,18 +433,25 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
             usageInfo.usage &= ~VkImageUsageFlags{VK_IMAGE_USAGE_SAMPLED_BIT};
         }
     }
-    const VkImageViewCreateInfo info{
+    // Array or not follows the texture, as on D3D12 and in HLSL (Texture2DArray);
+    // whole cubes read as cubes, 3D textures as volumes (P102).
+    VkImageViewType viewType = texture.layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    if (wholeCubes) {
+        viewType = layerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+    } else if (volume) {
+        viewType = VK_IMAGE_VIEW_TYPE_3D;
+    }
+    VkImageViewCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = format != texture.format ? &usageInfo : nullptr,
         .image = native(texture).image,
-        // Array or not follows the texture, as on D3D12 and in HLSL (Texture2DArray).
-        .viewType = texture.layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        .viewType = viewType,
         .format = toVkFormat(format),
         .subresourceRange = {.aspectMask = aspects,
                              .baseMipLevel = desc.baseMip,
                              .levelCount = mipCount,
-                             .baseArrayLayer = desc.baseLayer,
-                             .layerCount = layerCount},
+                             .baseArrayLayer = volume ? 0 : desc.baseLayer,
+                             .layerCount = volume ? 1 : layerCount},
     };
     // Copy-only textures have no view usage: Vulkan allows no image view, and
     // copies need none (they use the image and the range below).
@@ -432,6 +462,24 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
     if ((usageOf(texture.usage) & kViewUsages) != 0) {
         checkVk(state.functions.vkCreateImageView(state.device, &info, nullptr, &view), "vkCreateImageView");
     }
+    // Storage writes and rendering see a cube's faces as a 2D array; rendering
+    // into a 3D texture sees its slices as one (one mip, attachment use only).
+    VkImageView arrayView = VK_NULL_HANDLE;
+    const VkImageUsageFlags writes = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    VkImageViewUsageCreateInfo attachmentOnly{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
+                                              .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
+    if (wholeCubes && (usageOf(texture.usage) & writes) != 0) {
+        info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        checkVk(state.functions.vkCreateImageView(state.device, &info, nullptr, &arrayView), "vkCreateImageView");
+    } else if (volume && has(texture.usage, TextureUsage::eRenderTarget)) {
+        info.pNext = &attachmentOnly;
+        info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        info.subresourceRange.levelCount = 1;
+        info.subresourceRange.baseArrayLayer = desc.baseLayer;
+        info.subresourceRange.layerCount = layerCount;
+        checkVk(state.functions.vkCreateImageView(state.device, &info, nullptr, &arrayView), "vkCreateImageView");
+    }
 
     TextureView out;
     out.format = format;
@@ -439,6 +487,8 @@ TextureView createView(Device &device, const Texture &texture, const TextureView
     out.height = std::max(1u, texture.height >> desc.baseMip);
     out.samples = texture.samples;
     out.internal.view = reinterpret_cast<uint64>(view);
+    out.internal.arrayView = reinterpret_cast<uint64>(arrayView);
+    out.internal.volume = volume;
     out.internal.image = texture.internal.image;
     out.internal.aspectMask = aspects;
     out.internal.baseMip = desc.baseMip;
@@ -455,6 +505,7 @@ void destroyView(Device &device, TextureView &view) {
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, view.internal.textureId, "texture");
     state.functions.vkDestroyImageView(state.device, native(view), nullptr);
+    state.functions.vkDestroyImageView(state.device, reinterpret_cast<VkImageView>(view.internal.arrayView), nullptr);
     view = {};
 }
 
@@ -463,9 +514,12 @@ void destroyView(Device &device, TextureView &view) {
 Texture importTexture(Device &device, VkImage image, const TextureDesc &desc) {
     DeviceState &state = *device.internal.state;
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    EQ_VALIDATE(Validation::checkTextureShape(desc));
     Texture texture;
+    texture.shape = desc.shape;
     texture.width = desc.width;
     texture.height = desc.height;
+    texture.depth = desc.depth;
     texture.layers = desc.layers;
     texture.mips = desc.mips;
     texture.samples = desc.samples;

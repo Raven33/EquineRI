@@ -1,7 +1,7 @@
 #pragma once
 
 // Portable texture, view, rendering and graphics-pipeline descriptions
-// (CONTEXT.md P38, P39, P40, P58, P65, P73, P74, P75, P95). The objects are
+// (CONTEXT.md P38, P39, P40, P58, P65, P73, P74, P75, P95, P102). The objects are
 // per-backend structs (P83): RI::Vk::Texture, RI::D3D12::Texture, ...
 // Image layouts never appear here (P16): each backend keeps them internal.
 
@@ -65,11 +65,18 @@ enum class TextureUsage : uint32 {
 };
 makeBitmask(TextureUsage)
 
-// A 2D texture (or 2D array). 3D and cube textures come later.
+// The shape of a texture (P102). Cube textures are 2D arrays whose layers are
+// faces, 6 per cube in the order +X, -X, +Y, -Y, +Z, -Z. 3D textures have
+// depth slices instead of layers: views, copies and render targets count
+// slices where a 2D array counts layers.
+enum class TextureShape : uint8 { e2D, e3D, eCube };
+
 struct TextureDesc {
+    TextureShape shape = TextureShape::e2D;
     uint32 width = 1;
     uint32 height = 1;
-    uint32 layers = 1;
+    uint32 depth = 1;  // 3D textures only
+    uint32 layers = 1; // cube textures: 6 per cube
     uint32 mips = 1;
     uint32 samples = 1; // MSAA sample count: 1, 2, 4, 8
     Format format = Format::eUndefined;
@@ -95,12 +102,18 @@ inline constexpr uint32 kAllLayers = ~0u;
 // eDefault means color, or depth for depth formats.
 uint32 copyBytesPerTexel(Format format, Aspect aspect);
 
+// What a view is in HLSL follows from the texture and the range (P102): a
+// cube texture's view covering whole cubes reads as TextureCube or
+// TextureCubeArray, and is written and rendered to as a 2D array of faces;
+// other views of it are 2D arrays. A 3D texture's view reads and writes the
+// whole volume (Texture3D, RWTexture3D) of its mips; its slice range (baseLayer,
+// layerCount, one mip) only matters as a render target.
 struct TextureViewDesc {
     Format format = Format::eUndefined; // eUndefined: the texture's format
     uint32 baseMip = 0;
     uint32 mipCount = kAllMips;
-    uint32 baseLayer = 0;
-    uint32 layerCount = kAllLayers;
+    uint32 baseLayer = 0;           // 3D: first depth slice
+    uint32 layerCount = kAllLayers; // 3D: depth slices of the view's first mip
     Aspect aspect = Aspect::eDefault;
 };
 

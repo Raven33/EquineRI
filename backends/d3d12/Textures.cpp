@@ -1,4 +1,4 @@
-// Textures, views and query pools on D3D12 (P51, P58, P69, P71, P73, P74, P95).
+// Textures, views and query pools on D3D12 (P51, P58, P69, P71, P73, P74, P95, P102).
 //
 // Owns: format support, texture requirements and placed textures, the resting
 // layout of each texture (COMMON, or the attachment layout for attachment-only
@@ -6,7 +6,8 @@
 // and import of native textures (P77).
 //
 // Watch out: a new texture is reset at once on the internal list (R16, P69).
-// Sampled depth textures are typeless (Formats.hpp).
+// Sampled depth textures are typeless (Formats.hpp). Cubes are 2D arrays until
+// a shader view makes them cubes; a 3D texture has one subresource per mip.
 //
 // Vulkan counterpart: backends/vulkan/Textures.cpp and Resources.cpp.
 
@@ -47,12 +48,14 @@ D3D12_RESOURCE_DESC1 textureDesc(const TextureDesc &desc) {
     }
     // A sampled depth texture is typeless: its DSV and SRV use different formats.
     const bool typeless = isDepthFormat(desc.format) && has(desc.usage, TextureUsage::eSampled);
+    // Cubes are 2D arrays; their shader views make them cubes (P102).
+    const bool volume = desc.shape == TextureShape::e3D;
     return {
-        .Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+        .Dimension = volume ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D,
         .Alignment = 0,
         .Width = desc.width,
         .Height = desc.height,
-        .DepthOrArraySize = static_cast<UINT16>(desc.layers),
+        .DepthOrArraySize = static_cast<UINT16>(volume ? desc.depth : desc.layers),
         .MipLevels = static_cast<UINT16>(desc.mips),
         .Format = typeless ? typelessDepthFormat(desc.format) : dxgiFormat(desc.format),
         .SampleDesc = {.Count = desc.samples, .Quality = 0},
@@ -81,8 +84,14 @@ TextureView makeView(DeviceState &state, const Texture &texture, const TextureVi
     view.samples = texture.samples;
     const uint32 baseMip = desc.baseMip;
     const uint32 mipCount = desc.mipCount == kAllMips ? texture.mips - baseMip : desc.mipCount;
+    // A 3D texture's layers are the depth slices of the view's first mip.
+    const bool volume = texture.shape == TextureShape::e3D;
+    const uint32 layers = volume ? std::max(1u, texture.depth >> std::min(baseMip, 31u)) : texture.layers;
     const uint32 baseLayer = desc.baseLayer;
-    const uint32 layerCount = desc.layerCount == kAllLayers ? texture.layers - baseLayer : desc.layerCount;
+    const uint32 layerCount = desc.layerCount == kAllLayers ? layers - baseLayer : desc.layerCount;
+    if (volume) {
+        EQ_VALIDATE(Validation::checkVolumeView(mipCount, baseLayer != 0 || layerCount != layers));
+    }
     view.width = std::max(1u, texture.width >> baseMip);
     view.height = std::max(1u, texture.height >> baseMip);
 
@@ -93,7 +102,9 @@ TextureView makeView(DeviceState &state, const Texture &texture, const TextureVi
     in.baseLayer = baseLayer;
     in.layerCount = layerCount;
     in.textureMips = texture.mips;
-    in.textureLayers = texture.layers;
+    in.textureLayers = volume ? 1 : texture.layers; // subresources: a 3D texture has one per mip
+    in.shape = texture.shape;
+    in.cube = texture.shape == TextureShape::eCube && baseLayer % 6 == 0 && layerCount % 6 == 0 && layerCount > 0;
     in.restingLayout = texture.internal.restingLayout;
     in.textureUsage = texture.usage;
     in.textureId = texture.internal.id;
@@ -105,7 +116,10 @@ TextureView makeView(DeviceState &state, const Texture &texture, const TextureVi
     const bool array = texture.layers > 1;
     if (has(texture.usage, TextureUsage::eRenderTarget) && !isDepthFormat(format)) {
         D3D12_RENDER_TARGET_VIEW_DESC rtv{.Format = dxgiFormat(format)};
-        if (multisampled) {
+        if (volume) {
+            rtv.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
+            rtv.Texture3D = {.MipSlice = baseMip, .FirstWSlice = baseLayer, .WSize = layerCount};
+        } else if (multisampled) {
             rtv.ViewDimension = array ? D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D12_RTV_DIMENSION_TEXTURE2DMS;
             rtv.Texture2DMSArray = {.FirstArraySlice = baseLayer, .ArraySize = layerCount};
         } else if (array) {
@@ -190,10 +204,11 @@ void textureBarrier(ID3D12GraphicsCommandList7 *list, const TextureView &view, c
         .LayoutBefore = b.before,
         .LayoutAfter = b.after,
         .pResource = static_cast<ID3D12Resource *>(view.internal.resource),
+        // A 3D texture's slices are not array slices: its range is slice 0.
         .Subresources = {.IndexOrFirstMipLevel = view.internal.baseMip,
                          .NumMipLevels = view.internal.mipCount,
-                         .FirstArraySlice = view.internal.baseLayer,
-                         .NumArraySlices = view.internal.layerCount,
+                         .FirstArraySlice = view.internal.shape == TextureShape::e3D ? 0 : view.internal.baseLayer,
+                         .NumArraySlices = view.internal.shape == TextureShape::e3D ? 1 : view.internal.layerCount,
                          .FirstPlane = (planes & 1u) != 0 ? 0u : 1u,
                          .NumPlanes = static_cast<UINT>(std::popcount(planes))},
         .Flags = b.discard ? D3D12_TEXTURE_BARRIER_FLAG_DISCARD : D3D12_TEXTURE_BARRIER_FLAG_NONE,
@@ -250,6 +265,7 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, memory.internal.id, "memory");
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    EQ_VALIDATE(Validation::checkTextureShape(desc));
     const MemoryRequirements requirements = textureRequirements(device, desc);
     if (!fits(requirements, memory.kind)) {
         reportError(ErrorCategory::eUnsupported, "createTexture: textures need eGPU memory on D3D12");
@@ -271,8 +287,10 @@ Texture createTexture(Device &device, const Memory &memory, uint64 offset, const
             "CreatePlacedResource2 (texture)");
 
     Texture texture;
+    texture.shape = desc.shape;
     texture.width = desc.width;
     texture.height = desc.height;
+    texture.depth = desc.depth;
     texture.layers = desc.layers;
     texture.mips = desc.mips;
     texture.samples = desc.samples;
@@ -393,9 +411,12 @@ PipelineStatisticsLayout pipelineStatisticsLayout(Device & /*device*/) {
 Texture importTexture(Device &device, ID3D12Resource *resource, const TextureDesc &desc) {
     DeviceState &state = *device.internal.state;
     EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    EQ_VALIDATE(Validation::checkTextureShape(desc));
     Texture texture;
+    texture.shape = desc.shape;
     texture.width = desc.width;
     texture.height = desc.height;
+    texture.depth = desc.depth;
     texture.layers = desc.layers;
     texture.mips = desc.mips;
     texture.samples = desc.samples;

@@ -148,6 +148,16 @@ struct ImageTransition {
     VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 };
 VkImageSubresourceRange rangeOf(const TextureView &view);
+// The image view rendering uses: the 2D-array view of a cube or 3D view (P102).
+inline VkImageView attachmentViewOf(const TextureView &view) {
+    return reinterpret_cast<VkImageView>(view.internal.arrayView != 0 ? view.internal.arrayView : view.internal.view);
+}
+// The image view storage writes use: a cube's faces as a 2D array; a 3D
+// texture keeps its 3D view (RWTexture3D).
+inline VkImageView storageViewOf(const TextureView &view) {
+    return reinterpret_cast<VkImageView>(view.internal.arrayView != 0 && !view.internal.volume ? view.internal.arrayView
+                                                                                               : view.internal.view);
+}
 VkImageMemoryBarrier2 imageBarrier(const TextureView &view, const ImageTransition &t);
 // RI's own command buffer: begin recording, then submit on the graphics queue
 // (signalling the next timeline value) and wait for it.

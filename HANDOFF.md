@@ -7,9 +7,9 @@ State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), p
 
 Open, in order:
 
-1. **The missing graphics features** the user asked for (cube and 3D textures, depth bias and
-   clamp, line strips and wireframe, geometry and tessellation shaders):
-   `docs/FeatureProposal-2026-10-15.md`, waiting for the user's approval of the API.
+1. **The missing graphics features** (P102: cube and 3D textures, depth bias and clamp, line
+   strips and wireframe, geometry and tessellation shaders): implemented on branch
+   `graphics-features`, all Linux tests pass; the D3D12 half waits for Windows.
 2. **P95 and P98**, never reviewed by the user. The user found the `CONTEXT.md` entries
    unreadable; `docs/reviews/Decisions-P95-P98-plain.md` says them in plain words, with
    "Your call" on the points to review. Ask them one at a time.
@@ -37,7 +37,7 @@ instructions. The Linux session (`linux-ri`) has the RADV GPU. Docs site: `docs/
   process and the pilot's review (ports stopped 2026-10-15).
 - `ARCHITECTURE.md`: the entry point for changing RI (layout, call flow, invariants,
   recipes, backend differences); `docs/CodeDocumentation.md` is the standard it follows.
-- `CONTEXT.md`: the decision log (P1–P98) and the open questions (§5). Start here.
+- `CONTEXT.md`: the decision log (P1–P102) and the open questions (§5). Start here.
 - `docs/Plan.md`: the implementation plan (milestones 1–4).
 - Environment: `EQUINE_GPU=nvidia|amd|<index>` picks the test GPU; `EQUINE_GPU_VALIDATION=0`
   turns GPU-AV / GBV off in validation builds.

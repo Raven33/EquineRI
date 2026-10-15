@@ -70,7 +70,9 @@ Three things compile on both targets but behave differently unless you follow on
 ## Values passed to the pixel shader
 
 The vertex shader (or mesh shader) outputs a position and other values: a color, texture
-coordinates, a normal. The GPU interpolates them across each triangle and gives them to the
+coordinates, a normal. With tessellation or a geometry shader, the last of those stages
+(geometry, else domain) plays this part: "the vertex shader" below means the stage just before
+the pixel shader. The GPU interpolates them across each triangle and gives them to the
 pixel shader as its inputs. Each backend pairs outputs and inputs its own way:
 
 - **Vulkan** numbers the values (their *location*) in the order they are declared, leaving

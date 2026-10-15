@@ -415,3 +415,23 @@ EQ_TEST(dxil, signatures) {
     osg1->data.back() = std::byte{'X'};
     EQ_CHECK(mentions(read(joinParts(parts)), "semantic name is not terminated"));
 }
+
+// Hull, domain and geometry shaders read like other stages (P102): root data,
+// and the outputs the pixel shader is checked against.
+EQ_TEST(dxil, pipeline_stages) {
+    const DxilReadResult hs = read(loadShader("patch_hs"));
+    EQ_CHECK(hs.error.empty() && !hs.info.hasRootData);
+    const DxilReadResult ds = read(loadShader("patch_ds"));
+    EQ_CHECK(ds.error.empty() && ds.info.hasRootData && ds.info.rootDataSize == 20);
+    EQ_CHECK(ds.info.outputs.size() == 2);
+    if (ds.info.outputs.size() == 2) {
+        EQ_CHECK(ds.info.outputs[1].semanticName == "COLOR" && ds.info.outputs[1].registerIndex == 1);
+    }
+    const DxilReadResult gs = read(loadShader("layered_gs"));
+    EQ_CHECK(gs.error.empty() && !gs.info.hasRootData);
+    EQ_CHECK(gs.info.outputs.size() == 3);
+    if (gs.info.outputs.size() == 3) {
+        EQ_CHECK(gs.info.outputs[1].semanticName == "COLOR" && gs.info.outputs[1].registerIndex == 1);
+        EQ_CHECK(gs.info.outputs[2].systemValue != RI::Reflection::kDxilSystemValueNone);
+    }
+}
