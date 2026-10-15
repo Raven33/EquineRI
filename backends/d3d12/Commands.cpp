@@ -168,6 +168,7 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.graphics = false;
     cmd.internal.heapSet = false;
     cmd.internal.markerDepth = 0;
+    cmd.internal.openStatistics = 0;
     cmd.internal.pipelineState[0] = nullptr;
     cmd.internal.pipelineState[1] = nullptr;
     cmd.internal.rootDataBytes = 0;

@@ -349,6 +349,7 @@ struct CommandList {
         TextureView depthResolve;
         uint32 depthLayout = 0; // VkImageLayout used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
+        uint32 openStatistics = 0; // open ePipelineStatistics/eMeshPipelineStatistics queries (P105)
         uint64 id = 0;
     } internal;
 };

@@ -1,0 +1,13 @@
+== nvidia Vulkan
+DBG pixelShaderInvocations=1024 computeShaderInvocations=0 vertexShaderInvocations=0 meshPrimitives(statsSet)=0
+DBG generated.meshPrimitives=1 generated.pixelShaderInvocations=0
+[PASS] texture.mesh_statistics
+== nvidia D3D12
+  FAILED: generated.meshPrimitives == 1
+DBG pixelShaderInvocations=1024 computeShaderInvocations=0 vertexShaderInvocations=0 meshPrimitives(statsSet)=0
+DBG generated.meshPrimitives=0 generated.pixelShaderInvocations=0
+[FAIL] texture.mesh_statistics
+== amd Vulkan
+[PASS] texture.mesh_statistics
+== amd D3D12
+[PASS] texture.mesh_statistics

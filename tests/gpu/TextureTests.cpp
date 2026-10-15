@@ -865,7 +865,9 @@ EQ_TEST(texture, mesh_shaders) {
 }
 
 // The mesh counter set and the mesh-primitives query (P105) around a mesh draw
-// of one full-screen triangle. Vulkan forbids the classic set there.
+// of one full-screen triangle. Vulkan forbids the classic set there. The
+// primitives query is begun first: nested inside the statistics query, NVIDIA's
+// D3D12 driver counts no primitives (validation reports that order).
 EQ_TEST(texture, mesh_statistics) {
     Fixture f;
     if (!f.device.limits.meshShaders) {
@@ -895,17 +897,17 @@ EQ_TEST(texture, mesh_statistics) {
     RI::Buffer results = placeBuffer(f.device, f.readback,
                                      {.size = meshLayout.size + primitivesLayout.size, .usage = RI::BufferUsage::eCopyDst});
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
-    RI::cmdBeginQuery(f.cmd, stats, 0);
     if (primitives) {
         RI::cmdBeginQuery(f.cmd, prims, 0);
     }
+    RI::cmdBeginQuery(f.cmd, stats, 0);
     RI::cmdSetPipeline(f.cmd, pipeline);
     RI::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDrawMesh(f.cmd, 1, 1, 1);
+    RI::cmdEndQuery(f.cmd, stats, 0);
     if (primitives) {
         RI::cmdEndQuery(f.cmd, prims, 0);
     }
-    RI::cmdEndQuery(f.cmd, stats, 0);
     RI::cmdEndRendering(f.cmd);
     RI::cmdResolveQueries(f.cmd, stats, 0, 1, results, 0);
     if (primitives) {

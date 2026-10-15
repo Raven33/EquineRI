@@ -82,6 +82,12 @@ takes `size` bytes), read them after the submission's timeline point, and reset 
 - On Vulkan, a classic statistics query must not be active during a mesh draw, and only one
   statistics query (classic or mesh set) may be active at a time. The Vulkan validation
   layer reports both.
+- Begin a mesh-primitives query **before** any statistics query that is open at the same
+  time, or measure it alone ([P105](../design-notes/decisions.md#p105)). Begun inside an open
+  statistics query, NVIDIA's D3D12 driver counts no primitives (nor task and mesh
+  invocations), with no warning from the debug layer; begun first, both queries count
+  correctly. RI reports the nested order (**programmer error** in validation builds, on both
+  backends, so the same code is right everywhere).
 - Statistics count all GPU work between begin and end, including the work of RI's own
   operations and of the driver: a clear (`LoadOp::eClear`, `cmdClearTexture`) or a layout
   switch may run as a compute shader on some GPUs. To measure only your draws, begin the
