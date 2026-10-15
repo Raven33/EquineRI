@@ -1,0 +1,17 @@
+# NVIDIA GeForce RTX 3080 (vulkan): 6 mesh passes x 512 task groups, 600 frames per variant, interleaved
+variant                     median ms        p10        p90         vs A
+A_none                         1.5749     1.5667     1.5770       +0.00%
+B_stats                        1.6189     1.6026     1.6189       +2.80%
+C_stats_mesh                 103.3257   102.9652   103.6472    +6460.73%
+D_stats_mesh_primitives      103.9206   103.3370   104.2657    +6498.50%
+E_compute_only                 1.6169     1.6005     1.6179       +2.67%
+F_stats_primitives             1.6220     1.6077     1.6230       +2.99%
+G_stats_task                   3.1990     3.1846     3.2072     +103.12%
+H_stats_mesh_invocations     102.5034   102.1501   102.8567    +6408.52%
+B_stats vs A_none: +0.0440 ms (+2.80%), not clearly more -> the cost of a statistics query
+C_stats_mesh vs B_stats: +101.7068 ms (+6282.29%), clearly more -> the cost of adding task and mesh counters
+D_stats_mesh_primitives vs C_stats_mesh: +0.5949 ms (+0.58%), not clearly more -> clearly more: the primitive count becomes its own query
+B_stats vs E_compute_only: +0.0020 ms (+0.13%), not clearly more -> clearly more: a pool should choose its counters
+F_stats_primitives vs B_stats: +0.0031 ms (+0.19%), not clearly more -> the cost of the primitive count without task and mesh counters
+G_stats_task vs B_stats: +1.5800 ms (+97.60%), clearly more -> the cost of the task counter alone
+H_stats_mesh_invocations vs B_stats: +100.8845 ms (+6231.50%), clearly more -> the cost of the mesh counter alone

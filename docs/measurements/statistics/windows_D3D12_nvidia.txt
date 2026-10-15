@@ -1,0 +1,9 @@
+# D_stats_mesh_primitives: not supported on this device, skipped
+# E_compute_only: not supported on this device, skipped
+# NVIDIA GeForce RTX 3080 (d3d12): 6 mesh passes x 512 task groups, 600 frames per variant, interleaved
+variant                     median ms        p10        p90         vs A
+A_none                         1.5739     1.5729     1.5739       +0.00%
+B_stats                        1.6425     1.6425     1.6435       +4.36%
+C_stats_mesh                   3.6157     3.6055     3.6250     +129.73%
+B_stats vs A_none: +0.0686 ms (+4.36%), clearly more -> the cost of a statistics query
+C_stats_mesh vs B_stats: +1.9732 ms (+120.14%), clearly more -> the cost of adding task and mesh counters
