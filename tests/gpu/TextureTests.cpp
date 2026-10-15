@@ -771,6 +771,65 @@ EQ_TEST(texture, stencil_test) {
     RI::destroyTexture(f.device, target);
 }
 
+// cmdSetStencilReference (P104): the override writes 3 and still holds after a
+// pipeline switch (green passes testing for 3, its pipeline says 9); the next
+// section is back to the pipeline's 9, which fails (red stays 0).
+EQ_TEST(texture, stencil_reference_command) {
+    Fixture f;
+    const RI::Format depthFormat = RI::Format::eD32FloatS8Uint;
+    if (!RI::formatSupported(f.device, depthFormat, RI::TextureUsage::eDepthStencil)) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    RI::Texture depth = placeTexture(f.device, f.gpu,
+                                     {.width = kSize, .height = kSize, .format = depthFormat,
+                                      .usage = RI::TextureUsage::eDepthStencil});
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const auto pipelineWith = [&](RI::CompareOp compare, RI::StencilOp pass, uint8 reference, RI::ColorMask mask) {
+        const RI::StencilFace face{.pass = pass, .compare = compare};
+        return RI::createGraphicsPipeline(
+            f.device, {.vertex = vs,
+                       .pixel = ps,
+                       .colorFormats = {RI::Format::eRGBA8Unorm},
+                       .depthFormat = depthFormat,
+                       .stencil = {.test = true, .reference = reference, .front = face, .back = face},
+                       .blend = {{.writeMask = mask}}});
+    };
+    RI::Pipeline write = pipelineWith(RI::CompareOp::eAlways, RI::StencilOp::eReplace, 0, RI::ColorMask::eNone);
+    RI::Pipeline green = pipelineWith(RI::CompareOp::eEqual, RI::StencilOp::eKeep, 9, RI::ColorMask::eG);
+    RI::Pipeline red = pipelineWith(RI::CompareOp::eEqual, RI::StencilOp::eKeep, 9, RI::ColorMask::eR);
+    const DrawRoot white{.color = {1.0f, 1.0f, 1.0f, 1.0f}, .depth = 0.5f};
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}},
+                                  .depth = RI::DepthAttachment{.view = depth.view,
+                                                               .load = RI::LoadOp::eClear,
+                                                               .stencilLoad = RI::LoadOp::eClear}});
+    RI::cmdSetStencilReference(f.cmd, 3);
+    RI::cmdSetPipeline(f.cmd, write);
+    RI::cmdSetRootData(f.cmd, white);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdSetPipeline(f.cmd, green);
+    RI::cmdSetRootData(f.cmd, white);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eLoad}},
+                                  .depth = RI::DepthAttachment{.view = depth.view,
+                                                               .load = RI::LoadOp::eLoad,
+                                                               .stencilLoad = RI::LoadOp::eLoad}});
+    RI::cmdSetPipeline(f.cmd, red);
+    RI::cmdSetRootData(f.cmd, white);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.0f) && all(texels, 1, 1.0f));
+    for (RI::Pipeline *p : {&write, &green, &red}) {
+        RI::destroyPipeline(f.device, *p);
+    }
+    RI::destroyTexture(f.device, depth);
+    RI::destroyTexture(f.device, target);
+}
+
 // Mesh pipelines (P39): a mesh shader alone, then a task shader launching it,
 // each drawing the full-screen triangle.
 EQ_TEST(texture, mesh_shaders) {

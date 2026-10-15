@@ -303,6 +303,7 @@ struct Pipeline {
         bool graphics = false;
         bool depthWrite = false; // checked against read-only depth sections (P75)
         bool imported = false;   // P77: RI does not destroy it
+        uint8 stencilReference = 0; // dynamic state, set by cmdSetPipeline (P104)
         uint64 id = 0;
     } internal;
 };
@@ -332,6 +333,8 @@ struct CommandList {
         uint32 renderWidth = 0, renderHeight = 0; // the open section's size
         Viewport viewport;                        // the open section's, restored by endNative (P70, P103)
         Rect scissor;
+        uint8 stencilReference = 0;               // the current one (P104)
+        bool stencilOverride = false;             // set by cmdSetStencilReference in the open section
         bool native = false;            // inside beginNative/endNative
         uint64 lastSubmitted = 0;       // timeline value of its last submission
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
@@ -382,6 +385,9 @@ void cmdEndRendering(CommandList &cmd);
 // Inside a rendering section, until it ends or the next call (P103).
 void cmdSetViewport(CommandList &cmd, const Viewport &viewport);
 void cmdSetScissor(CommandList &cmd, const Rect &scissor);
+// The stencil reference for the rest of the rendering section, over the one
+// each pipeline brings (P104).
+void cmdSetStencilReference(CommandList &cmd, uint8 reference);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
 // Indexed draws (P39): indices come from an index buffer; vertices are still

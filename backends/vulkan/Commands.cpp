@@ -303,6 +303,13 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
         cmd.internal.boundLayout[index] = pipeline.internal.layout;
         bindHeap(cmd, index);
     }
+    // The pipeline's reference, unless cmdSetStencilReference set one in this section (P104).
+    if (pipeline.internal.graphics) {
+        if (!cmd.internal.stencilOverride) {
+            cmd.internal.stencilReference = pipeline.internal.stencilReference;
+        }
+        fn(cmd).vkCmdSetStencilReference(native(cmd), VK_STENCIL_FACE_FRONT_AND_BACK, cmd.internal.stencilReference);
+    }
 }
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
@@ -543,6 +550,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
     cmd.internal.scissor = {.width = width, .height = height};
     applyViewport(cmd);
     applyScissor(cmd);
+    cmd.internal.stencilOverride = false;
     cmd.internal.rendering = true;
 }
 
@@ -558,6 +566,13 @@ void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
     EQ_VALIDATE(Validation::checkScissor(scissor));
     cmd.internal.scissor = scissor;
     applyScissor(cmd);
+}
+
+void cmdSetStencilReference(CommandList &cmd, uint8 reference) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetStencilReference"));
+    cmd.internal.stencilReference = reference;
+    cmd.internal.stencilOverride = true;
+    fn(cmd).vkCmdSetStencilReference(native(cmd), VK_STENCIL_FACE_FRONT_AND_BACK, reference);
 }
 
 void cmdEndRendering(CommandList &cmd) {
@@ -1041,6 +1056,7 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
     if (cmd.internal.rendering) {
         applyViewport(cmd);
         applyScissor(cmd);
+        fn(cmd).vkCmdSetStencilReference(native(cmd), VK_STENCIL_FACE_FRONT_AND_BACK, cmd.internal.stencilReference);
     }
 }
 

@@ -50,8 +50,9 @@ a [rendering section](../concepts/rendering.md), and destroy it with
   planes (shadow maps of objects behind the light's near plane);
 - `stencil`: `test`, one `readMask` and one `writeMask` for both faces (as D3D12 has), the
   `reference` value, and per face (`front`, `back`) the operations on `fail`, `depthFail` and
-  `pass` and the `compare` function. The reference value is part of the pipeline: a different
-  reference is a different pipeline;
+  `pass` and the `compare` function. The reference is the pipeline's default:
+  [`cmdSetStencilReference`](cmdSetViewport.md) overrides it inside a section, so one pipeline
+  can tag objects with different values ([P104](../design-notes/decisions.md#p104));
 - `blend`: one `BlendState` per color format, or none (every target written as is). Each has
   `enable`, the color and alpha factors and operations (`result = src * srcFactor (op)
   dst * dstFactor`; `eMin` and `eMax` ignore the factors) and a `writeMask` of channels.

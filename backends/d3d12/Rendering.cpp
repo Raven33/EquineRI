@@ -259,6 +259,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         applyViewport(l, cmd.internal.viewport);
         applyScissor(l, cmd.internal.scissor);
     }
+    cmd.internal.stencilOverride = false;
     cmd.internal.rendering = true;
 }
 
@@ -484,7 +485,15 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
     if (cmd.internal.rendering && cmd.internal.renderWidth != 0) {
         applyViewport(l, cmd.internal.viewport);
         applyScissor(l, cmd.internal.scissor);
+        l->OMSetStencilRef(cmd.internal.stencilReference);
     }
+}
+
+void cmdSetStencilReference(CommandList &cmd, uint8 reference) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetStencilReference"));
+    cmd.internal.stencilReference = reference;
+    cmd.internal.stencilOverride = true;
+    list(cmd)->OMSetStencilRef(reference);
 }
 
 void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {

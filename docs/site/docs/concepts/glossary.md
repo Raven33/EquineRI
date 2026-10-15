@@ -63,7 +63,7 @@ Features RI v1 does not have at all, with what to do instead, are listed at the 
 | Mesh / task pipeline | Mesh shader PSO | `createGraphicsPipeline` with task and mesh shaders | `device.limits.meshShaders`. |
 | Tessellation, geometry shaders | HS, DS, GS | `hull`, `domain`, `geometry` in `GraphicsPipelineDesc` | `device.limits.tessellation`, `geometryShaders` ([P102](../design-notes/decisions.md#p102)). |
 | Polygon mode, depth bias, depth clamp | `FillMode`, `DepthBias`, `DepthClipEnable` | `fill`, `depthBias`, `depthClamp` | Fixed in the pipeline. |
-| Dynamic state | Command-list state | — | Fixed in the pipeline ([P38](../design-notes/decisions.md#p38)), except the viewport and scissor: they cover the attachments until [`cmdSetViewport`, `cmdSetScissor`](../reference/cmdSetViewport.md) change them. |
+| Dynamic state | Command-list state | — | Fixed in the pipeline ([P38](../design-notes/decisions.md#p38)), except the viewport, scissor and stencil reference: they come from the attachments and the pipeline until [`cmdSetViewport`, `cmdSetScissor`, `cmdSetStencilReference`](../reference/cmdSetViewport.md) change them. |
 | Pipeline cache | Pipeline library | — | Not in RI. |
 | `vkCmdBindPipeline` | `SetPipelineState` + root signature | [`cmdSetPipeline`](../reference/cmdSetPipeline.md) | |
 

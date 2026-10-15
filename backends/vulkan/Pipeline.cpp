@@ -5,8 +5,8 @@
 // push-constant range of exactly the root data size. Rendering formats come
 // from the description (dynamic rendering).
 //
-// Watch out: the stencil reference is part of the pipeline (P38: no dynamic
-// state); root data must agree between stages. In validation builds the
+// Watch out: the stencil reference is dynamic state that cmdSetPipeline sets
+// from the description (P104); root data must agree between stages. In validation builds the
 // pixel shader's inputs are matched to the outputs of the stage before it
 // (geometry, domain, vertex or mesh) by DXC's interface names and locations
 // (P101).
@@ -447,9 +447,11 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         .attachmentCount = static_cast<uint32>(blendAttachments.size()),
         .pAttachments = blendAttachments.data(),
     };
-    const VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    // The stencil reference is set by cmdSetPipeline or cmdSetStencilReference (P104).
+    const VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,
+                                            VK_DYNAMIC_STATE_STENCIL_REFERENCE};
     const VkPipelineDynamicStateCreateInfo dynamic{
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = 2, .pDynamicStates = dynamicStates};
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = 3, .pDynamicStates = dynamicStates};
     const VkGraphicsPipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext = &renderingInfo,
@@ -481,6 +483,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.layout = reinterpret_cast<uint64>(layout);
     out.internal.graphics = true;
     out.internal.depthWrite = desc.depth.test && desc.depth.write;
+    out.internal.stencilReference = desc.stencil.reference;
     out.internal.id = EQ_VK_TRACK(&state);
     return out;
 }

@@ -211,10 +211,11 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     }
     if (pipeline.internal.graphics) {
         list(cmd)->IASetPrimitiveTopology(static_cast<D3D_PRIMITIVE_TOPOLOGY>(pipeline.internal.topology));
-        // The reference value is pipeline state in RI (P38), dynamic in D3D12.
-        if (pipeline.internal.stencil) {
-            list(cmd)->OMSetStencilRef(pipeline.internal.stencilReference);
+        // The pipeline's reference, unless cmdSetStencilReference set one in this section (P104).
+        if (!cmd.internal.stencilOverride) {
+            cmd.internal.stencilReference = pipeline.internal.stencilReference;
         }
+        list(cmd)->OMSetStencilRef(cmd.internal.stencilReference);
     }
     cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;

@@ -7,7 +7,7 @@
 // at once on the internal list), cmdSetWorkGraph, cmdDispatchGraph(Indirect).
 //
 // Watch out: RI does not read root data from libraries, so WorkGraphDesc
-// gives its size (P62). The stencil reference is part of the pipeline (P38).
+// gives its size (P62). The stencil reference comes with the pipeline (P104).
 // In validation builds the pixel shader's input signature is matched to the
 // outputs of the stage before it (geometry, domain, vertex or mesh) by
 // semantic and register (P101).
@@ -440,7 +440,6 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.rootSignature = rootSignature;
     out.internal.graphics = true;
     out.internal.depthWrite = desc.depth.write;
-    out.internal.stencil = desc.stencil.test;
     out.internal.stencilReference = desc.stencil.reference;
     out.internal.topology = topologyOf(desc.topology, desc.patchControlPoints);
     out.internal.id = EQ_DX_TRACK(&state);
