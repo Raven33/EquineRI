@@ -4,8 +4,8 @@
 same things one point at a time, in plain words. Nothing here is new.
 
 - **P96 and P97** are settled: they record a measurement and what you decided after it.
-- **P95 and P98** are decisions the assistant made while implementing, which you have not reviewed
-  yet. Under each point, **"Your call"** names what you may want to change. Points with no
+- **P95 and P98** are decisions the assistant made while implementing. **Reviewed by the user on
+  2026-10-15**: each "Decided" note says what came of a point. Under each point, **"Your call"** names what you may want to change. Points with no
   "Your call" just describe how the code works.
 
 ## Words used on this page
@@ -229,8 +229,7 @@ the rest of a section.
   that memory up right away and waits for it, because commands recorded earlier may run
   later.
 
-*Your call:* whether that wait at bind time is acceptable. It happens once per bind, not per
-frame.
+**Decided (2026-10-15):** the wait at bind time stays.
 
 ### 10. Helpers
 
