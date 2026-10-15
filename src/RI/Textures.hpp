@@ -128,6 +128,27 @@ constexpr uint32 resolveModeBit(ResolveMode mode) { return 1u << static_cast<uin
 enum class LoadOp : uint8 { eLoad, eClear, eDontCare };
 enum class StoreOp : uint8 { eStore, eDontCare };
 
+// The viewport of a rendering section (P103): the rectangle of the render
+// target that clip space maps to, in pixels from the top-left corner, and the
+// range depth maps to. cmdBeginRendering sets it to the whole attachments.
+struct Viewport {
+    float x = 0.0f;
+    float y = 0.0f;
+    float width = 0.0f;
+    float height = 0.0f;
+    float minDepth = 0.0f;
+    float maxDepth = 1.0f;
+};
+
+// A scissor rectangle (P103), in pixels from the top-left corner: pixels
+// outside it are not written. cmdBeginRendering sets it to the attachments.
+struct Rect {
+    int32 x = 0;
+    int32 y = 0;
+    uint32 width = 0;
+    uint32 height = 0;
+};
+
 // Clear values: color for color textures, depth and stencil otherwise.
 struct ClearValue {
     std::array<float, 4> color{0.0f, 0.0f, 0.0f, 0.0f};

@@ -1516,6 +1516,57 @@ EQ_TEST(texture, volume_copy_render_sample) {
     RI::destroyTexture(f.device, volume);
 }
 
+// Viewport and scissor (P103): a viewport over the left half draws red there
+// only; a scissor over the top-right quarter keeps green there; the next
+// section starts again with both covering the attachments (blue everywhere).
+EQ_TEST(texture, viewport_and_scissor) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const auto writing = [&](RI::ColorMask mask) {
+        return RI::createGraphicsPipeline(f.device, {.vertex = vs,
+                                                     .pixel = ps,
+                                                     .colorFormats = {RI::Format::eRGBA8Unorm},
+                                                     .blend = {{.writeMask = mask}}});
+    };
+    RI::Pipeline red = writing(RI::ColorMask::eR), green = writing(RI::ColorMask::eG),
+                 blue = writing(RI::ColorMask::eB);
+    const DrawRoot white{.color = {1.0f, 1.0f, 1.0f, 1.0f}, .depth = 0.5f};
+    constexpr float kHalf = kSize / 2.0f;
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetViewport(f.cmd, {.width = kHalf, .height = float(kSize)});
+    RI::cmdSetPipeline(f.cmd, red);
+    RI::cmdSetRootData(f.cmd, white);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdSetViewport(f.cmd, {.width = float(kSize), .height = float(kSize)});
+    RI::cmdSetScissor(f.cmd, {.x = kSize / 2, .y = 0, .width = kSize / 2, .height = kSize / 2});
+    RI::cmdSetPipeline(f.cmd, green);
+    RI::cmdSetRootData(f.cmd, white);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eLoad}}});
+    RI::cmdSetPipeline(f.cmd, blue);
+    RI::cmdSetRootData(f.cmd, white);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    bool ok = true;
+    for (uint32 y = 0; y < kSize; ++y) {
+        for (uint32 x = 0; x < kSize; ++x) {
+            const bool left = x < kSize / 2, topRight = x >= kSize / 2 && y < kSize / 2;
+            ok = ok && near(texel(texels, x, y, 0), left ? 1.0f : 0.0f) &&
+                 near(texel(texels, x, y, 1), topRight ? 1.0f : 0.0f) && near(texel(texels, x, y, 2), 1.0f);
+        }
+    }
+    EQ_CHECK(ok);
+    for (RI::Pipeline *p : {&red, &green, &blue}) {
+        RI::destroyPipeline(f.device, *p);
+    }
+    RI::destroyTexture(f.device, target);
+}
+
 #if EQUINE_VALIDATION
 // A pixel shader that leaves out values before the one it reads (P101): RI
 // reports it on both backends, where Vulkan alone would read the wrong value.

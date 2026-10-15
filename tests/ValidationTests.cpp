@@ -148,3 +148,16 @@ EQ_TEST(validation, texture_shapes) {
     const CheckResult slices = checkVolumeView(2, true);
     EQ_CHECK(slices && slices->find("covers one mip") != std::string::npos);
 }
+
+// Viewport and scissor values (P103).
+EQ_TEST(validation, viewport_and_scissor) {
+    using namespace RI::Validation;
+    EQ_CHECK(!checkViewport({.width = 1.0f, .height = 1.0f}));
+    const CheckResult empty = checkViewport({.width = 0.0f, .height = 4.0f});
+    EQ_CHECK(empty && empty->find("give a width and height above 0") != std::string::npos);
+    const CheckResult depth = checkViewport({.width = 4.0f, .height = 4.0f, .maxDepth = 2.0f});
+    EQ_CHECK(depth && depth->find("outside 0..1") != std::string::npos);
+    EQ_CHECK(!checkScissor({.x = 3, .y = 0, .width = 2, .height = 2}));
+    const CheckResult negative = checkScissor({.x = -1, .y = 0, .width = 2, .height = 2});
+    EQ_CHECK(negative && negative->find("must be 0 or more") != std::string::npos);
+}

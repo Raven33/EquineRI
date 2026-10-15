@@ -288,7 +288,8 @@ struct DepthAttachment {
     ResolveMode resolveMode = ResolveMode::eMin;
 };
 
-// A rendering section. The viewport and scissor cover the attachments.
+// A rendering section. The viewport and scissor cover the attachments until
+// cmdSetViewport or cmdSetScissor changes them (P103).
 struct RenderingDesc {
     std::vector<ColorAttachment> colors;
     std::optional<DepthAttachment> depth;
@@ -343,13 +344,16 @@ struct CommandList {
         uint32 depthLayout = 0; // D3D12_BARRIER_LAYOUT used during the section
         uint32 markerDepth = 0; // open cmdBeginMarker regions
         // Restored by endNative (P70): the last pipeline per bind point, the
-        // last root data, the topology and the open section's size.
+        // last root data, the topology and the open section's viewport and
+        // scissor (P103).
         void *pipelineState[2] = {nullptr, nullptr};
         uint32 topology = 0;
         uint8 rootData[256] = {};
         uint32 rootDataBytes = 0;
         bool rootDataGraphics = false;
         uint32 renderWidth = 0, renderHeight = 0;
+        Viewport viewport;
+        Rect scissor;
         bool native = false;
         uint64 id = 0;
     } internal;
@@ -386,6 +390,9 @@ void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const 
 // when its backend needs to (A', P68); user code is the same everywhere (P16).
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc);
 void cmdEndRendering(CommandList &cmd);
+// Inside a rendering section, until it ends or the next call (P103).
+void cmdSetViewport(CommandList &cmd, const Viewport &viewport);
+void cmdSetScissor(CommandList &cmd, const Rect &scissor);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
 // Indexed draws (P39): indices come from an index buffer; vertices are still

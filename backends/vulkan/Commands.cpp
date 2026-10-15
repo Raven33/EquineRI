@@ -371,6 +371,25 @@ VkClearColorValue clearColorOf(Format format, const ClearValue &value) {
     return color;
 }
 
+// D3D12's orientation: a negative height makes clip-space y point up on both
+// backends, so the rectangle starts at its bottom edge.
+void applyViewport(CommandList &cmd) {
+    const Viewport &v = cmd.internal.viewport;
+    const VkViewport viewport{.x = v.x,
+                              .y = v.y + v.height,
+                              .width = v.width,
+                              .height = -v.height,
+                              .minDepth = v.minDepth,
+                              .maxDepth = v.maxDepth};
+    fn(cmd).vkCmdSetViewport(native(cmd), 0, 1, &viewport);
+}
+
+void applyScissor(CommandList &cmd) {
+    const Rect &r = cmd.internal.scissor;
+    const VkRect2D scissor{.offset = {r.x, r.y}, .extent = {r.width, r.height}};
+    fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
+}
+
 } // namespace
 
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
@@ -517,20 +536,28 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
     };
     fn(cmd).vkCmdBeginRendering(native(cmd), &info);
 
-    // The viewport covers the attachments, with D3D12's orientation: a
-    // negative height makes clip-space y point up on both backends.
-    const VkViewport viewport{.x = 0.0f,
-                              .y = static_cast<float>(height),
-                              .width = static_cast<float>(width),
-                              .height = -static_cast<float>(height),
-                              .minDepth = 0.0f,
-                              .maxDepth = 1.0f};
-    const VkRect2D scissor{.offset = {0, 0}, .extent = {width, height}};
-    fn(cmd).vkCmdSetViewport(native(cmd), 0, 1, &viewport);
+    // The viewport and scissor cover the attachments until the user sets them (P103).
     cmd.internal.renderWidth = width;
     cmd.internal.renderHeight = height;
-    fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
+    cmd.internal.viewport = {.width = static_cast<float>(width), .height = static_cast<float>(height)};
+    cmd.internal.scissor = {.width = width, .height = height};
+    applyViewport(cmd);
+    applyScissor(cmd);
     cmd.internal.rendering = true;
+}
+
+void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetViewport"));
+    EQ_VALIDATE(Validation::checkViewport(viewport));
+    cmd.internal.viewport = viewport;
+    applyViewport(cmd);
+}
+
+void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetScissor"));
+    EQ_VALIDATE(Validation::checkScissor(scissor));
+    cmd.internal.scissor = scissor;
+    applyScissor(cmd);
 }
 
 void cmdEndRendering(CommandList &cmd) {
@@ -1012,12 +1039,8 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
         }
     }
     if (cmd.internal.rendering) {
-        const auto width = static_cast<float>(cmd.internal.renderWidth);
-        const auto height = static_cast<float>(cmd.internal.renderHeight);
-        const VkViewport viewport{.x = 0.0f, .y = height, .width = width, .height = -height, .minDepth = 0.0f, .maxDepth = 1.0f};
-        const VkRect2D scissor{.offset = {0, 0}, .extent = {cmd.internal.renderWidth, cmd.internal.renderHeight}};
-        fn(cmd).vkCmdSetViewport(native(cmd), 0, 1, &viewport);
-        fn(cmd).vkCmdSetScissor(native(cmd), 0, 1, &scissor);
+        applyViewport(cmd);
+        applyScissor(cmd);
     }
 }
 

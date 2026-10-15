@@ -79,6 +79,17 @@ bool depthReadOnlyLayout(const DepthAttachment &depth) {
 
 // After a UAV clear in RI's own heap: the user's heaps and root signatures
 // come back (P65 (3)), so user code continues as if nothing happened.
+void applyViewport(ID3D12GraphicsCommandList7 *l, const Viewport &v) {
+    const D3D12_VIEWPORT viewport{v.x, v.y, v.width, v.height, v.minDepth, v.maxDepth};
+    l->RSSetViewports(1, &viewport);
+}
+
+void applyScissor(ID3D12GraphicsCommandList7 *l, const Rect &r) {
+    const D3D12_RECT scissor{r.x, r.y, static_cast<LONG>(r.x + static_cast<int64>(r.width)),
+                             static_cast<LONG>(r.y + static_cast<int64>(r.height))};
+    l->RSSetScissorRects(1, &scissor);
+}
+
 void restoreUserState(CommandList &cmd) {
     ID3D12GraphicsCommandList7 *l = list(cmd);
     if (cmd.internal.heapSet) {
@@ -239,13 +250,14 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
 
     l->OMSetRenderTargets(static_cast<UINT>(desc.colors.size()), desc.colors.empty() ? nullptr : rtvs, FALSE,
                           desc.depth ? &dsv : nullptr);
+    // The viewport and scissor cover the attachments until the user sets them (P103).
     if (width != ~0u) {
-        const D3D12_VIEWPORT viewport{0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f};
-        const D3D12_RECT scissor{0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
-        l->RSSetViewports(1, &viewport);
-        l->RSSetScissorRects(1, &scissor);
         cmd.internal.renderWidth = width;
         cmd.internal.renderHeight = height;
+        cmd.internal.viewport = {.width = static_cast<float>(width), .height = static_cast<float>(height)};
+        cmd.internal.scissor = {.width = width, .height = height};
+        applyViewport(l, cmd.internal.viewport);
+        applyScissor(l, cmd.internal.scissor);
     }
     cmd.internal.rendering = true;
 }
@@ -470,13 +482,23 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
         }
     }
     if (cmd.internal.rendering && cmd.internal.renderWidth != 0) {
-        const D3D12_VIEWPORT viewport{0.0f, 0.0f, static_cast<float>(cmd.internal.renderWidth),
-                                      static_cast<float>(cmd.internal.renderHeight), 0.0f, 1.0f};
-        const D3D12_RECT scissor{0, 0, static_cast<LONG>(cmd.internal.renderWidth),
-                                 static_cast<LONG>(cmd.internal.renderHeight)};
-        l->RSSetViewports(1, &viewport);
-        l->RSSetScissorRects(1, &scissor);
+        applyViewport(l, cmd.internal.viewport);
+        applyScissor(l, cmd.internal.scissor);
     }
+}
+
+void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetViewport"));
+    EQ_VALIDATE(Validation::checkViewport(viewport));
+    cmd.internal.viewport = viewport;
+    applyViewport(list(cmd), viewport);
+}
+
+void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
+    EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetScissor"));
+    EQ_VALIDATE(Validation::checkScissor(scissor));
+    cmd.internal.scissor = scissor;
+    applyScissor(list(cmd), scissor);
 }
 
 // ── Resolve (P52, P76) ───────────────────────────────────────────────────────

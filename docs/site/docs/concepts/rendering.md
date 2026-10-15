@@ -43,9 +43,12 @@ takes over another resource's memory is discarded first, even if its section cle
 
 ## Viewport and scissor
 
-RI sets the viewport and the scissor to cover the attachments: from (0, 0) to the size of the
-**smallest** attachment, depth from 0 to 1. A view of mip 1 of a 1024×1024 texture is 512×512,
-and so is the section. Smaller viewports and scissors come later.
+At the start of every section, RI sets the viewport and the scissor to cover the attachments:
+from (0, 0) to the size of the **smallest** attachment, depth from 0 to 1. A view of mip 1 of a
+1024×1024 texture is 512×512, and so is the section. Inside the section,
+[`cmdSetViewport` and `cmdSetScissor`](../reference/cmdSetViewport.md) change them, for
+split-screen, shadow-atlas tiles or clipped UI; the next section starts from the attachments
+again ([P103](../design-notes/decisions.md#p103)).
 
 ## Clip space points up on both backends
 

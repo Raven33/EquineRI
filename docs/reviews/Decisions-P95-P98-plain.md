@@ -65,8 +65,8 @@ same things one point at a time, in plain words. Nothing here is new.
 - A section can use a depth texture **read-only**: depth testing works, writing depth is
   an error, and shaders may sample the same texture (with the flag from P97).
 
-*Your call:* whether you want custom viewports and scissors. The engine may need them, for
-example for split-screen, or to render a shadow atlas tile by tile.
+**Decided (2026-10-15, P103):** the attachments stay the default, and `cmdSetViewport` and
+`cmdSetScissor` override them inside a section.
 
 ### 5. Graphics pipelines
 
