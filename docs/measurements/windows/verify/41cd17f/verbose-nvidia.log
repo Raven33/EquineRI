@@ -1,0 +1,68 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 16
+    Start  16: ri.validation.int64_atomics
+
+16: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "validation.int64_atomics"
+16: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+16: Test timeout computed to be: 120
+16: [PASS] validation.int64_atomics
+1/4 Test  #16: ri.validation.int64_atomics ......   Passed    0.01 sec
+test 26
+    Start  26: ri.dxil.int64_atomics
+
+26: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "dxil.int64_atomics"
+26: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+26: Test timeout computed to be: 120
+26: [PASS] dxil.int64_atomics
+2/4 Test  #26: ri.dxil.int64_atomics ............   Passed    0.01 sec
+test 100
+    Start 100: vk.compute.int64_atomics
+
+100: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "compute.int64_atomics"
+100: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+100: Environment variables: 
+100:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+100: Test timeout computed to be: 120
+100: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+100: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+100: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+100: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+100: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+100: 
+100: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+100: 
+100: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+100: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+100: 
+100: [PASS] compute.int64_atomics
+3/4 Test #100: vk.compute.int64_atomics .........   Passed    0.36 sec
+test 176
+    Start 176: d3d12.compute.int64_atomics
+
+176: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "compute.int64_atomics"
+176: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+176: Environment variables: 
+176:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+176: Test timeout computed to be: 120
+176: [PASS] compute.int64_atomics
+4/4 Test #176: d3d12.compute.int64_atomics ......   Passed    1.00 sec
+
+The following tests passed:
+	ri.validation.int64_atomics
+	ri.dxil.int64_atomics
+	vk.compute.int64_atomics
+	d3d12.compute.int64_atomics
+
+100% tests passed, 0 tests failed out of 4
+
+Label Time Summary:
+gpu    =   1.36 sec*proc (2 tests)
+
+Total Test time (real) =   1.40 sec
