@@ -89,7 +89,7 @@ Nothing to review here.
 - `cmdClearBuffer` needs a buffer with `eCopyDst` usage.
 - For barriers, a clear counts as a **copy** (`Stage::eCopy`).
 
-*Your call:* whether a clear should count as a copy (today), or have a stage of its own.
+**Decided (2026-10-15):** clears keep counting as copies.
 
 ### 8. Timestamps
 
