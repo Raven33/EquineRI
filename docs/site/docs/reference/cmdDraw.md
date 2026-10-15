@@ -1,5 +1,5 @@
 ---
-symbols: [RI::cmdDraw, RI::cmdSetIndexBuffer, RI::cmdDrawIndexed, RI::IndexFormat, RI::cmdDrawMesh]
+symbols: [RI::cmdDraw, RI::cmdSetIndexBuffer, RI::cmdDrawIndexed, RI::IndexFormat, RI::cmdDrawMesh, RI::kMaxMeshGroups]
 ---
 
 # RI::cmdDraw, RI::cmdDrawIndexed, RI::cmdDrawMesh
@@ -86,9 +86,14 @@ payload.
   draws).
 - The pipeline's attachment formats and sample count must match the section's.
 - Indirect draws: [`cmdExecuteIndirect`](indirect.md).
+- `cmdDrawMesh` launches at most `kMaxGroupsPerDimension` (65,535) groups per dimension and
+  `kMaxMeshGroups` (2^22) groups in all, on every backend
+  ([P106](../design-notes/decisions.md#p106)); more is a **programmer error** in validation
+  builds. Fold large counts with [`groupGrid`](../helpers/grid.md).
 
 ## Related decisions
 
 - [P39](../design-notes/decisions.md#p39): vertex pulling, no vertex input.
 - [P40](../design-notes/decisions.md#p40): rendering sections.
 - [P38](../design-notes/decisions.md#p38): complete pipeline state up front.
+- [P106](../design-notes/decisions.md#p106): group counts of mesh draws.

@@ -216,6 +216,9 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
     out.internal.pipelineState = pipelineState;
     out.internal.rootSignature = rootSignature;
     out.internal.id = EQ_DX_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, out, desc.name);
+    }
     return out;
 }
 
@@ -443,10 +446,14 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.stencilReference = desc.stencil.reference;
     out.internal.topology = topologyOf(desc.topology, desc.patchControlPoints);
     out.internal.id = EQ_DX_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, out, desc.name);
+    }
     return out;
 }
 
 void destroyPipeline(Device &device, Pipeline &pipeline) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, pipeline.internal.id, "pipeline");
     EQ_DX_UNTRACK(&state, pipeline.internal.id);
@@ -464,6 +471,7 @@ void destroyPipeline(Device &device, Pipeline &pipeline) {
 
 Pipeline importPipeline(Device &device, ID3D12PipelineState *pipeline, ID3D12RootSignature *rootSignature,
                         bool graphics, uint32 rootDataSize, D3D_PRIMITIVE_TOPOLOGY topology) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     Pipeline out;
     out.rootDataSize = rootDataSize;
@@ -548,10 +556,14 @@ WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
     release(properties);
     graph.backing = {.minSize = memory.MinSizeInBytes, .maxSize = memory.MaxSizeInBytes};
     graph.internal.id = EQ_DX_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, graph, desc.name);
+    }
     return graph;
 }
 
 void destroyWorkGraph(Device &device, WorkGraph &graph) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
     EQ_DX_UNTRACK(&state, graph.internal.id);
@@ -588,6 +600,7 @@ D3D12_SET_PROGRAM_DESC programOf(const WorkGraph &graph, bool initialize) {
 } // namespace
 
 void bindWorkGraphMemory(Device &device, WorkGraph &graph, const Buffer &backing, uint64 offset, uint64 size) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
     EQ_DX_CHECK_ALIVE(&state, backing.internal.id, "buffer");
@@ -610,6 +623,7 @@ void bindWorkGraphMemory(Device &device, WorkGraph &graph, const Buffer &backing
 }
 
 void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, graph.internal.id, "work graph");
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
@@ -629,6 +643,7 @@ void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
 }
 
 void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     if (inputs.empty()) {
         return;
     }
@@ -655,6 +670,7 @@ void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs) {
 }
 
 void cmdDispatchGraphIndirect(CommandList &cmd, uint64 inputAddress, bool multiNode) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     ID3D12GraphicsCommandList10 *l = list10(cmd);
     D3D12_DISPATCH_GRAPH_DESC desc{};
     if (multiNode) {

@@ -19,12 +19,14 @@
 
 #include <algorithm>
 #include <format>
+#include <string>
 #include <vector>
 
 namespace RI::D3D12 {
 
 struct SwapchainState {
-    SwapchainDesc desc;
+    SwapchainDesc desc; // without its name, which `name` keeps
+    std::string name;   // names the images, also those rebuilt on resize (P106)
     IDXGISwapChain3 *swapchain = nullptr;
     bool tearing = false; // created with ALLOW_TEARING
     std::vector<Texture> textures;
@@ -122,6 +124,9 @@ void buildBuffers(DeviceState &state, Swapchain &swapchain) {
         texture.internal.viewFormats = uint64{1} << static_cast<uint32>(texture.format);
         texture.internal.id = EQ_DX_TRACK(&state);
         texture.view = makeTextureView(state, texture, {});
+        if (!s.name.empty()) {
+            applyName(state, texture, std::format("{} [{}]", s.name, i));
+        }
         s.textures.push_back(texture);
     }
     s.imageUse.assign(desc.BufferCount, 0);
@@ -134,6 +139,7 @@ void buildBuffers(DeviceState &state, Swapchain &swapchain) {
 } // namespace
 
 std::vector<SurfaceFormat> surfaceFormats(Device &device, const Window &window) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     hwndOf(window, "surfaceFormats");
     std::vector<SurfaceFormat> formats = {
         {Format::eBGRA8Srgb, ColorSpace::eSrgb},     {Format::eBGRA8Unorm, ColorSpace::eSrgb},
@@ -147,14 +153,19 @@ std::vector<SurfaceFormat> surfaceFormats(Device &device, const Window &window) 
 }
 
 bool presentModeSupported(Device &device, const Window &window, PresentMode mode) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     hwndOf(window, "presentModeSupported");
     return mode != PresentMode::eImmediate || tearingSupported(*device.internal.state);
 }
 
 // Flip-model back buffers never allow unordered access (P64 (5)).
-bool screenStorageSupported(Device &, const Window &, Format) { return false; }
+bool screenStorageSupported([[maybe_unused]] Device &device, const Window &, Format) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
+    return false;
+}
 
 Swapchain createSwapchain(Device &device, const SwapchainDesc &desc) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     const HWND hwnd = hwndOf(desc.window, "createSwapchain");
     if (desc.storage) {
@@ -170,6 +181,8 @@ Swapchain createSwapchain(Device &device, const SwapchainDesc &desc) {
     }
     auto *s = new SwapchainState;
     s->desc = desc;
+    s->name = desc.name;
+    s->desc.name = {};
     s->tearing = tearingSupported(state);
     const DXGI_SWAP_CHAIN_DESC1 chainDesc{
         .Width = desc.width,
@@ -201,6 +214,7 @@ Swapchain createSwapchain(Device &device, const SwapchainDesc &desc) {
 }
 
 void resizeSwapchain(Device &device, Swapchain &swapchain, uint32 width, uint32 height) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     SwapchainState &s = *swapchain.internal.state;
@@ -213,6 +227,7 @@ void resizeSwapchain(Device &device, Swapchain &swapchain, uint32 width, uint32 
 }
 
 void destroySwapchain(Device &device, Swapchain &swapchain) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     EQ_DX_UNTRACK(&state, swapchain.internal.id);
@@ -225,6 +240,7 @@ void destroySwapchain(Device &device, Swapchain &swapchain) {
 }
 
 Texture acquire(Device &device, Swapchain &swapchain) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     SwapchainState &s = *swapchain.internal.state;
@@ -238,6 +254,7 @@ Texture acquire(Device &device, Swapchain &swapchain) {
 }
 
 void present(Queue &queue, Swapchain &swapchain) {
+    EQ_DX_CHECK_THREAD(queue.internal.device);
     DeviceState &state = *queue.internal.device;
     EQ_DX_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     SwapchainState &s = *swapchain.internal.state;

@@ -57,7 +57,8 @@ A [command list](../reference/commandList.md) has one life cycle
 There is no resubmission of a recorded list in this version. Each command list has its own
 native command memory (a Vulkan command pool, a D3D12 command allocator), so resetting one
 list never disturbs another. Recording happens on one thread in this version, and RI objects
-are not thread-safe.
+are not thread-safe: only the calls of the [any-thread list](threads.md) run elsewhere, `wait`
+and `isReached` among them.
 
 In validation builds, resetting or destroying a list the GPU may still
 be executing is a **programmer error**: `resetting a command list the GPU may still be
@@ -112,5 +113,6 @@ executing: wait for its timeline point (value 3) first; the queue has reached 2`
 - [P20](../design-notes/decisions.md#p20): per-queue timeline points; immediate destruction.
 - [P56](../design-notes/decisions.md#p56): one recording thread; command lists reused only
   after their point.
+- [P106](../design-notes/decisions.md#p106): the calls that may run on other threads.
 - [P63](../design-notes/decisions.md#p63): no resubmission in v1.
 - [P94](../design-notes/decisions.md#p94): `submit`, `wait`, `isReached`; the reuse check.

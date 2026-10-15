@@ -1,4 +1,4 @@
-// RI: object names and command markers (P53). Compiled once per enabled backend.
+// RI: object names and command markers (P53, P106). Compiled once per enabled backend.
 
 #include <RI/RI.hpp>
 
@@ -10,15 +10,15 @@ int main() {
         return 1;
     }
     RI::Device device = RI::createDevice({.gpu = gpus[0]});
-    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 20);
-    RI::Buffer particles = RI::createBuffer(device, memory, 0, {.size = 4096, .usage = RI::BufferUsage::eCopyDst});
-    RI::CommandList cmd = RI::createCommandList(device);
-
     // --8<-- [start:names]
-    // Names appear in RenderDoc, PIX, Nsight and in validation messages.
-    RI::setName(device, memory, "scene memory");
-    RI::setName(device, particles, "particles");
-    RI::setName(device, cmd, "frame commands");
+    // Names appear in RenderDoc, PIX, Nsight and in validation messages. Give
+    // them at creation: in the desc, or as the last argument where there is none.
+    RI::Memory memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 20, nullptr, "scene memory");
+    RI::Buffer particles = RI::createBuffer(
+        device, memory, 0, {.size = 4096, .usage = RI::BufferUsage::eCopyDst, .name = "particles"});
+    RI::CommandList cmd = RI::createCommandList(device, "frame commands");
+    // setName renames, for example a command list reused for another pass.
+    RI::setName(device, cmd, "frame 1 commands");
     // --8<-- [end:names]
 
     RI::cmdBegin(cmd);

@@ -270,6 +270,9 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
     out.internal.pipeline = reinterpret_cast<uint64>(pipeline);
     out.internal.layout = reinterpret_cast<uint64>(layout);
     out.internal.id = EQ_VK_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, out, desc.name);
+    }
     return out;
 }
 
@@ -485,10 +488,14 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.depthWrite = desc.depth.test && desc.depth.write;
     out.internal.stencilReference = desc.stencil.reference;
     out.internal.id = EQ_VK_TRACK(&state);
+    if (!desc.name.empty()) {
+        applyName(*device.internal.state, out, desc.name);
+    }
     return out;
 }
 
 void destroyPipeline(Device &device, Pipeline &pipeline) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, pipeline.internal.id, "pipeline");
     EQ_VK_UNTRACK(&state, pipeline.internal.id);
@@ -503,6 +510,7 @@ void destroyPipeline(Device &device, Pipeline &pipeline) {
 
 Pipeline importPipeline(Device &device, VkPipeline pipeline, VkPipelineLayout layout, bool graphics,
                         uint32 rootDataSize) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     Pipeline result;
     result.rootDataSize = rootDataSize;

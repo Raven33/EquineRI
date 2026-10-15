@@ -15,13 +15,19 @@ Open, in order:
    (`tools/statistics_bench`, `docs/measurements/statistics/`: RADV done, Windows not run) ; the
    shape is decided (two fixed counter sets, classic and mesh: Vulkan forbids RI's statistics
    queries around mesh draws), the primitive count's place waits for Windows. The helpers in the review wait for the user.
-0b. **Both sandboxes' review** (`docs/reviews/Sandboxes-2026-10-15.md`, P106), approved and
-   not implemented, API in `docs/FeatureProposal-Sandboxes-2026-10-15.md`:
-   - the any-thread list, with the device-thread check in validation builds;
-   - names in the descs;
-   - the buffer-view and group-count portable rules, with `maxConstantViewSize`.
+0b. **Both sandboxes' review** (`docs/reviews/Sandboxes-2026-10-15.md`, P106), API in
+   `docs/FeatureProposal-Sandboxes-2026-10-15.md`. **Implemented, verified on Linux only** (Vulkan
+   debug and release, the thread tests also under ThreadSanitizer); the D3D12 code is not compiled
+   yet, so the Windows session must build and run it. What it contains:
+   - the any-thread list, with the device-thread check (`EQ_*_CHECK_THREAD` in every other public
+     function) and a locked validation object tracker;
+   - names in the descs, through `applyName` in each backend's `Debug.cpp`;
+   - the buffer-view and group-count rules, with `maxBufferViewSize` and `maxConstantViewSize`;
+   - the `groupGrid` helper and `<equine/grid.hlsli>`.
 
-   Work-graph input limits wait for a retail Agility SDK. Mesh nodes: not now.
+   Also fixed: the docs header extractor dropped functions with a `= {}` default argument
+   (`endNative` was missing from the site). Work-graph input limits wait for a retail Agility
+   SDK. Mesh nodes: not now.
 1. **The missing graphics features are in** (P102: cube and 3D textures, depth bias and clamp,
    line strips and wireframe, geometry and tessellation shaders), verified on Linux (102/102)
    and Windows (165/165 on NVIDIA and AMD, `docs/measurements/windows/verify/5505e42/`).

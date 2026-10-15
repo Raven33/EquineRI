@@ -15,6 +15,8 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `maxResourceDescriptors` | the most view slots in a [descriptor heap](descriptorHeap.md) | the smallest update-after-bind descriptor limit of the GPU, at most 1,000,000 | 1,000,000 |
 | `maxSamplerDescriptors` | the most sampler slots in a heap | the GPU's update-after-bind sampler limit, at most 2048 | 2048 |
 | `maxRootDataSize` | the most bytes of [root data](../concepts/root-data.md) a shader may declare | `maxPushConstantsSize` (at least 128) | 256 (64 root constants) |
+| `maxBufferViewSize` | the most bytes one read or read-write [buffer view](writeDescriptors.md) covers, besides `kMaxBufferViewElements` ([P106](../design-notes/decisions.md#p106)) | `maxStorageBufferRange` | no byte limit beyond the element limit: `kMaxBufferViewElements` × 2048 (the largest structure stride) |
+| `maxConstantViewSize` | the most bytes one constant buffer view covers ([P106](../design-notes/decisions.md#p106)) | `maxUniformBufferRange`, at most 65,536 | 65,536 (4096 × 16 bytes) |
 | `gpuUploadMemory` | whether [`MemoryKind::eGPUUpload`](memory.md) can be allocated | all of the largest device-local heap is host-visible (ReBAR) | `GPUUploadHeapSupported` |
 | `timestampFrequency` | [timestamp](timestamps.md) ticks per second | `1e9 / timestampPeriod` (the period is in nanoseconds per tick) | `ID3D12CommandQueue::GetTimestampFrequency` of the graphics queue |
 | `meshShaders` | task and mesh shaders, [`cmdDrawMesh`](cmdDraw.md) | `VK_EXT_mesh_shader` with `taskShader` and `meshShader` | `D3D12_OPTIONS7::MeshShaderTier` at least tier 1 |
@@ -69,6 +71,8 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 - A shader with more root data than `maxRootDataSize` fails
   [`createComputePipeline`](pipeline.md) with an **unsupported** error.
 - `eGPUUpload` memory without `gpuUploadMemory` is an **unsupported** error.
+- A buffer view larger than `maxBufferViewSize` or `maxConstantViewSize` is a **programmer
+  error** at [`writeDescriptors`](writeDescriptors.md) in validation builds.
 - `timestampFrequency` is a device value while RI has one queue; it will move to the queue when
   queues are added ([P71](../design-notes/decisions.md#p71)). Only differences of timestamps
   are meaningful.
@@ -80,3 +84,4 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 - [P32](../design-notes/decisions.md#p32): `eGPUUpload` availability.
 - [P94](../design-notes/decisions.md#p94): the limits' values.
 - [P71](../design-notes/decisions.md#p71): the timestamp frequency is a device query.
+- [P106](../design-notes/decisions.md#p106): buffer view sizes.

@@ -22,12 +22,14 @@
 
 #include <algorithm>
 #include <format>
+#include <string>
 #include <vector>
 
 namespace RI::Vk {
 
 struct SwapchainState {
-    SwapchainDesc desc;
+    SwapchainDesc desc; // without its name, which `name` keeps
+    std::string name;   // names the images, also those rebuilt on resize (P106)
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     VkCommandPool pool = VK_NULL_HANDLE;
@@ -338,6 +340,9 @@ void build(DeviceState &state, Swapchain &swapchain, uint32 width, uint32 height
         texture.internal.restingLayout = static_cast<uint32>(resting);
         texture.internal.id = EQ_VK_TRACK(&state);
         texture.view = createView(device, texture, {});
+        if (!s.name.empty()) {
+            applyName(state, texture, std::format("{} [{}]", s.name, i));
+        }
         s.textures.push_back(texture);
         recordSwitch(state, s.toRest[i], texture.view, VK_IMAGE_LAYOUT_UNDEFINED, resting, VK_ACCESS_2_NONE);
         recordSwitch(state, s.toPresent[i], texture.view, resting, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
@@ -363,6 +368,7 @@ void build(DeviceState &state, Swapchain &swapchain, uint32 width, uint32 height
 } // namespace
 
 std::vector<SurfaceFormat> surfaceFormats(Device &device, const Window &window) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     const VkSurfaceKHR surface = createSurface(state, window);
     std::vector<SurfaceFormat> result;
@@ -380,6 +386,7 @@ std::vector<SurfaceFormat> surfaceFormats(Device &device, const Window &window) 
 }
 
 bool presentModeSupported(Device &device, const Window &window, PresentMode mode) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     const VkSurfaceKHR surface = createSurface(state, window);
     const std::vector<VkPresentModeKHR> modes = nativeModes(state, surface);
@@ -388,6 +395,7 @@ bool presentModeSupported(Device &device, const Window &window, PresentMode mode
 }
 
 bool screenStorageSupported(Device &device, const Window &window, Format format) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     const VkSurfaceKHR surface = createSurface(state, window);
     VkSurfaceCapabilitiesKHR caps{};
@@ -402,9 +410,12 @@ bool screenStorageSupported(Device &device, const Window &window, Format format)
 }
 
 Swapchain createSwapchain(Device &device, const SwapchainDesc &desc) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     auto *s = new SwapchainState;
     s->desc = desc;
+    s->name = desc.name;
+    s->desc.name = {};
     s->surface = createSurface(state, desc.window);
     const std::vector<VkSurfaceFormatKHR> formats = nativeFormats(state, s->surface);
     const bool formatOk = std::ranges::any_of(formats, [&](const VkSurfaceFormatKHR &f) {
@@ -431,6 +442,7 @@ Swapchain createSwapchain(Device &device, const SwapchainDesc &desc) {
 }
 
 void resizeSwapchain(Device &device, Swapchain &swapchain, uint32 width, uint32 height) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     // No image or semaphore in use: the timeline covers submissions, the
@@ -441,6 +453,7 @@ void resizeSwapchain(Device &device, Swapchain &swapchain, uint32 width, uint32 
 }
 
 void destroySwapchain(Device &device, Swapchain &swapchain) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     EQ_VK_UNTRACK(&state, swapchain.internal.id);
@@ -455,6 +468,7 @@ void destroySwapchain(Device &device, Swapchain &swapchain) {
 }
 
 Texture acquire(Device &device, Swapchain &swapchain) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     EQ_VK_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     SwapchainState &s = *swapchain.internal.state;
@@ -484,6 +498,7 @@ Texture acquire(Device &device, Swapchain &swapchain) {
 }
 
 void present(Queue &queue, Swapchain &swapchain) {
+    EQ_VK_CHECK_THREAD(queue.internal.device);
     DeviceState &state = *queue.internal.device;
     EQ_VK_CHECK_ALIVE(&state, swapchain.internal.id, "swapchain");
     SwapchainState &s = *swapchain.internal.state;

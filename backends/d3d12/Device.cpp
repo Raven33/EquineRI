@@ -124,6 +124,9 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     enableValidationOnce();
 
     auto *state = new DeviceState{};
+#if EQUINE_VALIDATION
+    state->deviceThread = std::this_thread::get_id();
+#endif
     state->factory = createFactory();
     Device device;
     state->adapter = findGpu(state->factory, desc.gpu, device.gpu);
@@ -236,6 +239,9 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .maxResourceDescriptors = D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_2,
         .maxSamplerDescriptors = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE,
         .maxRootDataSize = 64 * 4,
+        // Only the element limit binds (P106): kMaxBufferViewElements of the largest structure stride.
+        .maxBufferViewSize = kMaxBufferViewElements * D3D12_REQ_MULTI_ELEMENT_STRUCTURE_SIZE_IN_BYTES,
+        .maxConstantViewSize = D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16,
         .gpuUploadMemory = state->gpuUploadHeap,
         .timestampFrequency = timestampFrequency,
         .meshShaders = meshShaders,
@@ -258,6 +264,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
 }
 
 void destroyDevice(Device &device) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState *state = device.internal.state;
     if (state == nullptr) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");

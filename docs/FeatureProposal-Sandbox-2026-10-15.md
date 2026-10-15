@@ -177,6 +177,163 @@ and results: `docs/measurements/statistics/README.md`.
 On both backends: a task and mesh draw with known group and primitive counts, all three
 counters read back. A device without them reports `kNoCounter`.
 
+### The three shapes, after the measurement
+
+Measured on the RTX 3080 (`docs/measurements/statistics/README.md`). On Vulkan, the
+mesh-primitives query is free, the task counter costs 1.6 ms per frame, and the mesh counter
+costs about 100 ms. On D3D12 the three only exist together, in `PIPELINE_STATISTICS1`, at
++130%. Two fixed counter sets are decided (user, 2026-10-15); the question is where the task,
+mesh and primitive counters go.
+
+#### Common to the three
+
+The mesh set is a new query type. Its pools count only what Vulkan allows during mesh draws:
+
+```cpp
+enum class QueryType : uint8 {
+    eTimestamp,
+    eOcclusion,
+    ePipelineStatistics,     // the classic set: today's counters, for vertex-pipeline draws and dispatches
+    eMeshPipelineStatistics, // new: the mesh set, for mesh draws and dispatches
+    // ... per option, below
+};
+```
+
+`pipelineStatisticsLayout` takes the query type. **This is a signature change.** The default
+keeps today's calls working:
+
+```cpp
+PipelineStatisticsLayout pipelineStatisticsLayout(Device &device,
+                                                  QueryType type = QueryType::ePipelineStatistics);
+```
+
+Counters a type does not hold are `kNoCounter` in its layout, so `readPipelineStatistics`
+(the helper) reads them as 0. Nothing else changes: `cmdBeginQuery`, `cmdEndQuery` and
+`cmdResolveQueries` work on every counter type.
+
+How the backends map it:
+
+- **Vulkan:**
+  - classic: today's bits;
+  - mesh set: `FRAGMENT_SHADER_INVOCATIONS | COMPUTE_SHADER_INVOCATIONS`.
+- **D3D12:** both sets use `PIPELINE_STATISTICS`. The mesh set's layout only names the pixel
+  and compute offsets.
+
+Rules:
+
+- **Classic set during a mesh draw:** the Vulkan validation layer already reports it (VUID
+  07076). D3D12 counts nothing wrong, so RI adds no check.
+- **One statistics query at a time:** both APIs allow only one active statistics query of a
+  kind. On Vulkan, two `PIPELINE_STATISTICS` pools count as the same kind.
+  - The Vulkan layer reports a second one.
+  - RI adds a check only where D3D12 is silent, and only if a test shows it is.
+
+#### Option 1: mesh set = pixel and compute; the primitive count is its own query type; task and mesh invocations stay native
+
+```cpp
+enum class QueryType : uint8 { ..., eMeshPipelineStatistics, eMeshPrimitives };
+struct PipelineStatisticsLayout { /* existing */ uint32 meshPrimitives = kNoCounter; };
+```
+
+Usage:
+
+```cpp
+RI::QueryPool stats = RI::createQueryPool(device, {.type = RI::QueryType::eMeshPipelineStatistics, .count = 8});
+RI::QueryPool prims = RI::createQueryPool(device, {.type = RI::QueryType::eMeshPrimitives, .count = 8});
+RI::cmdBeginQuery(cmd, stats, 0);
+RI::cmdBeginQuery(cmd, prims, 0);
+RI::cmdDrawMesh(cmd, groups, 1, 1);
+RI::cmdEndQuery(cmd, prims, 0);
+RI::cmdEndQuery(cmd, stats, 0);
+RI::cmdResolveQueries(cmd, stats, 0, 1, readback, 0);
+RI::cmdResolveQueries(cmd, prims, 0, 1, readback, 256);
+// once the point is reached
+const auto s = RI::Helpers::readPipelineStatistics(RI::pipelineStatisticsLayout(device, RI::QueryType::eMeshPipelineStatistics), readback.mapped);
+const auto p = RI::Helpers::readPipelineStatistics(RI::pipelineStatisticsLayout(device, RI::QueryType::eMeshPrimitives),
+                                                   static_cast<std::byte *>(readback.mapped) + 256);
+// s.pixelShaderInvocations, s.computeShaderInvocations, p.meshPrimitives
+```
+
+Implementation:
+
+- **Vulkan:** `eMeshPrimitives` is `VK_QUERY_TYPE_MESH_PRIMITIVES_GENERATED_EXT`, needing
+  `meshShaderQueries`. The layout is `size = 8`, `meshPrimitives = 0`. Free on the RTX 3080.
+- **D3D12:** `eMeshPrimitives` is a `PIPELINE_STATISTICS1` heap, needing
+  `MeshShaderPipelineStatsSupported`. The layout is `size = 112`,
+  `meshPrimitives = offsetof(…, MSPrimitives)`. Costs +130%: D3D12 counts task and mesh
+  invocations with it.
+- **Without support** (RADV; AMD Windows has no mesh shaders): `createQueryPool` reports
+  unsupported, and the layout says `meshPrimitives = kNoCounter`. RI reports it the way it
+  reports other missing features (P11).
+- **Cost:** what RI offers is cheap, except the primitive count on D3D12, which the docs
+  state.
+
+#### Option 2: mesh set = pixel and compute; a third, explicit "mesh counters" query
+
+```cpp
+enum class QueryType : uint8 { ..., eMeshPipelineStatistics, eMeshShaderCounters };
+struct PipelineStatisticsLayout {
+    // existing
+    uint32 taskShaderInvocations = kNoCounter;
+    uint32 meshShaderInvocations = kNoCounter;
+    uint32 meshPrimitives = kNoCounter;
+};
+```
+
+Usage: as option 1, with `eMeshShaderCounters` in place of `eMeshPrimitives`, read through
+the same layout and helper.
+
+```cpp
+RI::QueryPool counters = RI::createQueryPool(device, {.type = RI::QueryType::eMeshShaderCounters, .count = 8});
+// ... as option 1 ...
+// c.taskShaderInvocations, c.meshShaderInvocations, c.meshPrimitives
+```
+
+Implementation:
+
+- **Vulkan:** an RI pool holds two native pools, which are begun, ended, reset and resolved
+  together. The first is a statistics pool with `TASK_ | MESH_SHADER_INVOCATIONS`; the
+  second is the primitives pool. The layout is `size = 24`: task at 0, mesh at 8,
+  primitives at 16. RI resolves the two pools into one result with the same stride.
+- **D3D12:** `PIPELINE_STATISTICS1`. The layout is `size = 112`, with `ASInvocations`,
+  `MSInvocations` and `MSPrimitives`.
+- **Rule:** on Vulkan, the mesh set and this type cannot be active together, since both are
+  `PIPELINE_STATISTICS` pools. The layer reports it.
+- **Cost:** up to 65x on Vulkan (the mesh counter) and +130% on D3D12. The docs call it a
+  profiling tool, not something to leave on. The primitive count alone, free on Vulkan, is
+  not offered.
+
+#### Option 3: mesh set = pixel, compute and primitives; task and mesh invocations stay native
+
+```cpp
+enum class QueryType : uint8 { ..., eMeshPipelineStatistics };
+struct PipelineStatisticsLayout { /* existing */ uint32 meshPrimitives = kNoCounter; };
+```
+
+Usage: one pool, as option 1's `stats`, and `s.meshPrimitives` is filled in where supported.
+
+Implementation:
+
+- **Vulkan:** the hidden-pool scheme of option 2. The statistics pool has
+  `FRAGMENT | COMPUTE`, and a primitives pool is added when `meshShaderQueries` is on. The
+  layout is `size = 24` (or 16 without primitives, with `meshPrimitives = kNoCounter`).
+- **D3D12:** `PIPELINE_STATISTICS1` where supported. The layout is `size = 112`, with pixel,
+  compute and `MSPrimitives`. Otherwise `PIPELINE_STATISTICS`, with
+  `meshPrimitives = kNoCounter`.
+- **Cost:** free on Vulkan, but **+130% on D3D12 for every mesh-set query**, even when only
+  pixel and compute counts are wanted.
+
+#### Comparison
+
+| | Option 1 | Option 2 | Option 3 |
+|---|---|---|---|
+| New query types | 2 (mesh set, primitives) | 2 (mesh set, mesh counters) | 1 (mesh set) |
+| Primitive count, Vulkan | free, own query | 65x, with the mesh counters | free, in the mesh set |
+| Primitive count, D3D12 | +130%, own query | +130% | +130% on every mesh-set query |
+| Task and mesh invocations | native only | in RI, as a profiling query | native only |
+| Hidden second native pool (Vulkan) | no | yes | yes |
+| Signature change | `pipelineStatisticsLayout(device, type)` | same | same |
+
 ## 3. 64-bit atomics
 
 ### What changes

@@ -25,6 +25,10 @@ set(EQUINE_RI_TEST_NAMES
     validation.texture_shapes
     validation.viewport_and_scissor
     validation.rendering_without_attachments
+    validation.tracker_across_threads
+    validation.buffer_view_size
+    validation.group_counts
+    validation.device_thread
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -78,6 +82,7 @@ set(EQUINE_GPU_SHARED_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/SwapchainTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/RayTracingTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/gpu/HelperTests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
 )
 set(EQUINE_GPU_SHARED_TEST_NAMES
     compute.buffer_compute_readback
@@ -126,6 +131,9 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     helpers.transfers
     helpers.frame_ring_and_profiler
     helpers.shader_compiler
+    helpers.group_grid
+    compute.names_at_creation
+    threads.pipelines_on_other_threads
     texture.unlisted_view_format_reports
 )
 if (WIN32)
@@ -149,6 +157,8 @@ if (EQUINE_VALIDATION)
         texture.read_only_depth_sampling_on_color_reports
         texture.copy_without_usage_reports
         texture.stage_link_mismatch_reports
+        compute.too_many_groups_reports
+        threads.call_from_other_thread_reports
     )
     list(APPEND EQUINE_GPU_SHARED_ABORT_TESTS
         "compute.root_data_size_mismatch_reports|programmer error: root data is 8 bytes, but the pipeline's shader declares 20 bytes"
@@ -161,6 +171,8 @@ if (EQUINE_VALIDATION)
         "texture.copy_without_usage_reports|programmer error: cmdCopyTextureToBuffer: the texture needs TextureUsage::eCopySrc"
         "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
         "texture.stage_link_mismatch_reports|programmer error: createGraphicsPipeline: the pixel shader reads NORMAL0 at"
+        "compute.too_many_groups_reports|programmer error: cmdDispatch: 65536 x 1 x 1 groups"
+        "threads.call_from_other_thread_reports|programmer error: createCommandList: called from thread"
     )
 endif()
 
@@ -170,7 +182,7 @@ function(equine_add_gpu_test_shaders exe)
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
                        "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl" "${dir}/write_faces.hlsl"
                        "${dir}/read_volume.hlsl"
-                       "${dir}/ray_query.hlsl" "${dir}/atomic64.hlsl")
+                       "${dir}/ray_query.hlsl" "${dir}/atomic64.hlsl" "${dir}/grid_count.hlsl")
     equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
                        "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/point_vs.hlsl" "${dir}/patch_vs.hlsl"
                        "${dir}/storage_raster_vs.hlsl")

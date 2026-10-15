@@ -112,7 +112,8 @@ uint64 completedValue(DeviceState &state) {
 
 // ── Command lists (P56) ──────────────────────────────────────────────────────
 
-CommandList createCommandList(Device &device) {
+CommandList createCommandList(Device &device, std::string_view name) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     ID3D12CommandAllocator *allocator = nullptr;
     checkHr(state.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator)),
@@ -128,10 +129,14 @@ CommandList createCommandList(Device &device) {
     cmd.internal.list = commandList;
     cmd.internal.allocator = allocator;
     cmd.internal.id = EQ_DX_TRACK(&state);
+    if (!name.empty()) {
+        applyName(*device.internal.state, cmd, name);
+    }
     return cmd;
 }
 
 void destroyCommandList(Device &device, CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(device.internal.state);
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_DX_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "destroying"));
@@ -144,6 +149,7 @@ void destroyCommandList(Device &device, CommandList &cmd) {
 }
 
 void resetCommandList(CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "resetting"));
@@ -153,6 +159,7 @@ void resetCommandList(CommandList &cmd) {
 // ── Recording (P34: each call writes the native command at once) ─────────────
 
 void cmdBegin(CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, cmd.internal.id, "command list");
     checkHr(list(cmd)->Reset(static_cast<ID3D12CommandAllocator *>(cmd.internal.allocator), nullptr),
             "ID3D12GraphicsCommandList::Reset");
@@ -171,11 +178,13 @@ void cmdBegin(CommandList &cmd) {
 
 // Writes are visible to the CPU once the fence value is reached: no barrier needed.
 void cmdEnd(CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkMarkersClosed(cmd.internal.markerDepth));
     checkHr(list(cmd)->Close(), "ID3D12GraphicsCommandList::Close");
 }
 
 void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, heap.internal.id, "descriptor heap");
     ID3D12DescriptorHeap *heaps[] = {static_cast<ID3D12DescriptorHeap *>(heap.internal.resourceHeap),
                                      static_cast<ID3D12DescriptorHeap *>(heap.internal.samplerHeap)};
@@ -194,6 +203,7 @@ void cmdSetHeap(CommandList &cmd, const DescriptorHeap &heap) {
 }
 
 void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
     EQ_VALIDATE(Validation::checkDepthWriteAllowed(cmd.internal.rendering && cmd.internal.depthReadOnly,
@@ -226,6 +236,7 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
 }
 
 void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRootDataSize(size, cmd.internal.rootDataSize));
     // Kept for endNative (P70).
     std::memcpy(cmd.internal.rootData, data, std::min<size_t>(size, sizeof(cmd.internal.rootData)));
@@ -238,10 +249,15 @@ void cmdSetRootData(CommandList &cmd, const void *data, uint32 size) {
     }
 }
 
-void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) { list(cmd)->Dispatch(x, y, z); }
+void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, false, "cmdDispatch"));
+    list(cmd)->Dispatch(x, y, z);
+}
 
 // Coarse stage -> stage barrier (P36), as one global enhanced barrier.
 void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     if (((before | after) & Stage::eAccelerationStructure) != Stage::eNone && !cmd.internal.device->rayTracing) {
         reportError(ErrorCategory::eUnsupported,
                     "cmdBarrier: Stage::eAccelerationStructure needs ray tracing (DeviceLimits::rayTracing)");
@@ -261,6 +277,7 @@ void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
 
 void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const Buffer &dst, uint64 dstOffset,
                    uint64 size) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, src.internal.id, "buffer");
     EQ_DX_CHECK_ALIVE(cmd.internal.device, dst.internal.id, "buffer");
     list(cmd)->CopyBufferRegion(static_cast<ID3D12Resource *>(dst.internal.resource), dstOffset,
@@ -270,6 +287,7 @@ void cmdCopyBuffer(CommandList &cmd, const Buffer &src, uint64 srcOffset, const 
 // ── Submission (P20) ─────────────────────────────────────────────────────────
 
 TimelinePoint submit(Queue &queue, CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(queue.internal.device);
     DeviceState &state = *queue.internal.device;
     EQ_DX_CHECK_ALIVE(&state, cmd.internal.id, "command list");
     ID3D12CommandList *lists[] = {list(cmd)};

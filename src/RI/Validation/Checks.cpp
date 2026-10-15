@@ -3,9 +3,13 @@
 
 #include <RI/Validation/Checks.hpp>
 
+#include <RI/Commands.hpp>
+#include <RI/Resources.hpp>
+
 #include <algorithm>
 #include <cctype>
 #include <format>
+#include <sstream>
 
 namespace RI::Validation {
 
@@ -431,6 +435,56 @@ CheckResult checkIndirectScratch(const IndirectScratchCheck &c, std::string_view
                            c.requiredSize, c.offset, c.requiredAlignment, c.scratchSize);
     }
     return {};
+}
+
+CheckResult checkBufferViewSize(uint64 size, uint32 stride, bool constant, uint64 maxViewSize,
+                                uint64 maxConstantSize) {
+    if (constant) {
+        if (constantViewSize(size) > maxConstantSize) {
+            return std::format("constant buffer view of {} bytes: this device allows {} "
+                               "(DeviceLimits::maxConstantViewSize, never above 64 KiB)",
+                               constantViewSize(size), maxConstantSize);
+        }
+        return {};
+    }
+    const uint64 element = stride == 0 ? 4 : stride;
+    if (size / element > kMaxBufferViewElements) {
+        return std::format("buffer view of {} elements of {} bytes: a view covers at most {} elements on every "
+                           "backend (kMaxBufferViewElements, D3D12's limit); split it into several views",
+                           size / element, element, kMaxBufferViewElements);
+    }
+    if (size > maxViewSize) {
+        return std::format("buffer view of {} bytes: this device allows {} (DeviceLimits::maxBufferViewSize)", size,
+                           maxViewSize);
+    }
+    return {};
+}
+
+CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::string_view call) {
+    if (x > kMaxGroupsPerDimension || y > kMaxGroupsPerDimension || z > kMaxGroupsPerDimension) {
+        return std::format("{}: {} x {} x {} groups; each dimension is at most {} on every backend "
+                           "(kMaxGroupsPerDimension); fold the count into a grid (Helpers::groupGrid)",
+                           call, x, y, z, kMaxGroupsPerDimension);
+    }
+    const uint64 total = uint64{x} * y * z;
+    if (mesh && total > kMaxMeshGroups) {
+        return std::format("{}: {} groups in one mesh draw; at most {} on every backend (kMaxMeshGroups)", call,
+                           total, kMaxMeshGroups);
+    }
+    return {};
+}
+
+CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view call) {
+    const std::thread::id here = std::this_thread::get_id();
+    if (here == deviceThread) {
+        return {};
+    }
+    std::ostringstream threads;
+    threads << "thread " << here << ", but the device thread is " << deviceThread;
+    return std::format("{}: called from {} (the thread that called createDevice). Only the any-thread list "
+                       "(pipeline and work-graph creation, workGraphEntry, wait, isReached, requirement and "
+                       "size queries) may run on other threads (P106)",
+                       call, threads.str());
 }
 
 } // namespace RI::Validation

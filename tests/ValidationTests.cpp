@@ -6,8 +6,14 @@
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/ObjectTracker.hpp>
 
+#include <RI/Commands.hpp>
+#include <RI/Resources.hpp>
+
+#include <atomic>
 #include <csignal>
 #include <cstdlib>
+#include <thread>
+#include <vector>
 
 EQ_TEST(validation, tracker_alive_then_destroyed) {
     RI::Validation::ObjectTracker tracker;
@@ -177,4 +183,74 @@ EQ_TEST(validation, rendering_without_attachments) {
         const CheckResult bad = checkRenderingSize(size);
         EQ_CHECK(bad && bad->find("must be 1..16384") != std::string::npos);
     }
+}
+
+// The tracker under creation on other threads (P106): ids registered and
+// forgotten on four threads while this one checks a live object.
+EQ_TEST(validation, tracker_across_threads) {
+    RI::Validation::ObjectTracker tracker;
+    const uint64 kept = RI::Validation::trackObject(tracker);
+    std::atomic<bool> done{false};
+    std::atomic<bool> lost{false};
+    std::vector<std::thread> workers;
+    for (int t = 0; t < 4; ++t) {
+        workers.emplace_back([&] {
+            for (int i = 0; i < 2000; ++i) {
+                RI::Validation::untrackObject(tracker, RI::Validation::trackObject(tracker));
+            }
+        });
+    }
+    std::thread checker([&] {
+        while (!done) {
+            if (RI::Validation::checkAlive(tracker, kept, "pipeline")) {
+                lost = true;
+            }
+        }
+    });
+    for (std::thread &worker : workers) {
+        worker.join();
+    }
+    done = true;
+    checker.join();
+    EQ_CHECK(!lost);
+    EQ_CHECK(tracker.live.size() == 1);
+}
+
+// Buffer views (P106): D3D12's element limit on every backend, then the device's bytes.
+EQ_TEST(validation, buffer_view_size) {
+    using RI::Validation::checkBufferViewSize;
+    constexpr uint64 kElements = RI::kMaxBufferViewElements;
+    constexpr uint64 kLarge = uint64{1} << 40;
+    EQ_CHECK(!checkBufferViewSize(kElements * 4, 0, false, kLarge, 65536));
+    const RI::Validation::CheckResult raw = checkBufferViewSize((kElements + 1) * 4, 0, false, kLarge, 65536);
+    EQ_CHECK(raw && raw->find("kMaxBufferViewElements") != std::string::npos);
+    EQ_CHECK(!checkBufferViewSize(kElements * 16, 16, false, kLarge, 65536));
+    EQ_CHECK(checkBufferViewSize((kElements + 1) * 16, 16, false, kLarge, 65536).has_value());
+    const RI::Validation::CheckResult bytes = checkBufferViewSize(1 << 20, 0, false, 1 << 19, 65536);
+    EQ_CHECK(bytes && bytes->find("maxBufferViewSize") != std::string::npos);
+    EQ_CHECK(!checkBufferViewSize(65536, 0, true, kLarge, 65536));
+    const RI::Validation::CheckResult constant = checkBufferViewSize(65536 + 1, 0, true, kLarge, 65536);
+    EQ_CHECK(constant && constant->find("maxConstantViewSize") != std::string::npos);
+}
+
+// Group counts (P106): 65,535 per dimension; mesh draws 2^22 in all.
+EQ_TEST(validation, group_counts) {
+    using RI::Validation::checkGroupCounts;
+    EQ_CHECK(!checkGroupCounts(65535, 65535, 1, false, "cmdDispatch"));
+    const RI::Validation::CheckResult wide = checkGroupCounts(65536, 1, 1, false, "cmdDispatch");
+    EQ_CHECK(wide && wide->find("cmdDispatch: 65536 x 1 x 1 groups") != std::string::npos);
+    EQ_CHECK(checkGroupCounts(1, 1, 65536, false, "cmdDispatch").has_value());
+    EQ_CHECK(!checkGroupCounts(2048, 2048, 1, true, "cmdDrawMesh"));
+    const RI::Validation::CheckResult mesh = checkGroupCounts(2048, 2048, 2, true, "cmdDrawMesh");
+    EQ_CHECK(mesh && mesh->find("kMaxMeshGroups") != std::string::npos);
+    EQ_CHECK(!checkGroupCounts(0, 0, 0, true, "cmdDrawMesh"));
+}
+
+// The device thread (P106): the same thread passes, another is named.
+EQ_TEST(validation, device_thread) {
+    const std::thread::id here = std::this_thread::get_id();
+    EQ_CHECK(!RI::Validation::checkDeviceThread(here, "cmdDispatch"));
+    RI::Validation::CheckResult other;
+    std::thread([&] { other = RI::Validation::checkDeviceThread(here, "cmdDispatch"); }).join();
+    EQ_CHECK(other && other->find("cmdDispatch: called from thread") != std::string::npos);
 }

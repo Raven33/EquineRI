@@ -8,6 +8,8 @@
 #include <RI/Textures.hpp>
 #include <types.hpp>
 
+#include <string_view>
+
 namespace RI {
 
 enum class WindowSystem : uint8 {
@@ -51,6 +53,7 @@ struct SwapchainDesc {
     // Compute writes to the screen texture (eStorage): only where
     // screenStorageSupported says so; never on D3D12 (P64 (5)).
     bool storage = false;
+    std::string_view name; // empty: unnamed (P106)
 };
 
 } // namespace RI

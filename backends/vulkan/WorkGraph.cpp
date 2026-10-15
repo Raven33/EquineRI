@@ -22,11 +22,26 @@ namespace {
 } // namespace
 
 WorkGraph createWorkGraph(Device &, const WorkGraphDesc &) { unsupported("createWorkGraph"); }
-void destroyWorkGraph(Device &, WorkGraph &) { unsupported("destroyWorkGraph"); }
+void destroyWorkGraph([[maybe_unused]] Device &device, WorkGraph &) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    unsupported("destroyWorkGraph");
+}
 uint32 workGraphEntry(const WorkGraph &, std::string_view, uint32) { unsupported("workGraphEntry"); }
-void bindWorkGraphMemory(Device &, WorkGraph &, const Buffer &, uint64, uint64) { unsupported("bindWorkGraphMemory"); }
-void cmdSetWorkGraph(CommandList &, const WorkGraph &) { unsupported("cmdSetWorkGraph"); }
-void cmdDispatchGraph(CommandList &, std::span<const GraphInput>) { unsupported("cmdDispatchGraph"); }
-void cmdDispatchGraphIndirect(CommandList &, uint64, bool) { unsupported("cmdDispatchGraphIndirect"); }
+void bindWorkGraphMemory([[maybe_unused]] Device &device, WorkGraph &, const Buffer &, uint64, uint64) {
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    unsupported("bindWorkGraphMemory");
+}
+void cmdSetWorkGraph([[maybe_unused]] CommandList &cmd, const WorkGraph &) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    unsupported("cmdSetWorkGraph");
+}
+void cmdDispatchGraph([[maybe_unused]] CommandList &cmd, std::span<const GraphInput>) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    unsupported("cmdDispatchGraph");
+}
+void cmdDispatchGraphIndirect([[maybe_unused]] CommandList &cmd, uint64, bool) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    unsupported("cmdDispatchGraphIndirect");
+}
 
 } // namespace RI::Vk

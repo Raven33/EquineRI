@@ -47,6 +47,12 @@ struct DispatchIndirectArgs { // also mesh draws: task (or mesh) groups
     uint32 z;
 };
 
+// Group counts, one rule on both backends (P106: D3D12's limits, which
+// Vulkan guarantees as minimums). Checked on cmdDispatch and cmdDrawMesh in
+// validation builds; indirect arguments must keep them too, unchecked.
+inline constexpr uint32 kMaxGroupsPerDimension = 65535;
+inline constexpr uint64 kMaxMeshGroups = uint64{1} << 22; // x * y * z of one mesh draw
+
 // Bytes from one indirect record to the next (P48): the arguments of `kind`,
 // preceded at Level 2 by `rootDataSize` bytes of root data (rounded up to 4).
 constexpr uint32 indirectStride(IndirectKind kind, uint32 rootDataSize = 0) {

@@ -1,6 +1,7 @@
 // Debugging on Vulkan (P53).
 //
-// Owns: setName for every object kind and cmdBeginMarker / cmdEndMarker
+// Owns: setName for every object kind, applyName (the names given at
+// creation, P106, and setName's) and cmdBeginMarker / cmdEndMarker
 // (VK_EXT_debug_utils, always on), and the device-lost path: checkQueueVk
 // reports VK_EXT_device_fault details in validation builds.
 //
@@ -27,10 +28,7 @@ void loadDebugFunctions(DeviceState &state) {
         vkGetInstanceProcAddr(state.instance, "vkCmdEndDebugUtilsLabelEXT"));
 }
 
-namespace {
-
-void nameObject(Device &device, VkObjectType type, uint64 handle, std::string_view name) {
-    const DeviceState &state = *device.internal.state;
+void nameNative(const DeviceState &state, VkObjectType type, uint64 handle, std::string_view name) {
     if (handle == 0 || state.setObjectName == nullptr) {
         return;
     }
@@ -42,37 +40,73 @@ void nameObject(Device &device, VkObjectType type, uint64 handle, std::string_vi
     checkVk(state.setObjectName(state.device, &info), "vkSetDebugUtilsObjectNameEXT");
 }
 
-} // namespace
+void applyName(const DeviceState &state, const Memory &memory, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_DEVICE_MEMORY, memory.internal.memory, name);
+}
+void applyName(const DeviceState &state, const Buffer &buffer, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_BUFFER, buffer.internal.buffer, name);
+}
+void applyName(const DeviceState &state, const Texture &texture, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_IMAGE, texture.internal.image, name);
+    nameNative(state, VK_OBJECT_TYPE_IMAGE_VIEW, texture.view.internal.view, name);
+}
+void applyName(const DeviceState &state, const TextureView &view, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_IMAGE_VIEW, view.internal.view, name);
+}
+void applyName(const DeviceState &state, const DescriptorHeap &heap, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_DESCRIPTOR_POOL, heap.internal.pool, name);
+    nameNative(state, VK_OBJECT_TYPE_DESCRIPTOR_SET, heap.internal.resourceSet, name);
+    nameNative(state, VK_OBJECT_TYPE_DESCRIPTOR_SET, heap.internal.samplerSet, name);
+}
+void applyName(const DeviceState &state, const QueryPool &pool, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_QUERY_POOL, pool.internal.pool, name);
+}
+void applyName(const DeviceState &state, const Pipeline &pipeline, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_PIPELINE, pipeline.internal.pipeline, name);
+}
+void applyName(const DeviceState &state, const CommandList &cmd, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_COMMAND_BUFFER, reinterpret_cast<uint64>(cmd.internal.commandBuffer), name);
+}
+void applyName(const DeviceState &state, const AccelerationStructure &structure, std::string_view name) {
+    nameNative(state, VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, structure.internal.handle, name);
+    nameNative(state, VK_OBJECT_TYPE_BUFFER, structure.internal.buffer, name);
+}
 
 void setName(Device &device, const Memory &memory, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_DEVICE_MEMORY, memory.internal.memory, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, memory, name);
 }
 void setName(Device &device, const Buffer &buffer, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_BUFFER, buffer.internal.buffer, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, buffer, name);
 }
 void setName(Device &device, const Texture &texture, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_IMAGE, texture.internal.image, name);
-    nameObject(device, VK_OBJECT_TYPE_IMAGE_VIEW, texture.view.internal.view, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, texture, name);
 }
 void setName(Device &device, const TextureView &view, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_IMAGE_VIEW, view.internal.view, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, view, name);
 }
 void setName(Device &device, const DescriptorHeap &heap, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_DESCRIPTOR_POOL, heap.internal.pool, name);
-    nameObject(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, heap.internal.resourceSet, name);
-    nameObject(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, heap.internal.samplerSet, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, heap, name);
 }
 void setName(Device &device, const QueryPool &pool, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_QUERY_POOL, pool.internal.pool, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, pool, name);
 }
 void setName(Device &device, const Pipeline &pipeline, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_PIPELINE, pipeline.internal.pipeline, name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, pipeline, name);
 }
 void setName(Device &device, const CommandList &cmd, std::string_view name) {
-    nameObject(device, VK_OBJECT_TYPE_COMMAND_BUFFER, reinterpret_cast<uint64>(cmd.internal.commandBuffer), name);
+    EQ_VK_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, cmd, name);
 }
 
 void cmdBeginMarker(CommandList &cmd, std::string_view name) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     const DeviceState &state = *cmd.internal.device;
     ++cmd.internal.markerDepth;
     if (state.beginLabel == nullptr) {
@@ -84,6 +118,7 @@ void cmdBeginMarker(CommandList &cmd, std::string_view name) {
 }
 
 void cmdEndMarker(CommandList &cmd) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkMarkerEnd(cmd.internal.markerDepth));
     --cmd.internal.markerDepth;
     const DeviceState &state = *cmd.internal.device;

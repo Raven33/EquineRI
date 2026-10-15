@@ -73,7 +73,8 @@ struct Memory {
 // With `forResource`, the memory suits that resource: Vulkan picks a native
 // type of `kind` the resource allows (some drivers allow only some types, e.g.
 // RADV for indirect scratch). Without it, the kind's default type.
-Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *forResource = nullptr);
+Memory allocateMemory(Device &device, MemoryKind kind, uint64 size, const MemoryRequirements *forResource = nullptr,
+                      std::string_view name = {});
 void freeMemory(Device &device, Memory &memory);
 
 MemoryRequirements bufferRequirements(Device &device, const BufferDesc &desc);
@@ -178,7 +179,7 @@ AccelerationStructureSizes tlasSizes(Device &device, const TlasDesc &desc);
 // Placement of a structure of `size` bytes: alignment and memory kinds.
 MemoryRequirements accelerationStructureRequirements(Device &device, uint64 size);
 AccelerationStructure createAccelerationStructure(Device &device, const Memory &memory, uint64 offset, uint64 size,
-                                                  bool topLevel);
+                                                  bool topLevel, std::string_view name = {});
 void destroyAccelerationStructure(Device &device, AccelerationStructure &structure);
 
 // ── Descriptors (P42, P59, P87, P94) ─────────────────────────────────────────
@@ -360,7 +361,7 @@ struct CommandList {
     } internal;
 };
 
-CommandList createCommandList(Device &device);
+CommandList createCommandList(Device &device, std::string_view name = {});
 void destroyCommandList(Device &device, CommandList &cmd);
 // Only once the list's last submission is reached (P56).
 void resetCommandList(CommandList &cmd);

@@ -177,6 +177,7 @@ void resolveInto(ID3D12GraphicsCommandList7 *l, const TextureView &src, const Te
 } // namespace
 
 void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     checkNotRendering(cmd, "cmdBeginRendering");
     if (desc.colors.size() > 8) {
@@ -271,6 +272,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
 }
 
 void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     checkNotRendering(cmd, "cmdBeginRendering");
     EQ_VALIDATE(Validation::checkRenderingSize(size));
     cmd.internal.colorCount = 0;
@@ -283,6 +285,7 @@ void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
 }
 
 void cmdEndRendering(CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     if (!cmd.internal.rendering) {
         reportError(ErrorCategory::eProgrammerError, "cmdEndRendering: no rendering section is open");
     }
@@ -316,9 +319,14 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.depthReadOnly = false;
 }
 
-void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) { list(cmd)->DispatchMesh(x, y, z); }
+void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, true, "cmdDrawMesh"));
+    list(cmd)->DispatchMesh(x, y, z);
+}
 
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkIndexBuffer((buffer.usage & BufferUsage::eIndex) != BufferUsage::eNone, offset,
                                              format == IndexFormat::eUint16 ? 2 : 4, buffer.size));
@@ -332,15 +340,18 @@ void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, In
 
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 vertexOffset,
                     uint32 firstInstance) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     list(cmd)->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     list(cmd)->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 // Discard (P69): contents and compression metadata reset, full scope.
 void cmdDiscard(CommandList &cmd, const TextureView &view) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     checkNotRendering(cmd, "cmdDiscard");
 #if EQUINE_VALIDATION
     Validation::markDiscarded(cmd.internal.device->placements, view.internal.textureId);
@@ -360,6 +371,7 @@ void cmdDiscard(CommandList &cmd, const TextureView &view) {
 // descriptors in RI's own shader-visible heap, then the user's heaps are set
 // again (the user's heap holds no RI slots).
 void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     checkNotRendering(cmd, "cmdClearTexture");
 #if EQUINE_VALIDATION
@@ -422,6 +434,7 @@ void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue
 }
 
 void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     checkNotRendering(cmd, "cmdClearBuffer");
     auto *resource = static_cast<ID3D12Resource *>(buffer.internal.resource);
@@ -453,6 +466,7 @@ void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
 // ── Native sections (P27, P70) ───────────────────────────────────────────────
 
 NativeCommands beginNative(CommandList &cmd) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     if (cmd.internal.native) {
         reportError(ErrorCategory::eProgrammerError, "beginNative: a native section is already open");
     }
@@ -461,6 +475,7 @@ NativeCommands beginNative(CommandList &cmd) {
 }
 
 void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     if (!cmd.internal.native) {
         reportError(ErrorCategory::eProgrammerError, "endNative: no native section is open");
     }
@@ -509,6 +524,7 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
 }
 
 void cmdSetStencilReference(CommandList &cmd, uint8 reference) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetStencilReference"));
     cmd.internal.stencilReference = reference;
     cmd.internal.stencilOverride = true;
@@ -516,6 +532,7 @@ void cmdSetStencilReference(CommandList &cmd, uint8 reference) {
 }
 
 void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetViewport"));
     EQ_VALIDATE(Validation::checkViewport(viewport));
     cmd.internal.viewport = viewport;
@@ -523,6 +540,7 @@ void cmdSetViewport(CommandList &cmd, const Viewport &viewport) {
 }
 
 void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, true, "cmdSetScissor"));
     EQ_VALIDATE(Validation::checkScissor(scissor));
     cmd.internal.scissor = scissor;
@@ -532,6 +550,7 @@ void cmdSetScissor(CommandList &cmd, const Rect &scissor) {
 // ── Resolve (P52, P76) ───────────────────────────────────────────────────────
 
 void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst, ResolveMode mode) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     checkNotRendering(cmd, "cmdResolve");
     EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
@@ -564,6 +583,7 @@ ID3D12QueryHeap *heapOf(const QueryPool &pool) { return static_cast<ID3D12QueryH
 } // namespace
 
 void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type == QueryType::eTimestamp, "cmdWriteTimestamp"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdWriteTimestamp: the query"));
@@ -571,6 +591,7 @@ void cmdWriteTimestamp(CommandList &cmd, const QueryPool &pool, uint32 index) {
 }
 
 void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdBeginQuery"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdBeginQuery: the query"));
@@ -578,6 +599,7 @@ void cmdBeginQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
 }
 
 void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_VALIDATE(Validation::checkQueryKind(pool.type != QueryType::eTimestamp, "cmdEndQuery"));
     EQ_VALIDATE(Validation::checkRange(index, 1, pool.count, 1, "cmdEndQuery: the query"));
@@ -585,10 +607,13 @@ void cmdEndQuery(CommandList &cmd, const QueryPool &pool, uint32 index) {
 }
 
 // D3D12 query heaps need no reset (P71 (1)).
-void cmdResetQueries(CommandList &, const QueryPool &, uint32, uint32) {}
+void cmdResetQueries([[maybe_unused]] CommandList &cmd, const QueryPool &, uint32, uint32) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
+}
 
 void cmdResolveQueries(CommandList &cmd, const QueryPool &pool, uint32 first, uint32 count, const Buffer &buffer,
                        uint64 offset) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_DX_CHECK_ALIVE(cmd.internal.device, pool.internal.id, "query pool");
     EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdResolveQueries"));
@@ -697,6 +722,7 @@ CopyLayout copyLayout(Device & /*device*/, const TextureView &view) {
 // Textures with copy usage rest in DIRECT_QUEUE_COMMON (L1), which allows
 // copies: no layout switch.
 void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.id, "buffer");
     EQ_DX_CHECK_ALIVE(&state, dst.internal.textureId, "texture");
@@ -719,6 +745,7 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
 }
 
 void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_DX_CHECK_ALIVE(&state, dst.internal.id, "buffer");
@@ -740,6 +767,7 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
 }
 
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_DX_CHECK_ALIVE(&state, dst.internal.textureId, "texture");

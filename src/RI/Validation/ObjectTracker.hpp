@@ -6,10 +6,13 @@
 // device's tracker holds the ids still alive. Copies share the id, so destroying
 // any copy makes all of them dead. Ids come from one process-wide counter, so
 // they never repeat across devices and an object from another device is caught.
+// The tracker is locked: objects of the any-thread list (P106) are created on
+// other threads while the device thread checks liveness.
 
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
 
+#include <shared_mutex>
 #include <string_view>
 #include <unordered_set>
 
@@ -17,6 +20,7 @@ namespace RI::Validation {
 
 struct ObjectTracker {
     std::unordered_set<uint64> live; // id 0 is never handed out: a default-constructed object is never alive
+    mutable std::shared_mutex mutex;
 };
 
 // Registers a newly created object and returns its id.

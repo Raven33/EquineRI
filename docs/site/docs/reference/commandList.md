@@ -83,8 +83,10 @@ Recording it again after its point is reached:
   still be executing: wait for its timeline point (value 3) first; the queue has reached 2`.
 - A recorded list is submitted **once**; there is no resubmission in this version
   ([P63](../design-notes/decisions.md#p63)).
-- Record from one thread; RI objects are not thread-safe in this version
-  ([P56](../design-notes/decisions.md#p56)).
+- Record on the [device thread](../concepts/threads.md), the one that called `createDevice`;
+  RI objects are not thread-safe ([P56](../design-notes/decisions.md#p56),
+  [P106](../design-notes/decisions.md#p106)). A recording call from another thread is a
+  **programmer error** in validation builds.
 - `cmdBegin` also clears the list's state (heap, pipeline): set them again in each recording.
 - `destroyCommandList` resets the struct.
 
