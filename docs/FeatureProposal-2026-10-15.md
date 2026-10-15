@@ -145,7 +145,8 @@ neither. Shaders are compiled with the `hs_6_6`, `ds_6_6` and `gs_6_6` profiles.
 
 - `hull` and `domain` come together, with `Topology::ePatchList` and a
   `patchControlPoints` from 1 to 32.
-- Root data must agree across every stage, as today.
+- Root data is unchanged: one block for the whole pipeline, which every stage sees (P44). As
+  today, the only check is that every stage reading root data declares the same size.
 - The values the pixel shader reads are checked against the last stage before it (P101):
   the geometry shader, else the domain shader, else the vertex shader.
 - `PipelineStatisticsLayout` gains the counters of the new stages (geometry invocations and
