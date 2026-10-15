@@ -1,0 +1,189 @@
+[0/2] Re-checking globbed directories...
+[1/163] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Textures.cpp.obj
+[2/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\WorkGraph.cpp.obj
+[3/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Indirect.cpp.obj
+[4/163] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Validation\ObjectTracker.cpp.obj
+[5/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Debug.cpp.obj
+[6/163] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Validation\Checks.cpp.obj
+[7/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\RayTracing.cpp.obj
+[8/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Textures.cpp.obj
+[9/163] Building CXX object CMakeFiles\EquineRI.dir\src\RI\Reflection\Dxil.cpp.obj
+[10/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Pipeline.cpp.obj
+[11/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Instance.cpp.obj
+[12/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Commands.cpp.obj
+[13/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Swapchain.cpp.obj
+[14/163] Linking CXX static library EquineRI.lib
+[15/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Device.cpp.obj
+[16/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Device.cpp.obj
+[17/163] Building CXX object backends\vulkan\CMakeFiles\EquineVulkanBackend.dir\Resources.cpp.obj
+[18/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Debug.cpp.obj
+[19/163] Linking CXX static library backends\vulkan\EquineVulkanBackend.lib
+[20/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Formats.cpp.obj
+[21/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Indirect.cpp.obj
+[22/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Adapter.cpp.obj
+[23/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Transfers.cpp.obj
+[24/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Profiler.cpp.obj
+[25/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\FrameRing.cpp.obj
+[26/163] Building CXX object helpers\CMakeFiles\EquineGlfwWindow.dir\glfw\GlfwWindow.cpp.obj
+[27/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Statistics.cpp.obj
+[28/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\MemoryAllocator.cpp.obj
+[29/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Swapchain.cpp.obj
+[30/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Commands.cpp.obj
+[31/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\RayTracing.cpp.obj
+[32/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\SlotAllocator.cpp.obj
+[33/163] Compiling bench_post_vs (vs_6_6) to SPIR-V and DXIL
+[34/163] Compiling bench_vs (vs_6_6) to SPIR-V and DXIL
+[35/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Transfers.cpp.obj
+[36/163] Compiling compute_readback (cs_6_6) to SPIR-V and DXIL
+[37/163] Compiling bench_ps (ps_6_6) to SPIR-V and DXIL
+[38/163] Compiling bench_post_ps (ps_6_6) to SPIR-V and DXIL
+[39/163] Compiling bench_ps1 (ps_6_6) to SPIR-V and DXIL
+[40/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\MemoryAllocator.cpp.obj
+[41/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\FrameRing.cpp.obj
+[42/163] Compiling bench_read (cs_6_6) to SPIR-V and DXIL
+[43/163] Compiling bench_light (cs_6_6) to SPIR-V and DXIL
+[44/163] Compiling bench_write (cs_6_6) to SPIR-V and DXIL
+[45/163] Compiling bench_hiz (cs_6_6) to SPIR-V and DXIL
+[46/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Resources.cpp.obj
+[47/163] Compiling stat_as (as_6_6) to SPIR-V and DXIL
+[48/163] Compiling stat_ms (ms_6_6) to SPIR-V and DXIL
+[49/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Profiler.cpp.obj
+[50/163] Compiling stat_ps (ps_6_6) to SPIR-V and DXIL
+[51/163] Compiling read_texture (cs_6_6) to SPIR-V and DXIL
+[52/163] Compiling stat_cs (cs_6_6) to SPIR-V and DXIL
+[53/163] Compiling fill (cs_6_6) to SPIR-V and DXIL
+[54/163] Compiling write_storage (cs_6_6) to SPIR-V and DXIL
+[55/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\Grid.cpp.obj
+[56/163] Compiling sample_cube (cs_6_6) to SPIR-V and DXIL
+[57/163] Compiling sample_texture (cs_6_6) to SPIR-V and DXIL
+[58/163] Compiling read_volume (cs_6_6) to SPIR-V and DXIL
+[59/163] Compiling write_faces (cs_6_6) to SPIR-V and DXIL
+[60/163] Compiling ray_query (cs_6_6) to SPIR-V and DXIL
+[61/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Statistics.cpp.obj
+[62/163] Compiling fullscreen_vs (vs_6_6) to SPIR-V and DXIL
+[63/163] Compiling grid_count (cs_6_6) to SPIR-V and DXIL
+[64/163] Compiling atomic64 (cs_6_6) to SPIR-V and DXIL
+[65/163] Compiling link_vs (vs_6_6) to SPIR-V and DXIL
+[66/163] Compiling lines_vs (vs_6_6) to SPIR-V and DXIL
+[67/163] Compiling point_vs (vs_6_6) to SPIR-V and DXIL
+[68/163] Compiling triangle_vs (vs_6_6) to SPIR-V and DXIL
+[69/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Pipeline.cpp.obj
+[70/163] Compiling storage_raster_vs (vs_6_6) to SPIR-V and DXIL
+[71/163] Compiling patch_vs (vs_6_6) to SPIR-V and DXIL
+[72/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Textures.cpp.obj
+[73/163] Compiling solid_ps (ps_6_6) to SPIR-V and DXIL
+[74/163] Compiling link_ps (ps_6_6) to SPIR-V and DXIL
+[75/163] Compiling color_ps (ps_6_6) to SPIR-V and DXIL
+[76/163] Compiling link_skip_ps (ps_6_6) to SPIR-V and DXIL
+[77/163] Compiling storage_raster_ps (ps_6_6) to SPIR-V and DXIL
+[78/163] Compiling layered_gs (gs_6_6) to SPIR-V and DXIL
+[79/163] Compiling fullscreen_gs (gs_6_6) to SPIR-V and DXIL
+[80/163] Building CXX object backends\d3d12\CMakeFiles\EquineD3D12Backend.dir\Rendering.cpp.obj
+[81/163] Compiling patch_hs (hs_6_6) to SPIR-V and DXIL
+[82/163] Compiling fullscreen_ms (ms_6_6) to SPIR-V and DXIL
+[83/163] Compiling fullscreen_payload_ms (ms_6_6) to SPIR-V and DXIL
+[84/163] Compiling patch_ds (ds_6_6) to SPIR-V and DXIL
+[85/163] Compiling printf (cs_6_6) to SPIR-V and DXIL
+[86/163] Compiling fullscreen_as (as_6_6) to SPIR-V and DXIL
+[87/163] Compiling root4 (cs_6_6) to SPIR-V and DXIL
+[88/163] Compiling work_graph (lib_6_8) to DXIL
+[89/163] Compiling root64 (cs_6_6) to SPIR-V and DXIL
+[90/163] Linking CXX static library helpers\EquineGlfwWindow.lib
+[91/163] Compiling root_arrays (cs_6_6) to SPIR-V and DXIL
+[92/163] Compiling declared (cs_6_6) to SPIR-V and DXIL
+[93/163] Linking CXX static library backends\d3d12\EquineD3D12Backend.lib
+[94/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\SlotAllocator.cpp.obj
+[95/163] Compiling misuse_b1 (cs_6_6) to SPIR-V and DXIL
+[96/163] Compiling sampler_heap (cs_6_6) to SPIR-V and DXIL
+[97/163] Compiling misuse_extra (cs_6_6) to SPIR-V and DXIL
+[98/163] Compiling doc_compute (cs_6_6) to SPIR-V and DXIL
+[99/163] Compiling doc_triangle_vs (vs_6_6) to SPIR-V and DXIL
+[100/163] Compiling doc_triangle_ps (ps_6_6) to SPIR-V and DXIL
+[101/163] Building CXX object helpers\CMakeFiles\EquineHelpersVulkan.dir\core\ShaderCompiler.cpp.obj
+[102/163] Linking CXX static library helpers\EquineHelpersVulkan.lib
+[103/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\Grid.cpp.obj
+[104/163] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_Vulkan.dir\QueriesVulkan.cpp.obj
+[105/163] Building CXX object helpers\CMakeFiles\EquineHelpersD3D12.dir\core\ShaderCompiler.cpp.obj
+[106/163] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_Vulkan.dir\BaselineVulkan.cpp.obj
+[107/163] Linking CXX static library helpers\EquineHelpersD3D12.lib
+[108/163] Building CXX object samples\CMakeFiles\compute_readback_Vulkan.dir\compute_readback\main.cpp.obj
+[109/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\ComputeTests.cpp.obj
+[110/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\SwapchainTests.cpp.obj
+[111/163] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_Vulkan.dir\main.cpp.obj
+C:\Users\Arthu\Documents\GitHub\EquineNext\tools\statistics_bench\main.cpp(294,53): warning: 'fopen' is deprecated: This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details. [-Wdeprecated-declarations]
+  294 |     std::FILE *csv = o.out.empty() ? nullptr : std::fopen(o.out.c_str(), "w");
+      |                                                     ^
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\stdio.h(212,20): note: 'fopen' has been explicitly marked deprecated here
+  212 |     _Check_return_ _CRT_INSECURE_DEPRECATE(fopen_s)
+      |                    ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(368,55): note: expanded from macro '_CRT_INSECURE_DEPRECATE'
+  368 |         #define _CRT_INSECURE_DEPRECATE(_Replacement) _CRT_DEPRECATE_TEXT(    \
+      |                                                       ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(358,47): note: expanded from macro '_CRT_DEPRECATE_TEXT'
+  358 | #define _CRT_DEPRECATE_TEXT(_Text) __declspec(deprecated(_Text))
+      |                                               ^
+1 warning generated.
+[112/163] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_D3D12.dir\QueriesD3D12.cpp.obj
+[113/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\RayTracingTests.cpp.obj
+[114/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\vulkan\DeviceTests.cpp.obj
+[115/163] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_D3D12.dir\BaselineD3D12.cpp.obj
+[116/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\HelperTests.cpp.obj
+[117/163] Building CXX object samples\CMakeFiles\compute_readback_D3D12.dir\compute_readback\main.cpp.obj
+[118/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\TextureTests.cpp.obj
+[119/163] Building CXX object tests\CMakeFiles\EquineRIVulkanTests.dir\gpu\ThreadTests.cpp.obj
+[120/163] Building CXX object tools\statistics_bench\CMakeFiles\statistics_bench_D3D12.dir\main.cpp.obj
+C:\Users\Arthu\Documents\GitHub\EquineNext\tools\statistics_bench\main.cpp(294,53): warning: 'fopen' is deprecated: This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details. [-Wdeprecated-declarations]
+  294 |     std::FILE *csv = o.out.empty() ? nullptr : std::fopen(o.out.c_str(), "w");
+      |                                                     ^
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\stdio.h(212,20): note: 'fopen' has been explicitly marked deprecated here
+  212 |     _Check_return_ _CRT_INSECURE_DEPRECATE(fopen_s)
+      |                    ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(368,55): note: expanded from macro '_CRT_INSECURE_DEPRECATE'
+  368 |         #define _CRT_INSECURE_DEPRECATE(_Replacement) _CRT_DEPRECATE_TEXT(    \
+      |                                                       ^
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\vcruntime.h(358,47): note: expanded from macro '_CRT_DEPRECATE_TEXT'
+  358 | #define _CRT_DEPRECATE_TEXT(_Text) __declspec(deprecated(_Text))
+      |                                               ^
+1 warning generated.
+[121/163] Linking CXX executable tools\statistics_bench\statistics_bench_Vulkan.exe; Copying clang AddressSanitizer DLL to statistics_bench_Vulkan output directory
+[122/163] Linking CXX executable samples\compute_readback_Vulkan.exe; Copying clang AddressSanitizer DLL to compute_readback_Vulkan output directory
+[123/163] Linking CXX executable samples\compute_readback_D3D12.exe; Copying clang AddressSanitizer DLL to compute_readback_D3D12 output directory; Copying the D3D12 Agility SDK runtime to compute_readback_D3D12's output directory
+[124/163] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_Vulkan.dir\main.cpp.obj
+[125/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\ComputeTests.cpp.obj
+[126/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\SwapchainTests.cpp.obj
+[127/163] Building CXX object tests\CMakeFiles\EquineRITests.dir\ValidationTests.cpp.obj
+[128/163] Building CXX object tests\CMakeFiles\EquineRITests.dir\DxilTests.cpp.obj
+[129/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\RayTracingTests.cpp.obj
+[130/163] Linking CXX executable tools\statistics_bench\statistics_bench_D3D12.exe; Copying clang AddressSanitizer DLL to statistics_bench_D3D12 output directory; Copying the D3D12 Agility SDK runtime to statistics_bench_D3D12's output directory
+[131/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsVulkan.dir\vulkan\native-device.cpp.obj
+[132/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\HelperTests.cpp.obj
+[133/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\ThreadTests.cpp.obj
+[134/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\gpu\TextureTests.cpp.obj
+[135/163] Linking CXX executable tools\layout_bench\layout_bench_Vulkan.exe; Copying clang AddressSanitizer DLL to layout_bench_Vulkan output directory
+[136/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\copies.cpp.obj
+[137/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\debugging.cpp.obj
+[138/163] Building CXX object tests\CMakeFiles\EquineRID3D12Tests.dir\d3d12\DeviceTests.cpp.obj
+[139/163] Building CXX object tools\layout_bench\CMakeFiles\layout_bench_D3D12.dir\main.cpp.obj
+[140/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsD3D12.dir\d3d12\native-device.cpp.obj
+[141/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\compute.cpp.obj
+[142/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\device.cpp.obj
+[143/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\errors.cpp.obj
+[144/163] Linking CXX executable tools\layout_bench\layout_bench_D3D12.exe; Copying clang AddressSanitizer DLL to layout_bench_D3D12 output directory; Copying the D3D12 Agility SDK runtime to layout_bench_D3D12's output directory
+[145/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\helpers.cpp.obj
+[146/163] Linking CXX executable tests\EquineRITests.exe; Copying clang AddressSanitizer DLL to EquineRITests output directory
+[147/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\native-access.cpp.obj
+[148/163] Linking CXX executable tests\EquineRIVulkanTests.exe; Copying clang AddressSanitizer DLL to EquineRIVulkanTests output directory
+[149/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\debugging.cpp.obj
+[150/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\swapchain.cpp.obj
+[151/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\copies.cpp.obj
+[152/163] Linking CXX executable tests\EquineRID3D12Tests.exe; Copying clang AddressSanitizer DLL to EquineRID3D12Tests output directory; Copying the D3D12 Agility SDK runtime to EquineRID3D12Tests's output directory
+[153/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\errors.cpp.obj
+[154/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\device.cpp.obj
+[155/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\helpers.cpp.obj
+[156/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\compute.cpp.obj
+[157/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRIVulkan.dir\ri\textures.cpp.obj
+[158/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\swapchain.cpp.obj
+[159/163] Building CXX object tests\CMakeFiles\EquineConformanceVulkan.dir\conformance\Conformance.cpp.obj
+[160/163] Building CXX object tests\CMakeFiles\EquineConformanceD3D12.dir\conformance\Conformance.cpp.obj
+[161/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\textures.cpp.obj
+[162/163] Building CXX object docs\site\snippets\CMakeFiles\EquineDocSnippetsRID3D12.dir\ri\native-access.cpp.obj
