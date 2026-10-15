@@ -303,6 +303,38 @@ EQ_TEST(compute, names_and_markers) {
     RI::destroyDevice(device);
 }
 
+// A buffer larger than one D3D12 view (512 MiB raw, P106) is cleared to its end.
+EQ_TEST(compute, clear_large_buffer) {
+    RI::Device device = createTestDevice();
+    constexpr uint64 kSize = (RI::kMaxBufferViewElements * 4) + (1 << 20);
+    const RI::BufferDesc desc{.size = kSize, .usage = RI::BufferUsage::eCopyDst | RI::BufferUsage::eCopySrc};
+    const RI::MemoryRequirements req = RI::bufferRequirements(device, desc);
+    RI::Memory gpuMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, req.size);
+    RI::Memory readbackMemory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 16);
+    RI::Buffer buffer = RI::createBuffer(device, gpuMemory, 0, desc);
+    RI::Buffer result = RI::createBuffer(device, readbackMemory, 0, {.size = 8, .usage = RI::BufferUsage::eCopyDst});
+
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdClearBuffer(cmd, buffer, 0x12345678u);
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(cmd, buffer, 0, result, 0, 4);
+    RI::cmdCopyBuffer(cmd, buffer, kSize - 4, result, 4, 4);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+
+    const auto *out = static_cast<const uint32 *>(result.mapped);
+    EQ_CHECK(out[0] == 0x12345678u);
+    EQ_CHECK(out[1] == 0x12345678u);
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyBuffer(device, buffer);
+    RI::destroyBuffer(device, result);
+    RI::freeMemory(device, gpuMemory);
+    RI::freeMemory(device, readbackMemory);
+    RI::destroyDevice(device);
+}
+
 // Names given at creation (P106): every kind with a desc or a name parameter.
 EQ_TEST(compute, names_at_creation) {
     RI::Device device = createTestDevice();

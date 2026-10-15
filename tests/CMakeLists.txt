@@ -137,6 +137,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     helpers.frame_ring_and_profiler
     helpers.shader_compiler
     helpers.group_grid
+    compute.clear_large_buffer
     compute.names_at_creation
     threads.pipelines_on_other_threads
     texture.unlisted_view_format_reports
