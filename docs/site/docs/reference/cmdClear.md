@@ -11,8 +11,10 @@ Clears outside rendering sections ([P65](../design-notes/decisions.md#p65)):
 - `RI::cmdClearTexture(cmd, view, value)` sets every texel of `view` to `value`: `value.color`
   for color textures (whole numbers for integer formats), `value.depth` and `value.stencil` for
   depth textures;
-- `RI::cmdClearBuffer(cmd, buffer, value)` sets every 32-bit word of the whole buffer to
-  `value` (a bit pattern: `0x3f800000` is `1.0f`).
+- `RI::cmdClearBuffer(cmd, buffer, value, offset, size)` sets every 32-bit word of a range of
+  the buffer to `value` (a bit pattern: `0x3f800000` is `1.0f`). Without `offset` and `size`,
+  the whole buffer; `size = kWholeSize` clears from `offset` to the end
+  ([P107](../design-notes/decisions.md#p107)).
 
 To clear an attachment at the start of a rendering section, use its load operation
 (`LoadOp::eClear`) instead: it is free or nearly so.
@@ -67,12 +69,13 @@ For barriers, **clears count as copies**: follow a clear with
 
 - **Vulkan**: the native clear commands, in place for textures resting in `GENERAL`, otherwise
   inside a switch to `TRANSFER_DST_OPTIMAL` and back ([P68](../design-notes/decisions.md#p68));
-  `vkCmdFillBuffer` for buffers.
+  `vkCmdFillBuffer` with the range for buffers.
 - **D3D12**: render targets and depth textures are cleared inside a switch to their attachment
   layout. Storage textures and buffers use an unordered-access clear with descriptors in **RI's
   own small heap**: RI sets that heap for the clear, then sets your heaps (and root signatures)
-  again, so your next commands see your heap and no slot of yours is used. A buffer larger than
-  one view (512 MiB, `kMaxBufferViewElements` words) is cleared in pieces.
+  again, so your next commands see your heap and no slot of yours is used. Buffers are cleared
+  through typed `R32_UINT` views, which may start at any multiple of 4 (a raw view needs 16); a
+  range larger than one view (512 MiB, `kMaxBufferViewElements` words) is cleared in pieces.
 
 ## Rules and errors
 
@@ -80,8 +83,9 @@ For barriers, **clears count as copies**: follow a clear with
   D3D12, another texture is a **programmer error**; on Vulkan, the validation layer reports it.
 - `cmdClearBuffer`: the buffer needs `BufferUsage::eCopyDst` (**programmer error**). On D3D12 it
   must also be in `eGPU` or `eGPUUpload` memory (`eUpload` and `eReadback` heaps forbid the
-  unordered access the clear uses): **programmer error** otherwise. The whole buffer is
-  cleared.
+  unordered access the clear uses): **programmer error** otherwise.
+- `cmdClearBuffer`'s `offset` and `size` are multiples of 4, the range is not empty and fits in
+  the buffer (validation builds, **programmer error**).
 - Not inside a rendering section (**programmer error**).
 - A texture over memory another resource used must be [discarded](cmdDiscard.md) before it is
   cleared (validation builds report it).
@@ -95,3 +99,4 @@ For barriers, **clears count as copies**: follow a clear with
 - [P68](../design-notes/decisions.md#p68): RI's layout switches around its own operations.
 - [P40](../design-notes/decisions.md#p40): clears at the start of a section are load
   operations.
+- [P107](../design-notes/decisions.md#p107): buffer clears take a range.

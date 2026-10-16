@@ -526,4 +526,16 @@ CheckResult checkSmallWrite(bool hasUsage, uint64 offset, uint64 size, uint64 bu
     return checkRange(offset, size, bufferSize, 4, "cmdWriteSmallData");
 }
 
+CheckResult checkClearRange(uint64 offset, uint64 size, uint64 bufferSize) {
+    if (offset >= bufferSize) {
+        return std::format("cmdClearBuffer: offset {} is not inside the buffer ({} bytes)", offset, bufferSize);
+    }
+    const uint64 resolved = size == kWholeSize ? bufferSize - offset : size;
+    if (offset % 4 != 0 || (size != kWholeSize && size % 4 != 0) || resolved == 0) {
+        return std::format("cmdClearBuffer: offset {} and size {} must be multiples of 4, and the size non-zero",
+                           offset, resolved);
+    }
+    return checkRange(offset, resolved, bufferSize, 4, "cmdClearBuffer");
+}
+
 } // namespace RI::Validation

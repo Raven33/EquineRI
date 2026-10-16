@@ -766,14 +766,15 @@ void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue
     }
 }
 
-void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value) {
+void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value, uint64 offset, uint64 size) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdClearBuffer"));
     if ((buffer.usage & BufferUsage::eCopyDst) == BufferUsage::eNone) {
         reportError(ErrorCategory::eProgrammerError, "cmdClearBuffer: the buffer needs BufferUsage::eCopyDst");
     }
-    fn(cmd).vkCmdFillBuffer(native(cmd), native(buffer), 0, VK_WHOLE_SIZE, value);
+    EQ_VALIDATE(Validation::checkClearRange(offset, size, buffer.size));
+    fn(cmd).vkCmdFillBuffer(native(cmd), native(buffer), offset, size == kWholeSize ? VK_WHOLE_SIZE : size, value);
 }
 
 void cmdWriteSmallData(CommandList &cmd, const Buffer &buffer, uint64 offset, std::span<const std::byte> data) {

@@ -141,7 +141,7 @@ EQ_SIGNATURE(cmdEndRendering, void (*)(RI::CommandList &));
 EQ_SIGNATURE(cmdDraw, void (*)(RI::CommandList &, uint32, uint32, uint32, uint32));
 EQ_SIGNATURE(cmdDiscard, void (*)(RI::CommandList &, const RI::TextureView &));
 EQ_SIGNATURE(cmdClearTexture, void (*)(RI::CommandList &, const RI::TextureView &, const RI::ClearValue &));
-EQ_SIGNATURE(cmdClearBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint32));
+EQ_SIGNATURE(cmdClearBuffer, void (*)(RI::CommandList &, const RI::Buffer &, uint32, uint64, uint64));
 EQ_SIGNATURE(cmdWriteSmallData, void (*)(RI::CommandList &, const RI::Buffer &, uint64, std::span<const std::byte>));
 EQ_SIGNATURE(cmdWriteTimestamp, void (*)(RI::CommandList &, const RI::QueryPool &, uint32));
 EQ_SIGNATURE(cmdResetQueries, void (*)(RI::CommandList &, const RI::QueryPool &, uint32, uint32));
