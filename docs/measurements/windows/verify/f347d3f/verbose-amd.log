@@ -1,0 +1,98 @@
+UpdateCTestConfiguration  from :C:/Users/Arthu/Documents/GitHub/EquineNext/DartConfiguration.tcl
+Test project C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 23
+    Start  23: ri.validation.clear_range
+
+23: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRITests.exe "validation.clear_range"
+23: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+23: Test timeout computed to be: 180
+23: [PASS] validation.clear_range
+1/5 Test  #23: ri.validation.clear_range ..........   Passed    0.01 sec
+test 108
+    Start 108: vk.compute.clear_large_buffer
+
+108: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "compute.clear_large_buffer"
+108: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+108: Environment variables: 
+108:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+108: Test timeout computed to be: 120
+108: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+108: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+108: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+108: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+108: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+108: 
+108: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+108: 
+108: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+108: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+108: 
+108: [EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+108: 	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+108: 
+108: [PASS] compute.clear_large_buffer
+2/5 Test #108: vk.compute.clear_large_buffer ......   Passed    0.40 sec
+test 110
+    Start 110: vk.compute.clear_buffer_range
+
+110: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRIVulkanTests.exe "compute.clear_buffer_range"
+110: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+110: Environment variables: 
+110:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+110: Test timeout computed to be: 120
+110: [EquineRI] Vulkan error: loader_get_json: Failed to open JSON file C:\Program Files\NVIDIA Corporation\Nsight Systems 2024.1.1\target-windows-x64\vulkan-layers\VkLayer_nsight-sys_windows.json
+110: [EquineRI] Vulkan warning: Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+110: [EquineRI] Vulkan warning: Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application specified API version of 1.4. May cause issues.
+110: [EquineRI] Vulkan warning: vkCreateInstance(): Information with the layer settings provided:
+110: - Both GPU Assisted Validation and Normal Core Check Validation are enabled, this is not recommended as it will be very slow. Once all errors in Core Check are solved, please disable it (validate_core), then only use GPU-AV for best performance.
+110: 
+110: - The debug callback is already logging to stdout, but printf_to_stdout is also enabled. DebugPrintf will skip the debug callback in favor of a direct stdout write.
+110: 
+110: [EquineRI] Vulkan warning: vkGetPhysicalDeviceProperties2(): Warning that validation is adjusting settings:
+110: 	Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 4194304
+110: 
+110: [EquineRI] Vulkan warning: vkCreateDevice(): Warning that validation is adjusting settings:
+110: 	Mesh Shading validation option was enabled, but the meshShader feature is not supported. [Disabling gpuav_mesh_shading]
+110: 
+110: [PASS] compute.clear_buffer_range
+3/5 Test #110: vk.compute.clear_buffer_range ......   Passed    0.28 sec
+test 188
+    Start 188: d3d12.compute.clear_large_buffer
+
+188: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "compute.clear_large_buffer"
+188: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+188: Environment variables: 
+188:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+188: Test timeout computed to be: 120
+188: [PASS] compute.clear_large_buffer
+4/5 Test #188: d3d12.compute.clear_large_buffer ...   Passed    0.73 sec
+test 190
+    Start 190: d3d12.compute.clear_buffer_range
+
+190: Test command: C:\Users\Arthu\Documents\GitHub\EquineNext\build\clangcl-debug\tests\EquineRID3D12Tests.exe "compute.clear_buffer_range"
+190: Working Directory: C:/Users/Arthu/Documents/GitHub/EquineNext/build/clangcl-debug/tests
+190: Environment variables: 
+190:  LSAN_OPTIONS=suppressions=C:/Users/Arthu/Documents/GitHub/EquineNext/tests/vulkan/lsan.supp:print_suppressions=0
+190: Test timeout computed to be: 120
+190: [PASS] compute.clear_buffer_range
+5/5 Test #190: d3d12.compute.clear_buffer_range ...   Passed    0.62 sec
+
+The following tests passed:
+	ri.validation.clear_range
+	vk.compute.clear_large_buffer
+	vk.compute.clear_buffer_range
+	d3d12.compute.clear_large_buffer
+	d3d12.compute.clear_buffer_range
+
+100% tests passed, 0 tests failed out of 5
+
+Label Time Summary:
+gpu    =   2.02 sec*proc (4 tests)
+
+Total Test time (real) =   2.05 sec
