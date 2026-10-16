@@ -209,4 +209,8 @@ CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view cal
 // inside the buffer.
 CheckResult checkSmallWrite(bool hasUsage, uint64 offset, uint64 size, uint64 bufferSize);
 
+// cmdClearBuffer's range (P107): `offset` and `size` multiples of 4 (`size`
+// may be kWholeSize, to the end of the buffer), non-empty, inside the buffer.
+CheckResult checkClearRange(uint64 offset, uint64 size, uint64 bufferSize);
+
 } // namespace RI::Validation

@@ -460,7 +460,8 @@ void cmdDiscard(CommandList &cmd, const TextureView &view);
 // Clears outside rendering sections (P65); they count as Stage::eCopy. Buffers
 // need eCopyDst.
 void cmdClearTexture(CommandList &cmd, const TextureView &view, const ClearValue &value);
-void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value);
+// `offset` and `size` are multiples of 4 (P107); kWholeSize clears to the end.
+void cmdClearBuffer(CommandList &cmd, const Buffer &buffer, uint32 value, uint64 offset = 0, uint64 size = kWholeSize);
 // A few values only (counters, flags, indices), recorded into the command list
 // itself; larger data goes through an upload buffer and cmdCopyBuffer (P107).
 // `offset` and data.size() are multiples of 4, data.size() at most

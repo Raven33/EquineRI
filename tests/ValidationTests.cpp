@@ -285,6 +285,20 @@ EQ_TEST(validation, small_write) {
     EQ_CHECK(checkSmallWrite(true, 64, 4, 64).has_value());
 }
 
+// A clear's range (P107): multiples of 4, inside the buffer; kWholeSize to the end.
+EQ_TEST(validation, clear_range) {
+    using RI::Validation::checkClearRange;
+    EQ_CHECK(!checkClearRange(0, RI::kWholeSize, 64));
+    EQ_CHECK(!checkClearRange(4, 8, 64));
+    EQ_CHECK(!checkClearRange(48, RI::kWholeSize, 64));
+    EQ_CHECK(checkClearRange(2, 8, 64).has_value());
+    EQ_CHECK(checkClearRange(4, 6, 64).has_value());
+    EQ_CHECK(checkClearRange(60, 8, 64).has_value());
+    EQ_CHECK(checkClearRange(68, RI::kWholeSize, 64).has_value());
+    EQ_CHECK(checkClearRange(64, RI::kWholeSize, 64).has_value());
+    EQ_CHECK(checkClearRange(0, 0, 64).has_value());
+}
+
 // The device thread (P106): the same thread passes, another is named.
 EQ_TEST(validation, device_thread) {
     const std::thread::id here = std::this_thread::get_id();

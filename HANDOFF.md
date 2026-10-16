@@ -36,7 +36,7 @@ Open, in order:
 0c. **Small writes and typed values in helpers** (P107, from the DX12 sandbox re-review,
    2026-10-16). **Implemented, verified on Linux only** (128/128, release clean); the D3D12 code
    is not compiled yet. `cmdWriteSmallData` (at most 64 bytes, `vkCmdUpdateBuffer` /
-   `WriteBufferImmediate`); `cmdSetRootData` now takes `std::span<const std::byte>`; the typed
+   `WriteBufferImmediate`); `cmdClearBuffer` takes a range (P107 (5)); `cmdSetRootData` now takes `std::span<const std::byte>`; the typed
    forms are `RI/Helpers/TypedCommands.hpp`, constrained by concepts; `kMaxRootDataSize` = 256
    caps Vulkan's limit. Windows to check: that `WriteBufferImmediate` is synchronized by
    `Stage::eCopy` under enhanced barriers (GPU-based validation), and `compute.clear_large_buffer`

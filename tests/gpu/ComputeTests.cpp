@@ -338,6 +338,40 @@ EQ_TEST(compute, clear_large_buffer) {
     RI::destroyDevice(device);
 }
 
+// A range of a buffer is cleared (P107); the words around it keep their value.
+// Offset 4: a raw D3D12 view could not start there, a typed one can.
+EQ_TEST(compute, clear_buffer_range) {
+    RI::Device device = createTestDevice();
+    const RI::BufferDesc desc{.size = 64, .usage = RI::BufferUsage::eCopyDst | RI::BufferUsage::eCopySrc};
+    const RI::MemoryRequirements req = RI::bufferRequirements(device, desc);
+    RI::Memory gpuMemory = RI::allocateMemory(device, RI::MemoryKind::eGPU, req.size);
+    RI::Memory readbackMemory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 16);
+    RI::Buffer buffer = RI::createBuffer(device, gpuMemory, 0, desc);
+    RI::Buffer result = RI::createBuffer(device, readbackMemory, 0, {.size = 64, .usage = RI::BufferUsage::eCopyDst});
+
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdClearBuffer(cmd, buffer, 1);
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdClearBuffer(cmd, buffer, 2, 4, 8);
+    RI::cmdClearBuffer(cmd, buffer, 3, 48);
+    RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(cmd, buffer, 0, result, 0, 64);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+
+    const auto *out = static_cast<const uint32 *>(result.mapped);
+    EQ_CHECK(out[0] == 1 && out[1] == 2 && out[2] == 2 && out[3] == 1);
+    EQ_CHECK(out[11] == 1 && out[12] == 3 && out[15] == 3);
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyBuffer(device, buffer);
+    RI::destroyBuffer(device, result);
+    RI::freeMemory(device, gpuMemory);
+    RI::freeMemory(device, readbackMemory);
+    RI::destroyDevice(device);
+}
+
 // Small writes (P107): typed values through the helper and bytes through core
 // land at their offsets; the bytes around them keep the clear value.
 EQ_TEST(compute, write_small_data) {

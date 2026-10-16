@@ -33,6 +33,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.device_thread
     validation.tracker_names
     validation.small_write
+    validation.clear_range
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -140,6 +141,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     helpers.group_grid
     compute.clear_large_buffer
     compute.write_small_data
+    compute.clear_buffer_range
     compute.names_at_creation
     threads.pipelines_on_other_threads
     texture.unlisted_view_format_reports
