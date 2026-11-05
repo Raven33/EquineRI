@@ -251,13 +251,11 @@ CheckResult checkCopyView(uint32 mipCount, uint32 samples, bool bufferCopy, uint
     return {};
 }
 
-CheckResult checkCopyTextureMatch(uint32 srcWidth, uint32 srcHeight, uint32 srcLayers, uint32 srcSamples,
-                                  uint32 srcBytes, uint32 dstWidth, uint32 dstHeight, uint32 dstLayers,
+CheckResult checkCopyTextureMatch(uint32 srcLayers, uint32 srcSamples, uint32 srcBytes, uint32 dstLayers,
                                   uint32 dstSamples, uint32 dstBytes) {
-    if (srcWidth != dstWidth || srcHeight != dstHeight || srcLayers != dstLayers) {
-        return std::format("cmdCopyTexture: the source is {}x{} with {} layer(s), the destination {}x{} with {}; "
-                           "they must match",
-                           srcWidth, srcHeight, srcLayers, dstWidth, dstHeight, dstLayers);
+    if (srcLayers != dstLayers) {
+        return std::format("cmdCopyTexture: the source has {} layer(s), the destination {}; they must match",
+                           srcLayers, dstLayers);
     }
     if (srcSamples != dstSamples) {
         return std::string("cmdCopyTexture: the source and destination sample counts differ");
@@ -265,6 +263,30 @@ CheckResult checkCopyTextureMatch(uint32 srcWidth, uint32 srcHeight, uint32 srcL
     if (srcBytes != dstBytes) {
         return std::format("cmdCopyTexture: texels of {} and {} bytes cannot be copied into each other", srcBytes,
                            dstBytes);
+    }
+    return {};
+}
+
+CheckResult checkCopyRegion(int32 x, int32 y, uint32 regionWidth, uint32 regionHeight, uint32 width, uint32 height,
+                            bool whole, std::string_view what, std::string_view call) {
+    if (regionWidth == 0 && regionHeight == 0) {
+        if (x != 0 || y != 0) {
+            return std::format("{}: the {} region at {}, {} is empty; give its width and height, or leave it "
+                               "default for the whole mip", call, what, x, y);
+        }
+        return {};
+    }
+    if (regionWidth == 0 || regionHeight == 0) {
+        return std::format("{}: the {} region is {}x{}; a region is at least 1x1", call, what, regionWidth,
+                           regionHeight);
+    }
+    if (x < 0 || y < 0 || uint64(x) + regionWidth > width || uint64(y) + regionHeight > height) {
+        return std::format("{}: the {} region {}x{} at {}, {} is outside the {}x{} mip", call, what, regionWidth,
+                           regionHeight, x, y, width, height);
+    }
+    if (whole && (x != 0 || y != 0 || regionWidth != width || regionHeight != height)) {
+        return std::format("{}: the {} is a depth, stencil or multisampled view, which copies only whole "
+                           "(D3D12); leave the region default", call, what);
     }
     return {};
 }

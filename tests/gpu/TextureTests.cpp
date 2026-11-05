@@ -580,6 +580,87 @@ EQ_TEST(texture, copy_round_trip) {
     RI::destroyTexture(f.device, b);
 }
 
+// Copy regions (P108): part of a mip is uploaded, copied to another place in
+// another texture, and read back; the bytes come back where copyLayout says.
+EQ_TEST(texture, copy_regions) {
+    Fixture f;
+    const RI::TextureDesc desc{.width = 16,
+                               .height = 16,
+                               .format = RI::Format::eRGBA8Unorm,
+                               .usage = RI::TextureUsage::eSampled | RI::TextureUsage::eCopySrc |
+                                        RI::TextureUsage::eCopyDst};
+    RI::Texture a = placeTexture(f.device, f.gpu, desc);
+    RI::Texture b = placeTexture(f.device, f.gpu, desc);
+    const RI::Rect patch{4, 2, 5, 3};   // uploaded into a
+    const RI::Rect source{3, 1, 6, 4};  // copied from a to b at `to`
+    const RI::Offset to{8, 9};
+    const RI::Rect target{8, 9, 6, 4};  // read back from b
+    const auto patchValue = [](uint32 x, uint32 y, uint32 c) { return static_cast<uint8>(100 + x * 5 + y * 13 + c); };
+
+    const RI::CopyLayout whole = RI::copyLayout(f.device, a.view);
+    const RI::CopyLayout part = RI::copyLayout(f.device, a.view, patch);
+    const RI::CopyLayout back = RI::copyLayout(f.device, b.view, target);
+    EQ_CHECK(part.width == 5 && part.height == 3 && part.rowPitch >= 5 * 4 && part.size >= part.rowPitch * 2 + 20);
+    EQ_CHECK(back.width == 6 && back.height == 4);
+
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)};
+    RI::Buffer wholeStaging = placeBuffer(f.device, upload, {.size = whole.size, .usage = RI::BufferUsage::eCopySrc});
+    RI::Buffer partStaging = placeBuffer(f.device, upload, {.size = part.size, .usage = RI::BufferUsage::eCopySrc});
+    RI::Buffer readback = placeBuffer(f.device, f.readback, {.size = back.size, .usage = RI::BufferUsage::eCopyDst});
+    auto *wholeBytes = static_cast<uint8 *>(wholeStaging.mapped);
+    for (uint32 y = 0; y < 16; ++y) {
+        for (uint32 x = 0; x < 16; ++x) {
+            for (uint32 c = 0; c < 4; ++c) {
+                wholeBytes[y * whole.rowPitch + x * 4 + c] = copyPattern(x, y, 0, c);
+            }
+        }
+    }
+    auto *partBytes = static_cast<uint8 *>(partStaging.mapped);
+    for (uint32 y = 0; y < part.height; ++y) {
+        for (uint32 x = 0; x < part.width; ++x) {
+            for (uint32 c = 0; c < 4; ++c) {
+                partBytes[y * part.rowPitch + x * 4 + c] = patchValue(x, y, c);
+            }
+        }
+    }
+    RI::cmdCopyBufferToTexture(f.cmd, wholeStaging, 0, a.view);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyBufferToTexture(f.cmd, partStaging, 0, a.view, patch);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, a.view, b.view, source, to);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTextureToBuffer(f.cmd, b.view, readback, 0, target);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    // Texel (x, y) of the read-back region is texel (source.x + x, source.y + y) of a.
+    const auto *out = static_cast<const uint8 *>(readback.mapped);
+    uint32 wrong = 0;
+    for (uint32 y = 0; y < back.height; ++y) {
+        for (uint32 x = 0; x < back.width; ++x) {
+            const uint32 ax = source.x + x;
+            const uint32 ay = source.y + y;
+            const bool patched = ax >= uint32(patch.x) && ax < patch.x + patch.width && ay >= uint32(patch.y) &&
+                                 ay < patch.y + patch.height;
+            for (uint32 c = 0; c < 4; ++c) {
+                const uint8 expected = patched ? patchValue(ax - patch.x, ay - patch.y, c) : copyPattern(ax, ay, 0, c);
+                wrong += out[y * back.rowPitch + x * 4 + c] != expected;
+            }
+        }
+    }
+    EQ_CHECK(wrong == 0);
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyBuffer(f.device, wholeStaging);
+    RI::destroyBuffer(f.device, partStaging);
+    RI::destroyBuffer(f.device, readback);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyTexture(f.device, a);
+    RI::destroyTexture(f.device, b);
+}
+
 // Depth values uploaded with a copy are what a shader then samples (P47).
 EQ_TEST(texture, copy_depth_upload) {
     Fixture f;

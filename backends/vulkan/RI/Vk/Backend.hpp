@@ -424,11 +424,18 @@ void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const B
 
 // Copies (P47). A texture view covers one mip (and one aspect of a depth
 // format); the buffer side follows copyLayout(). Copies count as Stage::eCopy.
-CopyLayout copyLayout(Device &device, const TextureView &view);
-void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst);
-void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset);
-// Same size, layer count, sample count and texel size.
-void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst);
+// `region` selects texels in each layer of the view (P108); the default, width
+// and height 0, is the whole mip. Depth, stencil and multisampled views copy
+// whole (D3D12 copies their subresources only whole).
+CopyLayout copyLayout(Device &device, const TextureView &view, Rect region = {});
+void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst,
+                            Rect region = {});
+void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset,
+                            Rect region = {});
+// `region` of `src` lands at `dstOffset` in `dst`, in every layer. Same layer
+// count, sample count and texel size.
+void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst, Rect region = {},
+                    Offset dstOffset = {});
 
 // Resolves a multisampled view into a single-sampled one (P52, P76), outside
 // rendering sections. Counts as Stage::eRenderTarget (color) or

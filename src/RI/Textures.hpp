@@ -143,13 +143,21 @@ struct Viewport {
     float maxDepth = 1.0f;
 };
 
-// A scissor rectangle (P103), in pixels from the top-left corner: pixels
-// outside it are not written. cmdBeginRendering sets it to the attachments.
+// A rectangle in pixels from the top-left corner: a scissor (P103; pixels
+// outside it are not written, cmdBeginRendering sets it to the attachments),
+// or the texels a copy covers (P108).
 struct Rect {
     int32 x = 0;
     int32 y = 0;
     uint32 width = 0;
     uint32 height = 0;
+};
+
+// A position in pixels from the top-left corner: where cmdCopyTexture writes
+// its region in the destination (P108).
+struct Offset {
+    int32 x = 0;
+    int32 y = 0;
 };
 
 // The size a rendering section without attachments rasterizes (P105):
@@ -361,8 +369,9 @@ struct PipelineStatisticsLayout {
 };
 
 // The staging layout of a texture view's texels in a buffer (P47), for
-// cmdCopyBufferToTexture and cmdCopyTextureToBuffer. The view covers one mip.
-// Row `y` of layer `l` starts at offset + l * layerPitch + y * rowPitch.
+// cmdCopyBufferToTexture and cmdCopyTextureToBuffer. The view covers one mip;
+// width and height are the copy region's (P108). Row `y` of layer `l` starts
+// at offset + l * layerPitch + y * rowPitch.
 struct CopyLayout {
     uint32 width = 0;        // texels per row
     uint32 height = 0;       // rows per layer

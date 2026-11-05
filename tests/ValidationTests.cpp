@@ -285,6 +285,25 @@ EQ_TEST(validation, small_write) {
     EQ_CHECK(checkSmallWrite(true, 64, 4, 64).has_value());
 }
 
+// Copy regions (P108): the default, inside the mip, not empty; depth, stencil
+// and multisampled views only whole.
+EQ_TEST(validation, copy_region) {
+    using RI::Validation::checkCopyRegion;
+    EQ_CHECK(!checkCopyRegion(0, 0, 0, 0, 64, 32, false, "source", "cmdCopyTexture"));
+    EQ_CHECK(!checkCopyRegion(0, 0, 0, 0, 64, 32, true, "source", "cmdCopyTexture"));
+    EQ_CHECK(!checkCopyRegion(10, 4, 54, 28, 64, 32, false, "source", "cmdCopyTexture"));
+    EQ_CHECK(!checkCopyRegion(0, 0, 64, 32, 64, 32, true, "source", "cmdCopyTexture"));
+    const RI::Validation::CheckResult empty = checkCopyRegion(3, 4, 0, 0, 64, 32, false, "source", "cmdCopyTexture");
+    EQ_CHECK(empty && empty->find("is empty") != std::string::npos);
+    EQ_CHECK(checkCopyRegion(0, 0, 8, 0, 64, 32, false, "source", "cmdCopyTexture").has_value());
+    const RI::Validation::CheckResult outside =
+        checkCopyRegion(60, 0, 8, 8, 64, 32, false, "destination", "cmdCopyBufferToTexture");
+    EQ_CHECK(outside && outside->find("destination region 8x8 at 60, 0 is outside the 64x32 mip") != std::string::npos);
+    EQ_CHECK(checkCopyRegion(-1, 0, 8, 8, 64, 32, false, "source", "cmdCopyTexture").has_value());
+    const RI::Validation::CheckResult whole = checkCopyRegion(0, 0, 8, 8, 64, 32, true, "source", "copyLayout");
+    EQ_CHECK(whole && whole->find("copies only whole") != std::string::npos);
+}
+
 // A clear's range (P107): multiples of 4, inside the buffer; kWholeSize to the end.
 EQ_TEST(validation, clear_range) {
     using RI::Validation::checkClearRange;
