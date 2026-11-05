@@ -1,0 +1,51 @@
+// The P112 measurement's shader: each thread sums `reads` loads of a 64-byte
+// constant block and writes the result. The block comes from one of three
+// places, chosen at compile time:
+//   PUSH: a uniform buffer in a push-descriptor set (RI's bindful slots);
+//   HEAP: an array of uniform buffers indexed by root data (heap-indexed);
+//   ROOT: the push constants themselves (root data alone, the baseline).
+#version 460
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+layout(local_size_x = 64) in;
+
+struct Block {
+    vec4 v[4];
+};
+
+layout(buffer_reference, std430) writeonly buffer Out {
+    vec4 values[];
+};
+
+layout(push_constant) uniform Root {
+    uint64_t results;
+    uint index;
+    uint reads;
+#if defined(ROOT)
+    Block block;
+#endif
+} root;
+
+#if defined(PUSH)
+layout(set = 0, binding = 0) uniform Constants {
+    Block block;
+} constants;
+#define BLOCK constants.block
+#elif defined(HEAP)
+#extension GL_EXT_nonuniform_qualifier : require
+layout(set = 0, binding = 0) uniform Constants {
+    Block block;
+} constants[];
+#define BLOCK constants[root.index].block
+#else
+#define BLOCK root.block
+#endif
+
+void main() {
+    vec4 sum = vec4(0.0);
+    for (uint r = 0; r < root.reads; ++r) {
+        sum += BLOCK.v[r & 3u] * float(r + 1u);
+    }
+    Out(root.results).values[root.index * 64u + gl_GlobalInvocationID.x] = sum;
+}

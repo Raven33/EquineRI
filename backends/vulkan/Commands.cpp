@@ -1,7 +1,7 @@
 // Command lists and recording on Vulkan (P20, P34, P36, P56, P85).
 //
-// Owns: command lists (one VkCommandPool each), heap, pipeline and root data
-// binding, barriers, rendering sections (with attachments, or a size alone,
+// Owns: command lists (one VkCommandPool each), heap, pipeline, root data and
+// constant buffer (push descriptors, P112) binding, barriers, rendering sections (with attachments, or a size alone,
 // P105) and draws, discard and clears,
 // queries, buffer-texture copies, resolve, native sections, submit and wait.
 //
@@ -309,6 +309,10 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     fn(cmd).vkCmdBindPipeline(native(cmd), bindPointOf(index), native(pipeline).pipeline);
     cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
+    cmd.internal.constantBuffersDeclared = pipeline.constantBuffers;
+    cmd.internal.constantBuffersSet = 0;
+    std::copy(std::begin(pipeline.internal.constantBufferSizes), std::end(pipeline.internal.constantBufferSizes),
+              cmd.internal.constantBufferSizes);
     cmd.internal.pipeline = pipeline.internal.pipeline;
     cmd.internal.boundPipeline[bindIndex(pipeline.internal.graphics)] = pipeline.internal.pipeline;
     if (cmd.internal.boundLayout[index] != pipeline.internal.layout) {
@@ -336,9 +340,56 @@ void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
                                VK_SHADER_STAGE_ALL, 0, size, data.data());
 }
 
+namespace {
+
+// One push of set 2 for one slot, on the current bind point (P112).
+void pushConstantBuffer(CommandList &cmd, uint32 slot) {
+    const VkDescriptorBufferInfo info{.buffer = reinterpret_cast<VkBuffer>(cmd.internal.constantBufferHandles[slot]),
+                                      .offset = cmd.internal.constantBufferOffsets[slot],
+                                      .range = cmd.internal.constantBufferSizes[slot]};
+    const VkWriteDescriptorSet write{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                     .dstBinding = slot,
+                                     .descriptorCount = 1,
+                                     .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                     .pBufferInfo = &info};
+    const uint32 index = bindIndex(cmd.internal.graphics);
+    const auto layout = reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[index]);
+    if (cmd.internal.device->pushDescriptorsCore) {
+        fn(cmd).vkCmdPushDescriptorSet(native(cmd), bindPointOf(index), layout, kConstantBufferSet, 1, &write);
+    } else {
+        fn(cmd).vkCmdPushDescriptorSetKHR(native(cmd), bindPointOf(index), layout, kConstantBufferSet, 1, &write);
+    }
+}
+
+Validation::ConstantBufferSlots declaredConstantBuffers(const CommandList &cmd) {
+    Validation::ConstantBufferSlots slots{.mask = cmd.internal.constantBuffersDeclared};
+    std::copy(std::begin(cmd.internal.constantBufferSizes), std::end(cmd.internal.constantBufferSizes),
+              slots.sizes.begin());
+    return slots;
+}
+
+} // namespace
+
+void cmdSetConstantBuffer(CommandList &cmd, uint32 slot, const Buffer &buffer, uint64 offset) {
+    EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VK_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    if (const Validation::CheckResult problem =
+            Validation::checkConstantBufferBind(slot, declaredConstantBuffers(cmd),
+                                                (buffer.usage & BufferUsage::eConstant) != BufferUsage::eNone, offset,
+                                                buffer.size)) {
+        reportError(ErrorCategory::eProgrammerError, *problem);
+    }
+    cmd.internal.constantBufferHandles[slot] = buffer.internal.buffer;
+    cmd.internal.constantBufferOffsets[slot] = offset;
+    cmd.internal.constantBuffersSet |= 1u << slot;
+    pushConstantBuffer(cmd, slot);
+}
+
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, false, "cmdDispatch"));
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDispatch"));
     fn(cmd).vkCmdDispatch(native(cmd), x, y, z);
 }
 
@@ -682,6 +733,8 @@ void cmdEndRendering(CommandList &cmd) {
 void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, true, "cmdDrawMesh"));
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDrawMesh"));
     fn(cmd).vkCmdDrawMeshTasksEXT(native(cmd), x, y, z);
 }
 
@@ -697,11 +750,15 @@ void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, In
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 vertexOffset,
                     uint32 firstInstance) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDrawIndexed"));
     fn(cmd).vkCmdDrawIndexed(native(cmd), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDraw"));
     // No RI section check: native rendering sections (escape hatch) may hold RI draws;
     // the validation layer reports a draw outside any section.
     fn(cmd).vkCmdDraw(native(cmd), vertexCount, instanceCount, firstVertex, firstInstance);
@@ -1166,6 +1223,11 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
         if (cmd.internal.rootDataBytes > 0) {
             fn(cmd).vkCmdPushConstants(native(cmd), reinterpret_cast<VkPipelineLayout>(cmd.internal.boundLayout[index]),
                                        VK_SHADER_STAGE_ALL, 0, cmd.internal.rootDataBytes, cmd.internal.rootData);
+        }
+        for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+            if ((cmd.internal.constantBuffersSet & (1u << slot)) != 0) {
+                pushConstantBuffer(cmd, slot);
+            }
         }
     }
     if (cmd.internal.rendering) {

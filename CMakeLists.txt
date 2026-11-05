@@ -310,6 +310,7 @@ if (EQUINE_BUILD_SAMPLES)
     add_subdirectory(tools/layout_bench) # the L1 measurement (Milestone 3)
     add_subdirectory(tools/descriptor_bench) # the P94 measurement
     add_subdirectory(tools/statistics_bench) # the P105 statistics-cost measurement
+    add_subdirectory(tools/constant_bench) # the P112 constant-buffer measurement
 endif()
 
 if (EQUINE_BUILD_DOC_SNIPPETS)

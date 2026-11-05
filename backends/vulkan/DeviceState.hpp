@@ -50,7 +50,12 @@ struct DeviceState {
     // per root data size (compatible with every RI pipeline of that size).
     bool generatedCommands = false;
     std::map<uint64, VkIndirectCommandsLayoutEXT> indirectLayouts;
-    std::map<uint32, VkPipelineLayout> indirectPipelineLayouts;
+    std::map<uint64, VkPipelineLayout> indirectPipelineLayouts; // key: root data size << 32 | constant buffer slots
+    // Bindful constant buffers (P112): push descriptors (core in 1.4, else
+    // VK_KHR_push_descriptor), one set layout per slot mask at set 2.
+    bool pushDescriptors = false;
+    bool pushDescriptorsCore = false;
+    std::map<uint32, VkDescriptorSetLayout> constantBufferSetLayouts;
     uint32 depthResolveModes = 0; // DeviceLimits copies (P76), for checks while recording
     uint32 stencilResolveModes = 0;
     uint32 graphicsQueueFamily = 0;
@@ -139,6 +144,13 @@ inline uint64 queryResultSize(const DeviceState &state, QueryType type) {
 }
 
 void destroyIndirectLayouts(DeviceState &state);
+
+// Pipeline layouts (Pipeline.cpp): the heap sets 0 and 1, set 2 for the
+// EQ_CONSTANT_BUFFER slots in `constantBuffers` (P112), and `rootDataSize`
+// bytes of push constants. Identical inputs give compatible layouts.
+inline constexpr uint32 kConstantBufferSet = 2;
+VkPipelineLayout createPipelineLayout(DeviceState &state, uint32 rootDataSize, uint32 constantBuffers);
+void destroyConstantBufferSetLayouts(DeviceState &state);
 
 // Debugging (Debug.cpp, P53).
 void loadDebugFunctions(DeviceState &state);

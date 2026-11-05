@@ -65,6 +65,8 @@ void execute(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 off
              const Buffer *count, uint64 countOffset, bool level2, [[maybe_unused]] const char *call) {
     DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, args.internal.id, "buffer");
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    call));
     if (count != nullptr) {
         EQ_DX_CHECK_ALIVE(&state, count->internal.id, "buffer");
     }

@@ -76,6 +76,7 @@ EQ_SIGNATURE(cmdEnd, void (*)(RI::CommandList &));
 EQ_SIGNATURE(cmdSetHeap, void (*)(RI::CommandList &, const RI::DescriptorHeap &));
 EQ_SIGNATURE(cmdSetPipeline, void (*)(RI::CommandList &, const RI::Pipeline &));
 EQ_SIGNATURE(cmdSetRootData, void (*)(RI::CommandList &, std::span<const std::byte>));
+EQ_SIGNATURE(cmdSetConstantBuffer, void (*)(RI::CommandList &, uint32, const RI::Buffer &, uint64));
 EQ_SIGNATURE(cmdDispatch, void (*)(RI::CommandList &, uint32, uint32, uint32));
 EQ_SIGNATURE(cmdBarrier, void (*)(RI::CommandList &, RI::Stage, RI::Stage));
 EQ_SIGNATURE(cmdCopyBuffer,

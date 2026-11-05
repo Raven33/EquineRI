@@ -323,6 +323,8 @@ void cmdEndRendering(CommandList &cmd) {
 void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, true, "cmdDrawMesh"));
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDrawMesh"));
     list(cmd)->DispatchMesh(x, y, z);
 }
 
@@ -342,11 +344,15 @@ void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, In
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 vertexOffset,
                     uint32 firstInstance) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDrawIndexed"));
     list(cmd)->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDraw"));
     list(cmd)->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -540,6 +546,11 @@ void endNative(CommandList &cmd, std::span<const NativeLayoutChange> changed) {
             l->SetGraphicsRoot32BitConstants(0, values, cmd.internal.rootData, 0);
         } else {
             l->SetComputeRoot32BitConstants(0, values, cmd.internal.rootData, 0);
+        }
+    }
+    for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+        if ((cmd.internal.constantBuffersSet & (1u << slot)) != 0) {
+            setConstantBufferAddress(cmd, slot, cmd.internal.constantBufferAddresses[slot]);
         }
     }
     if (cmd.internal.rendering && cmd.internal.renderWidth != 0) {

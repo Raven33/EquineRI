@@ -903,14 +903,16 @@ const Metadata *namedNode(const Module &module, const std::string &name) {
 // dx.resources' node = !{SRVs, UAVs, CBVs, Samplers}, each null or a list of records.
 // Every record starts with ID, global symbol, name, space, lower bound, range
 // size; a CBV record continues with its size in bytes and an extra-fields node
-// (DxilMetadataHelper: kDxilCBufferSizeInBytes = 6). Finds the root data CBV.
+// (DxilMetadataHelper: kDxilCBufferSizeInBytes = 6). Finds the root data CBV and
+// the EQ_CONSTANT_BUFFER CBVs (space 998, P112).
 constexpr size_t kResourceListCBVs = 2;
 constexpr size_t kResourceSpace = 3;
 constexpr size_t kResourceLowerBound = 4;
 constexpr size_t kResourceRangeSize = 5;
 constexpr size_t kCBufferSizeInBytes = 6;
 
-std::string findRootDataSize(const Module &module, std::optional<uint32> &rootDataSize) {
+std::string findCBufferSizes(const Module &module, std::optional<uint32> &rootDataSize, uint32 &constantBuffers,
+                             uint32 (&constantBufferSizes)[kMaxConstantBuffers]) {
     if (!module.namedMetadata.contains("dx.resources")) {
         return {}; // a shader without declared resources has no list
     }
@@ -942,6 +944,10 @@ std::string findRootDataSize(const Module &module, std::optional<uint32> &rootDa
                 return "the DXIL part's dx.resources metadata lists two CBVs at register(b0, space999)";
             }
             rootDataSize = *size;
+        }
+        if (*space == kConstantBufferSpace && *lowerBound < kMaxConstantBuffers) {
+            constantBuffers |= 1u << *lowerBound;
+            constantBufferSizes[*lowerBound] = *size;
         }
     }
     return {};
@@ -1009,10 +1015,23 @@ std::string_view className(DxilResourceClass resourceClass) {
     return "a resource";
 }
 
-// Moves every PSV0 resource but the root data into `info.bindings`; sets hasRootData.
+// Moves every PSV0 resource but the root data and the EQ_CONSTANT_BUFFER slots
+// into `info.bindings`; sets hasRootData and the slot mask.
 std::string sortReservedSpace(const std::vector<DxilBinding> &resources, DxilInfo &info) {
     uint32 reservedCount = 0;
     for (const DxilBinding &binding : resources) {
+        if (binding.space == kConstantBufferSpace) {
+            const bool isSlot = binding.resourceClass == DxilResourceClass::eCBV && binding.count == 1 &&
+                                binding.lowerBound < kMaxConstantBuffers;
+            if (!isSlot) {
+                return std::format("space 998 is reserved for EQ_CONSTANT_BUFFER (single CBVs at b0 to b{}), but the "
+                                   "shader declares {} at register({}{}, space998)",
+                                   kMaxConstantBuffers - 1, className(binding.resourceClass),
+                                   registerLetter(binding.resourceClass), binding.lowerBound);
+            }
+            info.constantBuffers |= 1u << binding.lowerBound;
+            continue;
+        }
         if (binding.space != kRootDataSpace) {
             info.bindings.push_back(binding);
             continue;
@@ -1151,9 +1170,13 @@ std::string readInto(std::span<const std::byte> bytecode, DxilInfo &info) {
     }
 
     std::optional<uint32> rootDataSize;
-    error = findRootDataSize(module, rootDataSize);
+    uint32 metadataConstantBuffers = 0;
+    error = findCBufferSizes(module, rootDataSize, metadataConstantBuffers, info.constantBufferSizes);
     if (!error.empty()) {
         return error;
+    }
+    if (metadataConstantBuffers != info.constantBuffers) {
+        return "PSV0 and the DXIL part's dx.resources metadata list different EQ_CONSTANT_BUFFER slots (space998)";
     }
     if (info.hasRootData != rootDataSize.has_value()) {
         return info.hasRootData

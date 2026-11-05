@@ -24,6 +24,7 @@
 
 #include <compare>
 #include <map>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -114,6 +115,11 @@ void releaseTextureView(DeviceState &state, TextureView &view);
 // Indirect (Indirect.cpp, P48): releases the command signatures made for
 // `rootSignature` (a pipeline being destroyed), or all of them (nullptr).
 void forgetCommandSignatures(DeviceState &state, void *rootSignature);
+// Constant buffers (Commands.cpp, P112): a pipeline or work graph change
+// declares its slots and forgets every bind.
+void forgetConstantBuffers(CommandList &cmd, uint32 declared, std::span<const uint32> sizes);
+// Records the root CBV of `slot` on the current bind point (also endNative's restore).
+void setConstantBufferAddress(CommandList &cmd, uint32 slot, uint64 address);
 // checkHr for queue submission and waits.
 void checkQueueHr(DeviceState &state, HRESULT result, std::string_view call);
 

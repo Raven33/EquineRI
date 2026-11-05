@@ -58,6 +58,15 @@ inline constexpr uint64 kMaxMeshGroups = uint64{1} << 22; // x * y * z of one me
 // device's own limit, DeviceLimits::maxRootDataSize, may be lower.
 inline constexpr uint32 kMaxRootDataSize = 256;
 
+// Bindful constant buffers (P112): EQ_CONSTANT_BUFFER slots 0 to
+// kMaxConstantBuffers - 1. Each slot a pipeline declares takes
+// kConstantBufferRootCost bytes of the root budget (D3D12: a root CBV is 2
+// root DWORDs), so root data + 8 bytes per slot fit in maxRootDataSize on every
+// backend. Offsets are multiples of kConstantBufferAlignment (D3D12's rule).
+inline constexpr uint32 kMaxConstantBuffers = 8;
+inline constexpr uint32 kConstantBufferRootCost = 8;
+inline constexpr uint64 kConstantBufferAlignment = 256;
+
 // The most bytes one cmdWriteSmallData may write (P107): it is for a few
 // values, recorded into the command list itself.
 inline constexpr uint32 kMaxSmallWriteSize = 64;

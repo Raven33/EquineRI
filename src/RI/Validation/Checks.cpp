@@ -7,6 +7,7 @@
 #include <RI/Resources.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <cctype>
 #include <format>
 #include <sstream>
@@ -517,6 +518,77 @@ CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::strin
                            total, kMaxMeshGroups);
     }
     return {};
+}
+
+CheckResult mergeConstantBuffers(ConstantBufferSlots &pipeline, const ConstantBufferSlots &stage, std::string_view call,
+                                 std::string_view stageName) {
+    for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+        const uint32 bit = 1u << slot;
+        if ((stage.mask & bit) == 0) {
+            continue;
+        }
+        if ((pipeline.mask & bit) != 0 && pipeline.sizes[slot] != stage.sizes[slot]) {
+            return std::format("{}: the {} shader declares constant buffer slot {} with {} bytes, another stage with "
+                               "{}; every stage must declare a slot the same way (P112)",
+                               call, stageName, slot, stage.sizes[slot], pipeline.sizes[slot]);
+        }
+        pipeline.mask |= bit;
+        pipeline.sizes[slot] = stage.sizes[slot];
+    }
+    return {};
+}
+
+CheckResult checkRootBudget(uint32 rootDataSize, const ConstantBufferSlots &slots, uint32 maxRootDataSize,
+                            uint64 maxConstantViewSize, std::string_view call) {
+    const uint32 count = static_cast<uint32>(std::popcount(slots.mask));
+    const uint32 rootBytes = (rootDataSize + 3) / 4 * 4;
+    if (rootBytes + kConstantBufferRootCost * count > maxRootDataSize) {
+        return std::format("{}: the shader's root data is {} bytes and it declares {} constant buffers ({} bytes each "
+                           "of the root budget); together they take {} bytes, and this GPU allows {} (P44, P112)",
+                           call, rootDataSize, count, kConstantBufferRootCost,
+                           rootBytes + kConstantBufferRootCost * count, maxRootDataSize);
+    }
+    for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+        if ((slots.mask & (1u << slot)) != 0 && slots.sizes[slot] > maxConstantViewSize) {
+            return std::format("{}: constant buffer slot {} is {} bytes; this GPU reads at most {} through one "
+                               "constant buffer (DeviceLimits::maxConstantViewSize)",
+                               call, slot, slots.sizes[slot], maxConstantViewSize);
+        }
+    }
+    return {};
+}
+
+CheckResult checkConstantBufferBind(uint32 slot, const ConstantBufferSlots &declared, bool constantUsage, uint64 offset,
+                                    uint64 bufferSize) {
+    if (slot >= kMaxConstantBuffers || (declared.mask & (1u << slot)) == 0) {
+        return std::format("cmdSetConstantBuffer: the pipeline set last declares no constant buffer at slot {} "
+                           "(EQ_CONSTANT_BUFFER)",
+                           slot);
+    }
+    if (!constantUsage) {
+        return std::format("cmdSetConstantBuffer: slot {}: the buffer needs BufferUsage::eConstant", slot);
+    }
+    if (offset % kConstantBufferAlignment != 0) {
+        return std::format("cmdSetConstantBuffer: slot {}: offset {} is not a multiple of {} "
+                           "(kConstantBufferAlignment)",
+                           slot, offset, kConstantBufferAlignment);
+    }
+    const uint64 size = declared.sizes[slot];
+    if (offset > bufferSize || size > bufferSize - offset) {
+        return std::format("cmdSetConstantBuffer: slot {}: {} bytes at offset {} run past the buffer's {} bytes", slot,
+                           size, offset, bufferSize);
+    }
+    return {};
+}
+
+CheckResult checkConstantBuffersSet(uint32 declared, uint32 set, std::string_view call) {
+    const uint32 missing = declared & ~set;
+    if (missing == 0) {
+        return {};
+    }
+    return std::format("{}: constant buffer slot {} is not set since the last cmdSetPipeline or cmdSetWorkGraph "
+                       "(cmdSetConstantBuffer; a pipeline change forgets every slot, P112)",
+                       call, std::countr_zero(missing));
 }
 
 CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view call) {

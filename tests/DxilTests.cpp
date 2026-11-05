@@ -244,6 +244,25 @@ EQ_TEST(dxil, space999_second_resource_is_error) {
     EQ_CHECK(mentions(result, "register(u0, space999)"));
 }
 
+// Bindful constant buffers (P112): space 998 slots leave the declared bindings,
+// with their sizes from dx.resources.
+EQ_TEST(dxil, constant_buffer_slots) {
+    const DxilReadResult result = read(loadShader("constant_buffers"));
+    EQ_CHECK(result.error.empty());
+    EQ_CHECK(result.info.hasRootData && result.info.rootDataSize == 8);
+    EQ_CHECK(result.info.constantBuffers == 0b1001u);
+    EQ_CHECK(result.info.constantBufferSizes[0] == 16);
+    EQ_CHECK(result.info.constantBufferSizes[3] == 32);
+    EQ_CHECK(result.info.bindings.empty());
+}
+
+EQ_TEST(dxil, constant_buffer_past_slot_7_is_error) {
+    const DxilReadResult result = read(loadShader("constant_buffer_bad"));
+    EQ_CHECK(mentions(result, "space 998 is reserved for EQ_CONSTANT_BUFFER"));
+    EQ_CHECK(mentions(result, "register(b8, space998)"));
+    EQ_CHECK(result.info.constantBuffers == 0);
+}
+
 // PSV0 is versioned: later versions append fields to the runtime info and to
 // each resource record, and announce their sizes.
 EQ_TEST(dxil, newer_psv_layout) {

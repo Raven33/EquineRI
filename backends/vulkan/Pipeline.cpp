@@ -1,8 +1,9 @@
-// Pipelines on Vulkan (P38, P39, P44, P45, P67, P94).
+// Pipelines on Vulkan (P38, P39, P44, P45, P67, P94, P112).
 //
 // Owns: compute, graphics and mesh pipelines. The pipeline layout comes from
-// the shaders (SPIRV-Reflect): the device's two heap set layouts and one
-// push-constant range of exactly the root data size. Rendering formats come
+// the shaders (SPIRV-Reflect): the device's two heap set layouts, a cached
+// push-descriptor set layout at set 2 for the EQ_CONSTANT_BUFFER slots, and
+// one push-constant range of exactly the root data size. Rendering formats come
 // from the description (dynamic rendering).
 //
 // Watch out: the stencil reference is dynamic state that cmdSetPipeline sets
@@ -22,6 +23,7 @@
 
 #include <spirv_reflect.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <format>
 #include <string>
@@ -30,11 +32,59 @@
 
 namespace RI::inline EQUINE_RI_ABI::Vk {
 
+VkPipelineLayout createPipelineLayout(DeviceState &state, uint32 rootDataSize, uint32 constantBuffers) {
+    VkDescriptorSetLayout setLayouts[] = {state.resourceSetLayout, state.samplerSetLayout, VK_NULL_HANDLE};
+    uint32 setCount = 2;
+    if (constantBuffers != 0) {
+        auto found = state.constantBufferSetLayouts.find(constantBuffers);
+        if (found == state.constantBufferSetLayouts.end()) {
+            std::vector<VkDescriptorSetLayoutBinding> bindings;
+            for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+                if ((constantBuffers & (1u << slot)) != 0) {
+                    bindings.push_back({.binding = slot,
+                                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                        .descriptorCount = 1,
+                                        .stageFlags = VK_SHADER_STAGE_ALL});
+                }
+            }
+            const VkDescriptorSetLayoutCreateInfo info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                                                       .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT,
+                                                       .bindingCount = static_cast<uint32>(bindings.size()),
+                                                       .pBindings = bindings.data()};
+            VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+            checkVk(state.functions.vkCreateDescriptorSetLayout(state.device, &info, nullptr, &layout),
+                    "vkCreateDescriptorSetLayout (constant buffers)");
+            found = state.constantBufferSetLayouts.emplace(constantBuffers, layout).first;
+        }
+        setLayouts[kConstantBufferSet] = found->second;
+        setCount = 3;
+    }
+    const VkPushConstantRange range{.stageFlags = VK_SHADER_STAGE_ALL, .offset = 0, .size = rootDataSize};
+    const VkPipelineLayoutCreateInfo layoutInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = setCount,
+        .pSetLayouts = setLayouts,
+        .pushConstantRangeCount = rootDataSize > 0 ? 1u : 0u,
+        .pPushConstantRanges = &range,
+    };
+    VkPipelineLayout layout = VK_NULL_HANDLE;
+    checkVk(state.functions.vkCreatePipelineLayout(state.device, &layoutInfo, nullptr, &layout), "vkCreatePipelineLayout");
+    return layout;
+}
+
+void destroyConstantBufferSetLayouts(DeviceState &state) {
+    for (const auto &[mask, layout] : state.constantBufferSetLayouts) {
+        state.functions.vkDestroyDescriptorSetLayout(state.device, layout, nullptr);
+    }
+    state.constantBufferSetLayouts.clear();
+}
+
 namespace {
 
 struct ShaderInfo {
     uint32 rootDataSize = 0;
     bool hasRootData = false;
+    Validation::ConstantBufferSlots constantBuffers; // set 2 (P112)
     // The values passed between stages (P101), in validation builds.
     std::vector<Validation::StageValue> inputs;
     std::vector<Validation::StageValue> outputs;
@@ -98,13 +148,27 @@ ShaderInfo reflect(Bytecode bytecode, SpvReflectShaderStageFlagBits stage, const
     }
 #endif
 
-    // Only the descriptor heaps: set 0 binding 0 (ResourceDescriptorHeap) and
-    // set 1 binding 0 (SamplerDescriptorHeap with -fvk-bind-sampler-heap 0 1).
+    // The descriptor heaps: set 0 binding 0 (ResourceDescriptorHeap) and set 1
+    // binding 0 (SamplerDescriptorHeap with -fvk-bind-sampler-heap 0 1); and
+    // EQ_CONSTANT_BUFFER slots, uniform buffers at set 2, bindings 0 to 7 (P112).
     for (uint32 i = 0; problem.empty() && i < module.descriptor_binding_count; ++i) {
         const SpvReflectDescriptorBinding &b = module.descriptor_bindings[i];
         const bool resourceHeap = b.set == 0 && b.binding == 0;
         const bool samplerHeap = b.set == 1 && b.binding == 0 && b.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER;
         if (resourceHeap || samplerHeap) {
+            continue;
+        }
+        if (b.set == kConstantBufferSet) {
+            const bool isSlot = b.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER && b.count == 1 &&
+                                b.binding < kMaxConstantBuffers;
+            if (!isSlot) {
+                problem = std::format("set 2 is reserved for EQ_CONSTANT_BUFFER (single constant buffers at "
+                                      "bindings 0 to {}), but the shader declares '{}' at binding {} there",
+                                      kMaxConstantBuffers - 1, b.name != nullptr ? b.name : "?", b.binding);
+                continue;
+            }
+            info.constantBuffers.mask |= 1u << b.binding;
+            info.constantBuffers.sizes[b.binding] = (b.block.size + 15) / 16 * 16;
             continue;
         }
         if (b.set == 0 && b.binding == 1 && b.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER) {
@@ -124,25 +188,26 @@ ShaderInfo reflect(Bytecode bytecode, SpvReflectShaderStageFlagBits stage, const
 }
 
 
-// The pipeline layout for `rootDataSize` bytes of root data (P44).
-VkPipelineLayout createLayout(DeviceState &state, const DeviceLimits &limits, uint32 rootDataSize, const char *call) {
-    if (rootDataSize > limits.maxRootDataSize) {
-        reportError(ErrorCategory::eUnsupported,
-                    std::format("{}: the shader's root data is {} bytes; this GPU allows {} (P44)", call, rootDataSize,
-                                limits.maxRootDataSize));
+// The pipeline layout for `rootDataSize` bytes of root data and the given
+// constant buffer slots, once they fit the GPU (P44, P112).
+VkPipelineLayout createLayout(DeviceState &state, const DeviceLimits &limits, uint32 rootDataSize,
+                              const Validation::ConstantBufferSlots &slots, const char *call) {
+    if (const Validation::CheckResult problem = Validation::checkRootBudget(
+            rootDataSize, slots, limits.maxRootDataSize, limits.maxConstantViewSize, call)) {
+        reportError(ErrorCategory::eUnsupported, *problem);
     }
-    const VkDescriptorSetLayout setLayouts[] = {state.resourceSetLayout, state.samplerSetLayout};
-    const VkPushConstantRange range{.stageFlags = VK_SHADER_STAGE_ALL, .offset = 0, .size = rootDataSize};
-    const VkPipelineLayoutCreateInfo layoutInfo{
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 2,
-        .pSetLayouts = setLayouts,
-        .pushConstantRangeCount = rootDataSize > 0 ? 1u : 0u,
-        .pPushConstantRanges = &range,
-    };
-    VkPipelineLayout layout = VK_NULL_HANDLE;
-    checkVk(state.functions.vkCreatePipelineLayout(state.device, &layoutInfo, nullptr, &layout), "vkCreatePipelineLayout");
-    return layout;
+    if (slots.mask != 0 && !state.pushDescriptors) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("{}: EQ_CONSTANT_BUFFER needs push descriptors (Vulkan 1.4 or VK_KHR_push_descriptor), "
+                                "which this GPU lacks (P112)",
+                                call));
+    }
+    return createPipelineLayout(state, rootDataSize, slots.mask);
+}
+
+void keepConstantBuffers(Pipeline &pipeline, const Validation::ConstantBufferSlots &slots) {
+    pipeline.constantBuffers = slots.mask;
+    std::copy(slots.sizes.begin(), slots.sizes.end(), pipeline.internal.constantBufferSizes);
 }
 
 VkShaderModule createModule(DeviceState &state, Bytecode bytecode) {
@@ -249,7 +314,8 @@ VkCullModeFlags cullOf(CullMode cull) {
 Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) {
     DeviceState &state = *device.internal.state;
     const ShaderInfo info = reflect(desc.shader, SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT, "createComputePipeline", "compute");
-    const VkPipelineLayout layout = createLayout(state, device.limits, info.rootDataSize, "createComputePipeline");
+    const VkPipelineLayout layout =
+        createLayout(state, device.limits, info.rootDataSize, info.constantBuffers, "createComputePipeline");
     const VkShaderModule module = createModule(state, desc.shader);
     const VkComputePipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
@@ -267,6 +333,7 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
 
     Pipeline out;
     out.rootDataSize = info.rootDataSize;
+    keepConstantBuffers(out, info.constantBuffers);
     out.internal.pipeline = reinterpret_cast<uint64>(pipeline);
     out.internal.layout = reinterpret_cast<uint64>(layout);
     out.internal.id = EQ_VK_TRACK(&state);
@@ -343,11 +410,16 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         stageList.push_back({desc.pixel, SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, "pixel"});
     }
     uint32 rootDataSize = 0;
+    Validation::ConstantBufferSlots constantBuffers;
     const char *rootStage = nullptr;
     [[maybe_unused]] std::vector<Validation::StageValue> producerOutputs;
     [[maybe_unused]] const char *producer = "";
     for (const Stage &stage : stageList) {
         const ShaderInfo info = reflect(stage.code, stage.reflectStage, kCall, stage.name);
+        if (const Validation::CheckResult clash =
+                Validation::mergeConstantBuffers(constantBuffers, info.constantBuffers, kCall, stage.name)) {
+            reportError(ErrorCategory::eProgrammerError, *clash);
+        }
         if (stage.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
             EQ_VALIDATE(Validation::checkStageLink(producerOutputs, info.inputs, producer, "location"));
         } else if (stage.stage != VK_SHADER_STAGE_TASK_BIT_EXT) {
@@ -368,7 +440,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     }
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
                                                hasStencil(desc.depthFormat)));
-    const VkPipelineLayout layout = createLayout(state, device.limits, rootDataSize, kCall);
+    const VkPipelineLayout layout = createLayout(state, device.limits, rootDataSize, constantBuffers, kCall);
 
     std::vector<VkShaderModule> modules;
     std::vector<VkPipelineShaderStageCreateInfo> stages;
@@ -482,6 +554,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
 
     Pipeline out;
     out.rootDataSize = rootDataSize;
+    keepConstantBuffers(out, constantBuffers);
     out.internal.pipeline = reinterpret_cast<uint64>(pipeline);
     out.internal.layout = reinterpret_cast<uint64>(layout);
     out.internal.graphics = true;

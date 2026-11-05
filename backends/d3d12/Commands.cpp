@@ -1,8 +1,8 @@
 // Command lists, binding, barriers and submission on D3D12 (P20, P34, P36,
-// P56, P85).
+// P56, P85, P112).
 //
 // Owns: command lists (one allocator each), cmdBegin / cmdEnd, cmdSetHeap,
-// cmdSetPipeline, cmdSetRootData, cmdBarrier (one global barrier from the
+// cmdSetPipeline, cmdSetRootData, cmdSetConstantBuffer (root CBVs), cmdBarrier (one global barrier from the
 // stage masks), submit and wait (a fence as the timeline).
 //
 // Keeps: what is bound, in CommandList::internal, so RI can set the user's
@@ -23,6 +23,7 @@
 #include <RI/Validation/Placement.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <cstring>
 #include <format>
 
@@ -230,6 +231,7 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     }
     cmd.internal.graphics = pipeline.internal.graphics;
     cmd.internal.rootDataSize = pipeline.rootDataSize;
+    forgetConstantBuffers(cmd, pipeline.constantBuffers, pipeline.internal.constantBufferSizes);
     cmd.internal.pipelineState[point] = pipeline.internal.pipelineState;
     if (pipeline.internal.graphics) {
         cmd.internal.topology = pipeline.internal.topology;
@@ -251,9 +253,58 @@ void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
     }
 }
 
+void forgetConstantBuffers(CommandList &cmd, uint32 declared, std::span<const uint32> sizes) {
+    cmd.internal.constantBuffersDeclared = declared;
+    cmd.internal.constantBuffersSet = 0;
+    for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+        cmd.internal.constantBufferSizes[slot] = slot < sizes.size() ? sizes[slot] : 0;
+    }
+}
+
+namespace {
+
+Validation::ConstantBufferSlots declaredConstantBuffers(const CommandList &cmd) {
+    Validation::ConstantBufferSlots slots{.mask = cmd.internal.constantBuffersDeclared};
+    std::copy(std::begin(cmd.internal.constantBufferSizes), std::end(cmd.internal.constantBufferSizes),
+              slots.sizes.begin());
+    return slots;
+}
+
+// Root CBVs follow the root constants, in slot order (Pipeline.cpp).
+UINT constantBufferParameter(const CommandList &cmd, uint32 slot) {
+    const uint32 below = cmd.internal.constantBuffersDeclared & ((1u << slot) - 1);
+    return (cmd.internal.rootDataSize > 0 ? 1u : 0u) + static_cast<UINT>(std::popcount(below));
+}
+
+} // namespace
+
+void setConstantBufferAddress(CommandList &cmd, uint32 slot, uint64 address) {
+    if (cmd.internal.graphics) {
+        list(cmd)->SetGraphicsRootConstantBufferView(constantBufferParameter(cmd, slot), address);
+    } else {
+        list(cmd)->SetComputeRootConstantBufferView(constantBufferParameter(cmd, slot), address);
+    }
+}
+
+void cmdSetConstantBuffer(CommandList &cmd, uint32 slot, const Buffer &buffer, uint64 offset) {
+    EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_DX_CHECK_ALIVE(cmd.internal.device, buffer.internal.id, "buffer");
+    const Validation::ConstantBufferSlots declared = declaredConstantBuffers(cmd);
+    if (const Validation::CheckResult problem = Validation::checkConstantBufferBind(
+            slot, declared, (buffer.usage & BufferUsage::eConstant) != BufferUsage::eNone, offset, buffer.size)) {
+        reportError(ErrorCategory::eProgrammerError, *problem);
+    }
+    const uint64 address = buffer.gpuAddress + offset;
+    cmd.internal.constantBufferAddresses[slot] = address;
+    cmd.internal.constantBuffersSet |= 1u << slot;
+    setConstantBufferAddress(cmd, slot, address);
+}
+
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
     EQ_VALIDATE(Validation::checkGroupCounts(x, y, z, false, "cmdDispatch"));
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDispatch"));
     list(cmd)->Dispatch(x, y, z);
 }
 

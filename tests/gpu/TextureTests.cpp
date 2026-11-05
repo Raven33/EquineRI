@@ -1837,3 +1837,31 @@ EQ_TEST(texture, stage_link_mismatch_reports) {
     RI::createGraphicsPipeline(device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}});
 }
 #endif
+
+// Bindful constant buffers (P112): the vertex and pixel shaders share slot 1,
+// which gives the depth and the color.
+EQ_TEST(texture, constant_buffer_shared_slot) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer block = placeBuffer(f.device, upload, {.size = 256, .usage = RI::BufferUsage::eConstant});
+    const float shape[5] = {0.25f, 0.5f, 1.0f, 1.0f, 0.5f};
+    std::memcpy(block.mapped, shape, sizeof(shape));
+    std::vector<std::byte> vs = loadShader("constant_buffer_vs"), ps = loadShader("constant_buffer_ps");
+    RI::Pipeline pipeline =
+        RI::createGraphicsPipeline(f.device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    EQ_CHECK(pipeline.constantBuffers == 0b10u);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::cmdSetConstantBuffer(f.cmd, 1, block, 0);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.25f) && all(texels, 1, 0.5f) && all(texels, 2, 1.0f));
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyBuffer(f.device, block);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyTexture(f.device, target);
+}

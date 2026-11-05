@@ -189,6 +189,7 @@ nav:
           - RI::cmdSetHeap: reference/cmdSetHeap.md
           - RI::cmdSetPipeline: reference/cmdSetPipeline.md
           - RI::cmdSetRootData: reference/cmdSetRootData.md
+          - RI::cmdSetConstantBuffer: reference/cmdSetConstantBuffer.md
           - RI::cmdDispatch: reference/cmdDispatch.md
           - RI::cmdBarrier: reference/cmdBarrier.md
           - RI::cmdCopyBuffer: reference/cmdCopyBuffer.md

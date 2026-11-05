@@ -5,10 +5,12 @@
 // CheckResult (P91); backends call them through EQ_VALIDATE.
 
 #include <RI/Abi.hpp>
+#include <RI/Commands.hpp>
 #include <RI/Textures.hpp>
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
 
+#include <array>
 #include <span>
 #include <string>
 #include <string_view>
@@ -204,6 +206,27 @@ CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
 // Group counts of a dispatch or mesh draw (P106): each at most
 // kMaxGroupsPerDimension, and for mesh draws x * y * z at most kMaxMeshGroups.
 CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::string_view call);
+
+// The EQ_CONSTANT_BUFFER slots a shader or pipeline declares (P112), with each
+// block's size rounded up to 16 bytes (D3D12's constant-buffer rows), so both
+// backends check binds against the same size. 0: unknown (work graphs).
+struct ConstantBufferSlots {
+    uint32 mask = 0;
+    std::array<uint32, kMaxConstantBuffers> sizes{};
+};
+// Adds one stage's slots to a pipeline's: a slot two stages declare must have
+// one size.
+CheckResult mergeConstantBuffers(ConstantBufferSlots &pipeline, const ConstantBufferSlots &stage, std::string_view call,
+                                 std::string_view stageName);
+// What a pipeline declares fits the root budget and the constant view size
+// (always checked, as unsupported: P44, P112).
+CheckResult checkRootBudget(uint32 rootDataSize, const ConstantBufferSlots &slots, uint32 maxRootDataSize,
+                            uint64 maxConstantViewSize, std::string_view call);
+// One cmdSetConstantBuffer against the pipeline set last.
+CheckResult checkConstantBufferBind(uint32 slot, const ConstantBufferSlots &declared, bool constantUsage, uint64 offset,
+                                    uint64 bufferSize);
+// Every slot the pipeline declares is set before `call` runs it.
+CheckResult checkConstantBuffersSet(uint32 declared, uint32 set, std::string_view call);
 
 // A call outside the any-thread list runs on the device thread, the one that
 // called createDevice (P106). `call` names it.

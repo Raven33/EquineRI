@@ -299,8 +299,10 @@ struct RenderingDesc {
 // ── Pipelines (P38, P45, P67) ────────────────────────────────────────────────
 
 struct Pipeline {
-    uint32 rootDataSize = 0; // bytes, from the shader (P44, P45)
+    uint32 rootDataSize = 0;    // bytes, from the shader (P44, P45)
+    uint32 constantBuffers = 0; // EQ_CONSTANT_BUFFER slots the shaders declare, as a bitmask (P112)
     struct {
+        uint32 constantBufferSizes[kMaxConstantBuffers] = {}; // each slot's block, rounded to 16 bytes
         uint64 pipeline = 0; // VkPipeline
         uint64 layout = 0;   // VkPipelineLayout
         bool graphics = false;
@@ -329,6 +331,13 @@ struct CommandList {
         uint64 heapResourceSet = 0;     // heap set by cmdSetHeap, 0 if none
         uint64 heapSamplerSet = 0;
         uint32 rootDataSize = 0;        // of the pipeline set by cmdSetPipeline
+        // EQ_CONSTANT_BUFFER slots (P112) of the pipeline set last: declared,
+        // set since, their sizes, and what endNative pushes again (P70).
+        uint32 constantBuffersDeclared = 0;
+        uint32 constantBuffersSet = 0;
+        uint32 constantBufferSizes[kMaxConstantBuffers] = {};
+        uint64 constantBufferHandles[kMaxConstantBuffers] = {}; // VkBuffer
+        uint64 constantBufferOffsets[kMaxConstantBuffers] = {};
         uint64 pipeline = 0;            // VkPipeline set by cmdSetPipeline (indirect Level 2, P70)
         uint64 boundPipeline[2] = {0, 0}; // per bind point (compute, graphics), restored by endNative
         uint8 rootData[kMaxRootDataSize] = {}; // the last root data set, restored after native sections (P70)
@@ -370,6 +379,10 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline);
 // P24). Kept across draws and dispatches until set again. Typed values:
 // RI::Helpers::cmdSetRootData (P107).
 void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data);
+// Binds `buffer` at `offset` (a multiple of kConstantBufferAlignment) to
+// EQ_CONSTANT_BUFFER slot `slot` of the pipeline or work graph set last. A
+// pipeline change forgets every slot (P112).
+void cmdSetConstantBuffer(CommandList &cmd, uint32 slot, const Buffer &buffer, uint64 offset);
 // Outside rendering sections.
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z);
 // Every write made by `before` stages becomes visible to every access of
@@ -547,6 +560,7 @@ void present(Queue &queue, Swapchain &swapchain);
 
 struct WorkGraph {
     uint32 rootDataSize = 0;
+    uint32 constantBuffers = 0; // from WorkGraphDesc (P112)
     WorkGraphMemory backing; // what the graph needs
     struct {
         // nothing: work graphs are D3D12 only

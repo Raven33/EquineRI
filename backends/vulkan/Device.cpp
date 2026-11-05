@@ -49,6 +49,7 @@ struct DeviceSetup {
     bool fault = false;
     bool mutableDescriptor = false;
     bool generatedCommands = false;
+    bool pushDescriptorExtension = false; // VK_KHR_push_descriptor, before Vulkan 1.4 (P112)
 };
 
 // RI's extensions (P60 (2)), each enabled when the GPU has it.
@@ -71,6 +72,9 @@ DeviceSetup chooseSetup(VkPhysicalDevice physicalDevice, uint32 apiVersion) {
     };
     setup.mutableDescriptor = use(VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME); // descriptor heaps (P94), required
     use(VK_KHR_SWAPCHAIN_EXTENSION_NAME);           // P43
+    if (!setup.v14) {
+        setup.pushDescriptorExtension = use(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME); // P112; core in 1.4
+    }
     setup.mesh = use(VK_EXT_MESH_SHADER_EXTENSION_NAME); // P39
     // P49: acceleration structures need deferred host operations; ray query needs both.
     if (hasExtension(available, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) &&
@@ -620,6 +624,8 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     device.limits.indirectRootData =
         setup.generatedCommands && chain.f.generatedCommands.deviceGeneratedCommands == VK_TRUE;
     state->generatedCommands = device.limits.indirectRootData;
+    state->pushDescriptorsCore = setup.v14 && chain.f.v14.pushDescriptor == VK_TRUE;
+    state->pushDescriptors = state->pushDescriptorsCore || setup.pushDescriptorExtension;
     // Inline ray tracing (P49): acceleration structures and ray queries.
     state->rayTracing = setup.rayQuery && chain.f.accelerationStructure.accelerationStructure == VK_TRUE &&
                         chain.f.rayQuery.rayQuery == VK_TRUE;
@@ -684,6 +690,7 @@ void destroyDevice(Device &device) {
         reportError(ErrorCategory::eProgrammerError, "destroyDevice: this device was never created or already destroyed");
     }
     destroyIndirectLayouts(*state);
+    destroyConstantBufferSetLayouts(*state);
     for (const auto &[key, sampler] : state->samplers) {
         state->functions.vkDestroySampler(state->device, sampler, nullptr);
     }

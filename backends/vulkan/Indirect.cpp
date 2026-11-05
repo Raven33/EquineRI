@@ -3,7 +3,7 @@
 // Owns: cmdExecuteIndirect (Level 1: vkCmdDraw*Indirect(Count), mesh and
 // dispatch variants) and Level 2 (cmdExecuteIndirectWithRootData,
 // indirectScratchRequirements) on VK_EXT_device_generated_commands: one
-// indirect commands layout per (kind, root data size), a push-constant token
+// indirect commands layout per (kind, root data size, constant buffer slots), a push-constant token
 // then the draw or dispatch token.
 //
 // Keeps: the indirect layouts and their pipeline layouts, cached in
@@ -49,29 +49,26 @@ void checkIndirectCall([[maybe_unused]] const CommandList &cmd, [[maybe_unused]]
          .countForDispatchAllowed = level2},
         call));
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, kind != IndirectKind::eDispatch, call));
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    call));
 }
 
-uint64 layoutKey(IndirectKind kind, uint32 rootDataSize) {
-    return (uint64{static_cast<uint32>(kind)} << 32) | rootDataSize;
+// Root data size in the low 16 bits (at most kMaxRootDataSize), constant buffer
+// slots in the next 8, the kind above.
+uint64 layoutKey(IndirectKind kind, uint32 rootDataSize, uint32 constantBuffers) {
+    return (uint64{static_cast<uint32>(kind)} << 32) | (uint64{constantBuffers} << 16) | rootDataSize;
 }
 
-// RI's pipeline layout for `rootDataSize`: the same set layouts and push
-// constant range as every RI pipeline with that much root data.
-VkPipelineLayout indirectPipelineLayout(DeviceState &state, uint32 rootDataSize) {
-    auto found = state.indirectPipelineLayouts.find(rootDataSize);
+// RI's pipeline layout for `rootDataSize` and `constantBuffers`: the same set
+// layouts and push constant range as every RI pipeline declaring them.
+VkPipelineLayout indirectPipelineLayout(DeviceState &state, uint32 rootDataSize, uint32 constantBuffers) {
+    const uint64 key = (uint64{constantBuffers} << 32) | rootDataSize;
+    auto found = state.indirectPipelineLayouts.find(key);
     if (found != state.indirectPipelineLayouts.end()) {
         return found->second;
     }
-    const VkDescriptorSetLayout setLayouts[] = {state.resourceSetLayout, state.samplerSetLayout};
-    const VkPushConstantRange range{.stageFlags = VK_SHADER_STAGE_ALL, .offset = 0, .size = rootDataSize};
-    const VkPipelineLayoutCreateInfo info{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                          .setLayoutCount = 2,
-                                          .pSetLayouts = setLayouts,
-                                          .pushConstantRangeCount = rootDataSize > 0 ? 1u : 0u,
-                                          .pPushConstantRanges = &range};
-    VkPipelineLayout layout = VK_NULL_HANDLE;
-    checkVk(state.functions.vkCreatePipelineLayout(state.device, &info, nullptr, &layout), "vkCreatePipelineLayout");
-    state.indirectPipelineLayouts.emplace(rootDataSize, layout);
+    const VkPipelineLayout layout = createPipelineLayout(state, rootDataSize, constantBuffers);
+    state.indirectPipelineLayouts.emplace(key, layout);
     return layout;
 }
 
@@ -84,8 +81,9 @@ VkShaderStageFlags stagesOf(IndirectKind kind) {
     }
 }
 
-VkIndirectCommandsLayoutEXT indirectLayout(DeviceState &state, IndirectKind kind, uint32 rootDataSize) {
-    const uint64 key = layoutKey(kind, rootDataSize);
+VkIndirectCommandsLayoutEXT indirectLayout(DeviceState &state, IndirectKind kind, uint32 rootDataSize,
+                                           uint32 constantBuffers) {
+    const uint64 key = layoutKey(kind, rootDataSize, constantBuffers);
     auto found = state.indirectLayouts.find(key);
     if (found != state.indirectLayouts.end()) {
         return found->second;
@@ -113,7 +111,7 @@ VkIndirectCommandsLayoutEXT indirectLayout(DeviceState &state, IndirectKind kind
         .sType = VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_EXT,
         .shaderStages = stagesOf(kind),
         .indirectStride = indirectStride(kind, rootDataSize),
-        .pipelineLayout = indirectPipelineLayout(state, rootDataSize),
+        .pipelineLayout = indirectPipelineLayout(state, rootDataSize, constantBuffers),
         .tokenCount = tokenCount,
         .pTokens = tokens};
     VkIndirectCommandsLayoutEXT layout = VK_NULL_HANDLE;
@@ -125,13 +123,13 @@ VkIndirectCommandsLayoutEXT indirectLayout(DeviceState &state, IndirectKind kind
 
 // What vkGetGeneratedCommandsMemoryRequirementsEXT reports for `pipeline`.
 VkMemoryRequirements generatedCommandsRequirements(DeviceState &state, VkPipeline pipeline, IndirectKind kind,
-                                                   uint32 rootDataSize, uint32 maxCount) {
+                                                   uint32 rootDataSize, uint32 constantBuffers, uint32 maxCount) {
     const VkGeneratedCommandsPipelineInfoEXT pipelineInfo{.sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT,
                                                           .pipeline = pipeline};
     const VkGeneratedCommandsMemoryRequirementsInfoEXT info{
         .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_EXT,
         .pNext = &pipelineInfo,
-        .indirectCommandsLayout = indirectLayout(state, kind, rootDataSize),
+        .indirectCommandsLayout = indirectLayout(state, kind, rootDataSize, constantBuffers),
         .maxSequenceCount = maxCount};
     VkMemoryRequirements2 requirements{.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
     state.functions.vkGetGeneratedCommandsMemoryRequirementsEXT(state.device, &info, &requirements);
@@ -195,7 +193,8 @@ MemoryRequirements indirectScratchRequirements(Device &device, const Pipeline &p
     }
     EQ_VK_CHECK_ALIVE(&state, pipeline.internal.id, "pipeline");
     const VkMemoryRequirements requirements = generatedCommandsRequirements(
-        state, reinterpret_cast<VkPipeline>(pipeline.internal.pipeline), kind, pipeline.rootDataSize, maxCount);
+        state, reinterpret_cast<VkPipeline>(pipeline.internal.pipeline), kind, pipeline.rootDataSize,
+        pipeline.constantBuffers, maxCount);
     // The types both the scratch range and a scratch buffer of that size allow,
     // so memory from allocateMemory(kind, size, &this) holds the buffer too.
     const MemoryRequirements buffer =
@@ -218,12 +217,13 @@ void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const B
                     "(DeviceLimits::indirectRootData; VK_EXT_device_generated_commands)");
     }
     const uint32 rootDataSize = cmd.internal.rootDataSize;
+    const uint32 constantBuffers = cmd.internal.constantBuffersDeclared;
     const uint32 stride = indirectStride(kind, rootDataSize);
     checkIndirectCall(cmd, kind, records, offset, maxCount, count, countOffset, stride, true,
                       "cmdExecuteIndirectWithRootData");
     const VkPipeline pipeline = reinterpret_cast<VkPipeline>(cmd.internal.pipeline);
     const VkMemoryRequirements requirements =
-        generatedCommandsRequirements(state, pipeline, kind, rootDataSize, maxCount);
+        generatedCommandsRequirements(state, pipeline, kind, rootDataSize, constantBuffers, maxCount);
     if (scratch != nullptr) {
         EQ_VK_CHECK_ALIVE(&state, scratch->internal.id, "buffer");
     }
@@ -243,7 +243,7 @@ void cmdExecuteIndirectWithRootData(CommandList &cmd, IndirectKind kind, const B
         .sType = VK_STRUCTURE_TYPE_GENERATED_COMMANDS_INFO_EXT,
         .pNext = &pipelineInfo,
         .shaderStages = stagesOf(kind),
-        .indirectCommandsLayout = indirectLayout(state, kind, rootDataSize),
+        .indirectCommandsLayout = indirectLayout(state, kind, rootDataSize, constantBuffers),
         .indirectAddress = records.gpuAddress + offset,
         .indirectAddressSize = uint64{stride} * maxCount,
         .preprocessAddress = scratch != nullptr ? scratch->gpuAddress + scratchOffset : 0,

@@ -1,8 +1,8 @@
-// Pipelines and work graphs on D3D12 (P38, P39, P44, P45, P50, P62, P67, P94).
+// Pipelines and work graphs on D3D12 (P38, P39, P44, P45, P50, P62, P67, P94, P112).
 //
 // Owns: root signatures built from the shader by RI's own DXIL reader
 // (heap-indexing flags; root constants at b0 space999 of exactly the declared
-// size), compute, graphics and mesh pipelines, and work graphs: a state object
+// size; a root CBV per EQ_CONSTANT_BUFFER slot in space998), compute, graphics and mesh pipelines, and work graphs: a state object
 // from a lib_6_8 library, bindWorkGraphMemory (initializes the backing memory
 // at once on the internal list), cmdSetWorkGraph, cmdDispatchGraph(Indirect).
 //
@@ -37,17 +37,36 @@ namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 namespace {
 
+// Root constants first (parameter 0, so root data and indirect signatures
+// never move), then one root CBV per EQ_CONSTANT_BUFFER slot, in slot order
+// (P112; constantBufferParameter finds them).
 ID3D12RootSignature *createRootSignature(DeviceState &state, const Reflection::DxilInfo &info) {
-    const D3D12_ROOT_PARAMETER1 rootData{
-        .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
-        .Constants = {.ShaderRegister = 0, .RegisterSpace = 999, .Num32BitValues = (info.rootDataSize + 3) / 4},
-        .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
-    };
+    std::vector<D3D12_ROOT_PARAMETER1> parameters;
+    if (info.hasRootData) {
+        parameters.push_back({
+            .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+            .Constants = {.ShaderRegister = 0,
+                          .RegisterSpace = Reflection::kRootDataSpace,
+                          .Num32BitValues = (info.rootDataSize + 3) / 4},
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
+        });
+    }
+    for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+        if ((info.constantBuffers & (1u << slot)) != 0) {
+            parameters.push_back({
+                .ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV,
+                .Descriptor = {.ShaderRegister = slot,
+                               .RegisterSpace = Reflection::kConstantBufferSpace,
+                               .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE},
+                .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
+            });
+        }
+    }
     // Heaps are always bound (P94), so the heap-indexing flags are always set.
     const D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc{
         .Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
-        .Desc_1_1 = {.NumParameters = info.hasRootData ? 1u : 0u,
-                     .pParameters = &rootData,
+        .Desc_1_1 = {.NumParameters = static_cast<UINT>(parameters.size()),
+                     .pParameters = parameters.data(),
                      .Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
                               D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED},
     };
@@ -127,12 +146,28 @@ std::vector<Validation::StageValue> stageOutputs(const Reflection::DxilInfo &pro
 }
 #endif
 
-void checkRootDataSize(const Device &device, uint32 size, const char *call) {
-    if (size > device.limits.maxRootDataSize) {
-        reportError(ErrorCategory::eUnsupported,
-                    std::format("{}: the shader's root data is {} bytes; D3D12 allows {} (P44)", call, size,
-                                device.limits.maxRootDataSize));
+// What a stage or pipeline declares in space 998 (P112), with sizes rounded to
+// constant-buffer rows so both backends check binds alike.
+Validation::ConstantBufferSlots constantBuffersOf(const Reflection::DxilInfo &info) {
+    Validation::ConstantBufferSlots slots;
+    slots.mask = info.constantBuffers;
+    for (uint32 slot = 0; slot < kMaxConstantBuffers; ++slot) {
+        slots.sizes[slot] = (info.constantBufferSizes[slot] + 15) / 16 * 16;
     }
+    return slots;
+}
+
+void checkRootBudget(const Device &device, uint32 rootDataSize, const Validation::ConstantBufferSlots &slots,
+                     const char *call) {
+    if (const Validation::CheckResult problem = Validation::checkRootBudget(
+            rootDataSize, slots, device.limits.maxRootDataSize, device.limits.maxConstantViewSize, call)) {
+        reportError(ErrorCategory::eUnsupported, *problem);
+    }
+}
+
+void keepConstantBuffers(Pipeline &pipeline, const Validation::ConstantBufferSlots &slots) {
+    pipeline.constantBuffers = slots.mask;
+    std::copy(slots.sizes.begin(), slots.sizes.end(), pipeline.internal.constantBufferSizes);
 }
 
 D3D12_STENCIL_OP stencilOpOf(StencilOp op) {
@@ -207,7 +242,8 @@ D3D12_COMPARISON_FUNC compareOf(CompareOp op) {
 Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) {
     DeviceState &state = *device.internal.state;
     const Reflection::DxilInfo info = reflectStage(device, desc.shader, "createComputePipeline", "compute");
-    checkRootDataSize(device, info.rootDataSize, "createComputePipeline");
+    const Validation::ConstantBufferSlots slots = constantBuffersOf(info);
+    checkRootBudget(device, info.rootDataSize, slots, "createComputePipeline");
 
     ID3D12RootSignature *rootSignature = createRootSignature(state, info);
     const D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc{
@@ -220,6 +256,7 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
 
     Pipeline out;
     out.rootDataSize = info.hasRootData ? info.rootDataSize : 0;
+    keepConstantBuffers(out, slots);
     out.internal.pipelineState = pipelineState;
     out.internal.rootSignature = rootSignature;
     out.internal.id = EQ_DX_TRACK(&state);
@@ -299,14 +336,20 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     EQ_VALIDATE(Validation::checkGraphicsStages(meshPipeline, !desc.hull.empty(), !desc.domain.empty(),
                                                 !desc.geometry.empty(), desc.topology == Topology::ePatchList,
                                                 desc.patchControlPoints));
-    // One root data block for the whole pipeline (P44).
+    // One root data block and one set of constant buffer slots for the whole
+    // pipeline (P44, P112).
     Reflection::DxilInfo info{};
+    Validation::ConstantBufferSlots slots;
     const char *rootStage = nullptr;
     const auto addStage = [&](Bytecode code, const char *name) -> Reflection::DxilInfo {
         if (code.empty()) {
             return {};
         }
         Reflection::DxilInfo stage = reflectStage(device, code, call, name);
+        if (const Validation::CheckResult clash =
+                Validation::mergeConstantBuffers(slots, constantBuffersOf(stage), call, name)) {
+            reportError(ErrorCategory::eProgrammerError, *clash);
+        }
         if (!stage.hasRootData) {
             return stage;
         }
@@ -341,7 +384,8 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
                           : "vertex",
             "register"));
     }
-    checkRootDataSize(device, info.rootDataSize, call);
+    info.constantBuffers = slots.mask;
+    checkRootBudget(device, info.rootDataSize, slots, call);
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
                                                hasStencil(desc.depthFormat)));
     if (desc.colorFormats.size() > 8) {
@@ -446,6 +490,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
 
     Pipeline out;
     out.rootDataSize = info.hasRootData ? info.rootDataSize : 0;
+    keepConstantBuffers(out, slots);
     out.internal.pipelineState = pipelineState;
     out.internal.rootSignature = rootSignature;
     out.internal.graphics = true;
@@ -524,10 +569,18 @@ ID3D12GraphicsCommandList10 *list10(const CommandList &cmd) {
 WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
     DeviceState &state = *device.internal.state;
     requireWorkGraphs(device, "createWorkGraph");
-    checkRootDataSize(device, desc.rootDataSize, "createWorkGraph");
+    if ((desc.constantBuffers >> kMaxConstantBuffers) != 0) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("createWorkGraph: constantBuffers {:#x} names a slot past {} (P112)", desc.constantBuffers,
+                                kMaxConstantBuffers - 1));
+    }
+    // RI does not read libraries (P62): the slots are the user's, their sizes unknown (0).
+    const Validation::ConstantBufferSlots slots{.mask = desc.constantBuffers};
+    checkRootBudget(device, desc.rootDataSize, slots, "createWorkGraph");
     Reflection::DxilInfo info{};
     info.hasRootData = desc.rootDataSize > 0;
     info.rootDataSize = desc.rootDataSize;
+    info.constantBuffers = desc.constantBuffers;
     ID3D12RootSignature *rootSignature = createRootSignature(state, info);
 
     // Every node of the library, one global root signature, one work graph.
@@ -547,6 +600,7 @@ WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
 
     WorkGraph graph;
     graph.rootDataSize = desc.rootDataSize;
+    graph.constantBuffers = desc.constantBuffers;
     graph.internal.stateObject = stateObject;
     graph.internal.rootSignature = rootSignature;
     ID3D12StateObjectProperties1 *objectProperties = nullptr;
@@ -643,6 +697,7 @@ void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
     cmd.internal.rootSignature[0] = rootSignature;
     cmd.internal.graphics = false;
     cmd.internal.rootDataSize = graph.rootDataSize;
+    forgetConstantBuffers(cmd, graph.constantBuffers, {});
     cmd.internal.pipelineState[0] = nullptr; // SetProgram replaces the pipeline state
     const D3D12_SET_PROGRAM_DESC program = programOf(graph, false);
     l->SetProgram(&program);
@@ -651,6 +706,8 @@ void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
 
 void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDispatchGraph"));
     if (inputs.empty()) {
         return;
     }
@@ -678,6 +735,8 @@ void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs) {
 
 void cmdDispatchGraphIndirect(CommandList &cmd, uint64 inputAddress, bool multiNode) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkConstantBuffersSet(cmd.internal.constantBuffersDeclared, cmd.internal.constantBuffersSet,
+                                                    "cmdDispatchGraphIndirect"));
     ID3D12GraphicsCommandList10 *l = list10(cmd);
     D3D12_DISPATCH_GRAPH_DESC desc{};
     if (multiNode) {

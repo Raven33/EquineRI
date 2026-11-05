@@ -1,0 +1,9 @@
+gpu,AMD Radeon 680M (RADV REMBRANDT)
+driver,radv Mesa 26.2.5-arch1.1
+config,dispatches 4096,many reads 4,heavy groups 16384,heavy reads 256,rounds 15
+check,heap,same as push
+check,root,same as push
+measure,unit,push,heap,root
+many: record,ns per dispatch (median),245.4,130.8,174.5
+many: gpu,ms for 4096 dispatches (median),0.0849,0.0825,0.0800
+heavy: gpu,ms (median),0.9496,0.9924,0.8670

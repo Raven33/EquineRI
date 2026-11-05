@@ -301,8 +301,10 @@ struct RenderingDesc {
 // ── Pipelines (P38, P45, P67) ────────────────────────────────────────────────
 
 struct Pipeline {
-    uint32 rootDataSize = 0; // bytes, from the shader (P44, P45)
+    uint32 rootDataSize = 0;    // bytes, from the shader (P44, P45)
+    uint32 constantBuffers = 0; // EQ_CONSTANT_BUFFER slots the shaders declare, as a bitmask (P112)
     struct {
+        uint32 constantBufferSizes[kMaxConstantBuffers] = {}; // each slot's block, rounded to 16 bytes
         void *pipelineState = nullptr; // ID3D12PipelineState
         void *rootSignature = nullptr; // ID3D12RootSignature, built by RI (P67)
         bool graphics = false;
@@ -332,6 +334,13 @@ struct CommandList {
         bool heapSet = false;
         void *heaps[2] = {nullptr, nullptr}; // the user's heaps, set again after RI's UAV clears (P65)
         uint32 rootDataSize = 0;
+        // EQ_CONSTANT_BUFFER slots (P112) of the pipeline or work graph set
+        // last: declared, set since, their sizes, and the addresses endNative
+        // sets again (P70).
+        uint32 constantBuffersDeclared = 0;
+        uint32 constantBuffersSet = 0;
+        uint32 constantBufferSizes[kMaxConstantBuffers] = {};
+        uint64 constantBufferAddresses[kMaxConstantBuffers] = {};
         uint64 lastSubmitted = 0;
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
         bool rendering = false;
@@ -379,6 +388,10 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline);
 // P24). Kept across draws and dispatches until set again. Typed values:
 // RI::Helpers::cmdSetRootData (P107).
 void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data);
+// Binds `buffer` at `offset` (a multiple of kConstantBufferAlignment) to
+// EQ_CONSTANT_BUFFER slot `slot` of the pipeline or work graph set last. A
+// pipeline change forgets every slot (P112).
+void cmdSetConstantBuffer(CommandList &cmd, uint32 slot, const Buffer &buffer, uint64 offset);
 // Outside rendering sections.
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z);
 // Every write made by `before` stages becomes visible to every access of
@@ -556,6 +569,7 @@ void present(Queue &queue, Swapchain &swapchain);
 
 struct WorkGraph {
     uint32 rootDataSize = 0;
+    uint32 constantBuffers = 0; // from WorkGraphDesc (P112)
     WorkGraphMemory backing; // what the graph needs
     struct {
         void *stateObject = nullptr;   // ID3D12StateObject

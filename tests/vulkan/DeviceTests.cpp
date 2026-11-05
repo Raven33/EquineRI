@@ -415,3 +415,73 @@ EQ_TEST(vk, work_graph_unsupported_reports) {
     EQ_CHECK(!device.limits.workGraphs);
     RI::createWorkGraph(device, {});
 }
+
+// Bindful constant buffers after a native section (P70, P112): native code
+// pushes another block into slot 3; endNative pushes RI's back.
+EQ_TEST(vk, constant_buffers_after_native) {
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    gputest::Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 20)};
+    gputest::Arena upload{.memory = RI::allocateMemory(device, RI::MemoryKind::eUpload, 1 << 20)};
+    gputest::Arena readback{.memory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 20)};
+    RI::Buffer blocks = gputest::placeBuffer(device, upload, {.size = 1024, .usage = RI::BufferUsage::eConstant});
+    const float scale[4] = {2.0f, 0.0f, 0.0f, 0.0f};
+    const float kept[8] = {0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 100.0f, 0.0f};
+    const float wrong[8] = {0.0f, 20.0f, 0.0f, 0.0f, 0.0f, 0.0f, 200.0f, 0.0f};
+    auto *bytes = static_cast<std::byte *>(blocks.mapped);
+    std::memcpy(bytes, scale, sizeof(scale));
+    std::memcpy(bytes + 256, kept, sizeof(kept));
+    std::memcpy(bytes + 512, wrong, sizeof(wrong));
+    RI::Buffer output = gputest::placeBuffer(device, gpu, {.size = 256, .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc});
+    RI::Buffer result = gputest::placeBuffer(device, readback, {.size = 256, .usage = RI::BufferUsage::eCopyDst});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadWriteView{.buffer = output, .stride = 4}}});
+    const std::vector<std::byte> shader = gputest::loadShader("constant_buffers");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = shader});
+    struct ConstantRoot {
+        uint32 outputSlot;
+        uint32 base;
+    };
+    runOnce(device, [&](RI::CommandList &cmd) {
+        RI::cmdSetHeap(cmd, heap);
+        RI::cmdSetPipeline(cmd, pipeline);
+        RI::cmdSetConstantBuffer(cmd, 0, blocks, 0);
+        RI::cmdSetConstantBuffer(cmd, 3, blocks, 256);
+        RI::Helpers::cmdSetRootData(cmd, ConstantRoot{.outputSlot = 0, .base = 0});
+        const RI::Vk::NativeCommands n = RI::Vk::beginNative(cmd);
+        const VkDescriptorBufferInfo info{.buffer = RI::Vk::native(blocks), .offset = 512, .range = 32};
+        const VkWriteDescriptorSet write{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                         .dstBinding = 3,
+                                         .descriptorCount = 1,
+                                         .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                         .pBufferInfo = &info};
+        n.functions->vkCmdPushDescriptorSet(n.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                            RI::Vk::native(pipeline).layout, 2, 1, &write);
+        RI::Vk::endNative(cmd, {});
+        RI::cmdDispatch(cmd, 1, 1, 1);
+        RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+        RI::cmdCopyBuffer(cmd, output, 0, result, 0, 256);
+    });
+    const auto *out = static_cast<const float *>(result.mapped);
+    uint32 bad = 0;
+    for (uint32 i = 0; i < 64; ++i) {
+        bad += out[i] != 2.0f * float(i) + 110.0f;
+    }
+    EQ_CHECK(bad == 0);
+    RI::destroyPipeline(device, pipeline);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, blocks);
+    RI::destroyBuffer(device, output);
+    RI::destroyBuffer(device, result);
+    RI::freeMemory(device, gpu.memory);
+    RI::freeMemory(device, upload.memory);
+    RI::freeMemory(device, readback.memory);
+    RI::destroyDevice(device);
+}
+
+// Aborts by design: set 2 holds EQ_CONSTANT_BUFFER slots 0 to 7 only (P112).
+EQ_TEST(vk, constant_buffer_bad_slot_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    const std::vector<std::byte> shader = gputest::loadShader("constant_buffer_bad");
+    RI::createComputePipeline(device, {.shader = shader});
+}

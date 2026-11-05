@@ -270,6 +270,46 @@ EQ_TEST(validation, group_counts) {
     EQ_CHECK(!checkGroupCounts(0, 0, 0, true, "cmdDrawMesh"));
 }
 
+// Bindful constant buffers (P112): merging stages, the root budget, binds, and
+// slots left unset.
+EQ_TEST(validation, constant_buffers) {
+    using RI::Validation::ConstantBufferSlots;
+    ConstantBufferSlots pipeline;
+    ConstantBufferSlots vertex{.mask = 0b11u};
+    vertex.sizes[0] = 16;
+    vertex.sizes[1] = 64;
+    ConstantBufferSlots pixel{.mask = 0b110u};
+    pixel.sizes[1] = 64;
+    pixel.sizes[2] = 32;
+    EQ_CHECK(!RI::Validation::mergeConstantBuffers(pipeline, vertex, "createGraphicsPipeline", "vertex"));
+    EQ_CHECK(!RI::Validation::mergeConstantBuffers(pipeline, pixel, "createGraphicsPipeline", "pixel"));
+    EQ_CHECK(pipeline.mask == 0b111u && pipeline.sizes[2] == 32);
+    ConstantBufferSlots clash{.mask = 0b10u};
+    clash.sizes[1] = 48;
+    const RI::Validation::CheckResult merged = RI::Validation::mergeConstantBuffers(pipeline, clash, "c", "pixel");
+    EQ_CHECK(merged && merged->find("slot 1 with 48 bytes") != std::string::npos);
+
+    EQ_CHECK(!RI::Validation::checkRootBudget(232, pipeline, 256, 65536, "c")); // 232 + 3 * 8 = 256
+    const RI::Validation::CheckResult budget = RI::Validation::checkRootBudget(233, pipeline, 256, 65536, "c");
+    EQ_CHECK(budget && budget->find("together they take 260 bytes") != std::string::npos);
+    EQ_CHECK(RI::Validation::checkRootBudget(0, pipeline, 256, 63, "c").has_value());
+
+    using RI::Validation::checkConstantBufferBind;
+    EQ_CHECK(!checkConstantBufferBind(2, pipeline, true, 256, 512));
+    EQ_CHECK(checkConstantBufferBind(3, pipeline, true, 0, 512).has_value());
+    EQ_CHECK(checkConstantBufferBind(8, pipeline, true, 0, 512).has_value());
+    const RI::Validation::CheckResult usage = checkConstantBufferBind(0, pipeline, false, 0, 512);
+    EQ_CHECK(usage && usage->find("eConstant") != std::string::npos);
+    EQ_CHECK(checkConstantBufferBind(0, pipeline, true, 128, 512).has_value());
+    EQ_CHECK(!checkConstantBufferBind(1, pipeline, true, 256, 320));
+    EQ_CHECK(checkConstantBufferBind(1, pipeline, true, 256, 319).has_value());
+    EQ_CHECK(checkConstantBufferBind(1, pipeline, true, 512, 320).has_value());
+
+    EQ_CHECK(!RI::Validation::checkConstantBuffersSet(0b101u, 0b111u, "cmdDraw"));
+    const RI::Validation::CheckResult unset = RI::Validation::checkConstantBuffersSet(0b101u, 0b001u, "cmdDraw");
+    EQ_CHECK(unset && unset->find("cmdDraw: constant buffer slot 2 is not set") != std::string::npos);
+}
+
 // Small writes (P107): usage, alignment, the size limit and the range.
 EQ_TEST(validation, small_write) {
     using RI::Validation::checkSmallWrite;

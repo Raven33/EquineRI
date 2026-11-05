@@ -22,7 +22,7 @@ Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md`
 | `src/RI/Abi.hpp` | `EQUINE_RI_ABI`, the inline namespace every RI declaration lives in: `abi_retail` or `abi_preview`, from the tree's Agility SDK (P110). Every file that opens `namespace RI` opens `RI::inline EQUINE_RI_ABI`. |
 | `backends/vulkan/` | Namespace `RI::Vk::`, library `EquineVulkanBackend`. `RI/Vk/Backend.hpp` declares the backend's structs and functions; `RI/Vk/Native.hpp` the native access (P84). One `.cpp` per area. `DeviceState.hpp` is the hidden per-device state. |
 | `backends/d3d12/` | The same for D3D12: `RI::D3D12::`, `EquineD3D12Backend`, `RI/D3D12/Backend.hpp`, `RI/D3D12/Native.hpp`. Windows only. |
-| `shaders/equine/root.hlsli` | `EQ_ROOT_DATA` (P45), included by every shader. |
+| `shaders/equine/root.hlsli` | `EQ_ROOT_DATA` (P45) and `EQ_CONSTANT_BUFFER` (P112), included by every shader. |
 | `helpers/` | Optional code built only on RI's public functions (P41): `core/` (allocators, transfers, frame ring, profiler, shader compiler; libraries `EquineHelpersVulkan` / `EquineHelpersD3D12`). No window helper: GLFW is a test-only dependency (P109). |
 | `tests/` | `*.cpp` at the top: GPU-free tests (`EquineRITests`). `gpu/`: portable GPU tests, compiled once per backend. `vulkan/`, `d3d12/`: backend-only GPU tests (native access, backend quirks). `conformance/`: both backends declare the same signatures. `shaders/`: the tests' HLSL. |
 | `samples/` | Small programs on RI. |
@@ -169,6 +169,7 @@ mechanisms.
 | Memory kinds (P32) | One memory type per kind, chosen at device creation, plus other types of the kind for resources that need them (`allocateMemory(..., &requirements)`) | One heap type per kind; resource heap tier 2 holds everything; CPU kinds mapped through one buffer over the whole heap |
 | Descriptor heaps (P94, P99) | Two descriptor sets: set 0 one mutable binding for every resource view (as DXC's `ResourceDescriptorHeap`), set 1 samplers (a `VkSampler` cached per description); update-after-bind; heap size limited by what the driver accepts | Native shader-visible heaps, directly indexed |
 | Root data (P44, P45) | Push constants, one range for all stages | Root constants at root parameter 0 (`b0, space999`) |
+| Constant buffers (P112) | Uniform buffers at set 2, push descriptors; one set layout per slot mask, cached | Root CBVs after the root constants (`b0` to `b7, space998`); 8 bytes of the 256-byte budget each |
 | Shaders (P93, P94, P67) | SPIR-V from DXC with `-fvk-use-dx-layout -fvk-bind-sampler-heap 0 1`; SPIRV-Reflect (also the values passed to the pixel shader, P101) | DXIL; RI's own DXIL reader (also the signatures, P101) |
 | Layouts (P95, P97) | Modes: unified (`GENERAL` everywhere), T (resting layouts per usage), G; RI switches around rendering, clears, copies | Enhanced barriers; textures rest in `COMMON` or their attachment layout |
 | Barriers (P36) | One `VkMemoryBarrier2` from stage masks | One global barrier; attachment stages left to RI's switches |
@@ -176,7 +177,7 @@ mechanisms.
 | Texture shapes (P102) | Cubes: `CUBE_COMPATIBLE` images, a cube view to read and a second 2D-array view (`internal.arrayView`) to write and render; 3D: slices are depth, barriers take every array layer, render targets are 2D-array views of `2D_ARRAY_COMPATIBLE` images | Cubes are 2D arrays with cube SRVs; 3D: `TEXTURE3D`, one subresource per mip, RTVs pick `WSlice`s |
 | Clears (P65, P95) | Native clear commands | `Clear*View`, UAV clears through RI's small shader-visible heap, then the user's heaps and root signature again |
 | Timeline (P20) | Timeline semaphore | Fence |
-| Indirect (P48) | Level 1 native; Level 2 `VK_EXT_device_generated_commands` with the user's scratch | `ExecuteIndirect`, command signatures cached per root signature |
+| Indirect (P48) | Level 1 native; Level 2 `VK_EXT_device_generated_commands` with the user's scratch; its layouts keyed by root data size and constant buffer slots | `ExecuteIndirect`, command signatures cached per root signature |
 | Ray tracing (P49) | `VK_KHR_acceleration_structure` + ray query; acceleration structures must be a mutable descriptor type (off on AMD Windows) | DXR tier 1.1 |
 | Work graphs (P50, P62) | Unsupported | State object, `SetProgram`, `DispatchGraph` |
 | Swapchain (P43, P63, P64) | `VK_KHR_swapchain`; prerecorded layout switches per image | DXGI flip model; back buffers rest in `COMMON` (= `PRESENT`), so acquire and present submit nothing; sRGB views on UNORM buffers |

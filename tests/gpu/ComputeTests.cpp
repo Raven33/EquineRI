@@ -494,3 +494,154 @@ EQ_TEST(compute, unclosed_marker_reports) {
     RI::cmdEnd(cmd);
 }
 #endif
+
+// Bindful constant buffers (P112): constant_buffers.hlsl reads slots 0 and 3.
+// Blocks sit at 256-byte offsets of one upload buffer: the scale at 0, two
+// offset blocks at 256 and 512.
+namespace {
+
+struct ConstantRoot {
+    uint32 outputSlot;
+    uint32 base;
+};
+
+struct ConstantFixture {
+    RI::Device device = createTestDevice();
+    gputest::Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 1 << 20)};
+    gputest::Arena upload{.memory = RI::allocateMemory(device, RI::MemoryKind::eUpload, 1 << 20)};
+    gputest::Arena readback{.memory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 20)};
+    RI::Buffer blocks = gputest::placeBuffer(device, upload, {.size = 1024, .usage = RI::BufferUsage::eConstant});
+    RI::Buffer output = gputest::placeBuffer(
+        device, gpu, {.size = 128 * 4, .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc});
+    RI::Buffer result = gputest::placeBuffer(device, readback, {.size = 128 * 4, .usage = RI::BufferUsage::eCopyDst});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    std::vector<std::byte> shader = loadShader("constant_buffers");
+    RI::Pipeline pipeline = RI::createComputePipeline(device, {.shader = shader});
+    RI::CommandList cmd = RI::createCommandList(device);
+
+    ConstantFixture() {
+        const float scale[4] = {2.0f, 0.0f, 0.0f, 0.0f};
+        const float first[8] = {0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 100.0f, 0.0f};
+        const float second[8] = {0.0f, 20.0f, 0.0f, 0.0f, 0.0f, 0.0f, 200.0f, 0.0f};
+        auto *bytes = static_cast<std::byte *>(blocks.mapped);
+        std::memcpy(bytes, scale, sizeof(scale));
+        std::memcpy(bytes + 256, first, sizeof(first));
+        std::memcpy(bytes + 512, second, sizeof(second));
+        RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadWriteView{.buffer = output, .stride = 4}}});
+        RI::cmdBegin(cmd);
+        RI::cmdSetHeap(cmd, heap);
+    }
+
+    // Copies the output back, submits, waits.
+    const float *finish() {
+        RI::cmdBarrier(cmd, RI::Stage::eCompute | RI::Stage::eIndirect, RI::Stage::eCopy);
+        RI::cmdCopyBuffer(cmd, output, 0, result, 0, 128 * 4);
+        RI::cmdEnd(cmd);
+        RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+        return static_cast<const float *>(result.mapped);
+    }
+
+    ~ConstantFixture() {
+        RI::destroyCommandList(device, cmd);
+        RI::destroyPipeline(device, pipeline);
+        RI::destroyDescriptorHeap(device, heap);
+        for (RI::Buffer *b : {&blocks, &output, &result}) {
+            RI::destroyBuffer(device, *b);
+        }
+        for (gputest::Arena *a : {&gpu, &upload, &readback}) {
+            RI::freeMemory(device, a->memory);
+        }
+        RI::destroyDevice(device);
+    }
+};
+
+bool expected(const float *out, uint32 base, float offset) {
+    bool ok = true;
+    for (uint32 i = 0; i < 64; ++i) {
+        ok = ok && out[base + i] == 2.0f * float(i) + offset;
+    }
+    return ok;
+}
+
+} // namespace
+
+// Two slots, then slot 3 rebound at another offset between dispatches.
+EQ_TEST(compute, constant_buffers) {
+    ConstantFixture f;
+    EQ_CHECK(f.pipeline.constantBuffers == 0b1001u);
+    RI::cmdSetPipeline(f.cmd, f.pipeline);
+    RI::cmdSetConstantBuffer(f.cmd, 0, f.blocks, 0);
+    RI::cmdSetConstantBuffer(f.cmd, 3, f.blocks, 256);
+    RI::Helpers::cmdSetRootData(f.cmd, ConstantRoot{.outputSlot = 0, .base = 0});
+    RI::cmdDispatch(f.cmd, 1, 1, 1);
+    RI::cmdSetConstantBuffer(f.cmd, 3, f.blocks, 512);
+    RI::Helpers::cmdSetRootData(f.cmd, ConstantRoot{.outputSlot = 0, .base = 64});
+    RI::cmdDispatch(f.cmd, 1, 1, 1);
+    const float *out = f.finish();
+    EQ_CHECK(expected(out, 0, 110.0f));
+    EQ_CHECK(expected(out, 64, 220.0f));
+}
+
+// Indirect Level 2 (P48): root data per record, constant buffers set before.
+EQ_TEST(compute, constant_buffers_level2) {
+    ConstantFixture f;
+    if (!f.device.limits.indirectRootData) {
+        return;
+    }
+    struct Record {
+        ConstantRoot root;
+        RI::DispatchIndirectArgs args;
+    };
+    static_assert(sizeof(Record) == RI::indirectStride(RI::IndirectKind::eDispatch, sizeof(ConstantRoot)));
+    RI::Buffer records = gputest::placeBuffer(f.device, f.upload, {.size = 2 * sizeof(Record), .usage = RI::BufferUsage::eIndirect});
+    const Record list[2] = {{{.outputSlot = 0, .base = 0}, {1, 1, 1}}, {{.outputSlot = 0, .base = 64}, {1, 1, 1}}};
+    std::memcpy(records.mapped, list, sizeof(list));
+    const RI::MemoryRequirements need = RI::indirectScratchRequirements(f.device, f.pipeline, RI::IndirectKind::eDispatch, 2);
+    RI::Memory scratchMemory{};
+    RI::Buffer scratch{};
+    if (need.size > 0) {
+        scratchMemory = RI::allocateMemory(f.device, RI::MemoryKind::eGPU, need.size, &need);
+        scratch = RI::createBuffer(f.device, scratchMemory, 0, {.size = need.size, .usage = RI::BufferUsage::eIndirectScratch});
+    }
+    RI::cmdSetPipeline(f.cmd, f.pipeline);
+    RI::cmdSetConstantBuffer(f.cmd, 0, f.blocks, 0);
+    RI::cmdSetConstantBuffer(f.cmd, 3, f.blocks, 256);
+    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDispatch, records, 0, 2,
+                                       need.size > 0 ? &scratch : nullptr, 0, nullptr, 0);
+    const float *out = f.finish();
+    EQ_CHECK(expected(out, 0, 110.0f));
+    EQ_CHECK(expected(out, 64, 110.0f));
+    if (need.size > 0) {
+        RI::destroyBuffer(f.device, scratch);
+        RI::freeMemory(f.device, scratchMemory);
+    }
+    RI::destroyBuffer(f.device, records);
+}
+
+// Aborts by design: a pipeline change forgets the slots (validation builds).
+EQ_TEST(compute, constant_buffer_forgotten_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    ConstantFixture f;
+    RI::cmdSetPipeline(f.cmd, f.pipeline);
+    RI::cmdSetConstantBuffer(f.cmd, 0, f.blocks, 0);
+    RI::cmdSetConstantBuffer(f.cmd, 3, f.blocks, 256);
+    RI::cmdSetPipeline(f.cmd, f.pipeline);
+    RI::Helpers::cmdSetRootData(f.cmd, ConstantRoot{});
+    RI::cmdDispatch(f.cmd, 1, 1, 1);
+}
+
+// Aborts by design: offsets are multiples of kConstantBufferAlignment.
+EQ_TEST(compute, constant_buffer_misaligned_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    ConstantFixture f;
+    RI::cmdSetPipeline(f.cmd, f.pipeline);
+    RI::cmdSetConstantBuffer(f.cmd, 0, f.blocks, 16);
+}
+
+// Aborts by design: 256 bytes of root data and one slot exceed the root budget.
+EQ_TEST(compute, constant_buffer_budget_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    const std::vector<std::byte> shader = loadShader("constant_buffer_budget");
+    RI::createComputePipeline(device, {.shader = shader});
+}

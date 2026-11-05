@@ -85,10 +85,12 @@ struct ComputePipelineDesc {
 
 // Work graphs (P50, P62), D3D12 only: a DXIL library (lib_6_8) whose node
 // shaders form the graph. RI does not read root data from libraries (P62), so
-// give the size of the EQ_ROOT_DATA block the nodes declare (0: none).
+// give the size of the EQ_ROOT_DATA block the nodes declare (0: none), and
+// their EQ_CONSTANT_BUFFER slots (P112).
 struct WorkGraphDesc {
     Bytecode library;
     uint32 rootDataSize = 0;
+    uint32 constantBuffers = 0; // the EQ_CONSTANT_BUFFER slots the nodes declare, as a bitmask (P112)
     std::string_view name; // empty: unnamed (P106)
 };
 
