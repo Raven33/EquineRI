@@ -47,7 +47,7 @@ backend (each links one backend library).
 |---|---|---|
 | `EQUINE_VULKAN_BACKEND`, `EQUINE_D3D12_BACKEND` | `OFF` | The backends to build. |
 | `EQUINE_VALIDATION` | `OFF` | Native validation layers and RI's own checks ([validation](../concepts/validation.md)). |
-| `EQUINE_BUILD_HELPERS` | `ON` | The [helpers](../helpers/index.md): `EquineHelpersVulkan` / `EquineHelpersD3D12`, `EquineGlfwWindow`. |
+| `EQUINE_BUILD_HELPERS` | `ON` | The [helpers](../helpers/index.md): `EquineHelpersVulkan` / `EquineHelpersD3D12`. RI ships no window library: bring your own ([`RI::Window`](../reference/Window.md)). |
 | `EQUINE_SANITIZERS` | `OFF` | AddressSanitizer + UBSan on RI's code; turn it on for your whole build too. |
 | `EQUINE_CLANG_TIDY` | `OFF` | clang-tidy on RI's sources. |
 | `EQUINE_BUILD_TESTS`, `EQUINE_BUILD_SAMPLES`, `EQUINE_BUILD_DOC_SNIPPETS` | `OFF` | RI's own tests, samples and doc snippets. |

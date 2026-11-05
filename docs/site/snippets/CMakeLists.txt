@@ -22,10 +22,13 @@ file(GLOB EQUINE_DOC_SNIPPETS_D3D12 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DI
 
 add_custom_target(EquineDocSnippets)
 
+# The swapchain example opens its window with GLFW, as RI's tests do (P109).
+equine_add_glfw()
+
 foreach(backend IN ITEMS Vulkan D3D12)
     if (TARGET Equine${backend}Backend AND EQUINE_DOC_SNIPPETS_RI)
         add_library(EquineDocSnippetsRI${backend} OBJECT ${EQUINE_DOC_SNIPPETS_RI})
-        target_link_libraries(EquineDocSnippetsRI${backend} PRIVATE Equine${backend}Backend EquineGlfwWindow EquineHelpers${backend})
+        target_link_libraries(EquineDocSnippetsRI${backend} PRIVATE Equine${backend}Backend glfw EquineHelpers${backend})
         add_dependencies(EquineDocSnippets EquineDocSnippetsRI${backend})
         # The examples' shader, with RI's compile rule (P93); defines EQUINE_SHADER_DIR.
         equine_add_shaders(EquineDocSnippetsRI${backend} PROFILE cs_6_6 SOURCES

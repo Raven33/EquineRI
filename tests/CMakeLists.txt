@@ -240,6 +240,8 @@ function(equine_add_gpu_tests exe prefix)
 endfunction()
 
 # ── GPU tests ────────────────────────────────────────────────────────────────
+# The swapchain tests open a window with GLFW, a test-only dependency (P109).
+equine_add_glfw()
 # Need a real GPU and driver; labelled "gpu" so `ctest -LE gpu` skips them.
 if (TARGET EquineVulkanBackend)
     add_executable(EquineRIVulkanTests
@@ -250,7 +252,7 @@ if (TARGET EquineVulkanBackend)
     equine_add_gpu_test_shaders(EquineRIVulkanTests)
     equine_add_shaders(EquineRIVulkanTests PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/printf.hlsl")
     target_include_directories(EquineRIVulkanTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_link_libraries(EquineRIVulkanTests PRIVATE EquineVulkanBackend EquineGlfwWindow EquineHelpersVulkan)
+    target_link_libraries(EquineRIVulkanTests PRIVATE EquineVulkanBackend glfw EquineHelpersVulkan)
     equine_copy_sanitizer_runtime(EquineRIVulkanTests)
 
     set(EQUINE_VK_TEST_NAMES
@@ -307,7 +309,7 @@ if (TARGET EquineD3D12Backend)
     equine_add_gpu_test_shaders(EquineRID3D12Tests)
     equine_add_shaders(EquineRID3D12Tests PROFILE lib_6_8 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/work_graph.hlsl")
     target_include_directories(EquineRID3D12Tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_link_libraries(EquineRID3D12Tests PRIVATE EquineD3D12Backend EquineGlfwWindow EquineHelpersD3D12)
+    target_link_libraries(EquineRID3D12Tests PRIVATE EquineD3D12Backend glfw EquineHelpersD3D12)
     equine_copy_sanitizer_runtime(EquineRID3D12Tests)
     equine_deploy_agility_sdk(EquineRID3D12Tests)
 
