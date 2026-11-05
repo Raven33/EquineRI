@@ -7,9 +7,9 @@ symbols: [RI::Window, RI::WindowSystem]
 ## What it is
 
 `RI::Window` describes a window as the operating system knows it: plain OS handles, never a
-native graphics object. RI creates no windows ([P43](../design-notes/decisions.md#p43)). You
-create the window yourself (or with the [GLFW window helper](../helpers/glfw-window.md)) and
-fill in this struct; [`createSwapchain`](swapchain.md) takes it to present to the window.
+native graphics object. RI creates no windows and ships no window library
+([P43](../design-notes/decisions.md#p43), [P109](../design-notes/decisions.md#p109)). You
+create the window with the library of your choice and fill in this struct; [`createSwapchain`](swapchain.md) takes it to present to the window.
 
 | `system` | `display` | `handle` | `id` |
 |---|---|---|---|
@@ -37,6 +37,19 @@ const RI::Window window{
 };
 ```
 
+### From a GLFW window
+
+A few lines over `glfw3native.h`; create the window with `GLFW_CLIENT_API` set to
+`GLFW_NO_API` (RI, not GLFW, talks to the GPU). RI's own tests and examples use this code;
+GLFW is not part of RI.
+
+```cpp
+--8<-- "snippets/ri/swapchain.cpp:glfw"
+```
+
+Another window library (SDL, Qt, your own Win32 code) fills the same fields from its native
+handles.
+
 ## Rules / errors
 
 - The handles must stay valid while a swapchain uses them.
@@ -46,5 +59,6 @@ const RI::Window window{
 ## Related decisions
 
 [P43](../design-notes/decisions.md#p43) (RI creates no window; a native window handle and a
-swapchain), [P84](../design-notes/decisions.md#p84) (no native graphics types in portable
+swapchain), [P109](../design-notes/decisions.md#p109) (no window helper; GLFW only in RI's
+tests), [P84](../design-notes/decisions.md#p84) (no native graphics types in portable
 headers).

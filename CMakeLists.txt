@@ -167,6 +167,24 @@ function(equine_mark_nonproject_dependency target)
     )
 endfunction()
 
+# GLFW (pinned submodule, tag 3.4), for RI's own swapchain tests and doc
+# snippets only: RI creates no windows and ships no window helper (P43, P109).
+# Projects that already define a `glfw` target keep theirs.
+function(equine_add_glfw)
+    if (TARGET glfw)
+        return()
+    endif()
+    equine_require_submodule("${EQUINE_THIRD_PARTY_DIR}/glfw/CMakeLists.txt" glfw)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory("${EQUINE_THIRD_PARTY_DIR}/glfw" "${CMAKE_BINARY_DIR}/third_party/glfw" EXCLUDE_FROM_ALL SYSTEM)
+    equine_mark_nonproject_dependency(glfw)
+    # Third-party code: its warnings are not ours.
+    target_compile_options(glfw PRIVATE $<IF:$<STREQUAL:${CMAKE_C_COMPILER_FRONTEND_VARIANT},MSVC>,/w,-w>)
+endfunction()
+
 # RavenLib (header-only, vendored): bitmask operators for RI flag enums (P86).
 add_library(rvl INTERFACE)
 target_include_directories(rvl INTERFACE
@@ -277,7 +295,7 @@ if (EQUINE_BUILD_TESTS)
     enable_testing() # before samples: they register their own run as a test
 endif()
 
-# Helpers (P41): EquineHelpersVulkan / EquineHelpersD3D12, EquineGlfwWindow.
+# Helpers (P41): EquineHelpersVulkan / EquineHelpersD3D12.
 option(EQUINE_BUILD_HELPERS "Build the helper libraries" ON)
 if (EQUINE_BUILD_HELPERS OR EQUINE_BUILD_TESTS OR EQUINE_BUILD_SAMPLES OR EQUINE_BUILD_DOC_SNIPPETS)
     add_subdirectory(helpers)

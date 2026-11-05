@@ -22,7 +22,7 @@ Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md`
 | `backends/vulkan/` | Namespace `RI::Vk::`, library `EquineVulkanBackend`. `RI/Vk/Backend.hpp` declares the backend's structs and functions; `RI/Vk/Native.hpp` the native access (P84). One `.cpp` per area. `DeviceState.hpp` is the hidden per-device state. |
 | `backends/d3d12/` | The same for D3D12: `RI::D3D12::`, `EquineD3D12Backend`, `RI/D3D12/Backend.hpp`, `RI/D3D12/Native.hpp`. Windows only. |
 | `shaders/equine/root.hlsli` | `EQ_ROOT_DATA` (P45), included by every shader. |
-| `helpers/` | Optional code built only on RI's public functions (P41): `core/` (allocators, transfers, frame ring, profiler, shader compiler; libraries `EquineHelpersVulkan` / `EquineHelpersD3D12`) and `glfw/` (`EquineGlfwWindow`). |
+| `helpers/` | Optional code built only on RI's public functions (P41): `core/` (allocators, transfers, frame ring, profiler, shader compiler; libraries `EquineHelpersVulkan` / `EquineHelpersD3D12`). No window helper: GLFW is a test-only dependency (P109). |
 | `tests/` | `*.cpp` at the top: GPU-free tests (`EquineRITests`). `gpu/`: portable GPU tests, compiled once per backend. `vulkan/`, `d3d12/`: backend-only GPU tests (native access, backend quirks). `conformance/`: both backends declare the same signatures. `shaders/`: the tests' HLSL. |
 | `samples/` | Small programs on RI. |
 | `tools/` | Measurement harnesses: `layout_bench/` (L1, P96, P97), `descriptor_bench/` (P94), `statistics_bench/` (statistics-query cost, P105). |

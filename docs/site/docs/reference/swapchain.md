@@ -8,8 +8,8 @@ symbols: [RI::createSwapchain, RI::destroySwapchain, RI::resizeSwapchain, RI::ac
 
 A **swapchain** shows rendered frames in a window ([P43](../design-notes/decisions.md#p43),
 [P63](../design-notes/decisions.md#p63), [P64](../design-notes/decisions.md#p64)). RI creates
-no window: you pass its OS handles as an [`RI::Window`](Window.md) (the
-[GLFW window helper](../helpers/glfw-window.md) fills one in).
+no window: you pass its OS handles as an [`RI::Window`](Window.md) (its page shows how to
+fill one from a GLFW window).
 
 - `RI::surfaceFormats(device, window)` lists the `(format, color space)` pairs the window can
   show: `ColorSpace::eSrgb`, `eHdr10` (PQ, typically `eRGB10A2Unorm`) or `eScRgb` (linear,

@@ -1,10 +1,32 @@
-// RI: a window, a swapchain and a frame loop (P43, P63, P64), with the GLFW
-// window helper. Compiled once per enabled backend.
+// RI: a window, a swapchain and a frame loop (P43, P63, P64), the window
+// opened with GLFW. Compiled once per enabled backend.
 
-#include <RI/Helpers/GlfwWindow.hpp>
 #include <RI/RI.hpp>
 
+// --8<-- [start:glfw]
 #include <GLFW/glfw3.h>
+#if defined(_WIN32)
+#define GLFW_EXPOSE_NATIVE_WIN32
+#else
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_WAYLAND
+#endif
+#include <GLFW/glfw3native.h>
+
+// The OS handles of a GLFW window, on the platform GLFW runs on.
+RI::Window windowOf(GLFWwindow *window) {
+#if defined(_WIN32)
+    return {.system = RI::WindowSystem::eWin32, .display = GetModuleHandleW(nullptr), .handle = glfwGetWin32Window(window)};
+#else
+    if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) {
+        return {.system = RI::WindowSystem::eWayland,
+                .display = glfwGetWaylandDisplay(),
+                .handle = glfwGetWaylandWindow(window)};
+    }
+    return {.system = RI::WindowSystem::eXlib, .display = glfwGetX11Display(), .id = glfwGetX11Window(window)};
+#endif
+}
+// --8<-- [end:glfw]
 
 #include <algorithm>
 #include <vector>
@@ -17,10 +39,10 @@ int main() {
     RI::Device device = RI::createDevice({.gpu = gpus[0]});
 
     // --8<-- [start:create]
-    // RI creates no window: GLFW does, and the helper gives RI its OS handles.
+    // RI creates no window: GLFW does, and windowOf gives RI its OS handles.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow *window = glfwCreateWindow(1280, 720, "EquineRI", nullptr, nullptr);
-    const RI::Window osWindow = RI::Helpers::windowOf(window);
+    const RI::Window osWindow = windowOf(window);
 
     // Pick a format the window shows: sRGB 8-bit if possible (P64).
     const std::vector<RI::SurfaceFormat> formats = RI::surfaceFormats(device, osWindow);

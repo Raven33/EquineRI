@@ -1,15 +1,13 @@
-// Swapchains (P43, P63, P64): a real window from the GLFW helper, a few frames
+// Swapchains (P43, P63, P64): a real window opened with GLFW, a few frames
 // cleared and presented, a copy into the screen texture, then a resize. Skips
 // when no window can be opened (no display).
 
+#include "GlfwWindow.hpp"
 #include "GpuTestCommon.hpp"
 
 #include <TestHarness.hpp>
 
-#include <RI/Helpers/GlfwWindow.hpp>
 #include <RI/RI.hpp>
-
-#include <GLFW/glfw3.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -66,7 +64,7 @@ void swapchainOn(int platform) {
         return;
     }
     RI::Device device = createTestDevice();
-    const RI::Window osWindow = RI::Helpers::windowOf(window);
+    const RI::Window osWindow = gputest::windowOf(window);
     const std::vector<RI::SurfaceFormat> formats = RI::surfaceFormats(device, osWindow);
     EQ_CHECK(!formats.empty());
     const RI::SurfaceFormat wanted{RI::Format::eBGRA8Srgb, RI::ColorSpace::eSrgb};

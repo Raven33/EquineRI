@@ -225,7 +225,6 @@ nav:
       - Importing native objects: native/import.md
   - Helpers:
       - helpers/index.md
-      - GLFW window: helpers/glfw-window.md
       - Memory and slot allocators: helpers/allocators.md
       - Transfers: helpers/transfers.md
       - Frame ring: helpers/frame-ring.md
