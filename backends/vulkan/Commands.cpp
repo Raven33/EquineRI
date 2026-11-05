@@ -877,12 +877,30 @@ VkImageSubresourceLayers layersOf(const TextureView &view) {
             .layerCount = view.internal.volume ? 1 : view.internal.layerCount};
 }
 
-VkOffset3D sliceOffset(const TextureView &view) {
-    return {0, 0, view.internal.volume ? static_cast<int32_t>(view.internal.baseLayer) : 0};
+// A copy region (P108): the default is the whole mip.
+Rect resolved(Rect region, const TextureView &view) {
+    return region.width == 0 && region.height == 0 ? Rect{0, 0, view.width, view.height} : region;
 }
 
-VkExtent3D sliceExtent(const TextureView &view) {
-    return {view.width, view.height, view.internal.volume ? view.internal.layerCount : 1};
+// Depth, stencil and multisampled views copy only whole: D3D12's rule, kept
+// on both backends.
+bool copiesWhole(const TextureView &view) {
+    return view.samples > 1 ||
+           (view.internal.aspectMask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0;
+}
+
+void checkRegion([[maybe_unused]] Rect region, [[maybe_unused]] const TextureView &view,
+                 [[maybe_unused]] std::string_view what, [[maybe_unused]] std::string_view call) {
+    EQ_VALIDATE(Validation::checkCopyRegion(region.x, region.y, region.width, region.height, view.width, view.height,
+                                            copiesWhole(view), what, call));
+}
+
+VkOffset3D sliceOffset(const TextureView &view, int32 x = 0, int32 y = 0) {
+    return {x, y, view.internal.volume ? static_cast<int32_t>(view.internal.baseLayer) : 0};
+}
+
+VkExtent3D sliceExtent(const TextureView &view, Rect region) {
+    return {region.width, region.height, view.internal.volume ? view.internal.layerCount : 1};
 }
 
 // The layout a copy uses: in place for textures resting in GENERAL, else the
@@ -932,23 +950,25 @@ void checkBufferCopyRange([[maybe_unused]] const Buffer &buffer, [[maybe_unused]
     }
 }
 
-VkBufferImageCopy2 regionOf(const TextureView &view, uint64 offset, const CopyLayout &layout) {
+VkBufferImageCopy2 regionOf(const TextureView &view, uint64 offset, const CopyLayout &layout, Rect region) {
     return {.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .bufferOffset = offset,
             .bufferRowLength = static_cast<uint32>(layout.rowPitch / layout.bytesPerTexel),
             .bufferImageHeight = static_cast<uint32>(layout.layerPitch / layout.rowPitch),
             .imageSubresource = layersOf(view),
-            .imageOffset = sliceOffset(view),
-            .imageExtent = sliceExtent(view)};
+            .imageOffset = sliceOffset(view, region.x, region.y),
+            .imageExtent = sliceExtent(view, region)};
 }
 
 } // namespace
 
-CopyLayout copyLayout(Device &device, const TextureView &view) {
+CopyLayout copyLayout(Device &device, const TextureView &view, Rect region) {
     const DeviceState &state = *device.internal.state;
+    checkRegion(region, view, "view", "copyLayout");
+    region = resolved(region, view);
     CopyLayout layout;
-    layout.width = view.width;
-    layout.height = view.height;
+    layout.width = region.width;
+    layout.height = region.height;
     layout.layers = view.internal.layerCount;
     layout.bytesPerTexel = copyBytesOf(view);
     if (layout.bytesPerTexel == 0) {
@@ -971,7 +991,8 @@ CopyLayout copyLayout(Device &device, const TextureView &view) {
     return layout;
 }
 
-void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst) {
+void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst,
+                            Rect region) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.id, "buffer");
@@ -981,52 +1002,58 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
     EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdCopyBufferToTexture"));
 #endif
     checkCopy(dst, true, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyBufferToTexture");
+    checkRegion(region, dst, "destination", "cmdCopyBufferToTexture");
+    region = resolved(region, dst);
     Device device{.internal = {.state = &state}};
-    const CopyLayout layout = copyLayout(device, dst);
+    const CopyLayout layout = copyLayout(device, dst, region);
     checkBufferCopyRange(src, srcOffset, layout, BufferUsage::eCopySrc, "cmdCopyBufferToTexture");
     std::vector<VkImageMemoryBarrier2> barriers;
     switchForCopy(barriers, dst, true, false);
     pipelineBarrier(cmd, barriers);
-    const VkBufferImageCopy2 region = regionOf(dst, srcOffset, layout);
+    const VkBufferImageCopy2 copy = regionOf(dst, srcOffset, layout, region);
     const VkCopyBufferToImageInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
                                         .srcBuffer = native(src),
                                         .dstImage = reinterpret_cast<VkImage>(dst.internal.image),
                                         .dstImageLayout = copyLayoutFor(dst, true),
                                         .regionCount = 1,
-                                        .pRegions = &region};
+                                        .pRegions = &copy};
     fn(cmd).vkCmdCopyBufferToImage2(native(cmd), &info);
     barriers.clear();
     switchForCopy(barriers, dst, true, true);
     pipelineBarrier(cmd, barriers);
 }
 
-void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset) {
+void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset,
+                            Rect region) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_VK_CHECK_ALIVE(&state, dst.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTextureToBuffer"));
     checkCopy(src, true, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTextureToBuffer");
+    checkRegion(region, src, "source", "cmdCopyTextureToBuffer");
+    region = resolved(region, src);
     Device device{.internal = {.state = &state}};
-    const CopyLayout layout = copyLayout(device, src);
+    const CopyLayout layout = copyLayout(device, src, region);
     checkBufferCopyRange(dst, dstOffset, layout, BufferUsage::eCopyDst, "cmdCopyTextureToBuffer");
     std::vector<VkImageMemoryBarrier2> barriers;
     switchForCopy(barriers, src, false, false);
     pipelineBarrier(cmd, barriers);
-    const VkBufferImageCopy2 region = regionOf(src, dstOffset, layout);
+    const VkBufferImageCopy2 copy = regionOf(src, dstOffset, layout, region);
     const VkCopyImageToBufferInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
                                         .srcImage = reinterpret_cast<VkImage>(src.internal.image),
                                         .srcImageLayout = copyLayoutFor(src, false),
                                         .dstBuffer = native(dst),
                                         .regionCount = 1,
-                                        .pRegions = &region};
+                                        .pRegions = &copy};
     fn(cmd).vkCmdCopyImageToBuffer2(native(cmd), &info);
     barriers.clear();
     switchForCopy(barriers, src, false, true);
     pipelineBarrier(cmd, barriers);
 }
 
-void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
+void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst, Rect region,
+                    Offset dstOffset) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_VK_CHECK_ALIVE(&state, src.internal.textureId, "texture");
@@ -1037,28 +1064,32 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
 #endif
     checkCopy(src, false, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTexture");
     checkCopy(dst, false, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyTexture");
-    EQ_VALIDATE(Validation::checkCopyTextureMatch(src.width, src.height, src.internal.layerCount, src.samples,
-                                                  copyBytesOf(src), dst.width, dst.height, dst.internal.layerCount,
-                                                  dst.samples, copyBytesOf(dst)));
+    EQ_VALIDATE(Validation::checkCopyTextureMatch(src.internal.layerCount, src.samples, copyBytesOf(src),
+                                                  dst.internal.layerCount, dst.samples, copyBytesOf(dst)));
+    checkRegion(region, src, "source", "cmdCopyTexture");
+    region = resolved(region, src);
+    checkRegion({dstOffset.x, dstOffset.y, region.width, region.height}, dst, "destination", "cmdCopyTexture");
     std::vector<VkImageMemoryBarrier2> barriers;
     switchForCopy(barriers, src, false, false);
     switchForCopy(barriers, dst, true, false);
     pipelineBarrier(cmd, barriers);
-    const VkImageCopy2 region{.sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
-                              .srcSubresource = layersOf(src),
-                              .srcOffset = sliceOffset(src),
-                              .dstSubresource = layersOf(dst),
-                              .dstOffset = sliceOffset(dst),
-                              // A 3D side copies as many slices as the other side has layers.
-                              .extent = {src.width, src.height,
-                                         src.internal.volume || dst.internal.volume ? src.internal.layerCount : 1}};
+    const VkImageCopy2 copy{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+        .srcSubresource = layersOf(src),
+        .srcOffset = sliceOffset(src, region.x, region.y),
+        .dstSubresource = layersOf(dst),
+        .dstOffset = sliceOffset(dst, dstOffset.x, dstOffset.y),
+        // A 3D side copies as many slices as the other side has layers.
+        .extent = {region.width, region.height,
+                   src.internal.volume || dst.internal.volume ? src.internal.layerCount : 1}
+    };
     const VkCopyImageInfo2 info{.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
                                 .srcImage = reinterpret_cast<VkImage>(src.internal.image),
                                 .srcImageLayout = copyLayoutFor(src, false),
                                 .dstImage = reinterpret_cast<VkImage>(dst.internal.image),
                                 .dstImageLayout = copyLayoutFor(dst, true),
                                 .regionCount = 1,
-                                .pRegions = &region};
+                                .pRegions = &copy};
     fn(cmd).vkCmdCopyImage2(native(cmd), &info);
     barriers.clear();
     switchForCopy(barriers, src, false, true);

@@ -691,6 +691,23 @@ ID3D12Resource *resourceOf(const TextureView &view) { return static_cast<ID3D12R
 
 bool isVolume(const TextureView &view) { return view.internal.shape == TextureShape::e3D; }
 
+// A copy region (P108): the default is the whole mip.
+Rect resolved(Rect region, const TextureView &view) {
+    return region.width == 0 && region.height == 0 ? Rect{0, 0, view.width, view.height} : region;
+}
+
+// CopyTextureRegion copies depth, stencil and multisampled subresources only
+// whole.
+bool copiesWhole(const TextureView &view) {
+    return view.samples > 1 || view.internal.planes != 1 || isDepthFormat(view.format);
+}
+
+void checkRegion([[maybe_unused]] Rect region, [[maybe_unused]] const TextureView &view,
+                 [[maybe_unused]] std::string_view what, [[maybe_unused]] std::string_view call) {
+    EQ_VALIDATE(Validation::checkCopyRegion(region.x, region.y, region.width, region.height, view.width, view.height,
+                                            copiesWhole(view), what, call));
+}
+
 // The subresource of `layer` (counted from the view's first layer). A 3D
 // texture has one subresource per mip; its slices are depth (P102).
 UINT subresourceOf(const TextureView &view, uint32 layer) {
@@ -700,10 +717,22 @@ UINT subresourceOf(const TextureView &view, uint32 layer) {
            plane * view.internal.textureMips * view.internal.textureLayers;
 }
 
-// The z range of slice `layer` of a view: a 3D texture's slice, else z = 0.
-D3D12_BOX sliceBox(const TextureView &view, uint32 layer, uint32 count) {
+// `region` of slice `layer` of a view, `count` slices deep: a 3D texture's
+// slices, else z = 0.
+D3D12_BOX sliceBox(const TextureView &view, uint32 layer, uint32 count, Rect region) {
     const UINT z = isVolume(view) ? view.internal.baseLayer + layer : 0;
-    return {.left = 0, .top = 0, .front = z, .right = view.width, .bottom = view.height, .back = z + count};
+    return {.left = static_cast<UINT>(region.x),
+            .top = static_cast<UINT>(region.y),
+            .front = z,
+            .right = static_cast<UINT>(region.x) + region.width,
+            .bottom = static_cast<UINT>(region.y) + region.height,
+            .back = z + count};
+}
+
+// Whether a copy from `view` needs a box: 3D slices, or part of a mip.
+bool needsBox(const TextureView &view, Rect region) {
+    return isVolume(view) || region.x != 0 || region.y != 0 || region.width != view.width ||
+           region.height != view.height;
 }
 
 // One layer's placed footprint at `offset`, as D3D12 describes it.
@@ -713,6 +742,8 @@ D3D12_TEXTURE_COPY_LOCATION bufferLocation(ID3D12Device *device, const TextureVi
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
     device->GetCopyableFootprints(&desc, subresourceOf(view, layer), 1, 0, &footprint, nullptr, nullptr, nullptr);
     footprint.Offset = offset + layer * layout.layerPitch;
+    footprint.Footprint.Width = layout.width; // the copy region's (P108)
+    footprint.Footprint.Height = layout.height;
     footprint.Footprint.RowPitch = static_cast<UINT>(layout.rowPitch);
     // A 3D copy moves all of the view's slices at once (P102).
     footprint.Footprint.Depth = isVolume(view) ? layout.layers : 1;
@@ -741,10 +772,12 @@ void checkBufferCopyRange([[maybe_unused]] const Buffer &buffer, [[maybe_unused]
 } // namespace
 
 // Rows on D3D12's 256-byte pitch, layers on its 512-byte placement alignment.
-CopyLayout copyLayout(Device & /*device*/, const TextureView &view) {
+CopyLayout copyLayout(Device & /*device*/, const TextureView &view, Rect region) {
+    checkRegion(region, view, "view", "copyLayout");
+    region = resolved(region, view);
     CopyLayout layout;
-    layout.width = view.width;
-    layout.height = view.height;
+    layout.width = region.width;
+    layout.height = region.height;
     layout.layers = view.internal.layerCount;
     layout.bytesPerTexel = copyBytesOf(view);
     if (layout.bytesPerTexel == 0) {
@@ -762,7 +795,8 @@ CopyLayout copyLayout(Device & /*device*/, const TextureView &view) {
 
 // Textures with copy usage rest in DIRECT_QUEUE_COMMON (L1), which allows
 // copies: no layout switch.
-void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst) {
+void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffset, const TextureView &dst,
+                            Rect region) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.id, "buffer");
@@ -772,8 +806,10 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
     EQ_VALIDATE(Validation::checkDiscarded(state.placements, dst.internal.textureId, "cmdCopyBufferToTexture"));
 #endif
     checkCopy(dst, true, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyBufferToTexture");
+    checkRegion(region, dst, "destination", "cmdCopyBufferToTexture");
+    region = resolved(region, dst);
     Device device{.internal = {.state = &state}};
-    const CopyLayout layout = copyLayout(device, dst);
+    const CopyLayout layout = copyLayout(device, dst, region);
     checkBufferCopyRange(src, srcOffset, layout, BufferUsage::eCopySrc, "cmdCopyBufferToTexture");
     const uint32 copies = isVolume(dst) ? 1 : layout.layers;
     for (uint32 layer = 0; layer < copies; ++layer) {
@@ -781,19 +817,23 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
         const D3D12_TEXTURE_COPY_LOCATION from =
             bufferLocation(state.device, dst, layer, static_cast<ID3D12Resource *>(src.internal.resource), srcOffset,
                            layout);
-        list(cmd)->CopyTextureRegion(&to, 0, 0, sliceBox(dst, layer, 1).front, &from, nullptr);
+        list(cmd)->CopyTextureRegion(&to, static_cast<UINT>(region.x), static_cast<UINT>(region.y),
+                                     sliceBox(dst, layer, 1, region).front, &from, nullptr);
     }
 }
 
-void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset) {
+void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset,
+                            Rect region) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
     DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
     EQ_DX_CHECK_ALIVE(&state, dst.internal.id, "buffer");
     EQ_VALIDATE(Validation::checkRenderingSection(cmd.internal.rendering, false, "cmdCopyTextureToBuffer"));
     checkCopy(src, true, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTextureToBuffer");
+    checkRegion(region, src, "source", "cmdCopyTextureToBuffer");
+    region = resolved(region, src);
     Device device{.internal = {.state = &state}};
-    const CopyLayout layout = copyLayout(device, src);
+    const CopyLayout layout = copyLayout(device, src, region);
     checkBufferCopyRange(dst, dstOffset, layout, BufferUsage::eCopyDst, "cmdCopyTextureToBuffer");
     const uint32 copies = isVolume(src) ? 1 : layout.layers;
     for (uint32 layer = 0; layer < copies; ++layer) {
@@ -801,13 +841,15 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
             bufferLocation(state.device, src, layer, static_cast<ID3D12Resource *>(dst.internal.resource), dstOffset,
                            layout);
         const D3D12_TEXTURE_COPY_LOCATION from = textureLocation(src, layer);
-        // Depth and multisampled copies take no box: only 3D sources pass one.
-        const D3D12_BOX box = sliceBox(src, layer, layout.layers);
-        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, isVolume(src) ? &box : nullptr);
+        // Depth and multisampled copies take no box: they copy whole, so only
+        // 3D sources and regions pass one.
+        const D3D12_BOX box = sliceBox(src, layer, isVolume(src) ? layout.layers : 1, region);
+        list(cmd)->CopyTextureRegion(&to, 0, 0, 0, &from, needsBox(src, region) ? &box : nullptr);
     }
 }
 
-void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst) {
+void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst, Rect region,
+                    Offset dstOffset) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
     [[maybe_unused]] DeviceState &state = *cmd.internal.device;
     EQ_DX_CHECK_ALIVE(&state, src.internal.textureId, "texture");
@@ -818,15 +860,19 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
 #endif
     checkCopy(src, false, TextureUsage::eCopySrc, "eCopySrc", "cmdCopyTexture");
     checkCopy(dst, false, TextureUsage::eCopyDst, "eCopyDst", "cmdCopyTexture");
-    EQ_VALIDATE(Validation::checkCopyTextureMatch(src.width, src.height, src.internal.layerCount, src.samples,
-                                                  copyBytesOf(src), dst.width, dst.height, dst.internal.layerCount,
-                                                  dst.samples, copyBytesOf(dst)));
+    EQ_VALIDATE(Validation::checkCopyTextureMatch(src.internal.layerCount, src.samples, copyBytesOf(src),
+                                                  dst.internal.layerCount, dst.samples, copyBytesOf(dst)));
+    checkRegion(region, src, "source", "cmdCopyTexture");
+    region = resolved(region, src);
+    checkRegion({dstOffset.x, dstOffset.y, region.width, region.height}, dst, "destination", "cmdCopyTexture");
     // One slice or layer at a time, so 3D and 2D-array views copy into each other.
     for (uint32 layer = 0; layer < src.internal.layerCount; ++layer) {
         const D3D12_TEXTURE_COPY_LOCATION to = textureLocation(dst, layer);
         const D3D12_TEXTURE_COPY_LOCATION from = textureLocation(src, layer);
-        const D3D12_BOX box = sliceBox(src, layer, 1);
-        list(cmd)->CopyTextureRegion(&to, 0, 0, sliceBox(dst, layer, 1).front, &from, isVolume(src) ? &box : nullptr);
+        const D3D12_BOX box = sliceBox(src, layer, 1, region);
+        list(cmd)->CopyTextureRegion(&to, static_cast<UINT>(dstOffset.x), static_cast<UINT>(dstOffset.y),
+                                     sliceBox(dst, layer, 1, region).front, &from,
+                                     needsBox(src, region) ? &box : nullptr);
     }
 }
 

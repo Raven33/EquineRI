@@ -1,5 +1,5 @@
 ---
-symbols: [RI::copyLayout, RI::CopyLayout, RI::cmdCopyBufferToTexture, RI::cmdCopyTextureToBuffer, RI::cmdCopyTexture, RI::copyBytesPerTexel]
+symbols: [RI::copyLayout, RI::CopyLayout, RI::cmdCopyBufferToTexture, RI::cmdCopyTextureToBuffer, RI::cmdCopyTexture, RI::copyBytesPerTexel, RI::Offset]
 ---
 
 # RI::copyLayout, RI::cmdCopyBufferToTexture, RI::cmdCopyTextureToBuffer, RI::cmdCopyTexture
@@ -8,18 +8,23 @@ symbols: [RI::copyLayout, RI::CopyLayout, RI::cmdCopyBufferToTexture, RI::cmdCop
 
 Copies between buffers and textures ([P47](../design-notes/decisions.md#p47)):
 
-- `RI::copyLayout(device, view)` says how the texels of a texture view are laid out in a
+- `RI::copyLayout(device, view, region)` says how the texels of a texture view are laid out in a
   buffer: `rowPitch` bytes from one row to the next, `layerPitch` from one layer to the next,
   `size` bytes in all, and the `alignment` the buffer offset needs. The pitches differ per
   backend and GPU; you never compute them yourself.
-- `RI::cmdCopyBufferToTexture(cmd, src, srcOffset, dst)` copies texels from a buffer into a
+- `RI::cmdCopyBufferToTexture(cmd, src, srcOffset, dst, region)` copies texels from a buffer into a
   texture view (an upload, from `eUpload` memory).
-- `RI::cmdCopyTextureToBuffer(cmd, src, dst, dstOffset)` copies texels from a texture view into
+- `RI::cmdCopyTextureToBuffer(cmd, src, dst, dstOffset, region)` copies texels from a texture view into
   a buffer (a readback, into `eReadback` memory).
-- `RI::cmdCopyTexture(cmd, src, dst)` copies one texture view into another of the same size.
+- `RI::cmdCopyTexture(cmd, src, dst, region, dstOffset)` copies `region` of one texture view
+  to `dstOffset` in another.
 
-A copy covers the **whole view**: one mip, every layer of the view. Make a
-[view](view.md) of the mip (and layers) to copy. For depth formats, copy one aspect at a
+A copy covers **one mip and every layer of the view**: make a [view](view.md) of the mip (and
+layers) to copy. Within each layer, `region` (an `RI::Rect`: `x`, `y`, `width`, `height`)
+selects the texels ([P108](../design-notes/decisions.md#p108)); left default (width and
+height 0) it is the whole mip. `copyLayout` with the same region gives the buffer side of a
+region copy: its `width` and `height` are the region's. Reading the one pixel under the mouse
+is a 1x1 region, not the whole frame. For depth formats, copy one aspect at a
 time (a view with `Aspect::eDepth` or `Aspect::eStencil`); `RI::copyBytesPerTexel(format,
 aspect)` gives its size (4 bytes for depth, also for 24-bit depth; 1 for stencil).
 
@@ -85,12 +90,13 @@ Buffer-to-buffer copies are [`cmdCopyBuffer`](cmdCopyBuffer.md).
 ## How RI does it
 
 - **Vulkan**: `vkCmdCopyBufferToImage2`, `vkCmdCopyImageToBuffer2`, `vkCmdCopyImage2` with one
-  region. The row pitch follows `optimalBufferCopyRowPitchAlignment`, the offset alignment
+  region (the copy region becomes its image offset and extent). The row pitch follows `optimalBufferCopyRowPitchAlignment`, the offset alignment
   `optimalBufferCopyOffsetAlignment` (at least the texel size and 4). A texture that rests in
   `GENERAL` is copied in place; others (mode T) switch to the transfer layout and back, with
   RI's exact/full halves ([P68](../design-notes/decisions.md#p68)).
 - **D3D12**: `CopyTextureRegion` per layer, rows on 256 bytes, layers on 512 bytes; one copy
-  for all the slices of a 3D view (texture to texture: one per slice). Textures
+  for all the slices of a 3D view (texture to texture: one per slice). A region becomes the
+  source box and the destination's x and y; the buffer footprint takes the region's size. Textures
   with copy usage rest in `DIRECT_QUEUE_COMMON`, which allows copies: no switch.
 
 ## Rules and errors
@@ -101,7 +107,11 @@ Buffer-to-buffer copies are [`cmdCopyBuffer`](cmdCopyBuffer.md).
 - The view covers one mip and one aspect; buffer copies need a single-sampled texture.
 - The buffer offset is a multiple of `layout.alignment`, and `offset + layout.size` fits in the
   buffer.
-- `cmdCopyTexture`: same width, height, layer count, sample count and texel size.
+- A region is not empty and lies inside the mip; a region left default must stay at 0, 0.
+  Depth, stencil and multisampled views copy only whole, as D3D12 requires (**programmer
+  error** for a smaller region, on both backends).
+- `cmdCopyTexture`: the region fits at `dstOffset` in the destination; same layer count, sample
+  count and texel size.
 - Not inside a rendering section. Copies count as `Stage::eCopy` for
   [barriers](cmdBarrier.md): a barrier from the work that wrote the source, and one to the
   work that reads the destination.
@@ -112,3 +122,4 @@ Buffer-to-buffer copies are [`cmdCopyBuffer`](cmdCopyBuffer.md).
 
 - [P47](../design-notes/decisions.md#p47): copy commands and the copy-layout query.
 - [P68](../design-notes/decisions.md#p68): RI's layout switches around its own operations.
+- [P108](../design-notes/decisions.md#p108): copy regions.

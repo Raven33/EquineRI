@@ -68,10 +68,14 @@ CheckResult checkViewRange(uint32 baseMip, uint32 mipCount, uint32 mips, uint32 
 // copies, one aspect, and the texture has `usage` (eCopySrc or eCopyDst).
 CheckResult checkCopyView(uint32 mipCount, uint32 samples, bool bufferCopy, uint32 bytesPerTexel, bool hasUsage,
                           std::string_view usage, std::string_view call);
-// cmdCopyTexture: the same size, layer count, sample count and texel size.
-CheckResult checkCopyTextureMatch(uint32 srcWidth, uint32 srcHeight, uint32 srcLayers, uint32 srcSamples,
-                                  uint32 srcBytes, uint32 dstWidth, uint32 dstHeight, uint32 dstLayers,
+// cmdCopyTexture: the same layer count, sample count and texel size.
+CheckResult checkCopyTextureMatch(uint32 srcLayers, uint32 srcSamples, uint32 srcBytes, uint32 dstLayers,
                                   uint32 dstSamples, uint32 dstBytes);
+// A copy region (P108) of a `width` x `height` mip: the default (width and
+// height 0, at 0, 0) or a non-empty rectangle inside it; `whole` views (depth,
+// stencil, multisampled) take only the default. `what` names the side.
+CheckResult checkCopyRegion(int32 x, int32 y, uint32 regionWidth, uint32 regionHeight, uint32 width, uint32 height,
+                            bool whole, std::string_view what, std::string_view call);
 
 // A query command used with the right kind of pool (P71): `ok` says whether
 // the pool's type fits `call`.

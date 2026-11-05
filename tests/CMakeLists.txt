@@ -33,6 +33,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.device_thread
     validation.tracker_names
     validation.small_write
+    validation.copy_region
     validation.clear_range
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
@@ -107,6 +108,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.discard_after_aliasing
     texture.timestamps
     texture.copy_round_trip
+    texture.copy_regions
     texture.copy_depth_upload
     texture.occlusion_and_statistics
     texture.indexed_draw_with_blending
