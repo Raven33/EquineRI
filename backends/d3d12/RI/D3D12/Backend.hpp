@@ -332,6 +332,8 @@ struct CommandList {
         bool heapSet = false;
         void *heaps[2] = {nullptr, nullptr}; // the user's heaps, set again after RI's UAV clears (P65)
         uint32 rootDataSize = 0;
+        uint32 graphMaxInputRecords = 0; // the bound work graph's promise (P111), 0: none
+        uint32 graphMaxNodeInputs = 0;
         uint64 lastSubmitted = 0;
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
         bool rendering = false;
@@ -564,6 +566,8 @@ struct WorkGraph {
         uint32 graphIndex = 0;
         uint64 backingAddress = 0; // bound by bindWorkGraphMemory
         uint64 backingSize = 0;
+        uint32 maxInputRecords = 0; // the creation promise (P111), 0: none
+        uint32 maxNodeInputs = 0;
         uint64 id = 0;
     } internal;
 };

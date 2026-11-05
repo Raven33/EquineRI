@@ -32,6 +32,7 @@ set(EQUINE_RI_TEST_NAMES
     validation.tracker_across_threads
     validation.buffer_view_size
     validation.group_counts
+    validation.graph_inputs
     validation.device_thread
     validation.tracker_names
     validation.small_write
@@ -326,10 +327,16 @@ if (TARGET EquineD3D12Backend)
         d3d12.native_section
         d3d12.import_objects
         d3d12.work_graph
+        d3d12.work_graph_input_limits
+        d3d12.work_graph_input_limits_reports
     )
     equine_add_gpu_tests(EquineRID3D12Tests d3d12 ${EQUINE_D3D12_TEST_NAMES})
     set_tests_properties(d3d12.unknown_gpu_reports PROPERTIES
         PASS_REGULAR_EXPRESSION "\\[EquineRI\\] programmer error: the GPU 'Nonexistent GPU' is not available"
+    )
+    # Which refusal depends on the SDK and the GPU (P111).
+    set_tests_properties(d3d12.work_graph_input_limits_reports PROPERTIES
+        PASS_REGULAR_EXPRESSION "\\[EquineRI\\] (unsupported: createWorkGraph: maxInputRecords and maxNodeInputs need an Agility SDK preview|programmer error: cmdDispatchGraph: 2 records, but the graph was created with maxInputRecords = 1|unsupported: createWorkGraph: this GPU has no work graphs)"
     )
 endif()
 

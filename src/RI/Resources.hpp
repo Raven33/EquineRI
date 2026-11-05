@@ -89,6 +89,11 @@ struct ComputePipelineDesc {
 struct WorkGraphDesc {
     Bytecode library;
     uint32 rootDataSize = 0;
+    // A promise that lowers WorkGraph::backing (P111): at most maxInputRecords
+    // records and maxNodeInputs entry nodes per cmdDispatchGraph. Both or
+    // neither (0: no promise). Needs an Agility SDK preview (P110).
+    uint32 maxInputRecords = 0;
+    uint32 maxNodeInputs = 0;
     std::string_view name; // empty: unnamed (P106)
 };
 

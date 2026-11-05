@@ -20,6 +20,11 @@ D3D12 work graphs tier 1.0). On Vulkan every call is **unsupported**
   the library. RI does not read root data from libraries ([P62](../design-notes/decisions.md#p62)):
   give the size of the `EQ_ROOT_DATA` block the nodes declare. `graph.backing` gives the
   backing memory it needs (`minSize`, `maxSize`).
+- To shrink `graph.backing`, promise how much one dispatch passes: `maxInputRecords` (records
+  in all) and `maxNodeInputs` (entry nodes) in the desc, both or neither
+  ([P111](../design-notes/decisions.md#p111)). The backing memory can be far smaller than without
+  a promise. It needs an Agility SDK preview
+  ([another Agility SDK](../getting-started/use-in-your-project.md#another-agility-sdk)).
 - `RI::workGraphEntry(graph, "nodeName")` gives an entry node's index.
 - `RI::bindWorkGraphMemory(device, graph, backingBuffer, offset, size)` gives the graph its
   backing memory (a range of a buffer with `eReadWrite`). The range **belongs to the graph**
@@ -74,7 +79,8 @@ RI::cmdDispatchGraph(cmd, {&input, 1});
 
 - **D3D12**: a state object with the DXIL library, a global root signature built by RI (root
   constants and directly indexed heaps, as for every RI pipeline), and a work graph including
-  all nodes. `bindWorkGraphMemory` records `SetProgram` with the `INITIALIZE` flag on RI's
+  all nodes. A promise is passed to `ID3D12WorkGraphProperties1::SetMaximumInputRecords` before
+  the memory query. `bindWorkGraphMemory` records `SetProgram` with the `INITIALIZE` flag on RI's
   internal list and waits; `cmdSetWorkGraph` records `SetProgram` without it, then
   `DispatchGraph`.
 
@@ -84,6 +90,9 @@ RI::cmdDispatchGraph(cmd, {&input, 1});
 - The backing range has at least `graph.backing.minSize` bytes of an `eReadWrite` buffer
   (**programmer error** otherwise).
 - `cmdSetWorkGraph` before `bindWorkGraphMemory` is a **programmer error**.
+- Only one of `maxInputRecords` and `maxNodeInputs` is a **programmer error**; either of them
+  with a retail Agility SDK is **unsupported**. A `cmdDispatchGraph` past the promise is a
+  **programmer error** in validation builds; GPU input is not checked.
 - After `cmdSetWorkGraph`, set a pipeline again before ordinary dispatches.
 - Node-local root arguments and graphs with several programs are not modelled yet; use
   [native access](../native/index.md).
@@ -92,3 +101,4 @@ RI::cmdDispatchGraph(cmd, {&input, 1});
 
 - [P50](../design-notes/decisions.md#p50): work graphs, D3D12 only.
 - [P62](../design-notes/decisions.md#p62): input modes, inferred initialization, root data.
+- [P111](../design-notes/decisions.md#p111): input limits.

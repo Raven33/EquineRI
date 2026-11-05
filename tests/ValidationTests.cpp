@@ -270,6 +270,28 @@ EQ_TEST(validation, group_counts) {
     EQ_CHECK(!checkGroupCounts(0, 0, 0, true, "cmdDrawMesh"));
 }
 
+// Work-graph input promises (P111): both limits or neither, then records and
+// entry nodes per dispatch; no promise checks nothing.
+EQ_TEST(validation, graph_inputs) {
+    using RI::Validation::checkGraphInputLimits;
+    using RI::Validation::checkGraphInputs;
+    EQ_CHECK(!checkGraphInputLimits(0, 0));
+    EQ_CHECK(!checkGraphInputLimits(32, 2));
+    const RI::Validation::CheckResult half = checkGraphInputLimits(32, 0);
+    EQ_CHECK(half && half->find("give both or neither") != std::string::npos);
+    EQ_CHECK(checkGraphInputLimits(0, 2).has_value());
+
+    const uint32 record = 0;
+    const RI::GraphInput two[] = {{.entry = 0, .records = &record, .recordCount = 20, .recordStride = 4},
+                                  {.entry = 1, .records = &record, .recordCount = 12, .recordStride = 4}};
+    EQ_CHECK(!checkGraphInputs(two, 0, 0));
+    EQ_CHECK(!checkGraphInputs(two, 32, 2));
+    const RI::Validation::CheckResult records = checkGraphInputs(two, 31, 2);
+    EQ_CHECK(records && records->find("32 records") != std::string::npos);
+    const RI::Validation::CheckResult nodes = checkGraphInputs(two, 64, 1);
+    EQ_CHECK(nodes && nodes->find("2 entry nodes") != std::string::npos);
+}
+
 // Small writes (P107): usage, alignment, the size limit and the range.
 EQ_TEST(validation, small_write) {
     using RI::Validation::checkSmallWrite;

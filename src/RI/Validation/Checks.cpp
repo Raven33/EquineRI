@@ -519,6 +519,33 @@ CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::strin
     return {};
 }
 
+CheckResult checkGraphInputLimits(uint32 maxInputRecords, uint32 maxNodeInputs) {
+    if ((maxInputRecords == 0) != (maxNodeInputs == 0)) {
+        return std::format("createWorkGraph: maxInputRecords is {} and maxNodeInputs is {}; give both or neither",
+                           maxInputRecords, maxNodeInputs);
+    }
+    return {};
+}
+
+CheckResult checkGraphInputs(std::span<const GraphInput> inputs, uint32 maxInputRecords, uint32 maxNodeInputs) {
+    if (maxNodeInputs == 0) {
+        return {};
+    }
+    if (inputs.size() > maxNodeInputs) {
+        return std::format("cmdDispatchGraph: {} entry nodes, but the graph was created with maxNodeInputs = {}",
+                           inputs.size(), maxNodeInputs);
+    }
+    uint64 records = 0;
+    for (const GraphInput &input : inputs) {
+        records += input.recordCount;
+    }
+    if (records > maxInputRecords) {
+        return std::format("cmdDispatchGraph: {} records, but the graph was created with maxInputRecords = {}",
+                           records, maxInputRecords);
+    }
+    return {};
+}
+
 CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view call) {
     const std::thread::id here = std::this_thread::get_id();
     if (here == deviceThread) {

@@ -398,3 +398,83 @@ EQ_TEST(d3d12, work_graph) {
     RI::destroyWorkGraph(device, graph);
     RI::destroyDevice(device);
 }
+
+// Work-graph input limits (P111, Agility SDK preview only): the promise does
+// not raise the backing memory, and a dispatch within it gives the same sum as
+// d3d12.work_graph.
+EQ_TEST(d3d12, work_graph_input_limits) {
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    if (!device.limits.workGraphs || !EQUINE_AGILITY_SDK_PREVIEW) {
+        RI::destroyDevice(device);
+        return;
+    }
+    const std::vector<std::byte> library = gputest::loadShader("work_graph");
+    struct GraphRoot {
+        uint32 outputSlot;
+    };
+    RI::WorkGraph open = RI::createWorkGraph(device, {.library = library, .rootDataSize = sizeof(GraphRoot)});
+    RI::WorkGraph graph = RI::createWorkGraph(
+        device, {.library = library, .rootDataSize = sizeof(GraphRoot), .maxInputRecords = 1, .maxNodeInputs = 1});
+    EQ_CHECK(graph.backing.minSize <= open.backing.minSize);
+    EQ_CHECK(graph.backing.maxSize <= open.backing.maxSize);
+    RI::destroyWorkGraph(device, open);
+
+    const uint32 entry = RI::workGraphEntry(graph, "entry");
+    gputest::Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 64 << 20)};
+    gputest::Arena readback{.memory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 20)};
+    const uint64 backingSize = std::max<uint64>(graph.backing.minSize, 64);
+    RI::Buffer backing = gputest::placeBuffer(device, gpu, {.size = backingSize, .usage = RI::BufferUsage::eReadWrite});
+    RI::Buffer output = gputest::placeBuffer(device, gpu, {.size = 256,
+                                                           .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc |
+                                                                    RI::BufferUsage::eCopyDst});
+    RI::Buffer result = gputest::placeBuffer(device, readback, {.size = 256, .usage = RI::BufferUsage::eCopyDst});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::ReadWriteView{.buffer = output}}});
+    const uint32 multiplier = 3;
+    RI::bindWorkGraphMemory(device, graph, backing, 0, backingSize);
+    runOnce(device, [&](RI::CommandList &cmd) {
+        RI::cmdClearBuffer(cmd, output, 0);
+        RI::cmdBarrier(cmd, RI::Stage::eCopy, RI::Stage::eCompute);
+        RI::cmdSetHeap(cmd, heap);
+        RI::cmdSetWorkGraph(cmd, graph);
+        RI::Helpers::cmdSetRootData(cmd, GraphRoot{.outputSlot = 0});
+        const RI::GraphInput input{.entry = entry, .records = &multiplier, .recordCount = 1, .recordStride = 4};
+        RI::cmdDispatchGraph(cmd, {&input, 1});
+        RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+        RI::cmdCopyBuffer(cmd, output, 0, result, 0, 256);
+    });
+    EQ_CHECK(*static_cast<const uint32 *>(result.mapped) == 3 * (63 * 64 / 2));
+
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, result);
+    RI::destroyBuffer(device, output);
+    RI::destroyBuffer(device, backing);
+    RI::freeMemory(device, readback.memory);
+    RI::freeMemory(device, gpu.memory);
+    RI::destroyWorkGraph(device, graph);
+    RI::destroyDevice(device);
+}
+
+// Aborts by design (P111). A retail build refuses the promise at creation; a
+// preview build refuses a dispatch past it (validation builds); a GPU without
+// work graphs refuses the graph itself.
+EQ_TEST(d3d12, work_graph_input_limits_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = RI::createDevice({.gpu = gputest::pickGpu()});
+    const std::vector<std::byte> library = gputest::loadShader("work_graph");
+    RI::WorkGraph graph = RI::createWorkGraph(
+        device, {.library = library, .rootDataSize = 4, .maxInputRecords = 1, .maxNodeInputs = 1});
+    gputest::Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 64 << 20)};
+    const uint64 backingSize = std::max<uint64>(graph.backing.minSize, 64);
+    RI::Buffer backing = gputest::placeBuffer(device, gpu, {.size = backingSize, .usage = RI::BufferUsage::eReadWrite});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::bindWorkGraphMemory(device, graph, backing, 0, backingSize);
+    const uint32 entry = RI::workGraphEntry(graph, "entry");
+    const uint32 records[2] = {1, 1};
+    runOnce(device, [&](RI::CommandList &cmd) {
+        RI::cmdSetHeap(cmd, heap);
+        RI::cmdSetWorkGraph(cmd, graph);
+        const RI::GraphInput input{.entry = entry, .records = records, .recordCount = 2, .recordStride = 4};
+        RI::cmdDispatchGraph(cmd, {&input, 1});
+    });
+}

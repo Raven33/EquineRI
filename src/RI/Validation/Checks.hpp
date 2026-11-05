@@ -205,6 +205,11 @@ CheckResult checkVolumeView(uint32 mipCount, bool someSlices);
 // kMaxGroupsPerDimension, and for mesh draws x * y * z at most kMaxMeshGroups.
 CheckResult checkGroupCounts(uint32 x, uint32 y, uint32 z, bool mesh, std::string_view call);
 
+// A work graph's input promise (P111): both limits or neither, at creation.
+CheckResult checkGraphInputLimits(uint32 maxInputRecords, uint32 maxNodeInputs);
+// One cmdDispatchGraph against the promise the bound graph made (0: none).
+CheckResult checkGraphInputs(std::span<const GraphInput> inputs, uint32 maxInputRecords, uint32 maxNodeInputs);
+
 // A call outside the any-thread list runs on the device thread, the one that
 // called createDevice (P106). `call` names it.
 CheckResult checkDeviceThread(std::thread::id deviceThread, std::string_view call);

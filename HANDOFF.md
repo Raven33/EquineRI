@@ -31,8 +31,7 @@ Open, in order:
      4096 destroyed ones).
 
    Also fixed: the docs header extractor dropped functions with a `= {}` default argument
-   (`endNative` was missing from the site). Work-graph input limits wait for a retail Agility
-   SDK. Mesh nodes: not now.
+   (`endNative` was missing from the site). Work-graph input limits: P111, on an Agility SDK preview (P110). Mesh nodes: not now.
 0c. **Small writes and typed values in helpers** (P107, from the DX12 sandbox re-review,
    2026-10-16). **Implemented, verified on Linux only** (128/128, release clean); the D3D12 code
    is not compiled yet. `cmdWriteSmallData` (at most 64 bytes, `vkCmdUpdateBuffer` /

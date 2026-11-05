@@ -1,4 +1,4 @@
-// Pipelines and work graphs on D3D12 (P38, P39, P44, P45, P50, P62, P67, P94).
+// Pipelines and work graphs on D3D12 (P38, P39, P44, P45, P50, P62, P67, P94, P111).
 //
 // Owns: root signatures built from the shader by RI's own DXIL reader
 // (heap-indexing flags; root constants at b0 space999 of exactly the declared
@@ -525,6 +525,16 @@ WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
     DeviceState &state = *device.internal.state;
     requireWorkGraphs(device, "createWorkGraph");
     checkRootDataSize(device, desc.rootDataSize, "createWorkGraph");
+    if (const Validation::CheckResult limits = Validation::checkGraphInputLimits(desc.maxInputRecords, desc.maxNodeInputs)) {
+        reportError(ErrorCategory::eProgrammerError, *limits);
+    }
+#if !EQUINE_AGILITY_SDK_PREVIEW
+    if (desc.maxInputRecords != 0) {
+        reportError(ErrorCategory::eUnsupported,
+                    "createWorkGraph: maxInputRecords and maxNodeInputs need an Agility SDK preview "
+                    "(ID3D12WorkGraphProperties1; set EQUINE_AGILITY_SDK_VERSION, P110)");
+    }
+#endif
     Reflection::DxilInfo info{};
     info.hasRootData = desc.rootDataSize > 0;
     info.rootDataSize = desc.rootDataSize;
@@ -558,6 +568,17 @@ WorkGraph createWorkGraph(Device &device, const WorkGraphDesc &desc) {
 
     ID3D12WorkGraphProperties *properties = workGraphProperties(graph);
     graph.internal.graphIndex = properties->GetWorkGraphIndex(kProgramName);
+#if EQUINE_AGILITY_SDK_PREVIEW
+    // Before the memory query, so the backing sizes follow the promise (P111).
+    if (desc.maxInputRecords != 0) {
+        ID3D12WorkGraphProperties1 *properties1 = nullptr;
+        checkHr(stateObject->QueryInterface(IID_PPV_ARGS(&properties1)), "ID3D12WorkGraphProperties1");
+        properties1->SetMaximumInputRecords(graph.internal.graphIndex, desc.maxInputRecords, desc.maxNodeInputs);
+        release(properties1);
+    }
+#endif
+    graph.internal.maxInputRecords = desc.maxInputRecords;
+    graph.internal.maxNodeInputs = desc.maxNodeInputs;
     D3D12_WORK_GRAPH_MEMORY_REQUIREMENTS memory{};
     properties->GetWorkGraphMemoryRequirements(graph.internal.graphIndex, &memory);
     release(properties);
@@ -643,6 +664,8 @@ void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
     cmd.internal.rootSignature[0] = rootSignature;
     cmd.internal.graphics = false;
     cmd.internal.rootDataSize = graph.rootDataSize;
+    cmd.internal.graphMaxInputRecords = graph.internal.maxInputRecords;
+    cmd.internal.graphMaxNodeInputs = graph.internal.maxNodeInputs;
     cmd.internal.pipelineState[0] = nullptr; // SetProgram replaces the pipeline state
     const D3D12_SET_PROGRAM_DESC program = programOf(graph, false);
     l->SetProgram(&program);
@@ -651,6 +674,7 @@ void cmdSetWorkGraph(CommandList &cmd, const WorkGraph &graph) {
 
 void cmdDispatchGraph(CommandList &cmd, std::span<const GraphInput> inputs) {
     EQ_DX_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkGraphInputs(inputs, cmd.internal.graphMaxInputRecords, cmd.internal.graphMaxNodeInputs));
     if (inputs.empty()) {
         return;
     }
