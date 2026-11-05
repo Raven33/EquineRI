@@ -20,6 +20,43 @@ using gputest::loadShader;
 
 namespace {
 
+// Sets an environment variable for this scope.
+class ScopedEnv {
+public:
+    ScopedEnv(const char *name, const char *value) : name_(name) {
+#if defined(_WIN32)
+        _putenv_s(name, value);
+#else
+        setenv(name, value, 1);
+#endif
+    }
+    ~ScopedEnv() {
+#if defined(_WIN32)
+        _putenv_s(name_, "");
+#else
+        unsetenv(name_);
+#endif
+    }
+    ScopedEnv(const ScopedEnv &) = delete;
+    ScopedEnv &operator=(const ScopedEnv &) = delete;
+
+private:
+    const char *name_;
+};
+
+// Validation builds: Khronos validation 1.4.363 crashes ~10% of runs of this
+// test with GPU-assisted validation on (printf runs on it too). Its queue
+// thread's vkWaitSemaphores (gpuav::QueueSubState::Retire) faults in the
+// driver, on RADV and NVIDIA alike, when an application thread waits on the
+// timeline while others create pipelines; all three are legal together. The
+// layer reads these at instance creation (inside createDevice); core
+// validation, thread checks included, stays on. Drop once the layer is fixed.
+RI::Device createDeviceWithoutGpuAv() {
+    const ScopedEnv gpuav("VK_KHRONOS_VALIDATION_GPUAV_ENABLE", "false");
+    const ScopedEnv printf("VK_KHRONOS_VALIDATION_PRINTF_ENABLE", "false");
+    return createTestDevice();
+}
+
 struct FillRoot {
     uint32 inputSlot;
     uint32 outputSlot;
@@ -34,7 +71,7 @@ struct FillRoot {
 // records, submits and waits; a ninth thread waits on the submitted points.
 // Then every pipeline runs once.
 EQ_TEST(threads, pipelines_on_other_threads) {
-    RI::Device device = createTestDevice();
+    RI::Device device = createDeviceWithoutGpuAv();
     const std::vector<std::byte> bytecode = loadShader("fill");
     constexpr int kThreads = 8;
     constexpr int kPerThread = 16;
