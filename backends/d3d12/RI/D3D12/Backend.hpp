@@ -6,6 +6,7 @@
 // <RI/D3D12/Native.hpp>. Every declaration matches
 // backends/vulkan/RI/Vk/Backend.hpp (checked by tests/conformance).
 
+#include <RI/Abi.hpp>
 #include <RI/Commands.hpp>
 #include <RI/Device.hpp>
 #include <RI/Resources.hpp>
@@ -20,7 +21,7 @@
 #include <variant>
 #include <vector>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 struct DeviceState; // backend-private: native objects, tracking
 

@@ -4,13 +4,14 @@
 // marker regions (P53), resolved into readback memory and read as
 // milliseconds once the frame's timeline point is reached.
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <string>
 #include <string_view>
 #include <vector>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 struct ScopeTime {
     std::string name;

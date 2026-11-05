@@ -11,7 +11,7 @@
 #include <format>
 #include <sstream>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 CheckResult checkSlot(uint32 slot, uint32 count, std::string_view heap) {
     if (slot >= count) {

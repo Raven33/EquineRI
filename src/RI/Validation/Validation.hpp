@@ -9,12 +9,13 @@
 //
 // Scope (P88): only what native layers and GPU-AV cannot see, i.e. RI's own rules.
 
+#include <RI/Abi.hpp>
 #include <RI/Error.hpp>
 
 #include <optional>
 #include <string>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 using CheckResult = std::optional<std::string>;
 

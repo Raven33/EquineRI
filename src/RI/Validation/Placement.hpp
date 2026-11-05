@@ -6,6 +6,7 @@
 // it sees (rendering attachments, clears). Shader uses are invisible under
 // bindless and are not checked.
 
+#include <RI/Abi.hpp>
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
 
@@ -14,7 +15,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 struct PlacementTracker {
     struct Range {

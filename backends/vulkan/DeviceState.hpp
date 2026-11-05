@@ -12,6 +12,7 @@
 //
 // D3D12 counterpart: backends/d3d12/DeviceState.hpp.
 
+#include <RI/Abi.hpp>
 #include <RI/Vk/Native.hpp>
 #if EQUINE_VALIDATION
 #include <RI/Validation/Checks.hpp>
@@ -29,7 +30,7 @@
 #include <vector>
 #include <string_view>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 struct DeviceState {
     VkInstance instance = VK_NULL_HANDLE;

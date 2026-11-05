@@ -82,6 +82,26 @@ equine_deploy_agility_sdk(my_app)   # copies the runtime to <exe dir>/D3D12/
 Without either step D3D12 falls back to the system runtime, and `listGpus` may return no
 GPU. RI then prints `[EquineRI] Agility SDK not loaded …` with the step that is missing.
 
+### Another Agility SDK
+
+RI uses Agility SDK 1.619.6 unless your project picks one. Set both variables before
+`add_subdirectory`:
+
+```cmake
+set(EQUINE_AGILITY_SDK_VERSION "1.715.1-preview")
+set(EQUINE_AGILITY_SDK_SHA256 "7c0fd2eba933a3f57426eb8510225ddcb2f41ef929eaaf1fec6e2894c6c22bde")
+add_subdirectory(external/EquineRI)
+```
+
+A preview gives features the retail SDK lacks, such as work-graph input limits. It changes three
+things:
+
+- RI's declarations move to the inline namespace `RI::abi_preview` instead of `RI::abi_retail`.
+  You keep writing `RI::`, but a library built against the other SDK will not link with yours.
+- The executable exports the preview's version, through the same
+  `EQUINE_D3D12_AGILITY_SDK_EXPORTS()`.
+- Windows must be in Developer Mode, or D3D12 does not load the preview runtime.
+
 ## Next
 
 [Your first compute dispatch](first-compute.md) walks through a complete program.

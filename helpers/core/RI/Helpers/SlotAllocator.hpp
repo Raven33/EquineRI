@@ -3,11 +3,12 @@
 // Descriptor slot helper (P41, P42, P59): hands out heap slots and takes them
 // back only after the GPU work that may read them is done.
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <vector>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 struct SlotAllocator {
     struct Pending {

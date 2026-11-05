@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <format>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 void placeResource(PlacementTracker &tracker, uint64 memoryId, uint64 offset, uint64 size, uint64 resourceId,
                    bool isTexture) {

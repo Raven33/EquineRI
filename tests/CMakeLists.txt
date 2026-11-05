@@ -6,6 +6,7 @@ add_executable(EquineRITests
     "${CMAKE_CURRENT_SOURCE_DIR}/ErrorTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ValidationTests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/DxilTests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/AbiTests.cpp"
 )
 target_include_directories(EquineRITests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(EquineRITests PRIVATE EquineRI)
@@ -13,6 +14,7 @@ equine_copy_sanitizer_runtime(EquineRITests)
 
 # One CTest entry per test case so failures are reported individually.
 set(EQUINE_RI_TEST_NAMES
+    abi.tag_follows_sdk
     error.category_names
     error.report_prints_and_aborts
     validation.tracker_alive_then_destroyed

@@ -3,12 +3,13 @@
 // Portable GPU and device descriptions (CONTEXT.md P60, P92). The device itself
 // is a per-backend struct (P83): RI::Vk::Device, RI::D3D12::Device.
 
+#include <RI/Abi.hpp>
 #include <types.hpp>
 
 #include <array>
 #include <string>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 enum class GpuVendor : uint8 {
     eOther,

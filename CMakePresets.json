@@ -37,6 +37,16 @@
       }
     },
     {
+      "name": "clangcl-debug-preview",
+      "displayName": "Clang-CL Debug, Agility SDK preview",
+      "description": "clangcl-debug against the Agility SDK preview (P110). The preview runtime needs Windows Developer Mode.",
+      "inherits": "clangcl-debug",
+      "cacheVariables": {
+        "EQUINE_AGILITY_SDK_VERSION": "1.715.1-preview",
+        "EQUINE_AGILITY_SDK_SHA256": "7c0fd2eba933a3f57426eb8510225ddcb2f41ef929eaaf1fec6e2894c6c22bde"
+      }
+    },
+    {
       "name": "clangcl-release",
       "displayName": "Clang-CL Release",
       "description": "Both backends with release optimizations and sanitizers.",
@@ -122,6 +132,10 @@
       "configurePreset": "clangcl-debug"
     },
     {
+      "name": "clangcl-debug-preview",
+      "configurePreset": "clangcl-debug-preview"
+    },
+    {
       "name": "clangcl-release",
       "configurePreset": "clangcl-release"
     },
@@ -146,6 +160,13 @@
     {
       "name": "clangcl-debug",
       "configurePreset": "clangcl-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clangcl-debug-preview",
+      "configurePreset": "clangcl-debug-preview",
       "output": {
         "outputOnFailure": true
       }

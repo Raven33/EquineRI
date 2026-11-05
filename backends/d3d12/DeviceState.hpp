@@ -12,6 +12,7 @@
 //
 // Vulkan counterpart: backends/vulkan/DeviceState.hpp.
 
+#include <RI/Abi.hpp>
 #include <RI/D3D12/Backend.hpp>
 #if EQUINE_VALIDATION
 #include <RI/Validation/Checks.hpp>
@@ -30,7 +31,7 @@
 #include <d3d12sdklayers.h> // ID3D12InfoQueue1
 #include <dxgi1_6.h>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 struct DeviceState {
     IDXGIFactory6 *factory = nullptr;

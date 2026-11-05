@@ -5,13 +5,14 @@
 // native device additions (features, extensions, pNext, layout mode), native
 // sections (P27, P70) and import of native objects (P77).
 
+#include <RI/Abi.hpp>
 #include <RI/Vk/Backend.hpp>
 
 #include <volk.h>
 
 #include <span>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 // How the Vulkan backend hides image layouts (L1, A', P78). Backend-internal:
 // user code is identical in every mode (P16).

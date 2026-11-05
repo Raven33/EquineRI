@@ -2,10 +2,11 @@
 
 // Portable recording and submission types (CONTEXT.md P20, P34, P36, P56).
 
+#include <RI/Abi.hpp>
 #include <RI/Flags.hpp>
 #include <types.hpp>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 // Pipeline stages for coarse barriers (P36): a barrier from `before` to
 // `after` makes every write of the `before` stages visible to every access of

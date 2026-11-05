@@ -3,12 +3,13 @@
 // DXGI factory and adapter description, shared by listGpus and createDevice.
 // Each device owns its own factory (P92).
 
+#include <RI/Abi.hpp>
 #include <RI/Device.hpp>
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 // RI needs at least feature level 12_0.
 inline constexpr D3D_FEATURE_LEVEL kMinFeatureLevel = D3D_FEATURE_LEVEL_12_0;

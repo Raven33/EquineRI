@@ -231,6 +231,7 @@ endif()
 add_library(EquineRI STATIC
     src/types.hpp
     src/RI/RI.hpp
+    src/RI/Abi.hpp
     src/RI/Error.hpp
     src/RI/Error.cpp
     src/RI/Device.hpp
@@ -257,6 +258,9 @@ target_link_libraries(EquineRI PUBLIC
     rvl
 )
 target_compile_features(EquineRI PUBLIC cxx_std_20)
+# RI's ABI tag follows the tree's Agility SDK, retail or preview (P110).
+include(EquineAgilitySDKVersion)
+target_compile_definitions(EquineRI PUBLIC "EQUINE_AGILITY_SDK_PREVIEW=${EQUINE_AGILITY_SDK_PREVIEW}")
 
 # Compile-time validation switch (CONTEXT.md P21): native validation layers plus
 # Equine's own checks. Each preset sets it explicitly.

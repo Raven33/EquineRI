@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <cstring>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 PipelineStatistics readPipelineStatistics(const PipelineStatisticsLayout &layout, const void *result) {
     const auto read = [result](uint32 offset) -> uint64 {

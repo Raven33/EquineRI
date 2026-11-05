@@ -5,6 +5,7 @@
 // the device-creation hook, native sections (P27, P70) and import of native
 // objects (P77).
 
+#include <RI/Abi.hpp>
 #include <RI/D3D12/Backend.hpp>
 
 #include <d3d12.h>
@@ -12,7 +13,7 @@
 
 #include <span>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 // Borrowed pointers: RI keeps its references; AddRef to keep one longer.
 struct NativeDevice {

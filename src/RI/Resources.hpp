@@ -4,6 +4,7 @@
 // P33, P58, P59, P61, P87, P94). The objects themselves are per-backend structs
 // (P83): RI::Vk::Buffer, RI::D3D12::Buffer, ...
 
+#include <RI/Abi.hpp>
 #include <RI/Flags.hpp>
 #include <types.hpp>
 
@@ -11,7 +12,7 @@
 #include <span>
 #include <string_view>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 // The memory kinds (P32). Each backend maps them to its native memory types.
 enum class MemoryKind : uint8 {

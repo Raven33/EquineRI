@@ -5,12 +5,13 @@
 // window helper) creates it and passes its handles when creating a swapchain.
 // Also the portable swapchain descriptions (P43, P63, P64).
 
+#include <RI/Abi.hpp>
 #include <RI/Textures.hpp>
 #include <types.hpp>
 
 #include <string_view>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 enum class WindowSystem : uint8 {
     eWin32,   // display: HINSTANCE, window: HWND

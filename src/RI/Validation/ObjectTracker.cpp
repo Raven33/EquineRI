@@ -8,7 +8,7 @@
 #include <format>
 #include <mutex>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 namespace {
 std::atomic<uint64> nextObjectId{1};

@@ -5,7 +5,7 @@
 
 #include <cstring>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 Profiler createProfiler(Device &device, uint32 maxScopes) {
     Profiler profiler;

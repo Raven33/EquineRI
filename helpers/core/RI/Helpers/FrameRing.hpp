@@ -5,11 +5,12 @@
 // the list it reuses is still in flight. Per-frame data is indexed by
 // frameIndex(ring).
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <vector>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 struct FrameRing {
     Device *device = nullptr;

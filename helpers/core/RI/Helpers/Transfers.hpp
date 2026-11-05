@@ -4,11 +4,12 @@
 // staging memory and command list, submits, waits, and frees them. Simple and
 // slow: for loading and tools, not per-frame streaming.
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <vector>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 void uploadBuffer(Device &device, const Buffer &dst, uint64 offset, const void *data, uint64 size);
 std::vector<std::byte> readbackBuffer(Device &device, const Buffer &src, uint64 offset, uint64 size);

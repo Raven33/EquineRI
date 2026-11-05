@@ -24,7 +24,7 @@
 
 #include <format>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 namespace {
 

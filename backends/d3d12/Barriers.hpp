@@ -4,11 +4,12 @@
 // RI's operations, with an exact half on RI's side and a full half on the
 // other.
 
+#include <RI/Abi.hpp>
 #include <RI/D3D12/Backend.hpp>
 
 #include <d3d12.h>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 struct TextureBarrier {
     D3D12_BARRIER_LAYOUT before = D3D12_BARRIER_LAYOUT_UNDEFINED;

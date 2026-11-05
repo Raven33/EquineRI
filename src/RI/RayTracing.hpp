@@ -5,13 +5,14 @@
 // RayQuery with the top level in a descriptor heap slot (P42).
 // DeviceLimits::rayTracing says whether the GPU has it.
 
+#include <RI/Abi.hpp>
 #include <RI/Flags.hpp>
 #include <RI/Textures.hpp>
 #include <types.hpp>
 
 #include <vector>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 enum class AccelerationStructureFlags : uint32 {
     eNone = 0,

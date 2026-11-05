@@ -4,6 +4,7 @@
 // (P88: only what native layers cannot see). Plain checks returning a
 // CheckResult (P91); backends call them through EQ_VALIDATE.
 
+#include <RI/Abi.hpp>
 #include <RI/Textures.hpp>
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
@@ -13,7 +14,7 @@
 #include <string_view>
 #include <thread>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 // A descriptor slot inside its heap (P59). RI computes native addresses from
 // slots, so an out-of-range slot would silently write past the heap on D3D12.

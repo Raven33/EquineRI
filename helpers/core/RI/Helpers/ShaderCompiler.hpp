@@ -5,13 +5,14 @@
 // (P93, P94): SPIR-V for Vulkan (DX buffer layout, samplers in set 1), DXIL
 // for D3D12. RI itself takes bytecode only.
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <string>
 #include <string_view>
 #include <vector>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 struct ShaderCompiler {
     struct {

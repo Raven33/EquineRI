@@ -3,11 +3,12 @@
 // Instance creation and GPU description, shared by listGpus and createDevice.
 // Each device owns its own instance (P92).
 
+#include <RI/Abi.hpp>
 #include <RI/Device.hpp>
 
 #include <volk.h>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 // RI needs at least Vulkan 1.3 on the instance and the device.
 inline constexpr uint32 kMinApiVersion = VK_API_VERSION_1_3;

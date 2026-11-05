@@ -12,6 +12,7 @@
 // kDestroyedNames named objects destroyed, so a use after destroy is reported
 // by name.
 
+#include <RI/Abi.hpp>
 #include <RI/Validation/Validation.hpp>
 #include <types.hpp>
 
@@ -23,7 +24,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace RI::Validation {
+namespace RI::inline EQUINE_RI_ABI::Validation {
 
 inline constexpr size_t kDestroyedNames = 4096;
 

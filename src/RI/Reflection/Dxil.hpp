@@ -15,6 +15,7 @@
 // The reader only parses bytes, so it is portable and tested on every platform.
 // Malformed input yields an error message, never a crash or an out-of-bounds read.
 
+#include <RI/Abi.hpp>
 #include <types.hpp>
 
 #include <cstddef>
@@ -22,7 +23,7 @@
 #include <string>
 #include <vector>
 
-namespace RI::Reflection {
+namespace RI::inline EQUINE_RI_ABI::Reflection {
 
 enum class DxilResourceClass : uint8 {
     eSRV,

@@ -5,12 +5,13 @@
 // constraints here. The root data size against the pipeline stays a run-time
 // check.
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <span>
 #include <type_traits>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 // A pointer or a span is trivially copyable too, but it is never the value meant.
 template <typename T>

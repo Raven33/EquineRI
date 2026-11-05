@@ -28,7 +28,7 @@
 #include <string_view>
 #include <vector>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 namespace {
 

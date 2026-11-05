@@ -3,7 +3,7 @@
 
 #include <RI/Textures.hpp>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 bool isDepthFormat(Format format) {
     switch (format) {

@@ -28,7 +28,7 @@
 #include <algorithm>
 #include <format>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 namespace {
 

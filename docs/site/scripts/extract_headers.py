@@ -142,9 +142,11 @@ def parse_header(path: Path) -> list[Decl]:
             comment = []
             i += 1
             continue
-        m = re.match(r"^namespace\s+([\w:]+)\s*\{", s)
+        m = re.match(r"^namespace\s+([\w:\s]+?)\s*\{", s)
         if m:
-            namespaces.append(m.group(1).split("::"))
+            # RI::inline EQUINE_RI_ABI::Vk is RI::Vk to users (P110).
+            parts = [part.strip() for part in m.group(1).split("::")]
+            namespaces.append([part for part in parts if not part.startswith("inline ")])
             comment = []
             i += 1
             continue

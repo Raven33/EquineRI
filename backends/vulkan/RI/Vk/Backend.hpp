@@ -6,6 +6,7 @@
 // <RI/Vk/Native.hpp>. Every declaration matches backends/d3d12/RI/D3D12/
 // Backend.hpp (checked by tests/conformance).
 
+#include <RI/Abi.hpp>
 #include <RI/Commands.hpp>
 #include <RI/Device.hpp>
 #include <RI/Resources.hpp>
@@ -20,7 +21,7 @@
 #include <variant>
 #include <vector>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 struct DeviceState; // backend-private: native handles, function table, tracking
 

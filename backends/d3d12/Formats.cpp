@@ -3,7 +3,7 @@
 
 #include "Formats.hpp"
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 DXGI_FORMAT dxgiFormat(Format format) {
     switch (format) {

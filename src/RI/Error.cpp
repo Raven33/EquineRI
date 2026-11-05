@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <string>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 std::string_view toString(ErrorCategory category) {
     switch (category) {

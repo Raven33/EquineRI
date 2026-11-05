@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 struct SwapchainState {
     SwapchainDesc desc; // without its name, which `name` keeps

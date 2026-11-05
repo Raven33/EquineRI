@@ -9,6 +9,7 @@
 // A target linking a backend library gets its EQUINE_BACKEND_* macro. Code for
 // both backends is compiled once per backend, in separate targets.
 
+#include <RI/Abi.hpp>
 #include <RI/Error.hpp>
 #include <RI/RayTracing.hpp>
 #include <RI/Window.hpp>
@@ -17,12 +18,12 @@
 #error "Both EQUINE_BACKEND_VULKAN and EQUINE_BACKEND_D3D12 are set: compile RI code once per backend, in separate targets."
 #elif EQUINE_BACKEND_VULKAN
 #include <RI/Vk/Backend.hpp>
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 using namespace Vk;
 }
 #elif EQUINE_BACKEND_D3D12
 #include <RI/D3D12/Backend.hpp>
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 using namespace D3D12;
 }
 #else

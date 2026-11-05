@@ -4,7 +4,7 @@
 
 #include <format>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 DispatchIndirectArgs groupGrid(uint64 count, uint32 groupSize) {
     if (groupSize == 0) {

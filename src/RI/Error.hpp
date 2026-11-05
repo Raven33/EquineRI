@@ -5,12 +5,13 @@
 // so changing the error model touches one file, not every call site. The policy
 // is open (X1): for now every category prints a message and aborts.
 
+#include <RI/Abi.hpp>
 #include <types.hpp>
 
 #include <source_location>
 #include <string_view>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 // Validation builds (P53 (4)): GPU-assisted validation (Vulkan GPU-AV, D3D12
 // GPU-based validation) is on unless the environment variable

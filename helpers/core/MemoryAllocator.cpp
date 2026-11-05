@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <format>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 namespace {
 

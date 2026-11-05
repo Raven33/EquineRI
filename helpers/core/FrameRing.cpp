@@ -2,7 +2,7 @@
 
 #include <RI/Helpers/FrameRing.hpp>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 FrameRing createFrameRing(Device &device, uint32 framesInFlight) {
     FrameRing ring;

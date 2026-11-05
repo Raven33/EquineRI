@@ -1,13 +1,13 @@
-# D3D12 Agility SDK (CONTEXT.md, P55)
+# D3D12 Agility SDK (CONTEXT.md, P55, P110)
 #
 # Work graphs, enhanced barriers, and GPU_UPLOAD memory need the Agility SDK
-# runtime rather than the OS-provided D3D12. A pinned NuGet package is
+# runtime rather than the OS-provided D3D12. The NuGet package chosen by
+# EquineAgilitySDKVersion.cmake (RI's pin, or the parent project's) is
 # downloaded at configure time, verified by hash, and extracted into the
 # build tree. Nothing is committed to the repository.
 #
 # Provides:
 #   EquineAgilitySDK                      - interface target: Agility headers
-#   EQUINE_AGILITY_SDK_VERSION            - pinned package version
 #   equine_deploy_agility_sdk(<target>)   - copy the runtime next to an executable
 #
 # Executables must also export D3D12SDKVersion / D3D12SDKPath; see
@@ -15,8 +15,8 @@
 
 include_guard(GLOBAL)
 
-set(EQUINE_AGILITY_SDK_VERSION "1.619.6")
-set(EQUINE_AGILITY_SDK_SHA256 "08f0489281401aa430fc37322d6c3fc98a8025175aacd714c10d562f4963f1e9")
+include(EquineAgilitySDKVersion)
+
 set(EQUINE_AGILITY_SDK_URL
     "https://api.nuget.org/v3-flatcontainer/microsoft.direct3d.d3d12/${EQUINE_AGILITY_SDK_VERSION}/microsoft.direct3d.d3d12.${EQUINE_AGILITY_SDK_VERSION}.nupkg"
 )
@@ -70,14 +70,9 @@ target_include_directories(EquineAgilitySDK SYSTEM BEFORE INTERFACE
     "${EQUINE_AGILITY_SDK_INCLUDE_DIR}"
 )
 
-# D3D12_SDK_VERSION is the package's minor version (1.619.x -> 619). Exposed so
-# D3D12AgilityExports.hpp can detect a shadowing Windows SDK d3d12.h.
-string(REGEX MATCH "^[0-9]+\\.([0-9]+)\\." EQUINE_AGILITY_SDK_VERSION_MATCH "${EQUINE_AGILITY_SDK_VERSION}")
-if (NOT EQUINE_AGILITY_SDK_VERSION_MATCH)
-    message(FATAL_ERROR "Cannot parse the Agility SDK version '${EQUINE_AGILITY_SDK_VERSION}'.")
-endif()
+# Exposed so D3D12AgilityExports.hpp can detect a shadowing Windows SDK d3d12.h.
 target_compile_definitions(EquineAgilitySDK INTERFACE
-    "EQUINE_AGILITY_SDK_VERSION_MINOR=${CMAKE_MATCH_1}"
+    "EQUINE_AGILITY_SDK_VERSION_MINOR=${EQUINE_AGILITY_SDK_VERSION_MINOR}"
 )
 # The runtime folder travels with the target: this file's variables exist only
 # in the directory that include()s it, while executables deploy from anywhere.

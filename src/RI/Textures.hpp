@@ -5,6 +5,7 @@
 // per-backend structs (P83): RI::Vk::Texture, RI::D3D12::Texture, ...
 // Image layouts never appear here (P16): each backend keeps them internal.
 
+#include <RI/Abi.hpp>
 #include <RI/Flags.hpp>
 #include <RI/Resources.hpp>
 #include <types.hpp>
@@ -14,7 +15,7 @@
 #include <string_view>
 #include <vector>
 
-namespace RI {
+namespace RI::inline EQUINE_RI_ABI {
 
 enum class Format : uint16 {
     eUndefined,

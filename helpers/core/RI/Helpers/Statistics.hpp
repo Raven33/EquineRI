@@ -5,9 +5,10 @@
 // the backend wrote it, read into one fixed struct on the CPU. RI itself only
 // reports where each counter is (pipelineStatisticsLayout(device, type)).
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 // Counters of one counter query. A counter the query type does not hold, or
 // the GPU lacks, reads 0.

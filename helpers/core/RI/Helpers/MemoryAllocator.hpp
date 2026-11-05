@@ -4,11 +4,12 @@
 // of each memory kind, first fit, so you never compute offsets. Frees are
 // deferred to a timeline point (P20). Built only on RI's public functions.
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
 #include <vector>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 struct Allocation {
     Memory memory; // the block

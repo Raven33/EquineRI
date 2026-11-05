@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 void loadDebugFunctions(DeviceState &state) {
     state.setObjectName = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(

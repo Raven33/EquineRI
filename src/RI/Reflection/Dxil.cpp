@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace RI::Reflection {
+namespace RI::inline EQUINE_RI_ABI::Reflection {
 
 namespace {
 

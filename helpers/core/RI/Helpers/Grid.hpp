@@ -5,9 +5,10 @@
 // count is folded into rows. Shaders recover the linear group index with
 // eqLinearGroup (<equine/grid.hlsli>).
 
+#include <RI/Abi.hpp>
 #include <RI/RI.hpp>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 // The groups for `count` items of `groupSize` each: {groups, 1, 1} up to
 // kMaxGroupsPerDimension groups, then rows of kMaxGroupsPerDimension. The last

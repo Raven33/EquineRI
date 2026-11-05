@@ -26,7 +26,7 @@
 #include <format>
 #include <vector>
 
-namespace RI::D3D12 {
+namespace RI::inline EQUINE_RI_ABI::D3D12 {
 
 namespace {
 

@@ -5,7 +5,7 @@
 
 #include <format>
 
-namespace RI::Helpers {
+namespace RI::inline EQUINE_RI_ABI::Helpers {
 
 SlotAllocator createSlotAllocator(Queue &queue, uint32 first, uint32 count) {
     SlotAllocator slots;

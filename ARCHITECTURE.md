@@ -19,6 +19,7 @@ Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md`
 | `src/RI/Validation/` | RI's own checks (P88, P91): `Checks.*` (one function per rule), `ObjectTracker.*` (use after destroy), `Placement.*` (aliasing and discard tracking), `Validation.hpp` (`EQ_VALIDATE`). |
 | `src/RI/Reflection/` | RI's DXIL reader (P67): root data size and bindings from DXIL. SPIR-V uses SPIRV-Reflect. |
 | `src/types.hpp` | Integer aliases (`uint32`, …). |
+| `src/RI/Abi.hpp` | `EQUINE_RI_ABI`, the inline namespace every RI declaration lives in: `abi_retail` or `abi_preview`, from the tree's Agility SDK (P110). Every file that opens `namespace RI` opens `RI::inline EQUINE_RI_ABI`. |
 | `backends/vulkan/` | Namespace `RI::Vk::`, library `EquineVulkanBackend`. `RI/Vk/Backend.hpp` declares the backend's structs and functions; `RI/Vk/Native.hpp` the native access (P84). One `.cpp` per area. `DeviceState.hpp` is the hidden per-device state. |
 | `backends/d3d12/` | The same for D3D12: `RI::D3D12::`, `EquineD3D12Backend`, `RI/D3D12/Backend.hpp`, `RI/D3D12/Native.hpp`. Windows only. |
 | `shaders/equine/root.hlsli` | `EQ_ROOT_DATA` (P45), included by every shader. |
@@ -26,7 +27,7 @@ Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md`
 | `tests/` | `*.cpp` at the top: GPU-free tests (`EquineRITests`). `gpu/`: portable GPU tests, compiled once per backend. `vulkan/`, `d3d12/`: backend-only GPU tests (native access, backend quirks). `conformance/`: both backends declare the same signatures. `shaders/`: the tests' HLSL. |
 | `samples/` | Small programs on RI. |
 | `tools/` | Measurement harnesses: `layout_bench/` (L1, P96, P97), `descriptor_bench/` (P94), `statistics_bench/` (statistics-query cost, P105). |
-| `cmake/` | The pinned DXC (`EquineDXC.cmake`, `equine_add_shaders`) and the Agility SDK (`EquineAgilitySDK.cmake`). |
+| `cmake/` | The pinned DXC (`EquineDXC.cmake`, `equine_add_shaders`), the Agility SDK version (`EquineAgilitySDKVersion.cmake`: RI's pin or the parent's, P110) and its download (`EquineAgilitySDK.cmake`). |
 | `third_party/` | Pinned submodules: Vulkan-Headers, volk, SPIRV-Reflect, GLFW. |
 | `docs/site/` | The MkDocs site: `docs/` pages, `snippets/` (complete programs compiled with `-DEQUINE_BUILD_DOC_SNIPPETS=ON`), `scripts/` (header extraction, coverage, decision pages). |
 
@@ -164,7 +165,7 @@ mechanisms.
 
 | Area | Vulkan | D3D12 |
 |---|---|---|
-| Loading, device | volk, an instance per device, every feature the GPU reports turned on (P60, P89, P92) | Agility SDK 1.619, a DXGI factory per device (P55, P92) |
+| Loading, device | volk, an instance per device, every feature the GPU reports turned on (P60, P89, P92) | Agility SDK 1.619 by default, or the parent project's (P110); a DXGI factory per device (P55, P92) |
 | Memory kinds (P32) | One memory type per kind, chosen at device creation, plus other types of the kind for resources that need them (`allocateMemory(..., &requirements)`) | One heap type per kind; resource heap tier 2 holds everything; CPU kinds mapped through one buffer over the whole heap |
 | Descriptor heaps (P94, P99) | Two descriptor sets: set 0 one mutable binding for every resource view (as DXC's `ResourceDescriptorHeap`), set 1 samplers (a `VkSampler` cached per description); update-after-bind; heap size limited by what the driver accepts | Native shader-visible heaps, directly indexed |
 | Root data (P44, P45) | Push constants, one range for all stages | Root constants at root parameter 0 (`b0, space999`) |

@@ -3,6 +3,7 @@
 // Turns a failed VkResult into a report on the error channel (P57), with the
 // category that matches the result.
 
+#include <RI/Abi.hpp>
 #include <RI/Error.hpp>
 
 #include <volk.h>
@@ -10,7 +11,7 @@
 #include <source_location>
 #include <string_view>
 
-namespace RI::Vk {
+namespace RI::inline EQUINE_RI_ABI::Vk {
 
 ErrorCategory categoryOf(VkResult result);
 
