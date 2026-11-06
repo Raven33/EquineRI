@@ -1,0 +1,9 @@
+﻿gpu,AMD Radeon(TM) Graphics
+driver,AMD proprietary driver 26.8.1 (AMD proprietary shader compiler)
+config,dispatches 4096,many reads 4,heavy groups 16384,heavy reads 256,rounds 15
+check,heap,same as push
+check,root,same as push
+measure,unit,push,heap,root
+many: record,ns per dispatch (median),66.8,39.8,71.8
+many: gpu,ms for 4096 dispatches (median),0.2689,0.2585,0.1947
+heavy: gpu,ms (median),5.0535,5.0450,7.6419

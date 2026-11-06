@@ -1,0 +1,9 @@
+﻿gpu,NVIDIA GeForce RTX 3080
+driver,NVIDIA 617.42
+config,dispatches 4096,many reads 4,heavy groups 16384,heavy reads 256,rounds 15
+check,heap,same as push
+check,root,same as push
+measure,unit,push,heap,root
+many: record,ns per dispatch (median),194.5,175.2,208.8
+many: gpu,ms for 4096 dispatches (median),0.5960,0.5967,0.5954
+heavy: gpu,ms (median),0.3146,0.3148,0.3156

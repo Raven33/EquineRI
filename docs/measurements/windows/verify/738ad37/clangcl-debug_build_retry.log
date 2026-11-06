@@ -1,0 +1,7 @@
+[1/7] Linking CXX executable samples\compute_readback_Vulkan.exe; Copying clang AddressSanitizer DLL to compute_readback_Vulkan output directory
+[2/7] Linking CXX executable tests\EquineRITests.exe; Copying clang AddressSanitizer DLL to EquineRITests output directory
+[3/7] Linking CXX executable tests\EquineRIVulkanTests.exe; Copying clang AddressSanitizer DLL to EquineRIVulkanTests output directory
+[4/7] Linking CXX executable tools\layout_bench\layout_bench_D3D12.exe; Copying clang AddressSanitizer DLL to layout_bench_D3D12 output directory; Copying the D3D12 Agility SDK runtime to layout_bench_D3D12's output directory
+[5/7] Linking CXX executable tests\EquineRID3D12Tests.exe; Copying clang AddressSanitizer DLL to EquineRID3D12Tests output directory; Copying the D3D12 Agility SDK runtime to EquineRID3D12Tests's output directory
+[6/7] Building CXX object tests\CMakeFiles\EquineConformanceD3D12.dir\conformance\Conformance.cpp.obj
+[7/7] Building CXX object tests\CMakeFiles\EquineConformanceVulkan.dir\conformance\Conformance.cpp.obj
