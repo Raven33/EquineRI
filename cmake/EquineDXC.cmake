@@ -26,18 +26,38 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_HOST_SYSTEM_PROCESSOR 
     set(EQUINE_DXC_RELATIVE_EXE "bin/dxc")
     set(EQUINE_DXC_RELATIVE_LIBRARY "lib/libdxcompiler.so")
     set(EQUINE_DXC_RELATIVE_INCLUDE "include/dxc")
+elseif (APPLE)
+    # No macOS DXC release exists: EQUINE_DXC_DIR points at a local build of
+    # ${EQUINE_DXC_VERSION}, laid out like the Linux release (bin/dxc,
+    # lib/libdxcompiler.dylib, include/dxc). DXIL built here is unsigned (no
+    # libdxil on macOS), which only matters if it is loaded on D3D12.
+    set(EQUINE_DXC_DIR "" CACHE PATH "Local DXC ${EQUINE_DXC_VERSION} build (macOS)")
+    if (NOT EXISTS "${EQUINE_DXC_DIR}/bin/dxc")
+        message(FATAL_ERROR
+            "macOS has no pinned DXC release: build DXC ${EQUINE_DXC_VERSION} and set "
+            "-DEQUINE_DXC_DIR=<dir with bin/dxc, lib/libdxcompiler.dylib, include/dxc>."
+        )
+    endif()
+    set(EQUINE_DXC_LOCAL ON)
+    set(EQUINE_DXC_RELATIVE_EXE "bin/dxc")
+    set(EQUINE_DXC_RELATIVE_LIBRARY "lib/libdxcompiler.dylib")
+    set(EQUINE_DXC_RELATIVE_INCLUDE "include/dxc")
 else()
     message(FATAL_ERROR "No pinned DXC release for this host (${CMAKE_HOST_SYSTEM_NAME} ${CMAKE_HOST_SYSTEM_PROCESSOR}).")
 endif()
 set(EQUINE_DXC_URL
     "https://github.com/microsoft/DirectXShaderCompiler/releases/download/${EQUINE_DXC_VERSION}/${EQUINE_DXC_ARCHIVE}")
-set(EQUINE_DXC_ROOT "${CMAKE_BINARY_DIR}/_deps/dxc-${EQUINE_DXC_VERSION}")
+if (EQUINE_DXC_LOCAL)
+    set(EQUINE_DXC_ROOT "${EQUINE_DXC_DIR}")
+else()
+    set(EQUINE_DXC_ROOT "${CMAKE_BINARY_DIR}/_deps/dxc-${EQUINE_DXC_VERSION}")
+endif()
 set(EQUINE_DXC_EXECUTABLE "${EQUINE_DXC_ROOT}/${EQUINE_DXC_RELATIVE_EXE}")
 # The compiler library and its header, for the runtime shader-compilation helper (P29).
 set(EQUINE_DXC_LIBRARY "${EQUINE_DXC_ROOT}/${EQUINE_DXC_RELATIVE_LIBRARY}")
 set(EQUINE_DXC_INCLUDE_DIR "${EQUINE_DXC_ROOT}/${EQUINE_DXC_RELATIVE_INCLUDE}")
 
-if (NOT EXISTS "${EQUINE_DXC_EXECUTABLE}")
+if (NOT EQUINE_DXC_LOCAL AND NOT EXISTS "${EQUINE_DXC_EXECUTABLE}")
     message(STATUS "Equine DXC: downloading ${EQUINE_DXC_VERSION}")
     set(EQUINE_DXC_PACKAGE "${EQUINE_DXC_ROOT}-${EQUINE_DXC_ARCHIVE}")
     file(DOWNLOAD "${EQUINE_DXC_URL}" "${EQUINE_DXC_PACKAGE}"

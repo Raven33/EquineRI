@@ -114,6 +114,32 @@
         "EQUINE_BUILD_SAMPLES": true,
         "EQUINE_VALIDATION": false
       }
+    },
+    {
+      "name": "macos-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "EQUINE_DXC_DIR": "$env{EQUINE_DXC_DIR}"
+      }
+    },
+    {
+      "name": "macos-debug",
+      "displayName": "AppleClang Debug (macOS)",
+      "description": "GPU-free tests with AppleClang, Ninja, and sanitizers. Needs EQUINE_DXC_DIR (local DXC build).",
+      "inherits": "macos-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EQUINE_BUILD_TESTS": true,
+        "EQUINE_VALIDATION": true
+      }
     }
   ],
   "buildPresets": [
@@ -140,6 +166,10 @@
     {
       "name": "clang-bench",
       "configurePreset": "clang-bench"
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-debug"
     }
   ],
   "testPresets": [
@@ -167,6 +197,13 @@
     {
       "name": "clang-bench",
       "configurePreset": "clang-bench",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-debug",
       "output": {
         "outputOnFailure": true
       }
