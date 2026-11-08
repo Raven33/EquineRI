@@ -82,7 +82,8 @@ Every change keeps these. The decision behind each is in `CONTEXT.md`.
   `cmd*` functions (P85); descriptions use designated initializers (P86).
 - **RI allocates no memory on its own** (P31). The user places every buffer, texture and
   scratch range. RI's own objects are small and fixed: CPU descriptor heaps, one internal
-  command list, caches of native layouts, signatures and (Vulkan) samplers (P99).
+  command list, caches of native layouts, signatures and (Vulkan, Metal) samplers (P99). The
+  one exception is command memory that a command list owns and recycles at reset (Metal, P115).
 - **RI infers only what is evident** (knowable without tracking past commands) and always
   keeps an explicit form (P36). Barriers are the user's, as coarse stage masks (P36).
 - **Layouts are never visible** (P16). Textures rest in a layout chosen from their usage;

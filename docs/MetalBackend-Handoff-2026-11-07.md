@@ -79,3 +79,32 @@ D3D12 does for Vulkan-only features and the reverse.
    Milestone 2 took (`docs/Plan.md`).
 3. Extend `equine_add_shaders` for the chosen shader path, then `tests/conformance/`.
 4. Then area by area, in the order of `docs/Plan.md`'s milestones.
+
+## 4. User's answers (2026-11-07, before the proposal)
+
+Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` for review, then
+`CONTEXT.md` as P113 onwards (`p110`–`p112` are taken by open branches).
+
+- **API:** Metal 4 first, Apple silicon (M1+); a Metal 3 path later, so keep it possible.
+- **Platform:** macOS only for now.
+- **Shaders:** DXIL → Metal Shader Converter → `.metallib`. MSC is extracted into `~/dev/tools`
+  (`pkgutil --expand-full`), not installed system-wide. Its download needs an Apple ID, so the
+  user fetches the pkg. Pinned: **MSC 4.0 beta 3** (`metal-irconverter` 4.0.3, pkg SHA-256
+  `449833211e4ef0d46bfaa94848e801acff49e226d3c348bba0673f13716be622`), the user's choice over
+  the last stable 3.x (2025-12-05); laid out in `~/dev/tools/msc/{bin,include,lib,docs}`.
+- **Language:** C++ with metal-cpp (pinned `release/metal-cpp_macOS27.0.1_iOS27.0.1`, on GitHub,
+  so a submodule like Vulkan-Headers; it has all 30 `MTL4*` headers). Objective-C++ only to fill
+  an API that metal-cpp lacks. `Native.hpp` exposes `MTL::` pointers.
+- **Naming:** as §2.3 (`RI::Metal::`, `EquineMetalBackend`, `EQUINE_BACKEND_METAL`,
+  `EQUINE_METAL_BACKEND`).
+- **Validation:** documented only. RI sets no environment; presets or ctest set
+  `MTL_DEBUG_LAYER` and `MTL_SHADER_VALIDATION`.
+- **Geometry, tessellation:** unsupported (`DeviceLimits` false) for now; emulation revisited
+  later.
+- **Indirect Level 2 (P48):** the proposal investigates a mapping onto indirect command buffers.
+- **Ray queries:** supported on every Apple-silicon GPU, plus a fact that says whether they are
+  hardware-accelerated (M3+).
+- **Swapchain tests:** skipped when no usable window server (GUI session) is available; the
+  other GPU tests run offscreen.
+- **Next:** check MSC's argument-buffer layout and root constants against P94/P99 and the
+  256-byte root data, then write the proposal and stop for review.
