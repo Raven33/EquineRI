@@ -13,3 +13,22 @@ target_link_libraries(EquineMetalCpp PUBLIC
     "-framework QuartzCore"
 )
 equine_mark_nonproject_dependency(EquineMetalCpp)
+
+# ── Backend library (P113) ───────────────────────────────────────────────────
+add_library(EquineMetalBackend STATIC
+    RI/Metal/Backend.hpp
+    RI/Metal/Native.hpp
+    DeviceState.hpp
+    Device.cpp
+    Resources.cpp
+    Pipeline.cpp
+    Commands.cpp
+    Debug.cpp
+    Queries.cpp
+    Unsupported.cpp
+)
+target_include_directories(EquineMetalBackend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(EquineMetalBackend PUBLIC EquineRI EquineMetalCpp)
+target_compile_features(EquineMetalBackend PUBLIC cxx_std_20)
+# Selects this backend for <RI/RI.hpp> in every target that links it (P83).
+target_compile_definitions(EquineMetalBackend PUBLIC EQUINE_BACKEND_METAL=1)

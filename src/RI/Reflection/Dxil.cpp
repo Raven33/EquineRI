@@ -1179,4 +1179,34 @@ DxilReadResult readDxil(std::span<const std::byte> bytecode) {
     return result;
 }
 
+std::span<const std::byte> findDxilPart(std::span<const std::byte> bytecode, std::string_view code) {
+    if (code.size() != 4 || bytecode.size() < kContainerHeaderSize ||
+        loadU32(bytecode, 0) != fourCC('D', 'X', 'B', 'C')) {
+        return {};
+    }
+    const uint32 wanted = fourCC(code[0], code[1], code[2], code[3]);
+    const uint64 containerSize = loadU32(bytecode, 24);
+    if (containerSize < kContainerHeaderSize || containerSize > bytecode.size()) {
+        return {};
+    }
+    const uint64 partCount = loadU32(bytecode, 28);
+    if (partCount > (containerSize - kContainerHeaderSize) / 4) {
+        return {};
+    }
+    for (uint64 i = 0; i < partCount; ++i) {
+        const uint64 offset = loadU32(bytecode, kContainerHeaderSize + (4 * i));
+        if (offset > containerSize - kPartHeaderSize) {
+            return {};
+        }
+        const uint64 size = loadU32(bytecode, offset + 4);
+        if (size > containerSize - offset - kPartHeaderSize) {
+            return {};
+        }
+        if (loadU32(bytecode, offset) == wanted) {
+            return bytecode.subspan(offset + kPartHeaderSize, size);
+        }
+    }
+    return {};
+}
+
 } // namespace RI::Reflection

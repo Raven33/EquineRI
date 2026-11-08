@@ -1,0 +1,120 @@
+// Debugging on Metal (P53).
+//
+// Owns: setName for every object kind, applyName (the names given at
+// creation, P106, and setName's), cmdBeginMarker / cmdEndMarker (debug groups
+// on the MTL4CommandBuffer, which Xcode's capture and Instruments show).
+//
+// Watch out: a debug group must not straddle an open encoder, so markers end
+// the open encoder first (the next command opens a new one, carrying the
+// barriers). Compute pipeline labels are fixed at creation
+// (MTLComputePipelineDescriptor), so setName on a pipeline names it in
+// validation messages only. Textures are not built yet: their setName reports
+// eUnsupported.
+//
+// D3D12 counterpart: backends/d3d12/Debug.cpp.
+
+#include "DeviceState.hpp"
+#include <RI/Validation/Checks.hpp>
+
+namespace RI::Metal {
+
+namespace {
+
+// nsString returns an autoreleased string: drained before the call returns.
+struct ScopedPool {
+    NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
+    ~ScopedPool() { pool->release(); }
+};
+
+template <typename T>
+void label(void *object, std::string_view name) {
+    if (object != nullptr) {
+        ScopedPool scope;
+        static_cast<T *>(object)->setLabel(nsString(name));
+    }
+}
+
+} // namespace
+
+void applyName([[maybe_unused]] DeviceState &state, const Memory &memory, std::string_view name) {
+    label<MTL::Heap>(memory.internal.heap, name);
+    label<MTL::Buffer>(memory.internal.mapBuffer, name);
+    EQ_MTL_TRACK_NAME(&state, memory.internal.id, name);
+}
+void applyName([[maybe_unused]] DeviceState &state, const Buffer &buffer, std::string_view name) {
+    label<MTL::Buffer>(buffer.internal.buffer, name);
+    EQ_MTL_TRACK_NAME(&state, buffer.internal.id, name);
+}
+void applyName([[maybe_unused]] DeviceState &state, const DescriptorHeap &heap, std::string_view name) {
+    label<MTL::Buffer>(heap.internal.resourceBuffer, name);
+    label<MTL::Buffer>(heap.internal.samplerBuffer, name);
+    EQ_MTL_TRACK_NAME(&state, heap.internal.id, name);
+}
+void applyName([[maybe_unused]] DeviceState &state, const QueryPool &pool, std::string_view name) {
+    label<MTL4::CounterHeap>(pool.internal.heap, name);
+    EQ_MTL_TRACK_NAME(&state, pool.internal.id, name);
+}
+// MTLComputePipelineState has no label setter: the name reaches validation messages only.
+void applyName([[maybe_unused]] DeviceState &state, [[maybe_unused]] const Pipeline &pipeline,
+               [[maybe_unused]] std::string_view name) {
+    EQ_MTL_TRACK_NAME(&state, pipeline.internal.id, name);
+}
+void applyName([[maybe_unused]] DeviceState &state, const CommandList &cmd, std::string_view name) {
+    if (cmd.internal.state != nullptr) {
+        label<MTL4::CommandBuffer>(cmd.internal.state->commandBuffer, name);
+    }
+    EQ_MTL_TRACK_NAME(&state, cmd.internal.id, name);
+}
+
+void setName(Device &device, const Memory &memory, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, memory, name);
+}
+void setName(Device &device, const Buffer &buffer, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, buffer, name);
+}
+void setName([[maybe_unused]] Device &device, const Texture &, std::string_view) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    notYet("setName(Texture)");
+}
+void setName([[maybe_unused]] Device &device, const TextureView &, std::string_view) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    notYet("setName(TextureView)");
+}
+void setName(Device &device, const DescriptorHeap &heap, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, heap, name);
+}
+void setName(Device &device, const QueryPool &pool, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, pool, name);
+}
+void setName(Device &device, const Pipeline &pipeline, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, pipeline, name);
+}
+void setName(Device &device, const CommandList &cmd, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    applyName(*device.internal.state, cmd, name);
+}
+
+void cmdBeginMarker(CommandList &cmd, std::string_view name) {
+    EQ_MTL_CHECK_THREAD(cmd.internal.device);
+    CommandListState &state = *cmd.internal.state;
+    endEncoder(state);
+    ++state.markerDepth;
+    ScopedPool scope;
+    state.commandBuffer->pushDebugGroup(nsString(name));
+}
+
+void cmdEndMarker(CommandList &cmd) {
+    EQ_MTL_CHECK_THREAD(cmd.internal.device);
+    CommandListState &state = *cmd.internal.state;
+    EQ_VALIDATE(Validation::checkMarkerEnd(state.markerDepth));
+    endEncoder(state);
+    --state.markerDepth;
+    state.commandBuffer->popDebugGroup();
+}
+
+} // namespace RI::Metal

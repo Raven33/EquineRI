@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <span>
+#include <string_view>
 #include <string>
 #include <vector>
 
@@ -83,5 +84,11 @@ inline constexpr uint32 kRootDataSpace = 999;
 // Reads a DXBC container holding a DXIL shader. Root data rules (P45): the only
 // resource allowed in space 999 is one CBV at b0; anything else is an error.
 DxilReadResult readDxil(std::span<const std::byte> bytecode);
+
+// The data of the container part named `code` (four characters, e.g. "MTLB",
+// the Metal backend's metallib, P114), or an empty span when the bytecode is
+// not a well-formed container or has no such part. Run readDxil first for a
+// readable error.
+std::span<const std::byte> findDxilPart(std::span<const std::byte> bytecode, std::string_view code);
 
 } // namespace RI::Reflection

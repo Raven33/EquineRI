@@ -336,9 +336,73 @@ if (TARGET EquineD3D12Backend)
     )
 endif()
 
+if (TARGET EquineMetalBackend)
+    # Stage 2 of the Metal backend (P113): the compute tests only, offscreen.
+    # The other portable tests join as their features are built on Metal.
+    add_executable(EquineRIMetalTests
+        "${CMAKE_CURRENT_SOURCE_DIR}/TestMain.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ComputeTests.cpp"
+        # For threads.call_from_other_thread_reports only: its other case
+        # needs formatSupported (textures).
+        "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
+    )
+    equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/fill.hlsl")
+    # MSC refuses add and exchange on 64-bit heap atomics (P116 (2)); the test
+    # skips itself since int64BufferAtomics is false.
+    equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 NO_METAL SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/atomic64.hlsl")
+    target_include_directories(EquineRIMetalTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    # The helpers link the backend publicly: naming it again repeats the archive,
+    # which Apple's linker warns about.
+    target_link_libraries(EquineRIMetalTests PRIVATE EquineHelpersMetal)
+    equine_copy_sanitizer_runtime(EquineRIMetalTests)
+
+    set(EQUINE_METAL_TEST_NAMES
+        compute.buffer_compute_readback
+        compute.command_list_reuse_and_timeline
+        compute.memory_kinds
+        compute.names_and_markers
+        compute.int64_atomics
+        compute.clear_large_buffer
+        compute.clear_buffer_range
+        compute.write_small_data
+    )
+    set(EQUINE_METAL_ABORT_TESTS "")
+    if (EQUINE_VALIDATION)
+        list(APPEND EQUINE_METAL_TEST_NAMES
+            compute.root_data_size_mismatch_reports
+            compute.pipeline_before_heap_reports
+            compute.descriptor_slot_out_of_range_reports
+            compute.buffer_used_after_destroy_reports
+            compute.named_buffer_used_after_destroy_reports
+            compute.unclosed_marker_reports
+            compute.too_many_groups_reports
+            compute.small_write_too_large_reports
+            threads.call_from_other_thread_reports
+        )
+        foreach(entry IN LISTS EQUINE_GPU_SHARED_ABORT_TESTS)
+            if (entry MATCHES "^(compute|threads)\\.")
+                list(APPEND EQUINE_METAL_ABORT_TESTS "${entry}")
+            endif()
+        endforeach()
+    endif()
+    # Not yet: compute.names_at_creation (textures).
+    foreach(name IN LISTS EQUINE_METAL_TEST_NAMES)
+        add_test(NAME "mtl.${name}" COMMAND EquineRIMetalTests "${name}")
+        set_tests_properties("mtl.${name}" PROPERTIES LABELS gpu TIMEOUT 120)
+    endforeach()
+    foreach(entry IN LISTS EQUINE_METAL_ABORT_TESTS)
+        string(REPLACE "|" ";" parts "${entry}")
+        list(GET parts 0 name)
+        list(GET parts 1 message)
+        string(REPLACE "(" "\\(" message "${message}")
+        string(REPLACE ")" "\\)" message "${message}")
+        set_tests_properties("mtl.${name}" PROPERTIES PASS_REGULAR_EXPRESSION "\\[EquineRI\\] ${message}")
+    endforeach()
+endif()
+
 # ── Backend conformance (P83) ────────────────────────────────────────────────
 # The same source, compiled against each backend; building it is the test.
-foreach(backend IN ITEMS Vulkan D3D12)
+foreach(backend IN ITEMS Vulkan D3D12 Metal)
     if (TARGET Equine${backend}Backend)
         add_library(EquineConformance${backend} OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/conformance/Conformance.cpp")
         target_link_libraries(EquineConformance${backend} PRIVATE Equine${backend}Backend)

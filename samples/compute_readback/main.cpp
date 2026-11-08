@@ -1,5 +1,5 @@
 // Buffer -> compute -> readback: the Milestone 2 sample (docs/Plan.md).
-// The same code runs on Vulkan and on D3D12; the build picks the backend (P83).
+// The same code runs on Vulkan, D3D12 and Metal; the build picks the backend (P83).
 
 #include <RI/RI.hpp>
 
@@ -22,6 +22,8 @@ namespace {
 std::vector<std::byte> loadShader(const char *name) {
 #if EQUINE_BACKEND_VULKAN
     const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".spv";
+#elif EQUINE_BACKEND_METAL
+    const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".mtl.dxil";
 #else
     const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".dxil";
 #endif

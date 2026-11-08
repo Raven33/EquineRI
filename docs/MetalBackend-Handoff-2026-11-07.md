@@ -124,3 +124,24 @@ Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` f
 - **Next (stage 2):** `EquineMetalBackend` with device, memory, buffers, heaps, a compute
   pipeline from `.mtl.dxil`, dispatch and readback (`samples/compute_readback`,
   `tests/gpu/ComputeTests.cpp`), then `tests/conformance/` with the third backend.
+
+## 6. Stage 2 done (2026-11-08): compute on Metal
+
+- `EquineMetalBackend` (`backends/metal/`): device and GPU list (Metal 4 + Apple7), placement
+  heaps and residency, buffers, descriptor heaps (buffer views), compute pipelines from
+  `.mtl.dxil`, command lists with command memory (P115), root data, dispatch, barriers
+  (encoder and queue barriers, carried across encoders), buffer copies, clears, small writes,
+  markers, timestamp query pools, submit and the timeline (commit feedback waited for, so a
+  GPU error is reported by the `wait` of its submission). Everything else reports
+  `unsupported: ... not built yet on the Metal backend`; capability probes return false.
+- `RI.hpp` selects it with `EQUINE_BACKEND_METAL`; helpers, the sample and conformance build for
+  Metal. `EquineRIMetalTests`: the compute tests and `threads.call_from_other_thread_reports`.
+- macOS: 63/63 (validation on, preset), validation off 54/54 with samples, sample
+  `compute_readback_Metal` 0 of 4096 wrong with validation on and off; the Metal debug layer
+  and shader validation report nothing.
+- Known gaps: the GPU-error → eDeviceLost path is untested (no way found to fault the M4);
+  cmdClearBuffer does not reject eUpload/eReadback memory (Buffer has no memory kind on Metal);
+  the usage check in `writeDescriptors` is a static check in Resources.cpp, to move into
+  `src/RI/Validation` for every backend; `DeviceState` has no ray-tracing flag yet.
+- **Next (stage 3):** textures, views and samplers, then rendering (`docs/Plan.md` order), with
+  `names_at_creation` and the texture tests joining `EquineRIMetalTests`.

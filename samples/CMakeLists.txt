@@ -1,7 +1,7 @@
 # Samples: the same source built once per enabled backend (P83). Reference
 # workloads are listed in CONTEXT.md §3.
 
-foreach(backend IN ITEMS Vulkan D3D12)
+foreach(backend IN ITEMS Vulkan D3D12 Metal)
     if (NOT TARGET Equine${backend}Backend)
         continue()
     endif()

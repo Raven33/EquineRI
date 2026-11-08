@@ -45,10 +45,13 @@ inline RI::Gpu pickGpu() {
 
 inline RI::Device createTestDevice() { return RI::createDevice({.gpu = pickGpu()}); }
 
-// The shader compiled for this backend: SPIR-V for Vulkan, DXIL for D3D12.
+// The shader compiled for this backend: SPIR-V for Vulkan, DXIL for D3D12,
+// DXIL plus a metallib for Metal (P114).
 inline std::vector<std::byte> loadShader(const char *name) {
 #if EQUINE_BACKEND_VULKAN
     const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".spv";
+#elif EQUINE_BACKEND_METAL
+    const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".mtl.dxil";
 #else
     const std::string path = std::string(EQUINE_SHADER_DIR) + "/" + name + ".dxil";
 #endif

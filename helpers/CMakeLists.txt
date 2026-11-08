@@ -3,7 +3,9 @@
 
 # ── RI helpers (P41) ───────────────────────────────────────────────────────────
 # Built only on RI's public surface, so compiled once per backend (P83), like
-# user code: EquineHelpersVulkan, EquineHelpersD3D12.
+# user code: EquineHelpersVulkan, EquineHelpersD3D12, EquineHelpersMetal. On
+# Metal, ShaderCompiler yields plain DXIL, which the Metal backend refuses: it
+# takes .mtl.dxil from the build's Metal Shader Converter step (P114).
 set(EQUINE_HELPER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/MemoryAllocator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/SlotAllocator.cpp"
@@ -14,7 +16,7 @@ set(EQUINE_HELPER_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Statistics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/Grid.cpp"
 )
-foreach(backend IN ITEMS Vulkan D3D12)
+foreach(backend IN ITEMS Vulkan D3D12 Metal)
     if (TARGET Equine${backend}Backend)
         add_library(EquineHelpers${backend} STATIC ${EQUINE_HELPER_SOURCES})
         target_include_directories(EquineHelpers${backend} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/core")
