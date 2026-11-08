@@ -145,3 +145,44 @@ Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` f
   `src/RI/Validation` for every backend; `DeviceState` has no ray-tracing flag yet.
 - **Next (stage 3):** textures, views and samplers, then rendering (`docs/Plan.md` order), with
   `names_at_creation` and the texture tests joining `EquineRIMetalTests`.
+
+## 7. Stage 3a done (2026-11-08): textures without rendering
+
+- `backends/metal/Textures.cpp`: the format table (RI `Format` → `MTLPixelFormat`),
+  `formatSupported` from Apple's Apple7+ feature tables plus Metal's runtime queries (no D24S8
+  on the M4, sample counts 1, 2, 4; no sRGB storage, no multisampled storage),
+  `textureRequirements` (`heapTextureSizeAndAlign`, eGPU memory only, as D3D12), textures of every
+  shape (P102) placed in the Memory heap, views as `MTLTexture` views of the type MSC expects
+  (arrays when the texture has layers > 1, cubes for whole cubes plus a 2D-array view for storage
+  writes, 3D, multisampled), stencil views (`X32_Stencil8`), view formats (P74), names.
+- `Resources.cpp`: texture heap entries (read and read-write) and `writeSamplers` with a sampler
+  cache per `SamplerDesc` (P99); MSC's runtime header puts a sampler's resource ID in `gpuVA`
+  (not `textureViewID` as its manual says); the LOD bias lives in the sampler (MSC reads the
+  entry's bias only with `--samplerLODBias`).
+- `TextureCommands.cpp`: `copyLayout` with D3D12's rule (rows on 256 bytes, layers on 512; Metal
+  needs only whole texels, so one buffer layout suits every backend), the three copies with regions
+  (blits on the compute encoder; depth and stencil through blit options), `cmdClearTexture`
+  (render targets and depth: a load-action render pass per mip and layer, ordered like a copy by
+  `runClearPass`; storage textures: one row from command memory doubled by blits), `cmdDiscard`
+  (bookkeeping plus a full barrier).
+- `Queries.cpp`: `cmdWriteTimestamp` (precise, after barriers on all earlier work),
+  `cmdResetQueries` (nothing to do, as D3D12), `cmdResolveQueries` (`resolveCounterHeap`, ordered by
+  a device fence that later encoders wait for).
+- Registered: `compute.names_at_creation`, `threads.pipelines_on_other_threads`,
+  `texture.create_and_views`, `storage_write_then_sample`, `clear_commands`, `copy_round_trip`,
+  `copy_regions`, `copy_depth_upload`, `samplers`, `cube_storage_then_sample`,
+  `unlisted_view_format_reports`, `copy_without_usage_reports`,
+  `read_only_depth_sampling_on_color_reports`, and `geometry_shader`, `tessellation`,
+  `cube_layered_render` (they skip: P116 (1)). macOS: 79/79 (preset), 68/68 validation off.
+- Found: Metal's shader validation (`MTL_SHADER_VALIDATION`) silently blocks textures that are in
+  no residency set, even placed in a resident heap (reads 0, writes dropped, nothing printed): RI
+  adds every view to the residency set.
+- Known gaps: `samplerMinMax` stays false (the debug layer refuses min/max reductions on the M4,
+  and Metal has no query for them); timestamps and 3D, cube-array, D32S8 stencil and R11G11B10
+  clears were checked by a probe, not by a registered test (`texture.timestamps` and
+  `volume_copy_render_sample` render); `cmdCopyTexture` between textures of different formats of
+  the same texel size is untested against Metal's rules; texture lossless compression over aliased
+  placement memory is left to Metal (no reset on create or discard); the formatSupported table is
+  read from Apple's tables, not probed per format.
+- **Next (stage 3b):** graphics pipelines, rendering sections, draws, resolves and occlusion
+  queries; the remaining `texture.*` cases.

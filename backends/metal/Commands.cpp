@@ -3,7 +3,8 @@
 //
 // Owns: command lists (an MTL4CommandAllocator, an MTL4CommandBuffer and one
 // MTL4ArgumentTable each), their command memory (allocateCommandMemory), the
-// open compute encoder (computeEncoder / endEncoder), cmdBegin / cmdEnd,
+// open compute encoder (computeEncoder / endEncoder), render passes that only
+// clear (runClearPass), cmdBegin / cmdEnd,
 // cmdSetHeap, cmdSetPipeline, cmdSetRootData, cmdDispatch, cmdBarrier (stage
 // masks as MTLStages, stagesOf), cmdCopyBuffer, cmdClearBuffer,
 // cmdWriteSmallData, submit, wait and isReached (an MTLSharedEvent as the
@@ -138,12 +139,33 @@ MTL4::ComputeCommandEncoder *computeEncoder(CommandListState &cmd) {
     // Barriers recorded while no encoder was open: this encoder's work waits for
     // the earlier encoders' (of this list and of earlier submissions).
     if (cmd.pendingBefore != 0) {
-        cmd.compute->barrierAfterQueueStages(mtlStages(cmd.pendingBefore), mtlStages(cmd.pendingAfter),
+        cmd.compute->barrierAfterQueueStages(mtlStages(cmd.pendingBefore), mtlStages(encoderSide(cmd.pendingAfter)),
                                              MTL4::VisibilityOptionDevice);
         cmd.pendingBefore = 0;
         cmd.pendingAfter = 0;
     }
+    // A resolve runs outside encoders: queue barriers do not see it, its fence does.
+    if (cmd.waitResolve) {
+        cmd.compute->waitForFence(cmd.resolveFence, MTL::StageDispatch | MTL::StageBlit);
+        cmd.waitResolve = false;
+    }
     return cmd.compute;
+}
+
+void runClearPass(CommandListState &cmd, MTL4::RenderPassDescriptor *pass) {
+    endEncoder(cmd);
+    ScopedPool scope;
+    MTL4::RenderCommandEncoder *encoder = cmd.commandBuffer->renderCommandEncoder(pass);
+    // The barriers recorded before the clear also hold for it; they stay
+    // pending for the next compute encoder too, which they were recorded for.
+    if (cmd.pendingBefore != 0) {
+        encoder->barrierAfterQueueStages(mtlStages(cmd.pendingBefore), mtlStages(kRenderEncoderStages),
+                                         MTL4::VisibilityOptionDevice);
+    }
+    // A clear counts as Stage::eCopy (P65), which RI maps to blit stages: every
+    // later encoder waits for this pass's fragment work instead.
+    encoder->barrierAfterStages(mtlStages(kRenderEncoderStages), MTL::StageAll, MTL4::VisibilityOptionDevice);
+    encoder->endEncoding();
 }
 
 void endEncoder(CommandListState &cmd) {
@@ -209,6 +231,7 @@ CommandList createCommandList(Device &device, std::string_view name) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
     DeviceState &state = *device.internal.state;
     auto *list = new CommandListState;
+    list->resolveFence = state.resolveFence;
     list->allocator = state.device->newCommandAllocator();
     list->commandBuffer = state.device->newCommandBuffer();
     if (list->allocator == nullptr || list->commandBuffer == nullptr) {
@@ -305,6 +328,7 @@ void cmdBegin(CommandList &cmd) {
     list.threadGroupSize[0] = list.threadGroupSize[1] = list.threadGroupSize[2] = 1;
     list.rootDataSize = 0;
     list.rendering = false;
+    list.waitResolve = false;
     list.markerDepth = 0;
     list.pendingBefore = list.pendingAfter = 0;
     list.encoderBefore = list.encoderAfter = 0;
@@ -320,10 +344,11 @@ void cmdEnd(CommandList &cmd) {
     }
     EQ_VALIDATE(Validation::checkMarkersClosed(list.markerDepth));
     // Barriers recorded after the last encoder still order later submissions:
-    // an empty encoder takes them and its producer barrier passes them on.
-    if (list.pendingBefore != 0) {
-        const uint64 before = list.pendingBefore;
-        const uint64 after = list.pendingAfter;
+    // an empty encoder takes them and its producer barrier passes them on. A
+    // last resolve is waited for the same way.
+    if (list.pendingBefore != 0 || list.waitResolve) {
+        const uint64 before = list.pendingBefore | (list.waitResolve ? MTL::StageBlit | MTL::StageDispatch : 0);
+        const uint64 after = list.pendingAfter | (list.waitResolve ? MTL::StageAll : 0);
         computeEncoder(list);
         list.encoderBefore |= before;
         list.encoderAfter |= after;

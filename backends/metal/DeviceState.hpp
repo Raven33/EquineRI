@@ -6,9 +6,11 @@
 //
 // Keeps: the device and queue, the residency set (every Memory heap, heap
 // buffer and command memory chunk: Metal 4 makes nothing resident on its own),
-// the timeline event, a small fixed buffer for MSC's index-type uniform, and in
-// validation builds the object and placement trackers and the device thread
-// (P106). Everything is released with the device.
+// the timeline event, a small fixed buffer for MSC's index-type uniform, the
+// sampler cache (one MTLSamplerState per SamplerDesc, P99, P114 (3)), the fence
+// that orders counter-heap resolves, and in validation builds the object and
+// placement trackers and the device thread (P106). Everything is released with
+// the device.
 //
 // Ownership: metal-cpp objects created with new*/alloc are released with
 // release(); RI holds one reference to each, never autoreleased objects
@@ -30,8 +32,10 @@
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -49,10 +53,11 @@ inline constexpr uint32 kDrawArgumentsIndex = 4; // kIRArgumentBufferDrawArgumen
 inline constexpr uint32 kUniformsIndex = 5;      // kIRArgumentBufferUniformsBindPoint: the index type
 inline constexpr uint32 kArgumentTableBuffers = 6;
 
-// One heap slot: MSC's IRDescriptorTableEntry (P114 (3)). Buffers: gpuVA =
-// address, metadata low 32 bits = length. Textures: textureViewID =
-// gpuResourceID, metadata = min LOD clamp (float bits). Samplers:
-// textureViewID = the sampler's gpuResourceID, metadata = LOD bias.
+// One heap slot: MSC's IRDescriptorTableEntry (P114 (3)), as MSC's runtime
+// header writes it. Buffers: gpuVA = address, metadata low 32 bits = length.
+// Textures: textureViewID = gpuResourceID, metadata = min LOD clamp (float
+// bits). Samplers: gpuVA = the sampler's gpuResourceID (not textureViewID),
+// metadata = LOD bias (float bits).
 struct DescriptorEntry {
     uint64 gpuVA = 0;
     uint64 textureViewID = 0;
@@ -89,6 +94,15 @@ struct DeviceState {
     // MSC's uniform at kUniformsIndex, one 16-bit index type per slot: 0
     // non-indexed, 1 uint16, 2 uint32 (IRRuntime index types). Fixed, shared.
     MTL::Buffer *uniforms = nullptr;
+
+    // One sampler per distinct SamplerDesc (P99), created on first write and
+    // released with the device: Metal returns the same object for the same
+    // description anyway, and RI keeps its reference. Key: samplerKey.
+    std::map<std::array<uint32, 13>, MTL::SamplerState *> samplers;
+
+    // Orders counter-heap resolves, which run outside encoders, after the
+    // queue's earlier work and before later encoders (Queries.cpp).
+    MTL::Fence *resolveFence = nullptr;
 
 #if EQUINE_VALIDATION
     std::thread::id deviceThread; // the thread that called createDevice (P106)
@@ -143,6 +157,10 @@ struct CommandListState {
     uint32 threadGroupSize[3] = {1, 1, 1};
     uint32 rootDataSize = 0;
     bool rendering = false; // rendering sections: not built yet on Metal
+    // A counter-heap resolve ran since the last encoder: the next encoder waits
+    // for resolveFence (DeviceState's, borrowed) before its work.
+    bool waitResolve = false;
+    MTL::Fence *resolveFence = nullptr;
     uint32 markerDepth = 0;
 };
 
@@ -173,11 +191,24 @@ CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListSta
                                               uint64 alignment);
 // Commands.cpp: RI's Stage masks as MTLStages (proposal §6.2).
 uint64 stagesOf(Stage stage);
+// The stages render encoders run, and that their barriers accept.
+inline constexpr uint64 kRenderEncoderStages =
+    MTL::StageVertex | MTL::StageObject | MTL::StageMesh | MTL::StageFragment;
+// Commands.cpp: encodes a render pass that only loads and stores (a clear
+// outside rendering sections). It waits for the barriers recorded before it,
+// and every later encoder waits for it, so it orders like a copy (P65).
+void runClearPass(CommandListState &cmd, MTL4::RenderPassDescriptor *pass);
+
+// Textures.cpp: RI's formats as Metal's (Invalid for formats Metal lacks).
+MTL::PixelFormat pixelFormatOf(Format format);
+const char *formatName(Format format);
 
 // Debug.cpp: the native names of an object (setLabel), shared by setName and
 // names given at creation (P106).
 void applyName(DeviceState &state, const Memory &memory, std::string_view name);
 void applyName(DeviceState &state, const Buffer &buffer, std::string_view name);
+void applyName(DeviceState &state, const Texture &texture, std::string_view name);
+void applyName(DeviceState &state, const TextureView &view, std::string_view name);
 void applyName(DeviceState &state, const DescriptorHeap &heap, std::string_view name);
 void applyName(DeviceState &state, const QueryPool &pool, std::string_view name);
 void applyName(DeviceState &state, const Pipeline &pipeline, std::string_view name);

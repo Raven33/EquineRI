@@ -1,13 +1,13 @@
 // What the Metal backend does not build yet (P113).
 //
 // Owns: notYet, and a definition of every function of RI/Metal/Backend.hpp
-// that stage 2 (buffers, compute, readback) does not cover: textures and
-// views, acceleration structures, graphics pipelines, rendering and draws,
-// indirect execution, texture copies, resolves, discards and texture clears,
-// the query commands, swapchains and work graphs. Each reports eUnsupported,
-// so programs link and fail with a readable message. Capability probes
-// (formatSupported, presentModeSupported, screenStorageSupported) answer false
-// instead, so portable code takes its fallback as on the other backends.
+// that stages 2 (buffers, compute, readback) and 3a (textures, views,
+// samplers, copies, clears, timestamps) do not cover: acceleration
+// structures, graphics pipelines, rendering and draws, indirect execution,
+// resolves, occlusion queries, swapchains and work graphs. Each reports
+// eUnsupported, so programs link and fail with a readable message. Capability
+// probes (presentModeSupported, screenStorageSupported) answer false instead,
+// so portable code takes its fallback as on the other backends.
 //
 // Watch out: these do no thread or liveness checks: every call stops at
 // reportError anyway. Work graphs are not a stage still to come: they are
@@ -25,7 +25,7 @@ namespace RI::Metal {
 void notYet(std::string_view call) {
     reportError(ErrorCategory::eUnsupported,
                 std::string(call) +
-                    ": not built yet on the Metal backend (stage 2 covers compute; see "
+                    ": not built yet on the Metal backend (stages 2 and 3a cover compute and textures; see "
                     "docs/FeatureProposal-Metal-2026-11-07.md)");
 }
 
@@ -37,16 +37,6 @@ namespace {
 }
 
 } // namespace
-
-// ── Textures and views ───────────────────────────────────────────────────────
-
-// Any thread (P106): a pure query.
-bool formatSupported(Device &, Format, TextureUsage, uint32) { return false; }
-MemoryRequirements textureRequirements(Device &, const TextureDesc &) { notYet("textureRequirements"); }
-Texture createTexture(Device &, const Memory &, uint64, const TextureDesc &) { notYet("createTexture"); }
-void destroyTexture(Device &, Texture &) { notYet("destroyTexture"); }
-TextureView createView(Device &, const Texture &, const TextureViewDesc &) { notYet("createView"); }
-void destroyView(Device &, TextureView &) { notYet("destroyView"); }
 
 // ── Acceleration structures ──────────────────────────────────────────────────
 
@@ -93,29 +83,14 @@ void cmdExecuteIndirectWithRootData(CommandList &, IndirectKind, const Buffer &,
     notYet("cmdExecuteIndirectWithRootData");
 }
 
-// ── Texture copies, resolves, discards and clears ────────────────────────────
+// ── Resolves ─────────────────────────────────────────────────────────────────
 
-CopyLayout copyLayout(Device &, const TextureView &, Rect) { notYet("copyLayout"); }
-void cmdCopyBufferToTexture(CommandList &, const Buffer &, uint64, const TextureView &, Rect) {
-    notYet("cmdCopyBufferToTexture");
-}
-void cmdCopyTextureToBuffer(CommandList &, const TextureView &, const Buffer &, uint64, Rect) {
-    notYet("cmdCopyTextureToBuffer");
-}
-void cmdCopyTexture(CommandList &, const TextureView &, const TextureView &, Rect, Offset) { notYet("cmdCopyTexture"); }
 void cmdResolve(CommandList &, const TextureView &, const TextureView &, ResolveMode) { notYet("cmdResolve"); }
-void cmdDiscard(CommandList &, const TextureView &) { notYet("cmdDiscard"); }
-void cmdClearTexture(CommandList &, const TextureView &, const ClearValue &) { notYet("cmdClearTexture"); }
 
-// ── Query commands ───────────────────────────────────────────────────────────
+// ── Occlusion queries (with rendering) ───────────────────────────────────────
 
-void cmdWriteTimestamp(CommandList &, const QueryPool &, uint32) { notYet("cmdWriteTimestamp"); }
-void cmdResetQueries(CommandList &, const QueryPool &, uint32, uint32) { notYet("cmdResetQueries"); }
 void cmdBeginQuery(CommandList &, const QueryPool &, uint32) { notYet("cmdBeginQuery"); }
 void cmdEndQuery(CommandList &, const QueryPool &, uint32) { notYet("cmdEndQuery"); }
-void cmdResolveQueries(CommandList &, const QueryPool &, uint32, uint32, const Buffer &, uint64) {
-    notYet("cmdResolveQueries");
-}
 
 // ── Swapchains ───────────────────────────────────────────────────────────────
 

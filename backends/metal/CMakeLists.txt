@@ -21,6 +21,8 @@ add_library(EquineMetalBackend STATIC
     DeviceState.hpp
     Device.cpp
     Resources.cpp
+    Textures.cpp
+    TextureCommands.cpp
     Pipeline.cpp
     Commands.cpp
     Debug.cpp

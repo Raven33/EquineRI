@@ -3,8 +3,8 @@
 // Owns: listGpus (Metal 4 and Apple7 GPUs; the id is the registry ID),
 // createDevice / destroyDevice, the DeviceLimits, the MTL4 queue, the device's
 // residency set (makeResident / makeNonResident), the timeline event, MSC's
-// index-type uniforms, and the shared NS helpers (nsString, reportNsError,
-// checkGpuError).
+// index-type uniforms, the resolve fence, the sampler cache's release, and the
+// shared NS helpers (nsString, reportNsError, checkGpuError).
 //
 // Watch out: Metal 4 makes nothing resident on its own; every heap, heap
 // buffer and command memory chunk goes through makeResident, and submit
@@ -191,8 +191,15 @@ Device createDevice(const DeviceDesc &desc) {
     state->uniforms->setLabel(nsString("EquineRI index types"));
     makeResident(*state, state->uniforms);
 
-    // Stage 2 of the backend (P116): compute only. Features not built yet are
-    // reported false, even where the GPU has them (mesh, ray queries, indirect).
+    state->resolveFence = state->device->newFence();
+    if (state->resolveFence == nullptr) {
+        reportError(ErrorCategory::eOutOfMemory, "newFence failed (counter-heap resolves)");
+    }
+    state->resolveFence->setLabel(nsString("EquineRI counter resolves"));
+
+    // Stages 2 and 3a of the backend (P116): compute and textures without
+    // rendering. Features not built yet are reported false, even where the GPU
+    // has them (mesh, ray queries, indirect).
     device.limits = {
         // Heaps are plain buffers of 24-byte entries: no Metal limit binds
         // before memory does; RI keeps D3D12's tier-2 count as the portable size.
@@ -213,6 +220,8 @@ Device createDevice(const DeviceDesc &desc) {
         .indirectRootData = false,
         .rayTracing = false,
         .workGraphs = false,
+        // Min and max reductions need device support Metal reports nowhere (the
+        // debug layer refuses them on the M4).
         .samplerMinMax = false,
         .int64BufferAtomics = false, // P116 (2)
         .int64SharedAtomics = true,
@@ -239,6 +248,11 @@ void destroyDevice(Device &device) {
         std::unique_lock lock(feedback.mutex);
         feedback.arrived.wait(lock, [&] { return feedback.through >= state->lastSignaled; });
     }
+    // The sampler cache and the resolve fence are RI's own (P99).
+    for (auto &[key, sampler] : state->samplers) {
+        release(sampler);
+    }
+    release(state->resolveFence);
     if (state->uniforms != nullptr) {
         state->residency->removeAllocation(state->uniforms);
     }

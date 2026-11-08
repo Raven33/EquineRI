@@ -1,15 +1,16 @@
 // Debugging on Metal (P53).
 //
 // Owns: setName for every object kind, applyName (the names given at
-// creation, P106, and setName's), cmdBeginMarker / cmdEndMarker (debug groups
-// on the MTL4CommandBuffer, which Xcode's capture and Instruments show).
+// creation, P106, and setName's; textures' in Textures.cpp), cmdBeginMarker /
+// cmdEndMarker (debug groups on the MTL4CommandBuffer, which Xcode's capture
+// and Instruments show).
 //
 // Watch out: a debug group must not straddle an open encoder, so markers end
 // the open encoder first (the next command opens a new one, carrying the
 // barriers). Compute pipeline labels are fixed at creation
 // (MTLComputePipelineDescriptor), so setName on a pipeline names it in
-// validation messages only. Textures are not built yet: their setName reports
-// eUnsupported.
+// validation messages only. Texture and view names are applied in Textures.cpp,
+// next to the views they label.
 //
 // D3D12 counterpart: backends/d3d12/Debug.cpp.
 
@@ -74,13 +75,13 @@ void setName(Device &device, const Buffer &buffer, std::string_view name) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
     applyName(*device.internal.state, buffer, name);
 }
-void setName([[maybe_unused]] Device &device, const Texture &, std::string_view) {
+void setName(Device &device, const Texture &texture, std::string_view name) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
-    notYet("setName(Texture)");
+    applyName(*device.internal.state, texture, name);
 }
-void setName([[maybe_unused]] Device &device, const TextureView &, std::string_view) {
+void setName(Device &device, const TextureView &view, std::string_view name) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
-    notYet("setName(TextureView)");
+    applyName(*device.internal.state, view, name);
 }
 void setName(Device &device, const DescriptorHeap &heap, std::string_view name) {
     EQ_MTL_CHECK_THREAD(device.internal.state);

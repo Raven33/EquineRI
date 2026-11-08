@@ -27,6 +27,9 @@ NativeDevice native(const Device &device);
 // Native objects behind RI objects (P84). Borrowed pointers.
 inline MTL::Heap *native(const Memory &memory) { return static_cast<MTL::Heap *>(memory.internal.heap); }
 inline MTL::Buffer *native(const Buffer &buffer) { return static_cast<MTL::Buffer *>(buffer.internal.buffer); }
+inline MTL::Texture *native(const Texture &texture) { return static_cast<MTL::Texture *>(texture.internal.texture); }
+// The view's own texture (a Metal texture view), of the type shaders read it as.
+inline MTL::Texture *native(const TextureView &view) { return static_cast<MTL::Texture *>(view.internal.texture); }
 inline MTL4::CounterHeap *native(const QueryPool &pool) { return static_cast<MTL4::CounterHeap *>(pool.internal.heap); }
 
 // The heap buffers, bound at argument-table buffer indices 0 and 1

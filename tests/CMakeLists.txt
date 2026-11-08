@@ -337,16 +337,20 @@ if (TARGET EquineD3D12Backend)
 endif()
 
 if (TARGET EquineMetalBackend)
-    # Stage 2 of the Metal backend (P113): the compute tests only, offscreen.
-    # The other portable tests join as their features are built on Metal.
+    # Stages 2 and 3a of the Metal backend (P113): compute, and textures without
+    # rendering, offscreen. The other portable tests join as their features
+    # are built on Metal.
     add_executable(EquineRIMetalTests
         "${CMAKE_CURRENT_SOURCE_DIR}/TestMain.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ComputeTests.cpp"
-        # For threads.call_from_other_thread_reports only: its other case
-        # needs formatSupported (textures).
+        "${CMAKE_CURRENT_SOURCE_DIR}/gpu/TextureTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
     )
-    equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/fill.hlsl")
+    # The compute shaders of the registered cases; the graphics ones join with rendering.
+    set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
+    equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl"
+                       "${dir}/write_storage.hlsl" "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl"
+                       "${dir}/write_faces.hlsl")
     # MSC refuses add and exchange on 64-bit heap atomics (P116 (2)); the test
     # skips itself since int64BufferAtomics is false.
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 NO_METAL SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/atomic64.hlsl")
@@ -365,8 +369,25 @@ if (TARGET EquineMetalBackend)
         compute.clear_large_buffer
         compute.clear_buffer_range
         compute.write_small_data
+        compute.names_at_creation
+        threads.pipelines_on_other_threads
+        texture.create_and_views
+        texture.storage_write_then_sample
+        texture.clear_commands
+        texture.copy_round_trip
+        texture.copy_regions
+        texture.copy_depth_upload
+        texture.samplers
+        texture.cube_storage_then_sample
+        texture.unlisted_view_format_reports
+        # Skip themselves: no geometry or tessellation on Metal (P116 (1)).
+        texture.geometry_shader
+        texture.tessellation
+        texture.cube_layered_render
     )
-    set(EQUINE_METAL_ABORT_TESTS "")
+    set(EQUINE_METAL_ABORT_TESTS
+        "texture.unlisted_view_format_reports|programmer error: createView: format"
+    )
     if (EQUINE_VALIDATION)
         list(APPEND EQUINE_METAL_TEST_NAMES
             compute.root_data_size_mismatch_reports
@@ -378,14 +399,23 @@ if (TARGET EquineMetalBackend)
             compute.too_many_groups_reports
             compute.small_write_too_large_reports
             threads.call_from_other_thread_reports
+            texture.copy_without_usage_reports
+            texture.read_only_depth_sampling_on_color_reports
         )
         foreach(entry IN LISTS EQUINE_GPU_SHARED_ABORT_TESTS)
-            if (entry MATCHES "^(compute|threads)\\.")
+            if (entry MATCHES "^(compute|threads)\\." OR
+                entry MATCHES "^texture\\.(copy_without_usage|read_only_depth_sampling_on_color)_reports")
                 list(APPEND EQUINE_METAL_ABORT_TESTS "${entry}")
             endif()
         endforeach()
     endif()
-    # Not yet: compute.names_at_creation (textures).
+    # Not yet, with rendering (stage 3b): the other texture.* cases (sections,
+    # draws, graphics pipelines, resolves, occlusion; texture.timestamps and
+    # texture.discard_after_aliasing render too; the *_reports cases of
+    # sections and graphics pipelines). Later stages: texture.mesh_shaders,
+    # texture.indirect_level1/2 (they would only skip today). Unsupported on
+    # Metal (P116): pipeline statistics, which texture.occlusion_and_statistics
+    # and texture.mesh_statistics also read.
     foreach(name IN LISTS EQUINE_METAL_TEST_NAMES)
         add_test(NAME "mtl.${name}" COMMAND EquineRIMetalTests "${name}")
         set_tests_properties("mtl.${name}" PROPERTIES LABELS gpu TIMEOUT 120)

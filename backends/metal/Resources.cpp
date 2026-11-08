@@ -3,17 +3,20 @@
 //
 // Owns: allocateMemory (one untracked placement heap per allocation, storage
 // and cache mode from the kind), placed buffers, descriptor heaps (buffers of
-// MSC's 24-byte IRDescriptorTableEntry), buffer-view descriptor writes.
-// Texture views, acceleration-structure views and samplers come later, with
-// textures and ray tracing (notYet).
+// MSC's 24-byte IRDescriptorTableEntry), descriptor writes of buffer and
+// texture views, and samplers (writeSamplers, the device's sampler cache).
+// Acceleration-structure views come later, with ray tracing (notYet).
 //
 // Watch out: Metal 4 makes nothing resident on its own: every heap and heap
 // buffer joins the device's residency set (buffers placed in a heap are
 // covered by it). Metal maps buffers, not heaps: CPU-visible memory is mapped
 // through one buffer placed over the whole heap, as on D3D12, and buffers
 // placed later share it. Heap entries are written by RI itself (MSC's headers
-// are not included): gpuVA, then metadata = the view's length in bytes, which
-// GetDimensions reads.
+// are not included), as IRDescriptorTableSet* would: buffers gpuVA and
+// metadata = the view's length in bytes, which GetDimensions reads; textures
+// the view's gpuResourceID; samplers the sampler's gpuResourceID in gpuVA.
+// Sampler objects need supportArgumentBuffers, or Metal's debug layer asserts
+// when RI reads their resource ID.
 //
 // D3D12 counterpart: backends/d3d12/Resources.cpp.
 
@@ -23,6 +26,7 @@
 #include <RI/Validation/Placement.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <cstring>
 #include <format>
 #include <tuple>
@@ -94,6 +98,18 @@ Validation::CheckResult checkViewUsage(const DescriptorWrite &write, BufferUsage
     if (std::holds_alternative<ConstantBufferView>(write.descriptor) && !has(BufferUsage::eConstant)) {
         return std::format("writeDescriptors: slot {}: a ConstantBufferView needs a buffer with BufferUsage::eConstant",
                            write.slot);
+    }
+    return {};
+}
+
+// The usage a texture view needs: what D3D12's SRVs and UAVs and Vulkan's
+// image descriptors require; Metal validates no heap entry (P88).
+Validation::CheckResult checkTextureViewUsage(const DescriptorWrite &write, TextureUsage usage) {
+    const bool storage = std::holds_alternative<ReadWriteView>(write.descriptor);
+    const TextureUsage wanted = storage ? TextureUsage::eStorage : TextureUsage::eSampled;
+    if ((usage & wanted) == TextureUsage::eNone) {
+        return std::format("writeDescriptors: slot {}: a {} of a texture needs TextureUsage::{}", write.slot,
+                           storage ? "ReadWriteView" : "ReadView", storage ? "eStorage" : "eSampled");
     }
     return {};
 }
@@ -293,16 +309,107 @@ void destroyDescriptorHeap(Device &device, DescriptorHeap &heap) {
     heap = {};
 }
 
-// ── Samplers (P87, P114 (3)): with textures ─────────────────────────────────
+// ── Samplers (P87, P99, P114 (3)) ────────────────────────────────────────────
+
+namespace {
+
+std::array<uint32, 13> samplerKey(const SamplerDesc &d) {
+    return {static_cast<uint32>(d.minFilter),  static_cast<uint32>(d.magFilter),
+            static_cast<uint32>(d.mipFilter),  static_cast<uint32>(d.addressU),
+            static_cast<uint32>(d.addressV),   static_cast<uint32>(d.addressW),
+            std::bit_cast<uint32>(d.mipLodBias), std::bit_cast<uint32>(d.minLod),
+            std::bit_cast<uint32>(d.maxLod),   d.maxAnisotropy,
+            d.compare.has_value() ? 1u + static_cast<uint32>(*d.compare) : 0u,
+            static_cast<uint32>(d.border),     static_cast<uint32>(d.reduction)};
+}
+
+MTL::SamplerAddressMode addressOf(AddressMode mode) {
+    switch (mode) {
+    case AddressMode::eRepeat: return MTL::SamplerAddressModeRepeat;
+    case AddressMode::eMirror: return MTL::SamplerAddressModeMirrorRepeat;
+    case AddressMode::eClamp: return MTL::SamplerAddressModeClampToEdge;
+    case AddressMode::eBorder: return MTL::SamplerAddressModeClampToBorderColor;
+    }
+    return MTL::SamplerAddressModeRepeat;
+}
+
+MTL::SamplerBorderColor borderOf(BorderColor color) {
+    switch (color) {
+    case BorderColor::eTransparentBlack: return MTL::SamplerBorderColorTransparentBlack;
+    case BorderColor::eOpaqueBlack: return MTL::SamplerBorderColorOpaqueBlack;
+    case BorderColor::eOpaqueWhite: return MTL::SamplerBorderColorOpaqueWhite;
+    }
+    return MTL::SamplerBorderColorTransparentBlack;
+}
+
+// The device's sampler for `desc`, created on first use.
+MTL::SamplerState *samplerFor(DeviceState &state, const SamplerDesc &desc) {
+    const std::array<uint32, 13> key = samplerKey(desc);
+    if (const auto found = state.samplers.find(key); found != state.samplers.end()) {
+        return found->second;
+    }
+    // Anisotropy filters linearly, mips included, as D3D12's anisotropic filter does.
+    const bool anisotropic = desc.maxAnisotropy > 1;
+    const auto filter = [&](Filter f) {
+        return f == Filter::eLinear || anisotropic ? MTL::SamplerMinMagFilterLinear : MTL::SamplerMinMagFilterNearest;
+    };
+    MTL::SamplerDescriptor *native = MTL::SamplerDescriptor::alloc()->init();
+    native->setMinFilter(filter(desc.minFilter));
+    native->setMagFilter(filter(desc.magFilter));
+    native->setMipFilter(desc.mipFilter == Filter::eLinear || anisotropic ? MTL::SamplerMipFilterLinear
+                                                                          : MTL::SamplerMipFilterNearest);
+    native->setSAddressMode(addressOf(desc.addressU));
+    native->setTAddressMode(addressOf(desc.addressV));
+    native->setRAddressMode(addressOf(desc.addressW));
+    native->setBorderColor(borderOf(desc.border));
+    native->setLodMinClamp(desc.minLod);
+    native->setLodMaxClamp(desc.maxLod);
+    // The bias lives in the sampler: MSC reads the heap entry's bias only with
+    // --samplerLODBias, which RI does not pass (P114 (3)).
+    native->setLodBias(desc.mipLodBias);
+    native->setMaxAnisotropy(std::clamp<uint32>(desc.maxAnisotropy, 1, 16));
+    // RI's CompareOp has Metal's order (Never ... Always).
+    if (desc.compare.has_value()) {
+        native->setCompareFunction(static_cast<MTL::CompareFunction>(*desc.compare));
+    }
+    native->setReductionMode(desc.reduction == Reduction::eMin   ? MTL::SamplerReductionModeMinimum
+                             : desc.reduction == Reduction::eMax ? MTL::SamplerReductionModeMaximum
+                                                                 : MTL::SamplerReductionModeWeightedAverage);
+    native->setNormalizedCoordinates(true);
+    native->setSupportArgumentBuffers(true); // MSC reads samplers through the heap
+    MTL::SamplerState *sampler = state.device->newSamplerState(native);
+    native->release();
+    if (sampler == nullptr) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("writeSamplers: Metal refused a new sampler after {} distinct ones",
+                                state.samplers.size()));
+    }
+    state.samplers.emplace(key, sampler);
+    return sampler;
+}
+
+} // namespace
 
 void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
     writeSamplers(device, heap, std::span<const SamplerWrite>(writes.begin(), writes.size()));
 }
 
-void writeSamplers([[maybe_unused]] Device &device, DescriptorHeap &, std::span<const SamplerWrite>) {
+void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
-    notYet("writeSamplers");
+    DeviceState &state = *device.internal.state;
+    EQ_MTL_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
+    auto *entries = static_cast<DescriptorEntry *>(static_cast<MTL::Buffer *>(heap.internal.samplerBuffer)->contents());
+    for (const SamplerWrite &write : writes) {
+        EQ_VALIDATE(Validation::checkSlot(write.slot, heap.samplerCount, "sampler"));
+        EQ_VALIDATE(Validation::checkSampler(write.sampler, device.limits.samplerMinMax));
+        const MTL::SamplerState *sampler = samplerFor(state, write.sampler);
+        entries[write.slot] = DescriptorEntry{
+            .gpuVA = sampler->gpuResourceID()._impl,
+            .textureViewID = 0,
+            .metadata = std::bit_cast<uint32>(write.sampler.mipLodBias),
+        };
+    }
 }
 
 // ── Descriptor writes (P87, P94) ─────────────────────────────────────────────
@@ -323,11 +430,33 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
         if (std::holds_alternative<AccelerationStructureView>(write.descriptor)) {
             notYet("writeDescriptors (acceleration structure views)");
         }
+        // A read or read-write view names a texture when its texture view is set.
         const auto *read = std::get_if<ReadView>(&write.descriptor);
         const auto *readWrite = std::get_if<ReadWriteView>(&write.descriptor);
-        if ((read != nullptr && read->texture.internal.texture != nullptr) ||
-            (readWrite != nullptr && readWrite->texture.internal.texture != nullptr)) {
-            notYet("writeDescriptors (texture views)");
+        const TextureView *texture = read != nullptr && read->texture.internal.texture != nullptr ? &read->texture
+                                     : readWrite != nullptr && readWrite->texture.internal.texture != nullptr
+                                         ? &readWrite->texture
+                                         : nullptr;
+        if (texture != nullptr) {
+            EQ_MTL_CHECK_ALIVE(&state, texture->internal.textureId, "texture");
+            EQ_VALIDATE(checkTextureViewUsage(write, texture->internal.textureUsage));
+            // In every build: Metal has no view reading depth and stencil at once.
+            if (texture->internal.planes == 3) {
+                reportError(ErrorCategory::eProgrammerError,
+                            "writeDescriptors: a view with both depth and stencil cannot be read by shaders; create "
+                            "a view with Aspect::eDepth or Aspect::eStencil (P73)");
+            }
+            // Storage writes see whole cubes as a 2D array of faces (P102).
+            const void *view = readWrite != nullptr && texture->internal.arrayTexture != nullptr
+                                   ? texture->internal.arrayTexture
+                                   : texture->internal.texture;
+            // No min LOD clamp: the view's mip range already bounds sampling.
+            entries[write.slot] = DescriptorEntry{
+                .gpuVA = 0,
+                .textureViewID = static_cast<const MTL::Texture *>(view)->gpuResourceID()._impl,
+                .metadata = 0,
+            };
+            continue;
         }
 
         const auto [buffer, offset, size, stride, constant] = std::visit(

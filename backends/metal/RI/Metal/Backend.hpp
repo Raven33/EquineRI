@@ -104,12 +104,14 @@ struct TextureView {
     uint32 height = 0;
     uint32 samples = 1;
     struct {
-        void *texture = nullptr;   // MTL::Texture: the view
-        void *resource = nullptr;  // MTL::Texture: the whole texture
+        void *texture = nullptr;   // MTL::Texture: the view, of the type shaders read (P102)
+        void *arrayTexture = nullptr; // MTL::Texture: whole cubes as a 2D array, for storage writes
+        void *resource = nullptr;  // MTL::Texture: the whole texture (borrowed)
         uint32 baseMip = 0, mipCount = 1, baseLayer = 0, layerCount = 1; // 3D: slices
         TextureShape shape = TextureShape::e2D; // of the texture (P102)
         bool cube = false;         // reads as TextureCube(Array): whole cubes
-        uint32 textureMips = 1, textureLayers = 1;
+        uint8 planes = 1;          // depth formats: 1 depth, 2 stencil, 3 both (copies take one)
+        uint32 textureMips = 1, textureLayers = 1; // 3D: textureLayers is the depth
         TextureUsage textureUsage = TextureUsage::eNone; // checked by copies (P47)
         uint64 textureId = 0;      // validation builds (P91)
     } internal;
@@ -229,7 +231,8 @@ struct DescriptorWrite {
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const DescriptorWrite> writes);
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes);
 // Writes sampler descriptions into sampler-heap slots (P87). Vulkan keeps one
-// sampler per distinct description, until the device is destroyed.
+// sampler per distinct description, until the device is destroyed; so does
+// Metal (an MTLSamplerState per description, P114 (3)).
 void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const SamplerWrite> writes);
 void writeSamplers(Device &device, DescriptorHeap &heap, std::initializer_list<SamplerWrite> writes);
 
