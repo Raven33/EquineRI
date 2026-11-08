@@ -127,17 +127,19 @@
       },
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-        "EQUINE_DXC_DIR": "$env{EQUINE_DXC_DIR}"
+        "EQUINE_DXC_DIR": "$env{EQUINE_DXC_DIR}",
+        "EQUINE_MSC_DIR": "$env{EQUINE_MSC_DIR}"
       }
     },
     {
       "name": "macos-debug",
       "displayName": "AppleClang Debug (macOS)",
-      "description": "GPU-free tests with AppleClang, Ninja, and sanitizers. Needs EQUINE_DXC_DIR (local DXC build).",
+      "description": "GPU-free tests and the Metal backend with AppleClang, Ninja, and sanitizers. Needs EQUINE_DXC_DIR (local DXC build) and EQUINE_MSC_DIR (Metal Shader Converter).",
       "inherits": "macos-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EQUINE_BUILD_TESTS": true,
+        "EQUINE_METAL_BACKEND": true,
         "EQUINE_VALIDATION": true
       }
     }
@@ -204,6 +206,10 @@
     {
       "name": "macos-debug",
       "configurePreset": "macos-debug",
+      "environment": {
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      },
       "output": {
         "outputOnFailure": true
       }

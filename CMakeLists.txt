@@ -271,6 +271,7 @@ option(EQUINE_BUILD_SAMPLES "Build sample applications" OFF)
 option(EQUINE_BUILD_TESTS "Build GPU-free unit tests and register them with CTest" OFF)
 option(EQUINE_VULKAN_BACKEND "Build the Vulkan rendering backend" OFF)
 option(EQUINE_D3D12_BACKEND "Build the Direct3D 12 rendering backend" OFF)
+option(EQUINE_METAL_BACKEND "Build the Metal rendering backend (Apple silicon, macOS)" OFF)
 # Compiles every documentation snippet (docs/site/snippets) against its backend.
 # Compile only, never run; local use, not CI (docs/DocsProposal.md).
 option(EQUINE_BUILD_DOC_SNIPPETS "Compile the documentation site's code snippets" OFF)
@@ -278,10 +279,15 @@ option(EQUINE_BUILD_DOC_SNIPPETS "Compile the documentation site's code snippets
 if (EQUINE_D3D12_BACKEND AND NOT WIN32)
     message(FATAL_ERROR "EQUINE_D3D12_BACKEND is supported only on Windows.")
 endif()
+if (EQUINE_METAL_BACKEND AND NOT APPLE)
+    message(FATAL_ERROR "EQUINE_METAL_BACKEND is supported only on macOS.")
+endif()
 
 # The pinned DXC (P93): RI's shader rule (equine_add_shaders, callable from a
 # parent project too) and the shader-compiler helper.
 include(EquineDXC)
+# Metal Shader Converter (P113, P114): the third shader output on Apple hosts.
+include(EquineMSC)
 
 if (EQUINE_VULKAN_BACKEND)
     add_subdirectory(backends/vulkan)
@@ -289,6 +295,10 @@ endif()
 
 if (EQUINE_D3D12_BACKEND)
     add_subdirectory(backends/d3d12)
+endif()
+
+if (EQUINE_METAL_BACKEND)
+    add_subdirectory(backends/metal)
 endif()
 
 if (EQUINE_BUILD_TESTS)

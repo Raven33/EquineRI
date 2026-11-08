@@ -52,6 +52,11 @@ The outputs go to `<build>/shaders/`, and the target gets the define `EQUINE_SHA
 pointing there. The function is available when tests, samples or the documentation snippets
 are built.
 
+On macOS with Metal Shader Converter (`EQUINE_MSC_DIR`, a local copy of the pinned 4.0 beta 3),
+each shader also gets `<name>.mtl.dxil` for the Metal backend (in progress): the DXIL container
+plus an `MTLB` part holding the metallib. Add `NO_METAL` to the call for shaders the converter
+cannot handle.
+
 ## HLSL that works on both backends
 
 Three things compile on both targets but behave differently unless you follow one rule:
@@ -130,4 +135,5 @@ Root data larger than the device allows is an **unsupported** error
 - [P54](../design-notes/decisions.md#p54): the shader is the source of truth; one layout rule.
 - [P67](../design-notes/decisions.md#p67): RI's own DXIL reader.
 - [P93](../design-notes/decisions.md#p93): the pinned DXC and `equine_add_shaders`.
+- [P114](../design-notes/decisions.md#p114): Metal shaders.
 - [P94](../design-notes/decisions.md#p94): the sampler set rule.

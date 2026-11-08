@@ -445,3 +445,39 @@ EQ_TEST(dxil, pipeline_stages) {
         EQ_CHECK(gs.info.outputs[2].systemValue != RI::Reflection::kDxilSystemValueNone);
     }
 }
+
+#ifdef EQUINE_TEST_METAL_SHADERS
+// The Metal backend's bytecode (P114 (2)): the DXIL container plus an MTLB part
+// holding the metallib. RI's reader sees the same shader in both files, and
+// every DXIL part is unchanged.
+EQ_TEST(dxil, metal_container) {
+    for (const char *name : {"fill", "root4", "root64", "root_arrays", "link_vs", "link_skip_ps"}) {
+        const Bytes dxil = loadShader(name);
+        const Bytes packed = loadShader((std::string(name) + ".mtl").c_str());
+        const DxilReadResult plain = read(dxil);
+        const DxilReadResult metal = read(packed);
+        EQ_CHECK(plain.error.empty() && metal.error.empty());
+        EQ_CHECK(metal.info.hasRootData == plain.info.hasRootData);
+        EQ_CHECK(metal.info.rootDataSize == plain.info.rootDataSize);
+        EQ_CHECK(threadGroupIs(metal, plain.info.threadGroupSize[0], plain.info.threadGroupSize[1],
+                               plain.info.threadGroupSize[2]));
+        EQ_CHECK(metal.info.inputs.size() == plain.info.inputs.size());
+        EQ_CHECK(metal.info.outputs.size() == plain.info.outputs.size());
+
+        std::vector<Part> parts = splitParts(packed);
+        const std::vector<Part> original = splitParts(dxil);
+        EQ_CHECK(parts.size() == original.size() + 1);
+        if (parts.size() != original.size() + 1) {
+            continue;
+        }
+        for (size_t i = 0; i < original.size(); ++i) {
+            EQ_CHECK(parts[i].code == original[i].code && parts[i].data == original[i].data);
+        }
+        const Part *metallib = findPart(parts, fourCC("MTLB"));
+        EQ_CHECK(metallib != nullptr && &parts.back() == metallib);
+        // A metallib starts with its own "MTLB" magic.
+        EQ_CHECK(metallib != nullptr && metallib->data.size() > 4 && loadU32(metallib->data, 0) == fourCC("MTLB"));
+        EQ_CHECK(loadU32(packed, 24) == packed.size());
+    }
+}
+#endif

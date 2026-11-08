@@ -108,3 +108,19 @@ Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` f
   other GPU tests run offscreen.
 - **Next:** check MSC's argument-buffer layout and root constants against P94/P99 and the
   256-byte root data, then write the proposal and stop for review.
+
+## 5. Stage 1 done (2026-11-08): pins and build
+
+- metal-cpp submodule at `third_party/metal-cpp` (`8cdde68`); `backends/metal` builds
+  `EquineMetalCpp` (the private implementation, once) under `EQUINE_METAL_BACKEND`.
+- `cmake/EquineMSC.cmake`: `EQUINE_MSC_DIR` (presets read the environment; `~/dev/tools/env.sh`
+  exports it), version 4.0.3 checked at configure time, the fixed root signature written to
+  `<build>/equine/msc_root_signature.json`, and the `equine_metal_pack` tool
+  (`tools/metal_pack/MetalPack.cpp`) that appends the `MTLB` part.
+- `equine_add_shaders` writes `<name>.mtl.dxil` (metallibs in `<build>/shaders/metal/`), with
+  `NO_METAL` for the misuse inputs and `atomic64`.
+- `macos-debug` turns on the Metal backend and sets `MTL_DEBUG_LAYER` and
+  `MTL_SHADER_VALIDATION` for ctest. GPU-free suite: 46/46, with the new `dxil.metal_container`.
+- **Next (stage 2):** `EquineMetalBackend` with device, memory, buffers, heaps, a compute
+  pipeline from `.mtl.dxil`, dispatch and readback (`samples/compute_readback`,
+  `tests/gpu/ComputeTests.cpp`), then `tests/conformance/` with the third backend.

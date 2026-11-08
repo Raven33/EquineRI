@@ -60,6 +60,11 @@ set(EQUINE_RI_TEST_NAMES
 if (EQUINE_VALIDATION)
     list(APPEND EQUINE_RI_TEST_NAMES validation.macro_reports_failure)
 endif()
+get_property(EQUINE_METAL_SHADERS GLOBAL PROPERTY EQUINE_METAL_SHADERS)
+if (EQUINE_METAL_SHADERS)
+    list(APPEND EQUINE_RI_TEST_NAMES dxil.metal_container)
+    target_compile_definitions(EquineRITests PRIVATE EQUINE_TEST_METAL_SHADERS)
+endif()
 
 foreach(test_name IN LISTS EQUINE_RI_TEST_NAMES)
     add_test(NAME "ri.${test_name}" COMMAND EquineRITests "${test_name}")
@@ -346,6 +351,10 @@ equine_add_shaders(EquineRITests PROFILE cs_6_6 SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/root4.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/root64.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/root_arrays.hlsl"
+)
+# Declared resources (refused by RI, P30), misuse of space 999, and 64-bit heap
+# atomics (MSC refuses add, P116 (2)): DXIL-reader inputs, not Metal shaders.
+equine_add_shaders(EquineRITests PROFILE cs_6_6 NO_METAL SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/declared.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/sampler_heap.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/misuse_b1.hlsl"

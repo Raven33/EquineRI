@@ -7,9 +7,11 @@
 #
 # Provides:
 #   EQUINE_DXC_EXECUTABLE                          - the dxc executable
-#   equine_add_shaders(<target> PROFILE <p> SOURCES <files...>)
+#   equine_add_shaders(<target> PROFILE <p> SOURCES <files...> [NO_METAL])
 #       compiles each file to <build>/shaders/<name>.spv and <name>.dxil, adds
 #       them as dependencies of <target>, and defines EQUINE_SHADER_DIR on it.
+#       With Metal Shader Converter (EquineMSC.cmake), also <name>.mtl.dxil,
+#       unless NO_METAL (shaders MSC cannot convert, such as RI's misuse tests).
 
 include_guard(GLOBAL)
 
@@ -89,7 +91,10 @@ set_property(GLOBAL PROPERTY EQUINE_SHADER_INCLUDE_DIR "${EQUINE_SHADER_INCLUDE_
 function(equine_add_shaders target)
     get_property(EQUINE_DXC_EXECUTABLE GLOBAL PROPERTY EQUINE_DXC_EXECUTABLE)
     get_property(EQUINE_SHADER_INCLUDE_DIR GLOBAL PROPERTY EQUINE_SHADER_INCLUDE_DIR)
-    cmake_parse_arguments(ARG "" "PROFILE" "SOURCES" ${ARGN})
+    get_property(EQUINE_METAL_SHADERS GLOBAL PROPERTY EQUINE_METAL_SHADERS)
+    get_property(EQUINE_MSC_EXECUTABLE GLOBAL PROPERTY EQUINE_MSC_EXECUTABLE)
+    get_property(EQUINE_MSC_ROOT_SIGNATURE GLOBAL PROPERTY EQUINE_MSC_ROOT_SIGNATURE)
+    cmake_parse_arguments(ARG "NO_METAL" "PROFILE" "SOURCES" ${ARGN})
     if (NOT ARG_PROFILE OR NOT ARG_SOURCES)
         message(FATAL_ERROR "equine_add_shaders(<target> PROFILE <profile> SOURCES <files...>)")
     endif()
@@ -128,7 +133,25 @@ function(equine_add_shaders target)
                 COMMENT "Compiling ${name} (${ARG_PROFILE}) to SPIR-V and DXIL"
                 VERBATIM
             )
-            add_custom_target("${shader_target}" DEPENDS "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil")
+            set(outputs "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil")
+            if (EQUINE_METAL_SHADERS AND NOT ARG_NO_METAL)
+                # DXIL -> metallib with the fixed root signature (P114 (1)), then
+                # the DXIL container plus an MTLB part (P114 (2)).
+                add_custom_command(
+                    OUTPUT "${out_dir}/${name}.mtl.dxil"
+                    COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}/metal"
+                    COMMAND "${EQUINE_MSC_EXECUTABLE}" "--root-signature=${EQUINE_MSC_ROOT_SIGNATURE}"
+                            --minimum-gpu-family=Apple7 --minimum-os-build-version=26.0.0
+                            "-o=${out_dir}/metal/${name}.metallib" "${out_dir}/${name}.dxil"
+                    COMMAND equine_metal_pack "${out_dir}/${name}.dxil" "${out_dir}/metal/${name}.metallib"
+                            "${out_dir}/${name}.mtl.dxil"
+                    DEPENDS "${out_dir}/${name}.dxil" "${EQUINE_MSC_ROOT_SIGNATURE}" equine_metal_pack
+                    COMMENT "Converting ${name} (${ARG_PROFILE}) to Metal"
+                    VERBATIM
+                )
+                list(APPEND outputs "${out_dir}/${name}.mtl.dxil")
+            endif()
+            add_custom_target("${shader_target}" DEPENDS ${outputs})
         endif()
         add_dependencies("${target}" "${shader_target}")
     endforeach()
