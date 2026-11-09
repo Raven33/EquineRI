@@ -220,7 +220,7 @@ Device createDevice(const DeviceDesc &desc) {
         .meshShaders = true, // object and mesh functions, from MSC (P116)
         .geometryShaders = false, // P116 (1): MSC's emulation later
         .tessellation = false,
-        .indirectRootData = false,
+        .indirectRootData = true, // records bound in place (P48, proposal §7)
         .rayTracing = false,
         .workGraphs = false,
         // Min and max reductions need device support Metal reports nowhere (the
@@ -256,6 +256,7 @@ void destroyDevice(Device &device) {
         release(sampler);
     }
     release(state->resolveFence);
+    releaseBuiltins(*state);
     if (state->uniforms != nullptr) {
         state->residency->removeAllocation(state->uniforms);
     }

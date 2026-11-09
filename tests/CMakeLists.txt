@@ -116,6 +116,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.copy_regions
     texture.copy_depth_upload
     texture.occlusion_and_statistics
+    texture.occlusion
     texture.indexed_draw_with_blending
     texture.stencil_test
     texture.stencil_reference_command
@@ -410,6 +411,11 @@ if (TARGET EquineMetalBackend)
         texture.viewport_and_scissor
         texture.rendering_without_attachments
         texture.rendering_desc_without_attachment_reports
+        texture.occlusion
+        texture.resolve_color
+        texture.resolve_depth
+        texture.indirect_level1
+        texture.indirect_level2
         helpers.frame_ring_and_profiler
         helpers.allocators
         helpers.transfers
@@ -447,12 +453,9 @@ if (TARGET EquineMetalBackend)
             endif()
         endforeach()
     endif()
-    # Not yet: resolves (stage 3b-2) for texture.resolve_color and
-    # texture.resolve_depth; indirect execution (a later stage) for
-    # texture.indirect_level1/2 (they would only skip today). Unsupported on
-    # Metal (P116 (1)): pipeline statistics, which texture.occlusion_and_statistics
-    # and texture.mesh_statistics also read (the first needs occlusion queries
-    # too, stage 3b-2). helpers.shader_compiler compiles to plain DXIL, which
+    # Unsupported on Metal (P116 (1)): pipeline statistics, which
+    # texture.occlusion_and_statistics and texture.mesh_statistics read
+    # (texture.occlusion covers occlusion queries alone). helpers.shader_compiler compiles to plain DXIL, which
     # the Metal backend refuses (P114: Metal takes the build's .mtl.dxil).
     foreach(name IN LISTS EQUINE_METAL_TEST_NAMES)
         add_test(NAME "mtl.${name}" COMMAND EquineRIMetalTests "${name}")

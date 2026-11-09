@@ -755,6 +755,63 @@ EQ_TEST(texture, occlusion_and_statistics) {
     RI::destroyTexture(f.device, target);
 }
 
+// Occlusion queries alone (P115), for backends without pipeline statistics:
+// a full-screen draw counts every sample, a query around no draw counts none,
+// and a second section reuses the pool.
+EQ_TEST(texture, occlusion) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize,
+                                       .height = kSize,
+                                       .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs, ps;
+    RI::Pipeline pipeline = drawPipeline(f.device, RI::Format::eRGBA8Unorm, RI::Format::eUndefined, 1, false, vs, ps);
+    RI::QueryPool occlusion = RI::createQueryPool(f.device, {.type = RI::QueryType::eOcclusion, .count = 3});
+    RI::Buffer results = placeBuffer(f.device, f.readback, {.size = 3 * 8, .usage = RI::BufferUsage::eCopyDst});
+
+    RI::cmdResetQueries(f.cmd, occlusion, 0, 3);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{
+                                           .color = {1.0f, 0.0f, 0.0f, 1.0f},
+                                             .depth = 0.5f
+    });
+    RI::cmdBeginQuery(f.cmd, occlusion, 0);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndQuery(f.cmd, occlusion, 0);
+    RI::cmdBeginQuery(f.cmd, occlusion, 1);
+    RI::cmdEndQuery(f.cmd, occlusion, 1);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eLoad}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{
+                                           .color = {0.0f, 1.0f, 0.0f, 1.0f},
+                                             .depth = 0.5f
+    });
+    RI::cmdBeginQuery(f.cmd, occlusion, 2);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndQuery(f.cmd, occlusion, 2);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdResolveQueries(f.cmd, occlusion, 0, 3, results, 0);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    const auto *values = static_cast<const uint64 *>(results.mapped);
+    EQ_CHECK(values[0] == kSize * kSize);
+    EQ_CHECK(values[1] == 0);
+    EQ_CHECK(values[2] == 2 * kSize * kSize);
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyQueryPool(f.device, occlusion);
+    RI::destroyBuffer(f.device, results);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, target);
+}
+
 #if EQUINE_VALIDATION
 // A copy needs the texture's copy usage (P47).
 EQ_TEST(texture, copy_without_usage_reports) {

@@ -133,6 +133,15 @@ struct DeviceState {
     // buffer when the section begins, before RI knows whether it holds queries.
     std::atomic<uint32> occlusionPools{0};
 
+    // RI's built-in MSL (Indirect.cpp): the count copy of indirect execution,
+    // compiled at first use, released by releaseBuiltins.
+    struct Builtins {
+        MTL::ComputePipelineState *countKernel = nullptr;
+        MTL::RenderPipelineState *countVertex = nullptr; // rasterization off, inside sections
+    };
+    std::mutex builtinsMutex;
+    Builtins builtins;
+
 #if EQUINE_VALIDATION
     std::thread::id deviceThread; // the thread that called createDevice (P106)
     Validation::ObjectTracker objects;
@@ -287,6 +296,9 @@ void bindIndexType(DeviceState &state, CommandListState &cmd, uint64 indexType);
 // Queries.cpp: the occlusion part of cmdEndRendering, once the section's
 // encoder ended: copies the section's results into their pools (P115).
 void copyOcclusionResults(CommandListState &cmd);
+
+// Indirect.cpp: releases DeviceState::builtins (destroyDevice).
+void releaseBuiltins(DeviceState &state);
 
 // Textures.cpp: RI's formats as Metal's (Invalid for formats Metal lacks).
 MTL::PixelFormat pixelFormatOf(Format format);

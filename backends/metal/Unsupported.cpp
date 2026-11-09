@@ -3,7 +3,7 @@
 // Owns: notYet, and a definition of every function of RI/Metal/Backend.hpp
 // that stages 2 (buffers, compute, readback), 3a (textures, views, samplers,
 // copies, clears, timestamps), 3b-1 (graphics pipelines, rendering sections,
-// draws) and 3b-2 (resolves, occlusion queries) do not cover: indirect execution,
+// draws) and 3b-2 (resolves, occlusion queries, indirect execution) do not cover:
 // acceleration structures, swapchains and work graphs. Each reports
 // eUnsupported, so programs link and fail with a readable message. Capability
 // probes (presentModeSupported, screenStorageSupported) answer false instead,
@@ -55,19 +55,6 @@ void cmdBuildBlas(CommandList &, const AccelerationStructure &, const BlasDesc &
 }
 void cmdBuildTlas(CommandList &, const AccelerationStructure &, const TlasDesc &, const Buffer &, uint64, bool) {
     notYet("cmdBuildTlas");
-}
-
-// ── Indirect execution (stage 3b-2, not built yet) ───────────────────────────
-
-void cmdExecuteIndirect(CommandList &, IndirectKind, const Buffer &, uint64, uint32, const Buffer *, uint64) {
-    notYet("cmdExecuteIndirect");
-}
-MemoryRequirements indirectScratchRequirements(Device &, const Pipeline &, IndirectKind, uint32) {
-    notYet("indirectScratchRequirements");
-}
-void cmdExecuteIndirectWithRootData(CommandList &, IndirectKind, const Buffer &, uint64, uint32, const Buffer *, uint64,
-                                    const Buffer *, uint64) {
-    notYet("cmdExecuteIndirectWithRootData");
 }
 
 // ── Swapchains ───────────────────────────────────────────────────────────────

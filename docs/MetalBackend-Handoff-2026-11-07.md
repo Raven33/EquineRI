@@ -259,5 +259,35 @@ Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` f
   Metal's debug layer. Probes (not registered): IDs, in-section barriers and markers,
   attachments at other mips and layers, render timestamps:
   `/private/tmp/claude-502/-Users-arthur-dev-EquineRI/a8d0c79c-76bc-4da5-80ab-4d17527aad85/scratchpad/probe-3b1/`.
-- **Next (stage 3b-2):** resolves (at `cmdEndRendering` and `cmdResolve`), occlusion queries
-  (P115's visibility pages), then indirect execution (proposal §7).
+- Stage 3b-2 followed (§9).
+
+## 9. Stage 3b-2 done (2026-11-09): resolves, occlusion, indirect execution
+
+- **Resolves** (`Rendering.cpp`): at `cmdEndRendering` as store actions with a resolve texture;
+  `cmdResolve` as a render pass per layer that loads, stores and resolves. Depth: sample 0, min,
+  max; stencil: sample 0.
+- **Occlusion** (`Queries.cpp`, P115): each section points its visibility buffer at a page of
+  command memory while occlusion pools exist; `cmdEndRendering` copies the used slots into the
+  pools. A query begins and ends inside one section and one is open at a time. Pools must exist
+  before the section that uses them.
+- **Indirect** (`Indirect.cpp`, proposal §7): each record is one Metal indirect draw or dispatch
+  reading the record in place; index 4 points at its arguments, and Level 2's index 2 at its
+  root data. `indirectScratchRequirements` is 0 and `DeviceLimits::indirectRootData` is true.
+  A GPU count (Q4): RI's **first built-in MSL**, compiled from source once per device at first
+  use (not at build time, as §7 planned: one source string, no build step), copies the records
+  into command memory and zeroes the instance count (draws) or group count x (dispatches, mesh
+  draws) of records at or beyond the count. Outside sections it is a compute kernel; inside one,
+  a vertex function with rasterization off (a render encoder cannot dispatch), followed by an
+  encoder barrier Vertex -> Vertex/Object/Mesh. The debug layer accepts that pipeline in passes
+  of any attachment formats.
+- Registered: `texture.resolve_color`, `resolve_depth`, `indirect_level1`, `indirect_level2`,
+  and a new portable `texture.occlusion` (occlusion without statistics; also in the shared list,
+  so the D3D12 and Vulkan runs need it checked on Windows/Linux). macOS: 112/112 (preset),
+  98/98 validation off.
+- Known gaps: not reviewed by a second pair of eyes (resolves and occlusion were drafted by the
+  interrupted 3b-2 agent, indirect written inline). Untested: indirect mesh draws, Level 2
+  dispatches with a count, records of more than a few. `maxCount` encodes `maxCount` commands
+  on the CPU; an ICB variant (proposal §7 (a)) is not measured. An indirect draw counts as a
+  draw for timestamps even if all its records are empty.
+- **Next:** ray tracing (RI's MSL for the 64-byte instance repack, acceleration structures, ray
+  queries, `DeviceLimits::rayTracingHardware`), then swapchains.
