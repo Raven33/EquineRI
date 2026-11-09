@@ -24,15 +24,16 @@ is at `aa641ce`, checked 2026-11-12). The feature commits:
 | `82f5bb7` | stage 3b-2: resolves, occlusion queries, indirect execution (Level 1 and 2, GPU counts) |
 | `6b723ba` | inline ray tracing, `DeviceLimits::rayTracingHardware`, depth and stencil resolve modes |
 
-Tests on the M4 (macOS 27), after the review fixes, the probe tests and swapchains: **126/126** with `ctest
+Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains and geometry and
+tessellation: **129/129** with `ctest
 --preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`),
-**110/110** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+**113/113** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
-and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader`, `texture.tessellation` and
-`texture.cube_layered_render` pass by skipping (their limits are false on Metal).
+and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader` (without its pipeline-statistics part),
+`texture.tessellation` and `texture.cube_layered_render` run through MSC's emulation (§9).
 
-**Not done on Metal:** geometry and tessellation (MSC emulation,
+**Not done on Metal:** indirect draws of geometry and tessellation pipelines (MSC emulation,
 later), work graphs (D3D12 only), pipeline statistics, the Metal 3 path (P113), native import
 and native sections (P27, P70, P77). `backends/metal/Unsupported.cpp` lists what still reports
 `eUnsupported`.
@@ -157,8 +158,8 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
    window server, so a real run needs the `arthur` GUI session in front (ask the user).
 3. **Push** `metal-backend` and run the D3D12 and Vulkan builds on their platforms (the
    `rayTracingHardware` and `texture.occlusion` changes), when the user asks.
-4. Later, per P113 and P116: geometry and tessellation through MSC's emulation, the Metal 3
-   path, measuring indirect counts against an ICB, native import.
+4. Later, per P113 and P116: ~~geometry and tessellation through MSC's emulation~~ (done
+   2026-11-09, §9), the Metal 3 path, measuring indirect counts against an ICB, native import.
 
 ## 7. Review (2026-11-09)
 
@@ -277,4 +278,41 @@ pass 10 runs in a row. **Over SSH there is no GUI session and no display**
 (`CGSessionCopyCurrentDictionary` is null), yet GLFW opens the window and the layer still gives
 drawables: the tests run and nothing shows on Michel's screen. Not seen yet: a real on-screen
 run in the `arthur` GUI session, and HDR10.
+
+## 9. Geometry and tessellation (2026-11-09)
+
+Through Metal Shader Converter's emulation (P114 and P116 (1) amended, the user's choices:
+every vertex shader converted for it, MSC's pipeline helpers, indirect draws of these pipelines
+unsupported). Probed first in the scratchpad (`gs/probe.cpp`): a geometry and a tessellation
+pipeline built by MSC's helpers render correctly on a Metal 4 encoder with validation on, and
+every test vertex shader converted with emulation still passes the whole suite.
+
+- **Build:** `equine_add_shaders` converts `vs_`, `gs_`, `hs_` and `ds_` shaders with
+  `--enable-gs-ts-emulation` and an empty vertex input layout (`msc_vertex_layout.json`; RI has
+  no vertex inputs), writes MSC's reflection JSON, and vertex shaders also get
+  `--vertex-stage-in`. `equine_metal_pack` (`tools/metal_pack/MetalPack.cpp`) appends `MTLR`
+  (version 1, then 9 uint32 numbers taken from the JSON's `state`) and, for vertex shaders,
+  `MTLS` (the stage-in metallib). `dxil.metal_container` checks the parts.
+- **Backend:** `backends/metal/Emulation.cpp`. A pipeline with a geometry or hull shader is a
+  mesh pipeline from `IRRuntimeNewGeometry(Tessellation)EmulationPipeline`; depth-only ones get
+  RI's empty fragment function (MSL, a built-in). Tessellation without a geometry shader uses
+  MSC's passthrough mesh functions. Draws call MSC's calculation functions but bind the draw
+  arguments and draw info themselves, 16-byte aligned: MSC's `IRRuntime4Draw…Emulation` helpers
+  put the draw info 20 bytes into their scratch range (UBSan reports their misaligned store).
+  Argument-table indices: 3 (hull and domain root data, set by `cmdSetRootData` with 2), 6 (an
+  empty vertex-buffer table) and 7 (MSC's tessellator tables, 717 KB). Both live in
+  `DeviceState::emulation`, created with the device. `kArgumentTableBuffers` is 8.
+- **Behaviour:** `SV_VertexID` and `SV_InstanceID` as in RI's other Metal draws (vertex offset
+  and first vertex left out; first instance left out, as D3D12). `SV_RenderTargetArrayIndex`
+  from a geometry shader works (`texture.cube_layered_render`). Indirect draws of these
+  pipelines report `eUnsupported` (`Indirect.cpp`, documented in `Backend.hpp`).
+- **Tests:** `texture.geometry_shader` (its statistics part compiled out on Metal),
+  `texture.tessellation`, `texture.cube_layered_render`, and in `tests/metal/EmulationTests.cpp`
+  `metal.geometry_indexed_instanced`, `metal.tessellation_indexed_depth_only` and
+  `metal.geometry_indirect_reports`. New shaders `grid_instances_vs`, `point_pass_gs`. 10 runs in
+  a row pass.
+- **Not covered:** a geometry shader after tessellation, line and triangle strips into a
+  geometry shader, geometry-shader instancing (`[instance(n)]`), stream output (RI has none),
+  performance. Shared test files changed (`TextureTests.cpp`'s statistics guard): not yet
+  compiled on Windows or Linux.
 

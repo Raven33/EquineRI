@@ -26,7 +26,10 @@ a [rendering section](../concepts/rendering.md), and destroy it with
   `device.limits.geometryShaders`. Geometry shaders are slow on AMD and NVIDIA: mesh or
   compute shaders usually do the same work faster. They are handy for ports and for layered
   rendering, such as the six faces of a [cube texture](texture.md#shapes) in one draw
-  (`SV_RenderTargetArrayIndex`);
+  (`SV_RenderTargetArrayIndex`). On Metal, which has neither stage, geometry and tessellation
+  run through Metal Shader Converter's emulation (a mesh pipeline): such pipelines are drawn
+  with `cmdDraw` and `cmdDrawIndexed`, not with [indirect execution](indirect.md), and have no
+  [pipeline statistics](queries.md) (Metal has none);
 - `task`, `mesh`: a **mesh pipeline** gives a mesh shader instead of `vertex` (compiled with
   profile `ms_6_6`), and optionally a task (amplification) shader before it (`as_6_6`). It is
   drawn with [`cmdDrawMesh`](cmdDraw.md); `topology` does not apply (the mesh shader declares

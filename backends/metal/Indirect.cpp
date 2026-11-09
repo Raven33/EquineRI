@@ -240,6 +240,13 @@ void execute(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 off
         }
     } else {
         checkDraw(list, call, kind == IndirectKind::eDrawMesh);
+        // MSC's emulation computes its threadgroup counts on the CPU (P116 (1) amended).
+        if (list.graphics.internal.emulation != 0) {
+            reportError(ErrorCategory::eUnsupported,
+                        std::format("{}: on Metal, pipelines with geometry or tessellation shaders are drawn by "
+                                    "cmdDraw and cmdDrawIndexed only (MSC's emulation, P116 (1))",
+                                    call));
+        }
         if (kind == IndirectKind::eDrawIndexed && !list.indexSet) {
             reportError(ErrorCategory::eProgrammerError, std::format("{}: no index buffer is set (cmdSetIndexBuffer)", call));
         }
@@ -291,6 +298,7 @@ void releaseBuiltins(DeviceState &state) {
     release(state.builtins.countKernel);
     release(state.builtins.countVertex);
     release(state.builtins.repackKernel);
+    release(state.builtins.emptyFragment);
 }
 
 void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,

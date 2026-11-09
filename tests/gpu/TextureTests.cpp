@@ -1654,7 +1654,7 @@ EQ_TEST(texture, depth_clamp) {
 
 // A geometry shader (P102) turns one point into the full-screen triangle; the
 // pixel shader reads the geometry shader's outputs (P101), and the statistics
-// count one geometry shader run.
+// count one geometry shader run (not on Metal: no pipeline statistics, P116 (1)).
 EQ_TEST(texture, geometry_shader) {
     Fixture f;
     if (!f.device.limits.geometryShaders) {
@@ -1669,20 +1669,29 @@ EQ_TEST(texture, geometry_shader) {
                                                                   .pixel = ps,
                                                                   .colorFormats = {RI::Format::eRGBA8Unorm},
                                                                   .topology = RI::Topology::ePointList});
+#if !EQUINE_BACKEND_METAL
     RI::QueryPool statistics = RI::createQueryPool(f.device, {.type = RI::QueryType::ePipelineStatistics, .count = 1});
     const RI::PipelineStatisticsLayout stats = RI::pipelineStatisticsLayout(f.device);
     EQ_CHECK(stats.geometryShaderInvocations != RI::kNoCounter && stats.geometryShaderPrimitives != RI::kNoCounter);
     RI::Buffer results = placeBuffer(f.device, f.readback, {.size = stats.size, .usage = RI::BufferUsage::eCopyDst});
+#endif
     RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+#if !EQUINE_BACKEND_METAL
     RI::cmdBeginQuery(f.cmd, statistics, 0);
+#endif
     RI::cmdSetPipeline(f.cmd, pipeline);
     RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.0f, 1.0f, 0.0f, 1.0f}, .depth = 0.5f});
     RI::cmdDraw(f.cmd, 1);
+#if !EQUINE_BACKEND_METAL
     RI::cmdEndQuery(f.cmd, statistics, 0);
+#endif
     RI::cmdEndRendering(f.cmd);
+#if !EQUINE_BACKEND_METAL
     RI::cmdResolveQueries(f.cmd, statistics, 0, 1, results, 0);
+#endif
     const std::vector<float> texels = f.readBack(target.view);
     EQ_CHECK(all(texels, 0, 0.0f) && all(texels, 1, 1.0f));
+#if !EQUINE_BACKEND_METAL
     const auto *base = static_cast<const uint8 *>(results.mapped);
     const auto value = [&](uint32 offset) { return *reinterpret_cast<const uint64 *>(base + offset); };
     EQ_CHECK(value(stats.geometryShaderInvocations) == 1);
@@ -1693,6 +1702,7 @@ EQ_TEST(texture, geometry_shader) {
     EQ_CHECK(read.inputPrimitives == 1 && read.computeShaderInvocations == 0);
     RI::destroyBuffer(f.device, results);
     RI::destroyQueryPool(f.device, statistics);
+#endif
     RI::destroyPipeline(f.device, pipeline);
     RI::destroyTexture(f.device, target);
 }

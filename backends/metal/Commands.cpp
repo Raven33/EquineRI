@@ -515,7 +515,8 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
 }
 
 // Root data is the shader's top-level argument buffer (P114): its bytes go to
-// command memory and index 2 of the table points at them.
+// command memory and index 2 of the table points at them, and index 3 for
+// hull and domain shaders under emulation (Emulation.cpp).
 void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
     EQ_MTL_CHECK_THREAD(cmd.internal.device);
     CommandListState &list = *cmd.internal.state;
@@ -526,6 +527,7 @@ void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
     const CommandMemoryAllocation memory = allocateCommandMemory(*cmd.internal.device, list, data.size(), 16);
     std::memcpy(memory.cpu, data.data(), data.size());
     list.argumentTable->setAddress(memory.gpuAddress, kRootDataIndex);
+    list.argumentTable->setAddress(memory.gpuAddress, kHullDomainRootDataIndex);
 }
 
 void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {

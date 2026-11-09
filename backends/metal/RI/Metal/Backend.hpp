@@ -318,6 +318,18 @@ struct Pipeline {
         uint8 fillMode = 0;          // MTL::TriangleFillMode
         uint8 depthClipMode = 0;     // MTL::DepthClipMode
         float depthBias[3] = {0.0f, 0.0f, 0.0f}; // constant, slope, clamp
+        // Geometry or tessellation through MSC's emulation (P116 (1)): a mesh
+        // pipeline drawn by cmdDraw and cmdDrawIndexed as MSC's draw helpers
+        // do. 0: none, 1: geometry, 2: tessellation (with or without geometry).
+        uint8 emulation = 0;
+        uint8 emulationTopology = 0; // IRRuntimePrimitiveType of draws
+        uint8 tessellatorOutput = 0; // IRRuntimeTessellatorOutputPrimitive
+        // MSC's reflection (the shaders' MTLR parts): vertex output size,
+        // geometry input primitives per mesh threadgroup, geometry instances,
+        // patches per object threadgroup, input control points, object
+        // threads per patch.
+        uint32 emulationConfig[6] = {};
+        float maxTessellationFactor = 0.0f;
         uint64 id = 0;
     } internal;
 };
@@ -395,6 +407,9 @@ void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z);
 // bytes at `offset` in `args`, with the count read from `count` at `countOffset`
 // when given (at most maxCount). Dispatches take one record and no count.
 // Buffers need BufferUsage::eIndirect; the GPU reads them at Stage::eIndirect.
+// On Metal, pipelines with geometry or tessellation shaders (MSC's emulation,
+// P116 (1)) are drawn by cmdDraw and cmdDrawIndexed only: indirect draws of
+// them report eUnsupported.
 void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,
                         const Buffer *count = nullptr, uint64 countOffset = 0);
 // Level 2 (DeviceLimits::indirectRootData): each record starts with the root

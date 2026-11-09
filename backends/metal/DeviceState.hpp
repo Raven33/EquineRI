@@ -49,9 +49,17 @@ namespace RI::Metal {
 inline constexpr uint32 kResourceHeapIndex = 0; // kIRDescriptorHeapBindPoint
 inline constexpr uint32 kSamplerHeapIndex = 1;  // kIRSamplerHeapBindPoint
 inline constexpr uint32 kRootDataIndex = 2;     // kIRArgumentBufferBindPoint: the 256 bytes of root constants
+// kIRArgumentBufferHullDomainBindPoint: the same root data, as hull and domain
+// shaders read it under emulation (Emulation.cpp).
+inline constexpr uint32 kHullDomainRootDataIndex = 3;
 inline constexpr uint32 kDrawArgumentsIndex = 4; // kIRArgumentBufferDrawArgumentsBindPoint
 inline constexpr uint32 kUniformsIndex = 5;      // kIRArgumentBufferUniformsBindPoint: the index type
-inline constexpr uint32 kArgumentTableBuffers = 6;
+// Geometry and tessellation emulation (Emulation.cpp): kIRVertexBufferBindPoint,
+// an empty IRRuntimeVertexBuffers (RI has no vertex inputs), and
+// kIRRuntimeTessellatorTablesBindPoint, MSC's tessellator tables.
+inline constexpr uint32 kVertexBuffersIndex = 6;
+inline constexpr uint32 kTessellatorTablesIndex = 7;
+inline constexpr uint32 kArgumentTableBuffers = 8;
 // Bytes between the index types of DeviceState::uniforms: argument-table
 // addresses stay 16-byte aligned, as Metal wants buffer addresses.
 inline constexpr uint64 kIndexTypeStride = 16;
@@ -128,6 +136,10 @@ struct DeviceState {
     // kIndexTypeStride bytes: 0 non-indexed, 1 uint16, 2 uint32 (IRRuntime
     // index types). Fixed, shared by every command list.
     MTL::Buffer *uniforms = nullptr;
+    // Geometry and tessellation emulation (Emulation.cpp): an empty
+    // IRRuntimeVertexBuffers at offset 0, MSC's tessellator tables at
+    // kTessellatorTablesOffset. Created with the device, resident.
+    MTL::Buffer *emulation = nullptr;
 
     // One sampler per distinct SamplerDesc (P99), created on first write and
     // released with the device: Metal returns the same object for the same
@@ -150,6 +162,9 @@ struct DeviceState {
         MTL::ComputePipelineState *countKernel = nullptr;
         MTL::RenderPipelineState *countVertex = nullptr; // rasterization off, inside sections
         MTL::ComputePipelineState *repackKernel = nullptr;
+        // An empty fragment function, for depth-only emulated pipelines
+        // (MSC's pipeline helpers need one): Emulation.cpp.
+        MTL::Library *emptyFragment = nullptr;
     };
     std::mutex builtinsMutex;
     Builtins builtins;
@@ -337,6 +352,23 @@ void applyName(DeviceState &state, const DescriptorHeap &heap, std::string_view 
 void applyName(DeviceState &state, const QueryPool &pool, std::string_view name);
 void applyName(DeviceState &state, const Pipeline &pipeline, std::string_view name);
 void applyName(DeviceState &state, const CommandList &cmd, std::string_view name);
+
+// Pipeline.cpp: the metallib in part `part` of a .mtl.dxil ("MTLB", or a
+// vertex shader's stage-in function, "MTLS"), as an MTL::Library (owned).
+MTL::Library *newShaderLibrary(DeviceState &state, Bytecode bytecode, const char *call, const char *part = "MTLB");
+
+// Emulation.cpp: geometry and tessellation through MSC's emulation (P116 (1)
+// amended 2026-11-09). newEmulationBuffer makes DeviceState::emulation;
+// newEmulationPipeline builds `desc`'s pipeline from `base` (attachments,
+// samples, label set) and fills out.internal's emulation fields; drawEmulated
+// encodes a draw of the pipeline set (indexed when `indexed`, from
+// cmd.indexAddress).
+MTL::Buffer *newEmulationBuffer(DeviceState &state);
+MTL::RenderPipelineState *newEmulationPipeline(DeviceState &state, const GraphicsPipelineDesc &desc,
+                                               MTL::MeshRenderPipelineDescriptor *base, Pipeline &out,
+                                               const char *call);
+void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint32 count, uint32 instanceCount,
+                  uint32 first, int32 vertexOffset, uint32 firstInstance);
 
 // Unsupported.cpp: reports `call` as not built yet on the Metal backend.
 [[noreturn]] void notYet(std::string_view call);

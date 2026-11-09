@@ -15,11 +15,12 @@
 // on Metal: the pipeline keeps them for cmdSetPipeline (P38 holds: they are
 // fixed per pipeline). A pipeline's label can only be set through its
 // descriptor, so the creation name goes there; setName after creation only
-// renames the tracked object. Geometry, hull and domain shaders are
-// unsupported (P116 (1)). In validation builds the pixel shader's inputs are
-// matched to the outputs of the vertex or mesh shader by semantic and
-// register (P101), from the DXIL signatures as on D3D12, and 64-bit atomics
-// are checked against DeviceLimits (P105).
+// renames the tracked object. Geometry, hull and domain shaders go through
+// MSC's emulation (P116 (1) amended): Emulation.cpp builds those pipelines
+// from the mesh descriptor made here. In validation builds the pixel shader's
+// inputs are matched to the outputs of the stage before it (mesh, geometry,
+// domain or vertex) by semantic and register (P101), from the DXIL signatures
+// as on D3D12, and 64-bit atomics are checked against DeviceLimits (P105).
 //
 // D3D12 counterpart: backends/d3d12/Pipeline.cpp.
 
@@ -33,6 +34,7 @@
 #include <bit>
 #include <format>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace RI::Metal {
@@ -70,14 +72,16 @@ void checkRootDataSize(const Device &device, uint32 size, const char *call) {
     }
 }
 
-// The metallib of a .mtl.dxil as an MTL::Library (owned).
-MTL::Library *newLibrary(DeviceState &state, Bytecode bytecode, const char *call) {
-    const std::span<const std::byte> metallib = Reflection::findDxilPart(bytecode, "MTLB");
+} // namespace
+
+MTL::Library *newShaderLibrary(DeviceState &state, Bytecode bytecode, const char *call, const char *part) {
+    const std::span<const std::byte> metallib = Reflection::findDxilPart(bytecode, part);
     if (metallib.empty()) {
         reportError(ErrorCategory::eProgrammerError,
-                    std::format("{}: the shader has no MTLB part (the Metal backend takes .mtl.dxil: DXIL with the "
-                                "metallib from Metal Shader Converter in an MTLB part)",
-                                call));
+                    std::format("{}: the shader has no {} part (the Metal backend takes .mtl.dxil: DXIL with the "
+                                "metallib from Metal Shader Converter in an MTLB part, and a vertex shader's stage-in "
+                                "function in an MTLS part, as equine_add_shaders writes them)",
+                                call, part));
     }
     // The default destructor copies the bytes: the caller's bytecode may go
     // away while Metal still holds the dispatch data.
@@ -87,10 +91,12 @@ MTL::Library *newLibrary(DeviceState &state, Bytecode bytecode, const char *call
     MTL::Library *library = state.device->newLibrary(data, &error);
     dispatch_release(data);
     if (library == nullptr) {
-        reportNsError(ErrorCategory::eProgrammerError, std::format("{}: newLibrary (the MTLB part)", call), error);
+        reportNsError(ErrorCategory::eProgrammerError, std::format("{}: newLibrary (the {} part)", call, part), error);
     }
     return library;
 }
+
+namespace {
 
 // The shader's entry point (owned).
 MTL::Function *newMain(MTL::Library *library, const char *call, const char *stage) {
@@ -137,7 +143,8 @@ std::vector<Validation::StageValue> stageOutputs(const Reflection::DxilInfo &pro
 }
 #endif
 
-// Geometry and tessellation are not on Metal yet (P116 (1)); Vulkan's messages.
+// Geometry and tessellation follow DeviceLimits (true on Metal since the
+// emulation, P116 (1) amended); Vulkan's messages.
 void checkStageSupport(const Device &device, const GraphicsPipelineDesc &desc, const char *call) {
     if (!desc.geometry.empty() && !device.limits.geometryShaders) {
         reportError(ErrorCategory::eUnsupported,
@@ -313,7 +320,7 @@ Pipeline createComputePipeline(Device &device, const ComputePipelineDesc &desc) 
 
     // Error objects and strings below are autoreleased.
     NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
-    MTL::Library *library = newLibrary(state, desc.shader, call);
+    MTL::Library *library = newShaderLibrary(state, desc.shader, call);
     MTL::Function *function = library->newFunction(nsString("main"));
     if (function == nullptr) {
         reportError(ErrorCategory::eProgrammerError,
@@ -394,12 +401,21 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     const Reflection::DxilInfo task = addStage(desc.task, "task");
     const Reflection::DxilInfo mesh = addStage(desc.mesh, "mesh");
     [[maybe_unused]] const Reflection::DxilInfo vertex = addStage(desc.vertex, "vertex");
+    [[maybe_unused]] const Reflection::DxilInfo hull = addStage(desc.hull, "hull");
+    [[maybe_unused]] const Reflection::DxilInfo domain = addStage(desc.domain, "domain");
+    [[maybe_unused]] const Reflection::DxilInfo geometry = addStage(desc.geometry, "geometry");
     [[maybe_unused]] const Reflection::DxilInfo pixel = addStage(desc.pixel, "pixel");
+    // The stage the pixel shader reads from.
+    [[maybe_unused]] const auto [producer, producerName] =
+        meshPipeline              ? std::pair{&mesh, "mesh"}
+        : !desc.geometry.empty()  ? std::pair{&geometry, "geometry"}
+        : !desc.domain.empty()    ? std::pair{&domain, "domain"}
+                                  : std::pair{&vertex, "vertex"};
     if (!desc.pixel.empty()) {
-        EQ_VALIDATE(Validation::checkStageLink(stageOutputs(meshPipeline ? mesh : vertex, meshPipeline),
-                                               stageValues(pixel.inputs, true), meshPipeline ? "mesh" : "vertex",
-                                               "register"));
+        EQ_VALIDATE(Validation::checkStageLink(stageOutputs(*producer, meshPipeline), stageValues(pixel.inputs, true),
+                                               producerName, "register"));
     }
+    const bool emulated = !desc.geometry.empty() || !desc.hull.empty();
     checkRootDataSize(device, root.rootDataSize, call);
     EQ_VALIDATE(Validation::checkGraphicsState(desc.colorFormats.size(), desc.blend.size(), desc.stencil.test,
                                                hasStencil(desc.depthFormat)));
@@ -418,16 +434,26 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         if (code.empty()) {
             return {};
         }
-        Stage stage{.library = newLibrary(state, code, call)};
+        Stage stage{.library = newShaderLibrary(state, code, call)};
         stage.function = newMain(stage.library, call, name);
         return stage;
     };
-    Stage stages[] = {load(desc.task, "task"), load(desc.mesh, "mesh"), load(desc.vertex, "vertex"),
-                      load(desc.pixel, "pixel")};
+    // Emulated pipelines load their libraries in Emulation.cpp.
+    Stage stages[] = {load(desc.task, "task"), load(desc.mesh, "mesh"), emulated ? Stage{} : load(desc.vertex, "vertex"),
+                      emulated ? Stage{} : load(desc.pixel, "pixel")};
     const Stage &taskStage = stages[0], &meshStage = stages[1], &vertexStage = stages[2], &pixelStage = stages[3];
     NS::Error *error = nullptr;
     MTL::RenderPipelineState *pipelineState = nullptr;
-    if (meshPipeline) {
+    Pipeline out;
+    if (emulated) {
+        MTL::MeshRenderPipelineDescriptor *native = MTL::MeshRenderPipelineDescriptor::alloc()->init();
+        describeTargets(native, desc, call);
+        if (!desc.name.empty()) {
+            native->setLabel(nsString(desc.name));
+        }
+        pipelineState = newEmulationPipeline(state, desc, native, out, call);
+        release(native);
+    } else if (meshPipeline) {
         MTL::MeshRenderPipelineDescriptor *native = MTL::MeshRenderPipelineDescriptor::alloc()->init();
         native->setObjectFunction(taskStage.function);
         native->setMeshFunction(meshStage.function);
@@ -461,7 +487,6 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     MTL::DepthStencilState *depthStencil = newDepthStencilState(state, desc);
     pool->release();
 
-    Pipeline out;
     out.rootDataSize = root.hasRootData ? root.rootDataSize : 0;
     auto &in = out.internal;
     in.pipelineState = pipelineState;

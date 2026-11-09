@@ -29,12 +29,16 @@ add_library(EquineMetalBackend STATIC
     Indirect.cpp
     RayTracing.cpp
     Rendering.cpp
+    Emulation.cpp
     Debug.cpp
     Queries.cpp
     Swapchain.cpp
     Unsupported.cpp
 )
 target_include_directories(EquineMetalBackend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# MSC's runtime companion header, for geometry and tessellation emulation (Emulation.cpp).
+get_property(EQUINE_MSC_INCLUDE_DIR GLOBAL PROPERTY EQUINE_MSC_INCLUDE_DIR)
+target_include_directories(EquineMetalBackend SYSTEM PRIVATE "${EQUINE_MSC_INCLUDE_DIR}")
 target_link_libraries(EquineMetalBackend PUBLIC EquineRI EquineMetalCpp)
 target_compile_features(EquineMetalBackend PUBLIC cxx_std_20)
 # Selects this backend for <RI/RI.hpp> in every target that links it (P83).

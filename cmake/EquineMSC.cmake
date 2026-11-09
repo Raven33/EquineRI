@@ -13,6 +13,7 @@
 #   EQUINE_METAL_SHADERS          - ON when .mtl.dxil files are written
 #   EQUINE_MSC_EXECUTABLE         - metal-shaderconverter
 #   EQUINE_MSC_ROOT_SIGNATURE     - the fixed root signature (JSON)
+#   EQUINE_MSC_VERTEX_LAYOUT      - the empty vertex input layout (JSON), for emulation
 #   EQUINE_MSC_INCLUDE_DIR        - MSC's headers (metal_irconverter_runtime.h)
 #   target equine_metal_pack      - the packing tool
 
@@ -73,6 +74,13 @@ file(WRITE "${EQUINE_MSC_ROOT_SIGNATURE}" [=[{
 }
 ]=])
 
+# Geometry and tessellation emulation (P114, P116 amended 2026-11-09) needs a
+# vertex input layout at conversion: RI has no vertex inputs (shaders fetch
+# their own data), so it is always empty.
+set(EQUINE_MSC_VERTEX_LAYOUT "${CMAKE_BINARY_DIR}/equine/msc_vertex_layout.json")
+file(WRITE "${EQUINE_MSC_VERTEX_LAYOUT}" [=[{"InputElements":[],"SemanticNames":[]}
+]=])
+
 if (NOT TARGET equine_metal_pack)
     add_executable(equine_metal_pack "${CMAKE_CURRENT_LIST_DIR}/../tools/metal_pack/MetalPack.cpp")
 endif()
@@ -80,4 +88,5 @@ endif()
 set_property(GLOBAL PROPERTY EQUINE_METAL_SHADERS ON)
 set_property(GLOBAL PROPERTY EQUINE_MSC_EXECUTABLE "${EQUINE_MSC_EXECUTABLE}")
 set_property(GLOBAL PROPERTY EQUINE_MSC_ROOT_SIGNATURE "${EQUINE_MSC_ROOT_SIGNATURE}")
+set_property(GLOBAL PROPERTY EQUINE_MSC_VERTEX_LAYOUT "${EQUINE_MSC_VERTEX_LAYOUT}")
 set_property(GLOBAL PROPERTY EQUINE_MSC_INCLUDE_DIR "${EQUINE_MSC_DIR}/include")

@@ -360,9 +360,9 @@ if (TARGET EquineMetalBackend)
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/SwapchainTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/metal/DeviceTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/metal/SwapchainTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/metal/EmulationTests.cpp"
     )
-    # The shaders of the registered cases (geometry and tessellation ones are
-    # left out: those cases skip before loading them, P116 (1)).
+    # The shaders of the registered cases.
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl"
                        "${dir}/write_storage.hlsl" "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl"
@@ -370,9 +370,16 @@ if (TARGET EquineMetalBackend)
                        "${dir}/ray_query.hlsl" "${dir}/indirect_write.hlsl" "${dir}/ray_query_scene.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
                        "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/storage_raster_vs.hlsl"
-                       "${dir}/grid_points_vs.hlsl" "${dir}/layer_vs.hlsl")
+                       "${dir}/grid_points_vs.hlsl" "${dir}/layer_vs.hlsl" "${dir}/point_vs.hlsl"
+                       "${dir}/patch_vs.hlsl" "${dir}/grid_instances_vs.hlsl")
+    # Geometry and tessellation, through MSC's emulation (P116 (1)).
+    equine_add_shaders(EquineRIMetalTests PROFILE gs_6_6 SOURCES "${dir}/fullscreen_gs.hlsl" "${dir}/layered_gs.hlsl"
+                       "${dir}/point_pass_gs.hlsl")
+    equine_add_shaders(EquineRIMetalTests PROFILE hs_6_6 SOURCES "${dir}/patch_hs.hlsl")
+    equine_add_shaders(EquineRIMetalTests PROFILE ds_6_6 SOURCES "${dir}/patch_ds.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl"
-                       "${dir}/link_skip_ps.hlsl" "${dir}/storage_raster_ps.hlsl" "${dir}/layer_ps.hlsl")
+                       "${dir}/link_skip_ps.hlsl" "${dir}/storage_raster_ps.hlsl" "${dir}/layer_ps.hlsl"
+                       "${dir}/color_ps.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl"
                        "${dir}/fullscreen_payload_ms.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
@@ -452,13 +459,17 @@ if (TARGET EquineMetalBackend)
         # Open a GLFW window; over SSH it is on no display and the tests still run.
         window.swapchain
         metal.screen_contents
-        # Skip themselves: no geometry or tessellation on Metal (P116 (1)).
+        metal.geometry_indexed_instanced
+        metal.tessellation_indexed_depth_only
+        metal.geometry_indirect_reports
+        # Geometry and tessellation through MSC's emulation (P116 (1)).
         texture.geometry_shader
         texture.tessellation
         texture.cube_layered_render
     )
     set(EQUINE_METAL_ABORT_TESTS
         "texture.unlisted_view_format_reports|programmer error: createView: format"
+        "metal.geometry_indirect_reports|unsupported: cmdExecuteIndirect: on Metal, pipelines with geometry or tessellation shaders"
         "texture.rendering_desc_without_attachment_reports|programmer error: cmdBeginRendering: the RenderingDesc has no attachment"
     )
     if (EQUINE_VALIDATION)

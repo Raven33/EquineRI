@@ -94,6 +94,7 @@ function(equine_add_shaders target)
     get_property(EQUINE_METAL_SHADERS GLOBAL PROPERTY EQUINE_METAL_SHADERS)
     get_property(EQUINE_MSC_EXECUTABLE GLOBAL PROPERTY EQUINE_MSC_EXECUTABLE)
     get_property(EQUINE_MSC_ROOT_SIGNATURE GLOBAL PROPERTY EQUINE_MSC_ROOT_SIGNATURE)
+    get_property(EQUINE_MSC_VERTEX_LAYOUT GLOBAL PROPERTY EQUINE_MSC_VERTEX_LAYOUT)
     cmake_parse_arguments(ARG "NO_METAL" "PROFILE" "SOURCES" ${ARGN})
     if (NOT ARG_PROFILE OR NOT ARG_SOURCES)
         message(FATAL_ERROR "equine_add_shaders(<target> PROFILE <profile> SOURCES <files...>)")
@@ -136,16 +137,33 @@ function(equine_add_shaders target)
             set(outputs "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil")
             if (EQUINE_METAL_SHADERS AND NOT ARG_NO_METAL)
                 # DXIL -> metallib with the fixed root signature (P114 (1)), then
-                # the DXIL container plus an MTLB part (P114 (2)).
+                # the DXIL container plus an MTLB part (P114 (2)). Vertex,
+                # geometry, hull and domain shaders are converted for MSC's
+                # geometry and tessellation emulation, which also gives an MTLR
+                # part (reflection numbers) and, for vertex shaders, an MTLS part
+                # (the stage-in function): P114 and P116 amended 2026-11-09.
+                set(emulation_flags "")
+                set(pack_extra "")
+                if (ARG_PROFILE MATCHES "^(vs|gs|hs|ds)_")
+                    set(emulation_flags --enable-gs-ts-emulation
+                        "--vertex-input-layout-file=${EQUINE_MSC_VERTEX_LAYOUT}"
+                        "--output-reflection-file=${out_dir}/metal/${name}.json")
+                    set(pack_extra "${out_dir}/metal/${name}.json")
+                    if (ARG_PROFILE MATCHES "^vs_")
+                        list(APPEND emulation_flags --vertex-stage-in)
+                        list(APPEND pack_extra "${out_dir}/metal/${name}.stageIn.metallib")
+                    endif()
+                endif()
                 add_custom_command(
                     OUTPUT "${out_dir}/${name}.mtl.dxil"
                     COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}/metal"
                     COMMAND "${EQUINE_MSC_EXECUTABLE}" "--root-signature=${EQUINE_MSC_ROOT_SIGNATURE}"
-                            --minimum-gpu-family=Apple7 --minimum-os-build-version=26.0.0
+                            --minimum-gpu-family=Apple7 --minimum-os-build-version=26.0.0 ${emulation_flags}
                             "-o=${out_dir}/metal/${name}.metallib" "${out_dir}/${name}.dxil"
                     COMMAND equine_metal_pack "${out_dir}/${name}.dxil" "${out_dir}/metal/${name}.metallib"
-                            "${out_dir}/${name}.mtl.dxil"
-                    DEPENDS "${out_dir}/${name}.dxil" "${EQUINE_MSC_ROOT_SIGNATURE}" equine_metal_pack
+                            "${out_dir}/${name}.mtl.dxil" ${pack_extra}
+                    DEPENDS "${out_dir}/${name}.dxil" "${EQUINE_MSC_ROOT_SIGNATURE}" "${EQUINE_MSC_VERTEX_LAYOUT}"
+                            equine_metal_pack
                     COMMENT "Converting ${name} (${ARG_PROFILE}) to Metal"
                     VERBATIM
                 )

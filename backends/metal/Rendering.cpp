@@ -487,6 +487,11 @@ void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount, uint32 
     if (vertexCount == 0 || instanceCount == 0) {
         return; // no work, as an empty draw on the other backends
     }
+    if (list.graphics.internal.emulation != 0) {
+        list.sectionDrawn = true;
+        drawEmulated(*cmd.internal.device, list, false, vertexCount, instanceCount, firstVertex, 0, firstInstance);
+        return;
+    }
     bindDrawArguments(*cmd.internal.device, list,
                       DrawArguments{.vertexCountPerInstance = vertexCount,
                                     .instanceCount = instanceCount,
@@ -519,6 +524,12 @@ void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount, u
     checkDraw(list, "cmdDrawIndexed", false);
     require(list.indexSet, "cmdDrawIndexed", "no index buffer is set (cmdSetIndexBuffer)");
     if (indexCount == 0 || instanceCount == 0) {
+        return;
+    }
+    if (list.graphics.internal.emulation != 0) {
+        list.sectionDrawn = true;
+        drawEmulated(*cmd.internal.device, list, true, indexCount, instanceCount, firstIndex, vertexOffset,
+                     firstInstance);
         return;
     }
     const bool wide = list.indexFormat == IndexFormat::eUint32;

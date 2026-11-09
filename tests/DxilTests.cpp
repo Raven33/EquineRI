@@ -12,6 +12,7 @@
 #include <iterator>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -449,7 +450,8 @@ EQ_TEST(dxil, pipeline_stages) {
 #ifdef EQUINE_TEST_METAL_SHADERS
 // The Metal backend's bytecode (P114 (2)): the DXIL container plus an MTLB part
 // holding the metallib. RI's reader sees the same shader in both files, and
-// every DXIL part is unchanged.
+// every DXIL part is unchanged. Vertex shaders also carry MTLR (reflection for
+// geometry and tessellation emulation) and MTLS (their stage-in metallib).
 EQ_TEST(dxil, metal_container) {
     for (const char *name : {"fill", "root4", "root64", "root_arrays", "link_vs", "link_skip_ps"}) {
         const Bytes dxil = loadShader(name);
@@ -464,19 +466,29 @@ EQ_TEST(dxil, metal_container) {
         EQ_CHECK(metal.info.inputs.size() == plain.info.inputs.size());
         EQ_CHECK(metal.info.outputs.size() == plain.info.outputs.size());
 
+        const bool vertex = std::string_view(name).ends_with("_vs");
+        const size_t added = vertex ? 3 : 1;
         std::vector<Part> parts = splitParts(packed);
         const std::vector<Part> original = splitParts(dxil);
-        EQ_CHECK(parts.size() == original.size() + 1);
-        if (parts.size() != original.size() + 1) {
+        EQ_CHECK(parts.size() == original.size() + added);
+        if (parts.size() != original.size() + added) {
             continue;
         }
         for (size_t i = 0; i < original.size(); ++i) {
             EQ_CHECK(parts[i].code == original[i].code && parts[i].data == original[i].data);
         }
-        const Part *metallib = findPart(parts, fourCC("MTLB"));
-        EQ_CHECK(metallib != nullptr && &parts.back() == metallib);
         // A metallib starts with its own "MTLB" magic.
+        const Part *metallib = findPart(parts, fourCC("MTLB"));
+        EQ_CHECK(metallib != nullptr && &parts[original.size()] == metallib);
         EQ_CHECK(metallib != nullptr && metallib->data.size() > 4 && loadU32(metallib->data, 0) == fourCC("MTLB"));
+        if (vertex) {
+            // Version 1, then the vertex output size (link_vs writes four outputs).
+            const Part *reflection = findPart(parts, fourCC("MTLR"));
+            EQ_CHECK(reflection != nullptr && reflection->data.size() == 10 * 4);
+            EQ_CHECK(reflection != nullptr && loadU32(reflection->data, 0) == 1 && loadU32(reflection->data, 4) > 0);
+            const Part *stageIn = findPart(parts, fourCC("MTLS"));
+            EQ_CHECK(stageIn != nullptr && stageIn->data.size() > 4 && loadU32(stageIn->data, 0) == fourCC("MTLB"));
+        }
         EQ_CHECK(loadU32(packed, 24) == packed.size());
     }
 }

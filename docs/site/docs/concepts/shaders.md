@@ -53,9 +53,12 @@ pointing there. The function is available when tests, samples or the documentati
 are built.
 
 On macOS with Metal Shader Converter (`EQUINE_MSC_DIR`, a local copy of the pinned 4.0 beta 3),
-each shader also gets `<name>.mtl.dxil` for the Metal backend (in progress): the DXIL container
-plus an `MTLB` part holding the metallib. Add `NO_METAL` to the call for shaders the converter
-cannot handle.
+each shader also gets `<name>.mtl.dxil` for the Metal backend: the DXIL container plus an
+`MTLB` part holding the metallib. Vertex, geometry, hull and domain shaders are converted for
+the converter's geometry and tessellation emulation and also carry an `MTLR` part (the
+reflection numbers the emulation needs); vertex shaders also carry an `MTLS` part (their
+stage-in function), about 16 KB more per vertex shader. Add `NO_METAL` to the call for shaders
+the converter cannot handle.
 
 ## HLSL that works on both backends
 

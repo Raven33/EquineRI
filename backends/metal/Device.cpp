@@ -193,6 +193,9 @@ Device createDevice(const DeviceDesc &desc) {
     }
     state->uniforms->setLabel(nsString("EquineRI index types"));
     makeResident(*state, state->uniforms);
+    state->emulation = newEmulationBuffer(*state);
+    state->emulation->setLabel(nsString("EquineRI geometry and tessellation tables"));
+    makeResident(*state, state->emulation);
 
     state->resolveFence = state->device->newFence();
     if (state->resolveFence == nullptr) {
@@ -218,8 +221,8 @@ Device createDevice(const DeviceDesc &desc) {
         .gpuUploadMemory = true, // unified memory: every heap is GPU memory
         .timestampFrequency = state->device->queryTimestampFrequency(),
         .meshShaders = true, // object and mesh functions, from MSC (P116)
-        .geometryShaders = false, // P116 (1): MSC's emulation later
-        .tessellation = false,
+        .geometryShaders = true, // P116 (1) amended: MSC's emulation (Emulation.cpp)
+        .tessellation = true,
         .indirectRootData = true, // records bound in place (P48, proposal §7)
         .rayTracing = state->rayTracing,
         .rayTracingHardware = state->rayTracing && state->device->supportsFamily(MTL::GPUFamilyApple9),
@@ -265,6 +268,10 @@ void destroyDevice(Device &device) {
         state->residency->removeAllocation(state->uniforms);
     }
     release(state->uniforms);
+    if (state->emulation != nullptr) {
+        state->residency->removeAllocation(state->emulation);
+    }
+    release(state->emulation);
     release(state->timeline);
     if (state->queue != nullptr && state->residency != nullptr) {
         state->queue->removeResidencySet(state->residency);
