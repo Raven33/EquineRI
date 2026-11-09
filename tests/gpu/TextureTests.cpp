@@ -2015,7 +2015,8 @@ EQ_TEST(texture, indirect_dispatch_count) {
         RI::DispatchIndirectArgs args;
     };
     static_assert(sizeof(WriteRecord) == RI::indirectStride(RI::IndirectKind::eDispatch, 12));
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    // Two placements: D3D12 aligns each buffer to 64 KiB.
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 17)};
     RI::Buffer records = placeBuffer(f.device, upload, {.size = sizeof(WriteRecord) * kRecords,
                                                          .usage = RI::BufferUsage::eIndirect});
     for (uint32 i = 0; i < kRecords; ++i) {
@@ -2071,7 +2072,8 @@ EQ_TEST(texture, indirect_draw_records) {
         RI::DrawIndirectArgs args;
     };
     static_assert(sizeof(DrawRecord) == 36 && sizeof(DrawRecord) == RI::indirectStride(RI::IndirectKind::eDraw, sizeof(DrawRoot)));
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    // Two placements: D3D12 aligns each buffer to 64 KiB.
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 17)};
     RI::Buffer records = placeBuffer(f.device, upload, {.size = 3 * sizeof(DrawRecord), .usage = RI::BufferUsage::eIndirect});
     const RI::DrawIndirectArgs triangle{.vertexCount = 3, .instanceCount = 1};
     const DrawRecord list[3] = {{{.color = {1, 0, 0, 1}, .depth = 0.5f}, triangle},
@@ -2150,7 +2152,8 @@ EQ_TEST(texture, indirect_mesh) {
         RI::DispatchIndirectArgs args;
     };
     static_assert(sizeof(MeshRecord) == RI::indirectStride(RI::IndirectKind::eDrawMesh, sizeof(DrawRoot)));
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    // Two placements: D3D12 aligns each buffer to 64 KiB.
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 17)};
     RI::Buffer records = placeBuffer(f.device, upload, {.size = 2 * sizeof(MeshRecord), .usage = RI::BufferUsage::eIndirect});
     const MeshRecord list[2] = {{{.color = {1, 1, 0, 1}, .depth = 0.5f}, {1, 1, 1}},
                                 {{.color = {0, 1, 1, 1}, .depth = 0.5f}, {1, 1, 1}}};

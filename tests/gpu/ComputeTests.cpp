@@ -469,9 +469,10 @@ EQ_TEST(compute, too_many_groups_reports) {
 }
 #endif
 
-#if EQUINE_VALIDATION
+#if EQUINE_VALIDATION && EQUINE_BACKEND_METAL
 // A shader with 64-bit groupshared atomics on a device whose
-// int64SharedAtomics is false (P105): registered on Metal (P116 (2)).
+// int64SharedAtomics is false (P105): Metal only, the one backend where it is
+// false (P116 (2)); compiled out elsewhere, so registry_matches agrees.
 EQ_TEST(compute, int64_shared_atomics_reports) {
     std::signal(SIGABRT, [](int) { std::_Exit(0); });
     RI::Device device = createTestDevice();
