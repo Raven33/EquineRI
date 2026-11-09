@@ -1,5 +1,8 @@
 # Metal backend: handoff (2026-11-07)
 
+> Superseded as the starting point by `MetalBackend-Handoff-2026-11-09.md`; this file stays as
+> the stage-by-stage log (§5 to §10).
+
 State of branch `metal-backend` and what the next session does first. Read `ARCHITECTURE.md`,
 then `CONTEXT.md`, then this. Nothing about Metal is decided yet: `CONTEXT.md` has no Metal
 decision, and the invariants in `ARCHITECTURE.md` §3 were written for two backends.
