@@ -1,8 +1,9 @@
 // Indirect execution on Metal (P48, proposal §7).
 //
 // Owns: cmdExecuteIndirect, cmdExecuteIndirectWithRootData,
-// indirectScratchRequirements (always size 0), and RI's built-in count copy
-// (countPipelines, released by releaseBuiltins).
+// indirectScratchRequirements (always size 0), and RI's built-in MSL
+// (builtinPipelines, released by releaseBuiltins): the count copy, and the
+// instance repack of cmdBuildTlas (RayTracing.cpp).
 //
 // How: Metal's indirect layouts equal RI's (MTLDrawPrimitivesIndirectArguments,
 // MTLDrawIndexedPrimitivesIndirectArguments, MTLDispatchThreadgroupsIndirectArguments),
@@ -68,6 +69,34 @@ vertex void equine_count_vertex(constant CountParams &p [[buffer(0)]], uint v [[
 kernel void equine_count_kernel(constant CountParams &p [[buffer(0)]], uint v [[thread_position_in_grid]]) {
     copyWord(p, v);
 }
+
+// RayTracing.cpp: RI's 64-byte instances (D3D12's) as Metal's 72-byte
+// MTLIndirectAccelerationStructureInstanceDescriptor: the row-major 3x4
+// transform as is (the build sets MatrixLayoutRowMajor), the flags as the
+// options (same bits), the mask, the instance ID as the user ID, and the
+// bottom level's resource ID; the hit-group contribution is dropped.
+struct RepackParams {
+    device const uint *src;
+    device uint *dst;
+    uint count;
+};
+
+kernel void equine_repack_instances(constant RepackParams &p [[buffer(0)]], uint i [[thread_position_in_grid]]) {
+    if (i >= p.count) {
+        return;
+    }
+    device const uint *in = p.src + i * 16;
+    device uint *out = p.dst + i * 18;
+    for (uint w = 0; w < 12; ++w) {
+        out[w] = in[w];
+    }
+    out[12] = in[13] >> 24;        // options: the instance flags
+    out[13] = in[12] >> 24;        // mask
+    out[14] = 0;                   // intersection function table offset
+    out[15] = in[12] & 0xFFFFFFu;  // user ID: InstanceID()
+    out[16] = in[14];              // accelerationStructureID
+    out[17] = in[15];
+}
 )";
 
 constexpr uint32 kCountGroupSize = 64;
@@ -85,8 +114,10 @@ MTL::Function *function(MTL::Library *library, const char *name) {
     return f;
 }
 
-// RI's count copy, compiled at first use (DeviceState::builtins).
-const DeviceState::Builtins &countPipelines(DeviceState &state) {
+} // namespace
+
+// RI's built-in MSL, compiled at first use (DeviceState::builtins).
+const DeviceState::Builtins &builtinPipelines(DeviceState &state) {
     std::lock_guard lock(state.builtinsMutex);
     DeviceState::Builtins &b = state.builtins;
     if (b.countKernel != nullptr) {
@@ -100,6 +131,12 @@ const DeviceState::Builtins &countPipelines(DeviceState &state) {
     }
     MTL::Function *kernel = function(library, "equine_count_kernel");
     MTL::Function *vertex = function(library, "equine_count_vertex");
+    MTL::Function *repack = function(library, "equine_repack_instances");
+    b.repackKernel = state.device->newComputePipelineState(repack, &error);
+    if (b.repackKernel == nullptr) {
+        reportNsError(ErrorCategory::eUnsupported, "RI's instance repack: newComputePipelineState", error);
+    }
+    repack->release();
     b.countKernel = state.device->newComputePipelineState(kernel, &error);
     if (b.countKernel == nullptr) {
         reportNsError(ErrorCategory::eUnsupported, "RI's count copy: newComputePipelineState", error);
@@ -119,6 +156,8 @@ const DeviceState::Builtins &countPipelines(DeviceState &state) {
     pool->release();
     return b;
 }
+
+namespace {
 
 // The records RI's indirect commands read: `args` itself, or a copy in
 // command memory with the records at or beyond the count emptied.
@@ -142,7 +181,7 @@ uint64 recordsAddress(DeviceState &state, CommandListState &list, IndirectKind k
                         .zeroWord = zeroWord,
                         .maxCount = maxCount};
     std::memcpy(params.cpu, &p, sizeof(p));
-    const DeviceState::Builtins &b = countPipelines(state);
+    const DeviceState::Builtins &b = builtinPipelines(state);
     list.argumentTable->setAddress(params.gpuAddress, kResourceHeapIndex);
     if (list.render != nullptr) {
         list.render->setRenderPipelineState(b.countVertex);
@@ -156,7 +195,9 @@ uint64 recordsAddress(DeviceState &state, CommandListState &list, IndirectKind k
         encoder->dispatchThreadgroups(MTL::Size((p.total + kCountGroupSize - 1) / kCountGroupSize, 1, 1),
                                       MTL::Size(kCountGroupSize, 1, 1));
         encoder->barrierAfterEncoderStages(MTL::StageDispatch, MTL::StageDispatch, MTL4::VisibilityOptionDevice);
-        encoder->setComputePipelineState(list.pipeline);
+        if (list.pipeline != nullptr) {
+            encoder->setComputePipelineState(list.pipeline);
+        }
     }
     if (list.resourceHeapAddress != 0) {
         list.argumentTable->setAddress(list.resourceHeapAddress, kResourceHeapIndex);
@@ -249,6 +290,7 @@ void execute(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 off
 void releaseBuiltins(DeviceState &state) {
     release(state.builtins.countKernel);
     release(state.builtins.countVertex);
+    release(state.builtins.repackKernel);
 }
 
 void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,

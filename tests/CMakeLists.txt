@@ -347,13 +347,15 @@ if (TARGET EquineMetalBackend)
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/TextureTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/HelperTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gpu/RayTracingTests.cpp"
     )
     # The shaders of the registered cases (geometry and tessellation ones are
     # left out: those cases skip before loading them, P116 (1)).
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl"
                        "${dir}/write_storage.hlsl" "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl"
-                       "${dir}/write_faces.hlsl" "${dir}/read_volume.hlsl" "${dir}/grid_count.hlsl")
+                       "${dir}/write_faces.hlsl" "${dir}/read_volume.hlsl" "${dir}/grid_count.hlsl"
+                       "${dir}/ray_query.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
                        "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/storage_raster_vs.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl"
@@ -416,6 +418,7 @@ if (TARGET EquineMetalBackend)
         texture.resolve_depth
         texture.indirect_level1
         texture.indirect_level2
+        raytracing.build_trace_update
         helpers.frame_ring_and_profiler
         helpers.allocators
         helpers.transfers

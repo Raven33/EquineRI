@@ -30,6 +30,9 @@ inline MTL::Buffer *native(const Buffer &buffer) { return static_cast<MTL::Buffe
 inline MTL::Texture *native(const Texture &texture) { return static_cast<MTL::Texture *>(texture.internal.texture); }
 // The view's own texture (a Metal texture view), of the type shaders read it as.
 inline MTL::Texture *native(const TextureView &view) { return static_cast<MTL::Texture *>(view.internal.texture); }
+inline MTL::AccelerationStructure *native(const AccelerationStructure &structure) {
+    return static_cast<MTL::AccelerationStructure *>(structure.internal.structure);
+}
 inline MTL4::CounterHeap *native(const QueryPool &pool) { return static_cast<MTL4::CounterHeap *>(pool.internal.heap); }
 
 // The heap buffers, bound at argument-table buffer indices 0 and 1

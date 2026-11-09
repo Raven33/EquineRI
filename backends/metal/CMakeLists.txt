@@ -26,6 +26,7 @@ add_library(EquineMetalBackend STATIC
     Pipeline.cpp
     Commands.cpp
     Indirect.cpp
+    RayTracing.cpp
     Rendering.cpp
     Debug.cpp
     Queries.cpp

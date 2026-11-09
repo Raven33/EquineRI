@@ -252,6 +252,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .tessellation = true,
         .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
         .rayTracing = state->rayTracing,
+        .rayTracingHardware = state->rayTracing,
         .workGraphs = workGraphs,
         .samplerMinMax = state->samplerMinMax,
         .int64BufferAtomics = int64Buffer,

@@ -81,6 +81,12 @@ inline constexpr uint32 kStencilResolveModes = resolveModeBit(ResolveMode::eSamp
 // Textures: textureViewID = gpuResourceID, metadata = min LOD clamp (float
 // bits). Samplers: gpuVA = the sampler's gpuResourceID (not textureViewID),
 // metadata = LOD bias (float bits).
+// Heap sizes are rounded to 64 KiB, as D3D12's buffer placement alignment, so
+// a heap's capacity does not depend on the requested size's low bits.
+inline constexpr uint64 kHeapGranularity = 64 * 1024;
+
+inline uint64 alignUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
+
 struct DescriptorEntry {
     uint64 gpuVA = 0;
     uint64 textureViewID = 0;
@@ -104,6 +110,7 @@ struct GpuFeedback {
 
 struct DeviceState {
     MTL::Device *device = nullptr;
+    bool rayTracing = false; // DeviceLimits::rayTracing (RayTracing.cpp)
     MTL4::CommandQueue *queue = nullptr;
     MTL::ResidencySet *residency = nullptr;
     bool residencyDirty = false; // committed by submit before the next commit to the queue
@@ -133,11 +140,13 @@ struct DeviceState {
     // buffer when the section begins, before RI knows whether it holds queries.
     std::atomic<uint32> occlusionPools{0};
 
-    // RI's built-in MSL (Indirect.cpp): the count copy of indirect execution,
-    // compiled at first use, released by releaseBuiltins.
+    // RI's built-in MSL (Indirect.cpp): the count copy of indirect execution
+    // and the instance repack of cmdBuildTlas, compiled at first use,
+    // released by releaseBuiltins.
     struct Builtins {
         MTL::ComputePipelineState *countKernel = nullptr;
         MTL::RenderPipelineState *countVertex = nullptr; // rasterization off, inside sections
+        MTL::ComputePipelineState *repackKernel = nullptr;
     };
     std::mutex builtinsMutex;
     Builtins builtins;
@@ -297,7 +306,11 @@ void bindIndexType(DeviceState &state, CommandListState &cmd, uint64 indexType);
 // encoder ended: copies the section's results into their pools (P115).
 void copyOcclusionResults(CommandListState &cmd);
 
-// Indirect.cpp: releases DeviceState::builtins (destroyDevice).
+// Indirect.cpp: RI's built-in pipelines, compiled at first use; and their
+// release (destroyDevice).
+const DeviceState::Builtins &builtinPipelines(DeviceState &state);
+// RayTracing.cpp: a top level's heap entry (writeDescriptors).
+DescriptorEntry accelerationStructureEntry(DeviceState &state, const AccelerationStructure &tlas);
 void releaseBuiltins(DeviceState &state);
 
 // Textures.cpp: RI's formats as Metal's (Invalid for formats Metal lacks).

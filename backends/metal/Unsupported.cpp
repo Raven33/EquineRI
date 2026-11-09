@@ -3,8 +3,8 @@
 // Owns: notYet, and a definition of every function of RI/Metal/Backend.hpp
 // that stages 2 (buffers, compute, readback), 3a (textures, views, samplers,
 // copies, clears, timestamps), 3b-1 (graphics pipelines, rendering sections,
-// draws) and 3b-2 (resolves, occlusion queries, indirect execution) do not cover:
-// acceleration structures, swapchains and work graphs. Each reports
+// draws), 3b-2 (resolves, occlusion queries, indirect execution) and ray
+// tracing do not cover: swapchains and work graphs. Each reports
 // eUnsupported, so programs link and fail with a readable message. Capability
 // probes (presentModeSupported, screenStorageSupported) answer false instead,
 // so portable code takes its fallback as on the other backends.
@@ -38,24 +38,6 @@ namespace {
 }
 
 } // namespace
-
-// ── Acceleration structures ──────────────────────────────────────────────────
-
-AccelerationStructureSizes blasSizes(Device &, const BlasDesc &) { notYet("blasSizes"); }
-AccelerationStructureSizes tlasSizes(Device &, const TlasDesc &) { notYet("tlasSizes"); }
-MemoryRequirements accelerationStructureRequirements(Device &, uint64) {
-    notYet("accelerationStructureRequirements");
-}
-AccelerationStructure createAccelerationStructure(Device &, const Memory &, uint64, uint64, bool, std::string_view) {
-    notYet("createAccelerationStructure");
-}
-void destroyAccelerationStructure(Device &, AccelerationStructure &) { notYet("destroyAccelerationStructure"); }
-void cmdBuildBlas(CommandList &, const AccelerationStructure &, const BlasDesc &, const Buffer &, uint64, bool) {
-    notYet("cmdBuildBlas");
-}
-void cmdBuildTlas(CommandList &, const AccelerationStructure &, const TlasDesc &, const Buffer &, uint64, bool) {
-    notYet("cmdBuildTlas");
-}
 
 // ── Swapchains ───────────────────────────────────────────────────────────────
 

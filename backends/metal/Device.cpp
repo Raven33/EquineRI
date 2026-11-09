@@ -200,9 +200,9 @@ Device createDevice(const DeviceDesc &desc) {
     }
     state->resolveFence->setLabel(nsString("EquineRI counter resolves"));
 
-    // Stages 2 to 3b-1 of the backend (P116): compute, textures, rendering and
-    // mesh draws. Features not built yet are reported false, even where the
-    // GPU has them (ray queries, indirect).
+    // Ray queries on every GPU with supportsRaytracing; in hardware from
+    // Apple9 (M3) on (P116 (4)).
+    state->rayTracing = state->device->supportsRaytracing();
     device.limits = {
         // Heaps are plain buffers of 24-byte entries: no Metal limit binds
         // before memory does; RI keeps D3D12's tier-2 count as the portable size.
@@ -221,16 +221,17 @@ Device createDevice(const DeviceDesc &desc) {
         .geometryShaders = false, // P116 (1): MSC's emulation later
         .tessellation = false,
         .indirectRootData = true, // records bound in place (P48, proposal §7)
-        .rayTracing = false,
+        .rayTracing = state->rayTracing,
+        .rayTracingHardware = state->rayTracing && state->device->supportsFamily(MTL::GPUFamilyApple9),
         .workGraphs = false,
         // Min and max reductions need device support Metal reports nowhere (the
         // debug layer refuses them on the M4).
         .samplerMinMax = false,
         .int64BufferAtomics = false, // P116 (2)
         .int64SharedAtomics = true,
-        .accelerationStructureScratchAlignment = 0,
-        .depthResolveModes = 0,
-        .stencilResolveModes = 0,
+        .accelerationStructureScratchAlignment = state->rayTracing ? 256u : 0u, // RayTracing.cpp
+        .depthResolveModes = kDepthResolveModes, // sample 0, min, max (Rendering.cpp)
+        .stencilResolveModes = kStencilResolveModes,
     };
 
     device.graphicsQueue.internal.device = state;

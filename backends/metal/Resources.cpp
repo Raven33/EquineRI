@@ -37,12 +37,6 @@ namespace RI::Metal {
 
 namespace {
 
-// Heap sizes are rounded to 64 KiB, as D3D12's buffer placement alignment, so
-// a heap's capacity does not depend on the requested size's low bits.
-constexpr uint64 kHeapGranularity = 64 * 1024;
-
-uint64 alignUp(uint64 value, uint64 alignment) { return (value + alignment - 1) / alignment * alignment; }
-
 const char *nameOf(MemoryKind kind) {
     switch (kind) {
     case MemoryKind::eGPU: return "eGPU";
@@ -427,8 +421,9 @@ void writeDescriptors(Device &device, DescriptorHeap &heap, std::span<const Desc
 
     for (const DescriptorWrite &write : writes) {
         EQ_VALIDATE(Validation::checkSlot(write.slot, heap.resourceCount, "resource"));
-        if (std::holds_alternative<AccelerationStructureView>(write.descriptor)) {
-            notYet("writeDescriptors (acceleration structure views)");
+        if (const auto *tlas = std::get_if<AccelerationStructureView>(&write.descriptor)) {
+            entries[write.slot] = accelerationStructureEntry(state, tlas->tlas);
+            continue;
         }
         // A read or read-write view names a texture when its texture view is set.
         const auto *read = std::get_if<ReadView>(&write.descriptor);

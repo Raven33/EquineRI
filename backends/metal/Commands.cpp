@@ -164,8 +164,9 @@ uint64 stagesOf(Stage stage) {
     if ((stage & (Stage::ePixel | Stage::eRenderTarget | Stage::eDepthStencil)) != Stage::eNone) {
         stages |= MTL::StageFragment;
     }
+    // cmdBuildTlas repacks instances (a dispatch) and writes the header (a copy).
     if ((stage & Stage::eAccelerationStructure) != Stage::eNone) {
-        stages |= MTL::StageAccelerationStructure;
+        stages |= MTL::StageAccelerationStructure | MTL::StageDispatch | MTL::StageBlit;
     }
     return stages;
 }
@@ -519,8 +520,7 @@ void cmdDispatch(CommandList &cmd, uint32 x, uint32 y, uint32 z) {
 // Coarse stage -> stage barrier (P36), recorded where it stands (proposal §6.2).
 void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
     EQ_MTL_CHECK_THREAD(cmd.internal.device);
-    // Ray tracing is not built yet on Metal (DeviceLimits::rayTracing is false).
-    if (((before | after) & Stage::eAccelerationStructure) != Stage::eNone) {
+    if (((before | after) & Stage::eAccelerationStructure) != Stage::eNone && !cmd.internal.device->rayTracing) {
         reportError(ErrorCategory::eUnsupported,
                     "cmdBarrier: Stage::eAccelerationStructure needs ray tracing (DeviceLimits::rayTracing)");
     }

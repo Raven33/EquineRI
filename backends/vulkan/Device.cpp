@@ -450,6 +450,7 @@ void createHeapLayouts(DeviceState &state, DeviceLimits &limits) {
         typeList.descriptorTypeCount = static_cast<uint32>(state.mutableTypes.size());
         state.rayTracing = false;
         limits.rayTracing = false;
+        limits.rayTracingHardware = false;
         limits.accelerationStructureScratchAlignment = 0;
     }
     if (!supported(1)) {
@@ -624,6 +625,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     state->rayTracing = setup.rayQuery && chain.f.accelerationStructure.accelerationStructure == VK_TRUE &&
                         chain.f.rayQuery.rayQuery == VK_TRUE;
     device.limits.rayTracing = state->rayTracing;
+    device.limits.rayTracingHardware = state->rayTracing;
     {
         // Samplers (P87): min/max reduction, and the driver's sampler limits.
         state->samplerMinMax = chain.f.v12.samplerFilterMinmax == VK_TRUE;

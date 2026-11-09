@@ -163,6 +163,7 @@ struct AccelerationStructure {
     bool topLevel = false;
     struct {
         void *structure = nullptr; // MTL::AccelerationStructure, placed in the memory's heap
+        void *header = nullptr;    // top levels: MTL::Buffer after it, MSC's header (P116 (4))
         uint64 id = 0;
     } internal;
 };

@@ -289,5 +289,38 @@ Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` f
   dispatches with a count, records of more than a few. `maxCount` encodes `maxCount` commands
   on the CPU; an ICB variant (proposal §7 (a)) is not measured. An indirect draw counts as a
   draw for timestamps even if all its records are empty.
-- **Next:** ray tracing (RI's MSL for the 64-byte instance repack, acceleration structures, ray
-  queries, `DeviceLimits::rayTracingHardware`), then swapchains.
+- Found afterwards: `depthResolveModes` and `stencilResolveModes` were left 0, so
+  `texture.resolve_depth` passed by skipping; fixed with ray tracing (§10), and it now runs.
+- Ray tracing followed (§10).
+
+## 10. Ray tracing done (2026-11-09): acceleration structures and ray queries
+
+- `backends/metal/RayTracing.cpp`: bottom levels (triangle geometries) and top levels (Metal's
+  72-byte indirect instances, row-major transforms) placed in Memory heaps; builds and refits on
+  the compute encoder. `AccelerationStructure::gpuAddress` is the structure's resource ID.
+- `cmdBuildTlas` repacks RI's 64-byte instances with a second built-in kernel
+  (`equine_repack_instances`, in `Indirect.cpp`'s library) into the first
+  `alignUp(72 x count, 256)` bytes of the scratch, which `tlasSizes` adds (Q5). The flags copy
+  as Metal's options (same bits), the instance ID becomes the user ID, the hit-group
+  contribution is dropped.
+- MSC's 64-byte header stays in the structure's range (P116 (4)):
+  `accelerationStructureRequirements` adds a 128-byte buffer after the structure, and since
+  `eGPU` memory is GPU-only, `cmdBuildTlas` writes the header (resource ID and zeroed
+  contributions) with a copy. A top level is readable by shaders once built.
+  `writeDescriptors` points the entry's `gpuVA` at the header.
+- On Metal, `Stage::eAccelerationStructure` also covers Dispatch and Blit (the repack and the
+  header copy). Structures join the residency set, as texture views do.
+- New `DeviceLimits::rayTracingHardware` (P116 (4), Q8): Metal reports
+  `supportsRaytracing && supportsFamily(Apple9)` (true on the M4); D3D12 and Vulkan copy
+  `rayTracing`. Documented in `reference/DeviceLimits.md`. The D3D12 and Vulkan edits are
+  compiled on Windows and Linux only: check them there.
+- `raytracing.build_trace_update` registered on Metal and checked to really trace (t = 1, then
+  1.5 after the refit). A temporary probe with a translated instance gave t = 1.25 and the
+  expected x shift, so the row-major transform holds. macOS: 113/113 (preset), 99/99
+  validation off.
+- Known gaps: untested on Metal: indexed geometry, several geometries or instances, instance
+  masks, IDs and flags (the test shader reads only t), `ePreferFastBuild`, top-level refits.
+  Whether Apple7 and Apple8 (M1, M2) report `supportsRaytracing` and pass is unchecked (no
+  such Mac here). Not reviewed by a second pair of eyes.
+- **Next:** swapchains (`CAMetalLayer`; their tests skip without a window server), then a
+  review pass over stages 3b-2 and ray tracing.

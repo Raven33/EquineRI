@@ -64,6 +64,9 @@ struct DeviceLimits {
     bool tessellation = false;         // GraphicsPipelineDesc::hull and domain (P102)
     bool indirectRootData = false;     // indirect Level 2: cmdExecuteIndirectWithRootData (P48)
     bool rayTracing = false;           // acceleration structures and RayQuery (P49)
+    // Ray queries run on dedicated hardware: always with rayTracing on D3D12
+    // and Vulkan (P3's floor); Apple9 (M3) and later on Metal (P116 (4)).
+    bool rayTracingHardware = false;
     bool workGraphs = false;           // work graphs, D3D12 only (P50)
     bool samplerMinMax = false;        // Reduction::eMin and eMax samplers
     bool int64BufferAtomics = false;   // 64-bit integer atomics on buffers reached through the heap (P105)
