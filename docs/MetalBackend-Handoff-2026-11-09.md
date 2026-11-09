@@ -10,7 +10,8 @@ then this.
 
 ## 1. Where things stand
 
-Branch `metal-backend`, 8 commits over `master`, **not pushed**:
+Branch `metal-backend`, 10 commits over `master`; `origin/metal-backend` stops at `808498d`, so
+the 8 commits from `eb983e8` on are **not pushed**:
 
 | Commit | Content |
 |---|---|
@@ -113,16 +114,17 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 
 ## 5. Known gaps (what is unchecked)
 
-- **No second review** of stage 3b-2 or ray tracing. Stages 3a and 3b-1 were reviewed by two
-  agents each and their findings fixed.
+- **Reviewed 2026-11-09** (the whole backend, with probes): see §7 for the bugs found, none
+  fixed yet. Stages 3a and 3b-1 had been reviewed by two agents each and their findings fixed.
 - **Not compiled:** the D3D12 and Vulkan edits for `rayTracingHardware`
   (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), and the new portable test
   `texture.occlusion` on those backends. Check on Windows and Linux.
-- **Untested on Metal:** indirect mesh draws, Level 2 dispatches with a count, many records;
-  indexed or multiple BLAS geometries, several instances, instance masks, IDs and flags,
-  `ePreferFastBuild`, TLAS refits; texture copies between different formats of one texel size;
-  sampling a read-only depth attachment inside its section; `formatSupported` format by format
-  (the table follows Apple's documents).
+- **Probed but not registered** (§7.3; the probes should become tests): indirect mesh draws,
+  Level 2 dispatches with a count, many records; indexed or multiple BLAS geometries, several
+  instances, instance masks, IDs and flags, `ePreferFastBuild`, TLAS refits; point lists;
+  layered rendering with resolves; `formatSupported` format by format (M4 only); `native()`.
+- **Untested on Metal:** texture copies between different formats of one texel size; sampling
+  a read-only depth attachment inside its section.
 - **Open behaviour:** a pipeline whose stencil writes, in a read-only stencil section, is not
   reported (RI has no portable check). An indirect draw counts as a draw for timestamps even if
   every record is empty. The ICB variant of indirect counts (proposal §7 (a)) is not measured.
@@ -135,10 +137,10 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 
 ## 6. Next steps, in order
 
-1. **Review** stage 3b-2 and ray tracing (`Indirect.cpp`, `RayTracing.cpp`, the occlusion and
-   resolve parts of `Queries.cpp` and `Rendering.cpp`), and add tests for the untested cases in
-   §5 that need no new feature (indirect mesh draws, Level 2 dispatch counts, instance masks
-   and IDs: extend `ray_query.hlsl` or add a shader).
+1. **Fix the review's bugs** (§7.1), each with a registered test, and turn the probes of §7.3
+   into registered tests (indirect counts and Level 2 records, the ray-tracing scene, points,
+   layered resolves, `native()`). Ask the user first about `int64SharedAtomics` (§7.1 (2)):
+   making it false amends P116 (2).
 2. **Swapchains** on `CAMetalLayer`: `surfaceFormats`, present modes, `createSwapchain`,
    acquire and present on the MTL4 queue. `window.swapchain` uses GLFW and skips without a
    window server, so a real run needs the `arthur` GUI session in front (ask the user).
@@ -146,3 +148,77 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
    `rayTracingHardware` and `texture.occlusion` changes), when the user asks.
 4. Later, per P113 and P116: geometry and tessellation through MSC's emulation, the Metal 3
    path, measuring indirect counts against an ICB, native import.
+
+## 7. Review (2026-11-09)
+
+The whole backend was read (all of `backends/metal/`, 5,800 lines), every public function was
+mapped to the registered Metal tests that reach it, and what no test reaches was probed on the M4
+with `MTL_DEBUG_LAYER=1 MTL_SHADER_VALIDATION=1`. At `708ebd7`: 113/113 with the preset, no
+warnings. Nothing was changed in the repository. The probes (not part of the repository) are in
+`/private/tmp/claude-502/-Users-arthur-dev-EquineRI/5e5705f3-dabf-4450-a2d3-a97354f73767/scratchpad/probe/`
+(`Probe.cpp`, `Probe2.cpp`, shaders in `src/`, built by `mkshaders.sh`, `build.sh` and
+`build2.sh`; `sweep.log` holds the format sweep).
+
+### 7.1 Bugs found (not fixed)
+
+1. **Visibility pages make command memory grow exponentially.** While any occlusion pool exists,
+   each section takes a 32 KiB page that must end within the first 256 KiB of a chunk
+   (`attachVisibilityPage`, `Rendering.cpp`); when the chunk is full, `allocateCommandMemory`
+   (`Commands.cpp`) adds a chunk twice the last one's size, of which pages can again use only
+   256 KiB. The chunk size doubles about every 8 sections. Probed with one pool and empty
+   sections in one list: 8 sections 3 chunks (largest 256 KiB); 32 sections 6 chunks (2 MiB,
+   3 MiB in all); 64 sections 10 chunks (32 MiB, 63 MiB in all). Resets keep the chunks. Fix:
+   pages from their own fixed 256 KiB chunks (8 pages each), or no doubling when the miss came
+   from `limit`. Test: many sections in one list with a live pool, command memory bounded.
+2. **64-bit groupshared atomics do not compile on Metal**, yet `DeviceLimits::int64SharedAtomics`
+   is true (`Device.cpp`, P116 (2)). MSC 4.0b3 converts the shaders, then
+   `newComputePipelineState` fails: "Compilation failed due to an interrupted connection:
+   XPC_ERROR_CONNECTION_INTERRUPTED". Every operation fails (add, max, min, or, exchange,
+   compare-exchange, one shader each), with validation off too, and with MSC's
+   `--minimum-gpu-family=Apple9`. A plain 64-bit groupshared variable and a 32-bit groupshared
+   atomic work. No registered test covers it (`atomic64.hlsl` is `NO_METAL` and also uses
+   buffer atomics). Making the flag false amends P116 (2): the user decides.
+3. **A top level of 0 instances aborts under the debug layer**: "instance descriptor buffer
+   length (0) must not be 0" (`tlasDescriptor`, `RayTracing.cpp`, gives a range of
+   `72 x instanceCount` bytes). Without the debug layer it builds and every ray misses, as on
+   D3D12. Fix: a range of one 72-byte record (in the scratch's instance area, which then needs
+   `instanceArea(max(count, 1))`) while the count stays 0.
+4. **`native(const QueryPool &)` returns an occlusion pool's buffer as an `MTL4::CounterHeap *`**
+   (`Native.hpp`; `internal.heap` holds an `MTL::Buffer` for occlusion pools). Needs a separate
+   accessor or a variant; `Backend.hpp`'s comment on `internal.heap` says timestamps only.
+5. **Stale text:** `Resources.cpp`'s header says acceleration-structure views come later;
+   `notYet`'s message (`Unsupported.cpp`) names stages 2 to 3b-2 and not ray tracing.
+
+### 7.2 Smaller observations
+
+- `cmdBeginMarker` / `cmdEndMarker` outside sections end the open compute encoder each time
+  (`Debug.cpp`), so markers split encoders (a cost, not a bug).
+- Every section pays a 32 KiB visibility page while any occlusion pool exists, even without
+  queries (inherent to Metal taking the buffer at pass creation; bounded once 7.1 (1) is fixed).
+
+### 7.3 Probed and correct (M4)
+
+- **Native access:** every accessor returns RI's object (`native(buffer)->gpuAddress()` matches).
+- **Point lists** without a geometry shader: 256 points light 256 pixels, as on D3D12.
+- **Layered rendering** (`SV_RenderTargetArrayIndex` from the vertex shader, 2 layers): right in
+  both layers, single-sample and 4x with the resolve at `cmdEndRendering` (resolve slice 0 with
+  `renderTargetArrayLength` resolves every layer).
+- **Indirect:** Level 2 dispatches, 100 records with a GPU count of 37: all 100 slots right;
+  Level 2 draws with 36-byte records (root data at 4-byte-aligned addresses), with and without
+  a count and from offset 36; mesh draws, Level 2 with counts 1 and 0, and Level 1; the count
+  copy inside a 4x multisampled section.
+- **Ray tracing:** two geometries (one indexed with 16-bit indices and not opaque, committed
+  through `CommitNonOpaqueTriangleHit`), two instances: instance IDs and indices, geometry and
+  primitive indices, instance masks against the ray mask, the counter-clockwise instance flag
+  (front faces flip as on D3D12), `ePreferFastBuild`, a top-level refit moving an instance.
+- **`formatSupported`:** each of the 135 format, usage and sample-count combinations it accepts
+  was created and used without a debug-layer message: storage textures read back the expected
+  value after an `RWTexture2D` load + 0.5 + store (unorm8, RGB10A2, R11G11B10, half, float;
+  uint + 5), 28 multisampled color resolves including the 32-bit float formats, clears of the
+  rest. M4 only: Apple7 and Apple8 may allow fewer read-write formats.
+
+### 7.4 Test coverage
+
+Every function of `Backend.hpp` is reached by a registered Metal test except swapchains, work
+graphs (expected) and `native()`. Reached by one test only: the ray-tracing functions,
+`cmdDrawIndexed`, `cmdDrawMesh`, `cmdWriteTimestamp`, `cmdSetScissor`, each indirect entry point.
