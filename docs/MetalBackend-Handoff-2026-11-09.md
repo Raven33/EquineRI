@@ -116,14 +116,14 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 
 - **Reviewed 2026-11-09** (the whole backend, with probes): see §7 for the bugs found; all five
   are fixed, each with a registered test (§7.1). Stages 3a and 3b-1 had been reviewed by two agents each and their findings fixed.
-- **Not compiled:** the D3D12 and Vulkan edits for `rayTracingHardware`
-  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), the `WindowSystem::eCocoa` case
-  of `backends/vulkan/Swapchain.cpp`, and the new portable tests on
-  those backends: `texture.occlusion`, `texture.occlusion_many_sections`,
-  `texture.indirect_dispatch_count`, `texture.indirect_draw_records`, `texture.indirect_mesh`,
-  `texture.point_list`, `raytracing.empty_top_level`, `raytracing.scene`, and on D3D12
-  `texture.layered_vertex_output` (left out on Vulkan: RI does not turn on `shaderOutputLayer`,
-  so the test is compiled out there). Check on Windows and Linux.
+- **Checked on Windows (2026-11-09, at `15b79e1`):** 229/229 with `clangcl-debug` (D3D12 and
+  Vulkan tests, validation on), on the RTX 3080 and on the AMD iGPU, with no new warnings
+  (clang-tidy not run there). This covers the `rayTracingHardware` edits, the
+  `WindowSystem::eCocoa` case and every new portable test. `texture.indirect_mesh` skips on
+  the AMD iGPU (D3D12 MeshShaderTier 0). Two test fixes came out of it (`19df9c3`,
+  `15b79e1`): upload arenas sized for D3D12's 64 KiB buffer alignment, and
+  `compute.int64_shared_atomics_reports` compiled on Metal only. **Not checked on Linux**
+  (Vulkan on RADV, X11 and Wayland swapchains).
 - **Probed but not registered:** `formatSupported` format by format (M4 only; the sweep is one
   process per case). Every other probe of §7.3 is now a registered test (§7.4).
 - **Untested on Metal:** texture copies between different formats of one texel size; sampling
