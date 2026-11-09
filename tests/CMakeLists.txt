@@ -127,8 +127,13 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.resolve_depth
     texture.indirect_level1
     texture.indirect_level2
+    texture.indirect_dispatch_count
+    texture.indirect_draw_records
+    texture.indirect_mesh
+    texture.point_list
     raytracing.build_trace_update
     raytracing.empty_top_level
+    raytracing.scene
     texture.samplers
     texture.stage_link
     texture.line_strip
@@ -206,12 +211,13 @@ function(equine_add_gpu_test_shaders exe)
     equine_add_shaders(${exe} PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl" "${dir}/write_storage.hlsl"
                        "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl" "${dir}/write_faces.hlsl"
                        "${dir}/read_volume.hlsl"
-                       "${dir}/ray_query.hlsl" "${dir}/atomic64.hlsl" "${dir}/grid_count.hlsl")
+                       "${dir}/ray_query.hlsl" "${dir}/atomic64.hlsl" "${dir}/grid_count.hlsl"
+                       "${dir}/indirect_write.hlsl" "${dir}/ray_query_scene.hlsl")
     equine_add_shaders(${exe} PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
                        "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/point_vs.hlsl" "${dir}/patch_vs.hlsl"
-                       "${dir}/storage_raster_vs.hlsl")
+                       "${dir}/storage_raster_vs.hlsl" "${dir}/grid_points_vs.hlsl" "${dir}/layer_vs.hlsl")
     equine_add_shaders(${exe} PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl" "${dir}/link_skip_ps.hlsl"
-                       "${dir}/color_ps.hlsl" "${dir}/storage_raster_ps.hlsl")
+                       "${dir}/color_ps.hlsl" "${dir}/storage_raster_ps.hlsl" "${dir}/layer_ps.hlsl")
     equine_add_shaders(${exe} PROFILE gs_6_6 SOURCES "${dir}/fullscreen_gs.hlsl" "${dir}/layered_gs.hlsl")
     equine_add_shaders(${exe} PROFILE hs_6_6 SOURCES "${dir}/patch_hs.hlsl")
     equine_add_shaders(${exe} PROFILE ds_6_6 SOURCES "${dir}/patch_ds.hlsl")
@@ -332,6 +338,8 @@ if (TARGET EquineD3D12Backend)
         d3d12.native_section
         d3d12.import_objects
         d3d12.work_graph
+        # Portable, but not on Vulkan (shaderOutputLayer is not turned on).
+        texture.layered_vertex_output
     )
     equine_add_gpu_tests(EquineRID3D12Tests d3d12 ${EQUINE_D3D12_TEST_NAMES})
     set_tests_properties(d3d12.unknown_gpu_reports PROPERTIES
@@ -358,11 +366,12 @@ if (TARGET EquineMetalBackend)
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl"
                        "${dir}/write_storage.hlsl" "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl"
                        "${dir}/write_faces.hlsl" "${dir}/read_volume.hlsl" "${dir}/grid_count.hlsl"
-                       "${dir}/ray_query.hlsl")
+                       "${dir}/ray_query.hlsl" "${dir}/indirect_write.hlsl" "${dir}/ray_query_scene.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
-                       "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/storage_raster_vs.hlsl")
+                       "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/storage_raster_vs.hlsl"
+                       "${dir}/grid_points_vs.hlsl" "${dir}/layer_vs.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl"
-                       "${dir}/link_skip_ps.hlsl" "${dir}/storage_raster_ps.hlsl")
+                       "${dir}/link_skip_ps.hlsl" "${dir}/storage_raster_ps.hlsl" "${dir}/layer_ps.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl"
                        "${dir}/fullscreen_payload_ms.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
@@ -425,8 +434,14 @@ if (TARGET EquineMetalBackend)
         texture.resolve_depth
         texture.indirect_level1
         texture.indirect_level2
+        texture.indirect_dispatch_count
+        texture.indirect_draw_records
+        texture.indirect_mesh
+        texture.point_list
+        texture.layered_vertex_output
         raytracing.build_trace_update
         raytracing.empty_top_level
+        raytracing.scene
         helpers.frame_ring_and_profiler
         helpers.allocators
         helpers.transfers

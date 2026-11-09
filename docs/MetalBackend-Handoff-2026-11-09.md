@@ -24,10 +24,10 @@ the 8 commits from `eb983e8` on are **not pushed**:
 | `82f5bb7` | stage 3b-2: resolves, occlusion queries, indirect execution (Level 1 and 2, GPU counts) |
 | `6b723ba` | inline ray tracing, `DeviceLimits::rayTracingHardware`, depth and stencil resolve modes |
 
-Tests on the M4 (macOS 27), after the review fixes: **118/118** with `ctest --preset
-macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`),
-**102/102** in a build with RI validation off (`build/noval`). No compiler or clang-tidy warnings. Every portable GPU test runs on Metal except
-`texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
+Tests on the M4 (macOS 27), after the review fixes and the probe tests: **124/124** with `ctest
+--preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`),
+**108/108** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and the swapchain tests (not built). `texture.geometry_shader`, `texture.tessellation` and
 `texture.cube_layered_render` pass by skipping (their limits are false on Metal).
@@ -117,14 +117,14 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 - **Reviewed 2026-11-09** (the whole backend, with probes): see §7 for the bugs found; all five
   are fixed, each with a registered test (§7.1). Stages 3a and 3b-1 had been reviewed by two agents each and their findings fixed.
 - **Not compiled:** the D3D12 and Vulkan edits for `rayTracingHardware`
-  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), and the new portable tests
-  `texture.occlusion`, `texture.occlusion_many_sections` and `raytracing.empty_top_level` on
-  those backends. Check on Windows and Linux.
-- **Probed but not registered** (§7.3; the probes should become tests): indirect mesh draws,
-  Level 2 dispatches with a count, many records; indexed or multiple BLAS geometries, several
-  instances, instance masks, IDs and flags, `ePreferFastBuild`, TLAS refits; point lists;
-  layered rendering with resolves; `formatSupported` format by format (M4 only). `native()` is
-  now `metal.native_access`.
+  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), and the new portable tests on
+  those backends: `texture.occlusion`, `texture.occlusion_many_sections`,
+  `texture.indirect_dispatch_count`, `texture.indirect_draw_records`, `texture.indirect_mesh`,
+  `texture.point_list`, `raytracing.empty_top_level`, `raytracing.scene`, and on D3D12
+  `texture.layered_vertex_output` (left out on Vulkan: RI does not turn on `shaderOutputLayer`,
+  so the test is compiled out there). Check on Windows and Linux.
+- **Probed but not registered:** `formatSupported` format by format (M4 only; the sweep is one
+  process per case). Every other probe of §7.3 is now a registered test (§7.4).
 - **Untested on Metal:** texture copies between different formats of one texel size; sampling
   a read-only depth attachment inside its section.
 - **Open behaviour:** a pipeline whose stencil writes, in a read-only stencil section, is not
@@ -139,10 +139,7 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 
 ## 6. Next steps, in order
 
-1. **Fix the review's bugs** (§7.1), each with a registered test, and turn the probes of §7.3
-   into registered tests (indirect counts and Level 2 records, the ray-tracing scene, points,
-   layered resolves, `native()`). Ask the user first about `int64SharedAtomics` (§7.1 (2)):
-   making it false amends P116 (2).
+1. ~~Fix the review's bugs and register the probes~~: done 2026-11-09 (§7.1, §7.4).
 2. **Swapchains** on `CAMetalLayer`: `surfaceFormats`, present modes, `createSwapchain`,
    acquire and present on the MTL4 queue. `window.swapchain` uses GLFW and skips without a
    window server, so a real run needs the `arthur` GUI session in front (ask the user).
@@ -234,3 +231,14 @@ texts updated. Tests (1), (2) and (3) fail on the unfixed backend.
 Every function of `Backend.hpp` is reached by a registered Metal test except swapchains, work
 graphs (expected) and `native()`. Reached by one test only: the ray-tracing functions,
 `cmdDrawIndexed`, `cmdDrawMesh`, `cmdWriteTimestamp`, `cmdSetScissor`, each indirect entry point.
+
+**Since then (2026-11-09):** the probes are registered tests: `metal.native_access` (every
+`native()` accessor), `texture.indirect_dispatch_count` (Level 2 dispatches, 100 records, GPU
+count 37), `texture.indirect_draw_records` (36-byte Level 2 records with and without a count and
+from an offset; Level 1 with a count in a 4x section with a resolve), `texture.indirect_mesh`
+(Level 2 counts 1 and 0, Level 1), `texture.point_list`, `texture.layered_vertex_output` (2
+layers from the vertex shader, 1x and 4x with resolve) and `raytracing.scene` (two geometries,
+one indexed and not opaque; two instances with IDs, masks and the counter-clockwise flag;
+`ePreferFastBuild`; a top-level refit). New shaders: `indirect_write`, `grid_points_vs`,
+`layer_vs`, `layer_ps`, `ray_query_scene`. The ray-tracing and indirect functions are now
+reached by two tests or more.

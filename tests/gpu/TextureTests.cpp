@@ -11,11 +11,14 @@
 #include <RI/RI.hpp>
 #include <RI/Helpers/TypedCommands.hpp>
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstring>
 #include <cstdio>
 #include <csignal>
 #include <cstdlib>
+#include <deque>
 #include <vector>
 
 namespace {
@@ -150,6 +153,63 @@ RI::Pipeline drawPipeline(RI::Device &device, RI::Format color, RI::Format depth
     desc.depth = {.test = depth != RI::Format::eUndefined, .write = depthWrite, .compare = RI::CompareOp::eAlways};
     return RI::createGraphicsPipeline(device, desc);
 }
+
+// Copies every layer of an 8-bit RGBA `view` (eCopySrc) to readback memory,
+// submits, waits, and returns the texels as 0xRRGGBBAA, layer after layer.
+// The fixture's list is begun again afterwards.
+std::vector<uint32> readRgba8(Fixture &f, const RI::TextureView &view) {
+    const RI::CopyLayout layout = RI::copyLayout(f.device, view);
+    const uint64 used = f.readback.used;
+    RI::Buffer out = placeBuffer(f.device, f.readback, {.size = layout.size, .usage = RI::BufferUsage::eCopyDst});
+    RI::cmdBarrier(f.cmd, RI::Stage::eAll, RI::Stage::eCopy);
+    RI::cmdCopyTextureToBuffer(f.cmd, view, out, 0);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+    std::vector<uint32> texels;
+    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+        for (uint32 y = 0; y < layout.height; ++y) {
+            const auto *row = static_cast<const uint8 *>(out.mapped) + layer * layout.layerPitch + y * layout.rowPitch;
+            for (uint32 x = 0; x < layout.width; ++x) {
+                const uint8 *t = row + 4 * x;
+                texels.push_back(uint32{t[0]} << 24 | uint32{t[1]} << 16 | uint32{t[2]} << 8 | t[3]);
+            }
+        }
+    }
+    RI::destroyBuffer(f.device, out);
+    f.readback.used = used;
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    return texels;
+}
+
+// Scratch for indirect calls that need it (none on D3D12), each in its own
+// GPU memory of a type the scratch allows (RADV: only some types).
+struct IndirectScratch {
+    RI::Device &device;
+    std::deque<RI::Memory> memory;
+    std::deque<RI::Buffer> buffers; // stable addresses
+
+    // Null when the call needs none.
+    const RI::Buffer *make(const RI::Pipeline &pipeline, RI::IndirectKind kind, uint32 maxCount) {
+        const RI::MemoryRequirements need = RI::indirectScratchRequirements(device, pipeline, kind, maxCount);
+        if (need.size == 0) {
+            return nullptr;
+        }
+        memory.push_back(RI::allocateMemory(device, RI::MemoryKind::eGPU, need.size, &need));
+        buffers.push_back(RI::createBuffer(device, memory.back(), 0,
+                                           {.size = need.size, .usage = RI::BufferUsage::eIndirectScratch}));
+        return &buffers.back();
+    }
+    ~IndirectScratch() {
+        for (RI::Buffer &buffer : buffers) {
+            RI::destroyBuffer(device, buffer);
+        }
+        for (RI::Memory &m : memory) {
+            RI::freeMemory(device, m);
+        }
+    }
+};
 
 } // namespace
 
@@ -1939,5 +1999,261 @@ EQ_TEST(texture, stage_link_mismatch_reports) {
     RI::Device device = createTestDevice();
     const std::vector<std::byte> vs = loadShader("link_vs"), ps = loadShader("link_skip_ps");
     RI::createGraphicsPipeline(device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}});
+}
+#endif
+
+// Indirect Level 2 dispatches (P48): 100 records, a GPU count of 37. Each
+// record writes its own slot: slots from the count on stay 0.
+EQ_TEST(texture, indirect_dispatch_count) {
+    Fixture f;
+    if (!f.device.limits.indirectRootData) {
+        return;
+    }
+    constexpr uint32 kRecords = 100, kCount = 37;
+    struct WriteRecord {
+        uint32 outputSlot, index, value;
+        RI::DispatchIndirectArgs args;
+    };
+    static_assert(sizeof(WriteRecord) == RI::indirectStride(RI::IndirectKind::eDispatch, 12));
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer records = placeBuffer(f.device, upload, {.size = sizeof(WriteRecord) * kRecords,
+                                                         .usage = RI::BufferUsage::eIndirect});
+    for (uint32 i = 0; i < kRecords; ++i) {
+        static_cast<WriteRecord *>(records.mapped)[i] = {kOutputSlot, i, 1000 + i, {1, 1, 1}};
+    }
+    RI::Buffer count = placeBuffer(f.device, upload, {.size = 4, .usage = RI::BufferUsage::eIndirect});
+    *static_cast<uint32 *>(count.mapped) = kCount;
+    const std::vector<std::byte> shader = loadShader("indirect_write");
+    RI::Pipeline write = RI::createComputePipeline(f.device, {.shader = shader});
+    // The fixture's output buffer, viewed as uint32 slots.
+    RI::writeDescriptors(f.device, f.heap, {{.slot = kOutputSlot, .descriptor = RI::ReadWriteView{.buffer = f.output, .stride = 4}}});
+    IndirectScratch scratch{.device = f.device, .memory = {}, .buffers = {}};
+
+    RI::cmdClearBuffer(f.cmd, f.output, 0);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCompute);
+    RI::cmdSetPipeline(f.cmd, write);
+    RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDispatch, records, 0, kRecords,
+                                       scratch.make(write, RI::IndirectKind::eDispatch, kRecords), 0, &count, 0);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(f.cmd, f.output, 0, f.result, 0, 4 * kRecords);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+    const auto *slots = static_cast<const uint32 *>(f.result.mapped);
+    for (uint32 i = 0; i < kRecords; ++i) {
+        EQ_CHECK(slots[i] == (i < kCount ? 1000 + i : 0));
+    }
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::writeDescriptors(f.device, f.heap, {{.slot = kOutputSlot, .descriptor = RI::ReadWriteView{.buffer = f.output, .stride = 16}}});
+    RI::destroyPipeline(f.device, write);
+    RI::destroyBuffer(f.device, count);
+    RI::destroyBuffer(f.device, records);
+    RI::freeMemory(f.device, upload.memory);
+}
+
+// Indirect draws (P48) with records of 36 bytes (20 of root data, then the
+// arguments), so root data sits at 4-byte-aligned addresses: all records, a
+// GPU count of 1, and a call starting at the second record. Then a Level 1
+// call with a count inside a 4x multisampled section, resolved at its end.
+EQ_TEST(texture, indirect_draw_records) {
+    Fixture f;
+    if (!f.device.limits.indirectRootData) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                                        .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc});
+    std::vector<std::byte> vs, ps;
+    RI::Pipeline draw = drawPipeline(f.device, RI::Format::eRGBA8Unorm, RI::Format::eUndefined, 1, false, vs, ps);
+    struct DrawRecord {
+        DrawRoot root;
+        RI::DrawIndirectArgs args;
+    };
+    static_assert(sizeof(DrawRecord) == 36 && sizeof(DrawRecord) == RI::indirectStride(RI::IndirectKind::eDraw, sizeof(DrawRoot)));
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer records = placeBuffer(f.device, upload, {.size = 3 * sizeof(DrawRecord), .usage = RI::BufferUsage::eIndirect});
+    const RI::DrawIndirectArgs triangle{.vertexCount = 3, .instanceCount = 1};
+    const DrawRecord list[3] = {{{.color = {1, 0, 0, 1}, .depth = 0.5f}, triangle},
+                                {{.color = {0, 1, 0, 1}, .depth = 0.5f}, triangle},
+                                {{.color = {0, 0, 1, 1}, .depth = 0.5f}, triangle}};
+    std::memcpy(records.mapped, list, sizeof(list));
+    RI::Buffer count = placeBuffer(f.device, upload, {.size = 4, .usage = RI::BufferUsage::eIndirect});
+    *static_cast<uint32 *>(count.mapped) = 1;
+    IndirectScratch scratch{.device = f.device, .memory = {}, .buffers = {}};
+    // Scratch ranges are not reused between calls without an indirect barrier.
+    const RI::Buffer *scratchAll = scratch.make(draw, RI::IndirectKind::eDraw, 3);
+    const RI::Buffer *scratchCount = scratch.make(draw, RI::IndirectKind::eDraw, 3);
+    const RI::Buffer *scratchOffset = scratch.make(draw, RI::IndirectKind::eDraw, 1);
+
+    // The last record drawn wins.
+    const auto drawn = [&](auto record) {
+        RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+        RI::cmdSetPipeline(f.cmd, draw);
+        record();
+        RI::cmdEndRendering(f.cmd);
+        const std::vector<uint32> texels = readRgba8(f, target.view);
+        return std::all_of(texels.begin(), texels.end(), [&](uint32 t) { return t == texels[0]; }) ? texels[0] : 1u;
+    };
+    EQ_CHECK(drawn([&] {
+                 RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDraw, records, 0, 3, scratchAll, 0);
+             }) == 0x0000ffffu);
+    EQ_CHECK(drawn([&] {
+                 RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDraw, records, 0, 3, scratchCount, 0,
+                                                    &count, 0);
+             }) == 0xff0000ffu);
+    EQ_CHECK(drawn([&] {
+                 RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDraw, records, sizeof(DrawRecord), 1,
+                                                    scratchOffset, 0);
+             }) == 0x00ff00ffu);
+
+    // Level 1 with a count, multisampled (on Metal, the count copy runs inside the section).
+    RI::Texture multisampled = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .samples = 4,
+                                                              .format = RI::Format::eRGBA8Unorm,
+                                                              .usage = RI::TextureUsage::eRenderTarget});
+    std::vector<std::byte> vs4, ps4;
+    RI::Pipeline draw4 = drawPipeline(f.device, RI::Format::eRGBA8Unorm, RI::Format::eUndefined, 4, false, vs4, ps4);
+    RI::Buffer arguments = placeBuffer(f.device, upload, {.size = 2 * sizeof(RI::DrawIndirectArgs), .usage = RI::BufferUsage::eIndirect});
+    const RI::DrawIndirectArgs two[2] = {triangle, triangle};
+    std::memcpy(arguments.mapped, two, sizeof(two));
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = multisampled.view, .load = RI::LoadOp::eClear,
+                                              .store = RI::StoreOp::eDontCare, .resolveTo = target.view}}});
+    RI::cmdSetPipeline(f.cmd, draw4);
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1, 1, 0, 1}, .depth = 0.5f});
+    RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDraw, arguments, 0, 2, &count, 0);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<uint32> texels = readRgba8(f, target.view);
+    EQ_CHECK(std::all_of(texels.begin(), texels.end(), [](uint32 t) { return t == 0xffff00ffu; }));
+
+    RI::destroyPipeline(f.device, draw4);
+    RI::destroyTexture(f.device, multisampled);
+    RI::destroyBuffer(f.device, arguments);
+    RI::destroyBuffer(f.device, count);
+    RI::destroyBuffer(f.device, records);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyPipeline(f.device, draw);
+    RI::destroyTexture(f.device, target);
+}
+
+// Indirect mesh draws (P48): Level 2 with GPU counts of 1 and 0, and Level 1.
+EQ_TEST(texture, indirect_mesh) {
+    Fixture f;
+    if (!f.device.limits.meshShaders || !f.device.limits.indirectRootData) {
+        return;
+    }
+    RI::Texture target = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                                        .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc});
+    const std::vector<std::byte> ms = loadShader("fullscreen_ms"), ps = loadShader("solid_ps");
+    RI::Pipeline mesh = RI::createGraphicsPipeline(f.device, {.pixel = ps, .mesh = ms, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    struct MeshRecord {
+        DrawRoot root;
+        RI::DispatchIndirectArgs args;
+    };
+    static_assert(sizeof(MeshRecord) == RI::indirectStride(RI::IndirectKind::eDrawMesh, sizeof(DrawRoot)));
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 16)};
+    RI::Buffer records = placeBuffer(f.device, upload, {.size = 2 * sizeof(MeshRecord), .usage = RI::BufferUsage::eIndirect});
+    const MeshRecord list[2] = {{{.color = {1, 1, 0, 1}, .depth = 0.5f}, {1, 1, 1}},
+                                {{.color = {0, 1, 1, 1}, .depth = 0.5f}, {1, 1, 1}}};
+    std::memcpy(records.mapped, list, sizeof(list));
+    RI::Buffer counts = placeBuffer(f.device, upload, {.size = 8, .usage = RI::BufferUsage::eIndirect});
+    static_cast<uint32 *>(counts.mapped)[0] = 1;
+    static_cast<uint32 *>(counts.mapped)[1] = 0;
+    IndirectScratch scratch{.device = f.device, .memory = {}, .buffers = {}};
+    const RI::Buffer *scratchOne = scratch.make(mesh, RI::IndirectKind::eDrawMesh, 2);
+    const RI::Buffer *scratchZero = scratch.make(mesh, RI::IndirectKind::eDrawMesh, 2);
+
+    const auto drawn = [&](auto record) {
+        RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+        RI::cmdSetPipeline(f.cmd, mesh);
+        record();
+        RI::cmdEndRendering(f.cmd);
+        const std::vector<uint32> texels = readRgba8(f, target.view);
+        return std::all_of(texels.begin(), texels.end(), [&](uint32 t) { return t == texels[0]; }) ? texels[0] : 1u;
+    };
+    EQ_CHECK(drawn([&] {
+                 RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDrawMesh, records, 0, 2, scratchOne, 0,
+                                                    &counts, 0);
+             }) == 0xffff00ffu);
+    EQ_CHECK(drawn([&] {
+                 RI::cmdExecuteIndirectWithRootData(f.cmd, RI::IndirectKind::eDrawMesh, records, 0, 2, scratchZero, 0,
+                                                    &counts, 4);
+             }) == 0u);
+    EQ_CHECK(drawn([&] {
+                 RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1, 0, 1, 1}, .depth = 0.5f});
+                 RI::cmdExecuteIndirect(f.cmd, RI::IndirectKind::eDrawMesh, records, offsetof(MeshRecord, args), 1);
+             }) == 0xff00ffffu);
+
+    RI::destroyBuffer(f.device, counts);
+    RI::destroyBuffer(f.device, records);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyPipeline(f.device, mesh);
+    RI::destroyTexture(f.device, target);
+}
+
+// Point lists without a geometry shader: one point per pixel center lights
+// exactly that pixel (grid_points_vs.hlsl assumes kSize = 32).
+EQ_TEST(texture, point_list) {
+    static_assert(kSize == 32, "grid_points_vs.hlsl draws a 32 x 32 grid");
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .format = RI::Format::eRGBA8Unorm,
+                                                        .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc});
+    const std::vector<std::byte> vs = loadShader("grid_points_vs"), ps = loadShader("solid_ps");
+    RI::Pipeline points = RI::createGraphicsPipeline(f.device, {.vertex = vs, .pixel = ps,
+                                                                .colorFormats = {RI::Format::eRGBA8Unorm},
+                                                                .topology = RI::Topology::ePointList});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, points);
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1, 1, 1, 1}, .depth = 0.5f}); // a 32 x 32 grid
+    RI::cmdDraw(f.cmd, kSize * kSize / 2); // the upper half
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<uint32> texels = readRgba8(f, target.view);
+    for (uint32 i = 0; i < kSize * kSize; ++i) {
+        EQ_CHECK(texels[i] == (i < kSize * kSize / 2 ? 0xffffffffu : 0u));
+    }
+    RI::destroyPipeline(f.device, points);
+    RI::destroyTexture(f.device, target);
+}
+
+// Layered rendering with the layer chosen by the vertex shader
+// (SV_RenderTargetArrayIndex), into 2 layers: single-sampled, and 4x with a
+// resolve of every layer at cmdEndRendering. Not on Vulkan: RI does not turn
+// on shaderOutputLayer there.
+#if !EQUINE_BACKEND_VULKAN
+EQ_TEST(texture, layered_vertex_output) {
+    Fixture f;
+    const std::vector<std::byte> vs = loadShader("layer_vs"), ps = loadShader("layer_ps");
+    for (const uint32 samples : {1u, 4u}) {
+        RI::Texture target = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .layers = 2, .samples = samples,
+                                                            .format = RI::Format::eRGBA8Unorm,
+                                                            .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc});
+        RI::Texture resolved{};
+        if (samples > 1) {
+            resolved = placeTexture(f.device, f.gpu, {.width = kSize, .height = kSize, .layers = 2,
+                                                      .format = RI::Format::eRGBA8Unorm,
+                                                      .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc});
+        }
+        RI::Pipeline pipeline = RI::createGraphicsPipeline(f.device, {.vertex = vs, .pixel = ps,
+                                                                      .colorFormats = {RI::Format::eRGBA8Unorm},
+                                                                      .samples = samples});
+        RI::ColorAttachment color{.view = target.view, .load = RI::LoadOp::eClear};
+        if (samples > 1) {
+            color.store = RI::StoreOp::eDontCare;
+            color.resolveTo = resolved.view;
+        }
+        RI::cmdBeginRendering(f.cmd, {.colors = {color}});
+        RI::cmdSetPipeline(f.cmd, pipeline);
+        RI::cmdDraw(f.cmd, 3, 2);
+        RI::cmdEndRendering(f.cmd);
+        const std::vector<uint32> texels = readRgba8(f, samples > 1 ? resolved.view : target.view);
+        EQ_CHECK(texels.size() == 2 * kSize * kSize);
+        for (uint32 i = 0; i < texels.size(); ++i) {
+            EQ_CHECK(texels[i] == (i < kSize * kSize ? 0xff0000ffu : 0x00ff00ffu));
+        }
+        RI::destroyPipeline(f.device, pipeline);
+        RI::destroyTexture(f.device, target);
+        if (samples > 1) {
+            RI::destroyTexture(f.device, resolved);
+        }
+    }
 }
 #endif
