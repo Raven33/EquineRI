@@ -17,12 +17,13 @@ enum class WindowSystem : uint8 {
     eXlib,    // display: Display*, window: the X11 Window id
     eXcb,     // display: xcb_connection_t*, window: the xcb_window_t id
     eWayland, // display: wl_display*, window: wl_surface*
+    eCocoa,   // display: unused, window: NSView* (macOS; Metal adds a CAMetalLayer)
 };
 
 struct Window {
     WindowSystem system = WindowSystem::eWin32;
     void *display = nullptr;
-    void *handle = nullptr; // pointer-sized handles (HWND, wl_surface*)
+    void *handle = nullptr; // pointer-sized handles (HWND, wl_surface*, NSView*)
     uint64 id = 0;          // integer ids (X11 Window, xcb_window_t)
 };
 

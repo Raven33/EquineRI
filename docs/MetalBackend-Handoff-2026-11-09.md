@@ -24,15 +24,15 @@ the 8 commits from `eb983e8` on are **not pushed**:
 | `82f5bb7` | stage 3b-2: resolves, occlusion queries, indirect execution (Level 1 and 2, GPU counts) |
 | `6b723ba` | inline ray tracing, `DeviceLimits::rayTracingHardware`, depth and stencil resolve modes |
 
-Tests on the M4 (macOS 27), after the review fixes and the probe tests: **124/124** with `ctest
+Tests on the M4 (macOS 27), after the review fixes, the probe tests and swapchains: **126/126** with `ctest
 --preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`),
-**108/108** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+**110/110** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
-and the swapchain tests (not built). `texture.geometry_shader`, `texture.tessellation` and
+and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader`, `texture.tessellation` and
 `texture.cube_layered_render` pass by skipping (their limits are false on Metal).
 
-**Not done on Metal:** swapchains and presentation, geometry and tessellation (MSC emulation,
+**Not done on Metal:** geometry and tessellation (MSC emulation,
 later), work graphs (D3D12 only), pipeline statistics, the Metal 3 path (P113), native import
 and native sections (P27, P70, P77). `backends/metal/Unsupported.cpp` lists what still reports
 `eUnsupported`.
@@ -117,7 +117,8 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 - **Reviewed 2026-11-09** (the whole backend, with probes): see §7 for the bugs found; all five
   are fixed, each with a registered test (§7.1). Stages 3a and 3b-1 had been reviewed by two agents each and their findings fixed.
 - **Not compiled:** the D3D12 and Vulkan edits for `rayTracingHardware`
-  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), and the new portable tests on
+  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), the `WindowSystem::eCocoa` case
+  of `backends/vulkan/Swapchain.cpp`, and the new portable tests on
   those backends: `texture.occlusion`, `texture.occlusion_many_sections`,
   `texture.indirect_dispatch_count`, `texture.indirect_draw_records`, `texture.indirect_mesh`,
   `texture.point_list`, `raytracing.empty_top_level`, `raytracing.scene`, and on D3D12
@@ -140,7 +141,8 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 ## 6. Next steps, in order
 
 1. ~~Fix the review's bugs and register the probes~~: done 2026-11-09 (§7.1, §7.4).
-2. **Swapchains** on `CAMetalLayer`: `surfaceFormats`, present modes, `createSwapchain`,
+2. ~~**Swapchains** on `CAMetalLayer`~~: done 2026-11-09 (§8). Before that, the plan was:
+   `surfaceFormats`, present modes, `createSwapchain`,
    acquire and present on the MTL4 queue. `window.swapchain` uses GLFW and skips without a
    window server, so a real run needs the `arthur` GUI session in front (ask the user).
 3. **Push** `metal-backend` and run the D3D12 and Vulkan builds on their platforms (the
@@ -228,7 +230,8 @@ texts updated. Tests (1), (2) and (3) fail on the unfixed backend.
 
 ### 7.4 Test coverage
 
-Every function of `Backend.hpp` is reached by a registered Metal test except swapchains, work
+Every function of `Backend.hpp` is reached by a registered Metal test except swapchains (since
+built, §8), work
 graphs (expected) and `native()`. Reached by one test only: the ray-tracing functions,
 `cmdDrawIndexed`, `cmdDrawMesh`, `cmdWriteTimestamp`, `cmdSetScissor`, each indirect entry point.
 
@@ -242,3 +245,26 @@ one indexed and not opaque; two instances with IDs, masks and the counter-clockw
 `ePreferFastBuild`; a top-level refit). New shaders: `indirect_write`, `grid_points_vs`,
 `layer_vs`, `layer_ps`, `ray_query_scene`. The ray-tracing and indirect functions are now
 reached by two tests or more.
+
+## 8. Swapchains (2026-11-09)
+
+`backends/metal/Swapchain.cpp`. `RI::Window` gained `WindowSystem::eCocoa` (`handle` is the
+`NSView*`; P43 amended by the assistant, for the user's review). `createSwapchain` gives the
+view a `CAMetalLayer` (or keeps the one it has) through the Objective-C runtime (`objc_msgSend`;
+metal-cpp wraps no AppKit), not framebuffer-only, 2 or 3 drawables (3 by default),
+`displaySyncEnabled` for `eFifo`, no `eMailbox`; the layer's residency set joins the queue.
+`acquire` takes `nextDrawable` (retried on its 1 s timeout) and calls
+`MTL4::CommandQueue::wait(drawable)`; `present` calls `signalDrawable` then `present`. Each
+drawable texture is wrapped once as an `RI::Texture` (the texture is its own view) and kept
+until resize or destroy, which wait for the queue. Formats: BGRA8 sRGB and UNORM, RGB10A2 (sRGB
+color space), RGBA16Float (scRGB), and RGB10A2 HDR10 when the screen has EDR headroom. Storage:
+every listed format but `eBGRA8Srgb`.
+
+Tests: `window.swapchain` (the portable test, now compiled on macOS with `glfwGetCocoaView`) and
+`metal.screen_contents` (`tests/metal/SwapchainTests.cpp`: a clear and a compute write to the
+screen texture, each read back with a native blit before present; capabilities; resize). Both
+pass 10 runs in a row. **Over SSH there is no GUI session and no display**
+(`CGSessionCopyCurrentDictionary` is null), yet GLFW opens the window and the layer still gives
+drawables: the tests run and nothing shows on Michel's screen. Not seen yet: a real on-screen
+run in the `arthur` GUI session, and HDR10.
+

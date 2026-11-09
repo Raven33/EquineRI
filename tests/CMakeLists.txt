@@ -161,7 +161,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     threads.pipelines_on_other_threads
     texture.unlisted_view_format_reports
 )
-if (WIN32)
+if (WIN32 OR APPLE)
     list(APPEND EQUINE_GPU_SHARED_TEST_NAMES window.swapchain)
 else()
     list(APPEND EQUINE_GPU_SHARED_TEST_NAMES window.swapchain_x11 window.swapchain_wayland)
@@ -358,7 +358,9 @@ if (TARGET EquineMetalBackend)
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/HelperTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/RayTracingTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gpu/SwapchainTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/metal/DeviceTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/metal/SwapchainTests.cpp"
     )
     # The shaders of the registered cases (geometry and tessellation ones are
     # left out: those cases skip before loading them, P116 (1)).
@@ -384,7 +386,7 @@ if (TARGET EquineMetalBackend)
     target_include_directories(EquineRIMetalTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     # The helpers link the backend publicly: naming it again repeats the archive,
     # which Apple's linker warns about.
-    target_link_libraries(EquineRIMetalTests PRIVATE EquineHelpersMetal)
+    target_link_libraries(EquineRIMetalTests PRIVATE EquineHelpersMetal glfw)
     equine_copy_sanitizer_runtime(EquineRIMetalTests)
 
     set(EQUINE_METAL_TEST_NAMES
@@ -448,6 +450,9 @@ if (TARGET EquineMetalBackend)
         helpers.group_grid
         metal.native_access
         metal.visibility_pages_bounded
+        # Open a GLFW window; over SSH it is on no display and the tests still run.
+        window.swapchain
+        metal.screen_contents
         # Skip themselves: no geometry or tessellation on Metal (P116 (1)).
         texture.geometry_shader
         texture.tessellation

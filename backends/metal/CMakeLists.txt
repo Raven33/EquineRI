@@ -11,6 +11,7 @@ target_link_libraries(EquineMetalCpp PUBLIC
     "-framework Foundation"
     "-framework Metal"
     "-framework QuartzCore"
+    "-framework CoreGraphics"
 )
 equine_mark_nonproject_dependency(EquineMetalCpp)
 
@@ -30,6 +31,7 @@ add_library(EquineMetalBackend STATIC
     Rendering.cpp
     Debug.cpp
     Queries.cpp
+    Swapchain.cpp
     Unsupported.cpp
 )
 target_include_directories(EquineMetalBackend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

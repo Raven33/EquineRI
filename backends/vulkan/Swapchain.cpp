@@ -113,6 +113,8 @@ VkSurfaceKHR createSurface(const DeviceState &state, const Window &window) {
         name = "vkCreateWin32SurfaceKHR";
         info = &win32;
         break;
+    case WindowSystem::eCocoa:
+        reportError(ErrorCategory::eUnsupported, "createSwapchain: Cocoa windows are presented by the Metal backend");
     }
     const auto create = instanceFunction<CreateSurface>(state, name);
     if (create == nullptr) {

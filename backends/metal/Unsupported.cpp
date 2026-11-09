@@ -3,16 +3,16 @@
 // Owns: notYet, and a definition of every function of RI/Metal/Backend.hpp
 // that stages 2 (buffers, compute, readback), 3a (textures, views, samplers,
 // copies, clears, timestamps), 3b-1 (graphics pipelines, rendering sections,
-// draws), 3b-2 (resolves, occlusion queries, indirect execution) and ray
-// tracing do not cover: swapchains and work graphs. Each reports
-// eUnsupported, so programs link and fail with a readable message. Capability
-// probes (presentModeSupported, screenStorageSupported) answer false instead,
-// so portable code takes its fallback as on the other backends.
+// draws), 3b-2 (resolves, occlusion queries, indirect execution), ray
+// tracing and swapchains do not cover: work graphs. Each reports
+// eUnsupported, so programs link and fail with a readable message.
 //
 // Watch out: these do no thread or liveness checks: every call stops at
 // reportError anyway. Work graphs are not a stage still to come: they are
-// D3D12 only (P50), worded as on Vulkan. When a function is built, move it
-// to its file and delete it here, or the link fails with a duplicate.
+// D3D12 only (P50), worded as on Vulkan. No call uses notYet today; it stays
+// for the stages still to come (P113). When a function
+// is built, move it to its file and delete it here, or the link fails with a
+// duplicate.
 //
 // Vulkan counterpart of the work-graph part: backends/vulkan/WorkGraph.cpp.
 
@@ -25,8 +25,8 @@ namespace RI::Metal {
 void notYet(std::string_view call) {
     reportError(ErrorCategory::eUnsupported,
                 std::string(call) +
-                    ": not built yet on the Metal backend (built: compute, textures, rendering, indirect execution and "
-                    "inline ray tracing; see docs/FeatureProposal-Metal-2026-11-07.md)");
+                    ": not built yet on the Metal backend (built: compute, textures, rendering, indirect execution, "
+                    "inline ray tracing, swapchains; see docs/FeatureProposal-Metal-2026-11-07.md)");
 }
 
 namespace {
@@ -37,17 +37,6 @@ namespace {
 }
 
 } // namespace
-
-// ── Swapchains ───────────────────────────────────────────────────────────────
-
-std::vector<SurfaceFormat> surfaceFormats(Device &, const Window &) { notYet("surfaceFormats"); }
-bool presentModeSupported(Device &, const Window &, PresentMode) { return false; }
-bool screenStorageSupported(Device &, const Window &, Format) { return false; }
-Swapchain createSwapchain(Device &, const SwapchainDesc &) { notYet("createSwapchain"); }
-void resizeSwapchain(Device &, Swapchain &, uint32, uint32) { notYet("resizeSwapchain"); }
-void destroySwapchain(Device &, Swapchain &) { notYet("destroySwapchain"); }
-Texture acquire(Device &, Swapchain &) { notYet("acquire"); }
-void present(Queue &, Swapchain &) { notYet("present"); }
 
 // ── Work graphs (P50): D3D12 only ────────────────────────────────────────────
 

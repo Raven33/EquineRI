@@ -17,6 +17,7 @@ create the window with the library of your choice and fill in this struct; [`cre
 | `WindowSystem::eXlib` | `Display*` | unused | the X11 `Window` |
 | `WindowSystem::eXcb` | `xcb_connection_t*` | unused | the `xcb_window_t` |
 | `WindowSystem::eWayland` | `wl_display*` | `wl_surface*` | unused |
+| `WindowSystem::eCocoa` | unused | `NSView*` (macOS) | unused |
 
 Pointer-sized handles go in `handle`; integer ids (X11) go in `id`, so no cast is needed.
 
@@ -53,8 +54,9 @@ handles.
 ## Rules / errors
 
 - The handles must stay valid while a swapchain uses them.
-- No swapchain exists yet: `RI::Window` is in place so the swapchain milestone adds no new
-  portable type.
+- On macOS, pass the window's content view (`glfwGetCocoaView` with GLFW). The Metal backend
+  gives the view a `CAMetalLayer` (or uses the one it already has), so call `createSwapchain`
+  on the main thread.
 
 ## Related decisions
 

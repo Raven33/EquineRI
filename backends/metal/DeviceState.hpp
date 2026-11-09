@@ -289,7 +289,7 @@ MTL4::RenderCommandEncoder *beginRenderEncoder(CommandListState &cmd, MTL4::Rend
 void endEncoder(CommandListState &cmd);
 // Commands.cpp: `size` bytes of command memory aligned to `alignment` (a power
 // of two, at least 16 recommended for root data), valid until the list is
-// reset, ending at most `limit` bytes into their chunk (visibility pages).
+// reset.
 CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListState &cmd, uint64 size,
                                               uint64 alignment);
 // Commands.cpp: a section's visibility page (kVisibilityPageSize bytes, below

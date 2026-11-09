@@ -9,6 +9,8 @@
 #include <GLFW/glfw3.h>
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
+#elif defined(__APPLE__)
+#define GLFW_EXPOSE_NATIVE_COCOA
 #else
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_WAYLAND
@@ -20,6 +22,8 @@ namespace gputest {
 inline RI::Window windowOf(GLFWwindow *window) {
 #if defined(_WIN32)
     return {.system = RI::WindowSystem::eWin32, .display = GetModuleHandleW(nullptr), .handle = glfwGetWin32Window(window)};
+#elif defined(__APPLE__)
+    return {.system = RI::WindowSystem::eCocoa, .handle = glfwGetCocoaView(window)};
 #else
     if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) {
         return {.system = RI::WindowSystem::eWayland,

@@ -116,6 +116,8 @@ void swapchainOn(int platform) {
 
 #if defined(_WIN32)
 EQ_TEST(window, swapchain) { swapchainOn(GLFW_PLATFORM_WIN32); }
+#elif defined(__APPLE__)
+EQ_TEST(window, swapchain) { swapchainOn(GLFW_PLATFORM_COCOA); }
 #else
 EQ_TEST(window, swapchain_x11) { swapchainOn(GLFW_PLATFORM_X11); }
 EQ_TEST(window, swapchain_wayland) { swapchainOn(GLFW_PLATFORM_WAYLAND); }

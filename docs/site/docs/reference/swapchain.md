@@ -70,6 +70,13 @@ command list waited on each frame is the simplest correct loop.
   of its own. sRGB formats use a UNORM
   buffer with sRGB render-target views, as flip model requires. `eFifo` presents with sync
   interval 1, `eMailbox` with 0, `eImmediate` with tearing allowed.
+- **Metal**: a `CAMetalLayer` on the window's `NSView`, not framebuffer-only (so copies and,
+  except in sRGB formats, compute writes reach the screen texture). `acquire` takes the
+  layer's next drawable and makes the queue wait for it before the work submitted after;
+  `present` signals the drawable after the work submitted before it, then presents it.
+  Neither submits work. 2 or 3 images (3 by default); `eFifo` waits for the display,
+  `eImmediate` does not, and there is no `eMailbox`. `eHdr10` is listed when the window's
+  screen has HDR headroom.
 
 ## Rules and errors
 
@@ -85,7 +92,7 @@ command list waited on each frame is the simplest correct loop.
 - An out-of-date swapchain (the window changed) is reported on the
   [error channel](../concepts/error-channel.md) as `ErrorCategory::eSwapchainOutOfDate`; call
   `resizeSwapchain`.
-- D3D12 takes `WindowSystem::eWin32` windows only.
+- D3D12 takes `WindowSystem::eWin32` windows only; Metal takes `WindowSystem::eCocoa` windows only.
 
 ## Related decisions
 

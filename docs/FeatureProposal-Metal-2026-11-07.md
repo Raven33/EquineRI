@@ -258,7 +258,11 @@ Q4).
 - **Swapchain (P43):** `CAMetalLayer` drawables. metal-cpp has `QuartzCore/` for the layer and
   drawable. Getting the layer from the tests' GLFW `NSWindow` (`glfwGetCocoaWindow`) needs a few
   lines of Objective-C++ in the tests (P109 keeps GLFW out of RI). Swapchain tests skip when no
-  window server session is usable.
+  window server session is usable. *Built 2026-11-09 differently:* `RI::Window` gained
+  `WindowSystem::eCocoa` with the `NSView*` (an OS handle, as P43 asks), and the backend gives
+  the view its `CAMetalLayer` through the Objective-C runtime, so the tests need no
+  Objective-C++ (`glfwGetCocoaView`). Over SSH, GLFW opens a window on no display and the
+  layer still gives drawables: the tests run there, nothing shows.
 
 ## 9. Features and `DeviceLimits`
 
