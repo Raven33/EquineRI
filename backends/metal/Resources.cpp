@@ -5,7 +5,7 @@
 // and cache mode from the kind), placed buffers, descriptor heaps (buffers of
 // MSC's 24-byte IRDescriptorTableEntry), descriptor writes of buffer and
 // texture views, and samplers (writeSamplers, the device's sampler cache).
-// Acceleration-structure views come later, with ray tracing (notYet).
+// Acceleration-structure entries are written by RayTracing.cpp.
 //
 // Watch out: Metal 4 makes nothing resident on its own: every heap and heap
 // buffer joins the device's residency set (buffers placed in a heap are

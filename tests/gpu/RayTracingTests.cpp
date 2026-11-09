@@ -130,3 +130,67 @@ EQ_TEST(raytracing, build_trace_update) {
     RI::freeMemory(device, gpu.memory);
     RI::destroyDevice(device);
 }
+
+// A top level of 0 instances builds, and every ray misses (D3D12 and Vulkan
+// allow it; Metal's debug layer refuses an empty instance range, so the Metal
+// backend keeps room for one record).
+EQ_TEST(raytracing, empty_top_level) {
+    RI::Device device = createTestDevice();
+    if (!device.limits.rayTracing) {
+        RI::destroyDevice(device);
+        return;
+    }
+    Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 4 << 20)};
+    Arena upload{.memory = RI::allocateMemory(device, RI::MemoryKind::eUpload, 1 << 16)};
+    Arena readback{.memory = RI::allocateMemory(device, RI::MemoryKind::eReadback, 1 << 16)};
+    // A valid, unread instance address: some drivers check it even for 0 instances.
+    RI::Buffer instances = placeBuffer(device, upload, {.size = sizeof(RI::AccelerationStructureInstance),
+                                                         .usage = RI::BufferUsage::eAccelerationStructureInput});
+    std::memset(instances.mapped, 0, sizeof(RI::AccelerationStructureInstance));
+    const RI::TlasDesc tlasDesc{.instancesAddress = instances.gpuAddress, .instanceCount = 0};
+    const RI::AccelerationStructureSizes tlasSize = RI::tlasSizes(device, tlasDesc);
+    RI::AccelerationStructure tlas = placeStructure(device, gpu, tlasSize.size, true);
+    const RI::BufferDesc scratchDesc{.size = std::max<uint64>(tlasSize.buildScratchSize, 1),
+                                     .usage = RI::BufferUsage::eReadWrite};
+    const uint64 scratchOffset = gputest::alignUp(
+        gpu.used, std::max<uint64>(RI::bufferRequirements(device, scratchDesc).alignment,
+                                   device.limits.accelerationStructureScratchAlignment));
+    RI::Buffer scratch = RI::createBuffer(device, gpu.memory, scratchOffset, scratchDesc);
+    gpu.used = scratchOffset + RI::bufferRequirements(device, scratchDesc).size;
+    RI::Buffer output = placeBuffer(device, gpu, {.size = kSize * kSize * 4,
+                                                  .usage = RI::BufferUsage::eReadWrite | RI::BufferUsage::eCopySrc});
+    RI::Buffer result = placeBuffer(device, readback, {.size = kSize * kSize * 4, .usage = RI::BufferUsage::eCopyDst});
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::writeDescriptors(device, heap, {{.slot = 0, .descriptor = RI::AccelerationStructureView{.tlas = tlas}},
+                                        {.slot = 1, .descriptor = RI::ReadWriteView{.buffer = output, .stride = 4}}});
+    const std::vector<std::byte> shader = gputest::loadShader("ray_query");
+    RI::Pipeline trace = RI::createComputePipeline(device, {.shader = shader});
+
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdBuildTlas(cmd, tlas, tlasDesc, scratch, 0);
+    RI::cmdBarrier(cmd, RI::Stage::eAccelerationStructure, RI::Stage::eCompute);
+    RI::cmdSetHeap(cmd, heap);
+    RI::cmdSetPipeline(cmd, trace);
+    RI::Helpers::cmdSetRootData(cmd, TraceRoot{.tlasSlot = 0, .outputSlot = 1, .width = kSize, .height = kSize});
+    RI::cmdDispatch(cmd, kSize / 8, kSize / 8, 1);
+    RI::cmdBarrier(cmd, RI::Stage::eCompute, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(cmd, output, 0, result, 0, output.size);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+    const auto *t = static_cast<const float *>(result.mapped);
+    EQ_CHECK(std::all_of(t, t + kSize * kSize, [](float v) { return v == -1.0f; }));
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyPipeline(device, trace);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, result);
+    RI::destroyBuffer(device, output);
+    RI::destroyBuffer(device, scratch);
+    RI::destroyAccelerationStructure(device, tlas);
+    RI::destroyBuffer(device, instances);
+    RI::freeMemory(device, readback.memory);
+    RI::freeMemory(device, upload.memory);
+    RI::freeMemory(device, gpu.memory);
+    RI::destroyDevice(device);
+}

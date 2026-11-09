@@ -26,14 +26,14 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `rayTracing`, `accelerationStructureScratchAlignment` | [inline ray tracing](raytracing.md) and the scratch address alignment | `VK_KHR_acceleration_structure` + `VK_KHR_ray_query`, and acceleration structures accepted as a mutable descriptor type; `minAccelerationStructureScratchOffsetAlignment` | raytracing tier 1.1; 256 bytes |
 | `rayTracingHardware` | ray queries run on dedicated hardware (on Metal: Apple9, M3 and later; earlier Apple GPUs trace in shader code) | same as `rayTracing` (P3's floor is hardware) | same as `rayTracing` |
 | `samplerMinMax` | [`Reduction::eMin` / `eMax` samplers](writeSamplers.md) | `samplerFilterMinmax` (Vulkan 1.2) | `D3D12_OPTIONS::TiledResourcesTier` at least 2 |
-| `int64BufferAtomics` | 64-bit integer atomics (`InterlockedAdd`, `InterlockedMin`, … on `uint64_t`/`int64_t`) on buffers reached through the heap ([P105](../design-notes/decisions.md#p105)) | `shaderBufferInt64Atomics` and `shaderInt64` | `D3D12_OPTIONS11::AtomicInt64OnDescriptorHeapResourceSupported` and `D3D12_OPTIONS1::Int64ShaderOps` |
-| `int64SharedAtomics` | the same on `groupshared` memory ([P105](../design-notes/decisions.md#p105)) | `shaderSharedInt64Atomics` and `shaderInt64` | `D3D12_OPTIONS9::AtomicInt64OnGroupSharedSupported` and `Int64ShaderOps` |
+| `int64BufferAtomics` | 64-bit integer atomics (`InterlockedAdd`, `InterlockedMin`, … on `uint64_t`/`int64_t`) on buffers reached through the heap ([P105](../design-notes/decisions.md#p105)); false on Metal | `shaderBufferInt64Atomics` and `shaderInt64` | `D3D12_OPTIONS11::AtomicInt64OnDescriptorHeapResourceSupported` and `D3D12_OPTIONS1::Int64ShaderOps` |
+| `int64SharedAtomics` | the same on `groupshared` memory ([P105](../design-notes/decisions.md#p105)); false on Metal (its compiler fails on them) | `shaderSharedInt64Atomics` and `shaderInt64` | `D3D12_OPTIONS9::AtomicInt64OnGroupSharedSupported` and `Int64ShaderOps` |
 | `workGraphs` | [work graphs](workgraphs.md) | never (D3D12 only) | `D3D12_OPTIONS21::WorkGraphsTier` at least 1.0 |
 | `depthResolveModes`, `stencilResolveModes` | the depth and stencil [resolve](resolve.md) modes, `resolveModeBit(mode)` each | `VkPhysicalDeviceDepthStencilResolveProperties` | programmable sample positions tier 2: depth average/min/max, stencil min/max |
 
 A shader that uses 64-bit atomics where `int64BufferAtomics` or `int64SharedAtomics` is false
 is a **programmer error** at pipeline creation in validation builds: RI reads it from the DXIL
-on D3D12 and names the stage, and the Vulkan validation layer reports it
+on D3D12 and Metal and names the stage, and the Vulkan validation layer reports it
 ([P105](../design-notes/decisions.md#p105)).
 
 ## Signature

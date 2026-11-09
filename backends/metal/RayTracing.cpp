@@ -48,7 +48,10 @@ constexpr uint64 kScratchAlignment = 256;
 constexpr uint64 kHeaderSize = 128; // the 64-byte header, then zeroed contributions
 constexpr uint32 kRepackGroupSize = 64;
 
-uint64 instanceArea(uint32 count) { return alignUp(kMetalInstanceSize * count, kScratchAlignment); }
+// Metal's debug layer refuses an empty instance range, so a top level of 0
+// instances keeps room for one record, which the build reads none of.
+uint64 instanceRecords(uint32 count) { return std::max<uint64>(count, 1); }
+uint64 instanceArea(uint32 count) { return alignUp(kMetalInstanceSize * instanceRecords(count), kScratchAlignment); }
 
 struct RepackParams {
     uint64 src, dst;
@@ -116,7 +119,8 @@ MTL4::InstanceAccelerationStructureDescriptor *tlasDescriptor(const TlasDesc &de
     out->setInstanceTransformationMatrixLayout(MTL::MatrixLayoutRowMajor);
     out->setInstanceCount(desc.instanceCount);
     if (instances != 0) {
-        out->setInstanceDescriptorBuffer(MTL4::BufferRange(instances, kMetalInstanceSize * desc.instanceCount));
+        out->setInstanceDescriptorBuffer(
+            MTL4::BufferRange(instances, kMetalInstanceSize * instanceRecords(desc.instanceCount)));
     }
     out->setUsage(usageOf(desc.flags));
     return out;

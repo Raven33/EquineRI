@@ -812,6 +812,53 @@ EQ_TEST(texture, occlusion) {
     RI::destroyTexture(f.device, target);
 }
 
+// One occlusion query in each of many sections of one command list: each
+// counts its own draw (on Metal, the sections' visibility pages span several
+// chunks of command memory, P115).
+EQ_TEST(texture, occlusion_many_sections) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize,
+                                       .height = kSize,
+                                       .format = RI::Format::eRGBA8Unorm,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    std::vector<std::byte> vs, ps;
+    RI::Pipeline pipeline = drawPipeline(f.device, RI::Format::eRGBA8Unorm, RI::Format::eUndefined, 1, false, vs, ps);
+    constexpr uint32 kSections = 64;
+    RI::QueryPool occlusion = RI::createQueryPool(f.device, {.type = RI::QueryType::eOcclusion, .count = kSections});
+    RI::Buffer results = placeBuffer(f.device, f.readback, {.size = kSections * 8, .usage = RI::BufferUsage::eCopyDst});
+
+    RI::cmdResetQueries(f.cmd, occlusion, 0, kSections);
+    for (uint32 i = 0; i < kSections; ++i) {
+        RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eLoad}}});
+        RI::cmdSetPipeline(f.cmd, pipeline);
+        RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {1.0f, 0.0f, 0.0f, 1.0f}, .depth = 0.5f});
+        RI::cmdBeginQuery(f.cmd, occlusion, i);
+        // Query i counts i % 3 full-screen triangles.
+        for (uint32 d = 0; d < i % 3; ++d) {
+            RI::cmdDraw(f.cmd, 3);
+        }
+        RI::cmdEndQuery(f.cmd, occlusion, i);
+        RI::cmdEndRendering(f.cmd);
+    }
+    RI::cmdResolveQueries(f.cmd, occlusion, 0, kSections, results, 0);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+
+    const auto *values = static_cast<const uint64 *>(results.mapped);
+    for (uint32 i = 0; i < kSections; ++i) {
+        EQ_CHECK(values[i] == (i % 3) * kSize * kSize);
+    }
+
+    RI::resetCommandList(f.cmd);
+    RI::cmdBegin(f.cmd);
+    RI::cmdSetHeap(f.cmd, f.heap);
+    RI::destroyQueryPool(f.device, occlusion);
+    RI::destroyBuffer(f.device, results);
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyTexture(f.device, target);
+}
+
 #if EQUINE_VALIDATION
 // A copy needs the texture's copy usage (P47).
 EQ_TEST(texture, copy_without_usage_reports) {

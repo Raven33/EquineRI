@@ -25,9 +25,8 @@ namespace RI::Metal {
 void notYet(std::string_view call) {
     reportError(ErrorCategory::eUnsupported,
                 std::string(call) +
-                    ": not built yet on the Metal backend (stages 2 to 3b-2 cover compute, textures, rendering and indirect "
-                    "execution; see "
-                    "docs/FeatureProposal-Metal-2026-11-07.md)");
+                    ": not built yet on the Metal backend (built: compute, textures, rendering, indirect execution and "
+                    "inline ray tracing; see docs/FeatureProposal-Metal-2026-11-07.md)");
 }
 
 namespace {

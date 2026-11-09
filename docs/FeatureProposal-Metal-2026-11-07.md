@@ -268,7 +268,7 @@ Q4).
 | Ray queries (P49) | Every Apple-silicon GPU; hardware on M3+ (Apple9). `supportsRaytracing` = 1 on the M4 (**checked**) | supported, plus a new fact `rayTracingHardware` (name to agree; §2 of the handoff) |
 | Acceleration structures | Metal acceleration structures; MSC binds them through a 64-byte `IRRaytracingAccelerationStructureGPUHeader` in the heap entry (**checked** size). RI's shared 64-byte instance format against Metal's instance descriptors: to verify | supported if the instance format holds; otherwise RI's helper converts (question Q5) |
 | Geometry, hull and domain shaders | No native stages. MSC 4.0 converts them for its emulation pipeline (`--enable-gs-ts-emulation`, `IRRuntime4Draw…Emulation` helpers) | unsupported now (`geometryShaders`, `tessellation` false); emulation later |
-| 64-bit atomics, groupshared | Every operation converts (Apple8, Apple9) | `int64SharedAtomics` true (GPU run to verify) |
+| 64-bit atomics, groupshared | Every operation converts (Apple8, Apple9), but Metal's compiler then fails at pipeline creation (**checked**, M4, MSC 4.0b3) | `int64SharedAtomics` false (P116 (2), amended 2026-11-09) |
 | 64-bit atomics, heap buffers | Only Min, Max, CompareExchange and CompareStore convert; Add, And, Or, Xor and Exchange are refused (**checked**) | `int64BufferAtomics` false; question Q3 |
 | Work graphs (P50) | None | unsupported, as on Vulkan |
 | Pipeline statistics (P105) | Metal 4 counter heaps have timestamps only (**checked**) | `ePipelineStatistics`, `eMeshPipelineStatistics`, `eMeshPrimitives` unsupported |
@@ -324,7 +324,7 @@ Logs go to `docs/measurements/macos/verify/<commit>/` on the verify branches, ne
 - **Q2 (§5):** each command list owns command memory that grows by chunks and is recycled at
   `resetCommandList`. P31's invariant is amended for command memory.
 - **Q3 (§9):** `int64BufferAtomics` is false on Metal. The flag keeps one meaning on every backend
-  (all operations); `int64SharedAtomics` is true.
+  (all operations); `int64SharedAtomics` is true (amended 2026-11-09: false, see P116 (2)).
 - **Q4 (§7):** GPU-written counts use RI's first built-in kernel (MSL): it copies the records into
   the scratch range and zeroes the counts of records at or beyond the count. ICB is measured
   against it later (P18). Until the kernel exists, calls with a count are reported unsupported

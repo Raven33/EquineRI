@@ -187,8 +187,8 @@ CheckResult checkRenderingAttachments(size_t colorCount, bool hasDepth);
 CheckResult checkRenderingSize(const RenderingSize &size);
 
 // A shader's 64-bit atomics are ones the device has (P105, DeviceLimits::
-// int64BufferAtomics and int64SharedAtomics). D3D12 only: Vulkan's validation
-// layer already reports them.
+// int64BufferAtomics and int64SharedAtomics). D3D12 and Metal: Vulkan's
+// validation layer already reports them.
 CheckResult checkInt64Atomics(bool usesHeapAtomics, bool usesSharedAtomics, bool hasBufferAtomics,
                               bool hasSharedAtomics, std::string_view call, std::string_view stage);
 

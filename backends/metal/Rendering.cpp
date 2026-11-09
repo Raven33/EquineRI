@@ -142,8 +142,8 @@ void resolveDepthInto(MTL::RenderPassDepthAttachmentDescriptor *depth, MTL::Rend
     }
 }
 
-// While occlusion pools exist (P115): the section's visibility page, in the
-// first kVisibilityOffsetLimit bytes of a command memory chunk. Metal zeroes
+// While occlusion pools exist (P115): the section's visibility page, from
+// command memory of its own (allocateVisibilityPage). Metal zeroes
 // each slot a query names when the section begins (VisibilityResultTypeReset,
 // probed: only those slots), so the page needs no clear.
 void attachVisibilityPage(DeviceState &state, CommandListState &cmd, MTL4::RenderPassDescriptor *pass) {
@@ -153,8 +153,7 @@ void attachVisibilityPage(DeviceState &state, CommandListState &cmd, MTL4::Rende
     if (state.occlusionPools.load(std::memory_order_relaxed) == 0) {
         return;
     }
-    const CommandMemoryAllocation page =
-        allocateCommandMemory(state, cmd, kVisibilityPageSize, 8, kVisibilityOffsetLimit);
+    const CommandMemoryAllocation page = allocateVisibilityPage(state, cmd);
     cmd.visibilityBuffer = page.buffer;
     cmd.visibilityOffset = page.offset;
     pass->setVisibilityResultBuffer(page.buffer);

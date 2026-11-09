@@ -33,7 +33,19 @@ inline MTL::Texture *native(const TextureView &view) { return static_cast<MTL::T
 inline MTL::AccelerationStructure *native(const AccelerationStructure &structure) {
     return static_cast<MTL::AccelerationStructure *>(structure.internal.structure);
 }
-inline MTL4::CounterHeap *native(const QueryPool &pool) { return static_cast<MTL4::CounterHeap *>(pool.internal.heap); }
+// A pool's storage: `counters` for timestamp pools; `results` for occlusion
+// pools, a private buffer of one 64-bit count per query (visibility results are
+// copied there at the end of each section that measured them).
+struct NativeQueryPool {
+    MTL4::CounterHeap *counters = nullptr;
+    MTL::Buffer *results = nullptr;
+};
+inline NativeQueryPool native(const QueryPool &pool) {
+    if (pool.type == QueryType::eOcclusion) {
+        return {.results = static_cast<MTL::Buffer *>(pool.internal.heap)};
+    }
+    return {.counters = static_cast<MTL4::CounterHeap *>(pool.internal.heap)};
+}
 
 // The heap buffers, bound at argument-table buffer indices 0 and 1
 // (kIRDescriptorHeapBindPoint, kIRSamplerHeapBindPoint), each an array of

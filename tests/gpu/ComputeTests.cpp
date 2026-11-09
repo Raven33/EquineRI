@@ -470,6 +470,20 @@ EQ_TEST(compute, too_many_groups_reports) {
 #endif
 
 #if EQUINE_VALIDATION
+// A shader with 64-bit groupshared atomics on a device whose
+// int64SharedAtomics is false (P105): registered on Metal (P116 (2)).
+EQ_TEST(compute, int64_shared_atomics_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    if (device.limits.int64SharedAtomics) {
+        std::abort(); // the registered message is then missing: the test fails
+    }
+    const std::vector<std::byte> bytecode = loadShader("atomic64_shared");
+    RI::createComputePipeline(device, {.shader = bytecode});
+}
+#endif
+
+#if EQUINE_VALIDATION
 // More bytes than kMaxSmallWriteSize through the span form (P107).
 EQ_TEST(compute, small_write_too_large_reports) {
     std::signal(SIGABRT, [](int) { std::_Exit(0); });

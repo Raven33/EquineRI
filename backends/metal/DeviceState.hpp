@@ -66,8 +66,11 @@ inline constexpr uint32 kOcclusionSlotsPerSection = 4096;
 inline constexpr uint64 kVisibilityPageSize = uint64{kOcclusionSlotsPerSection} * 8;
 // Metal writes a visibility result at an offset of 256 KiB or more to offset
 // 0 instead, silently, also under the debug layer (probed on the M4): pages
-// end within the first 256 KiB of their chunk.
+// come from chunks of their own, of that size (8 pages each), so a page never
+// starts past it and other command memory grows as before.
 inline constexpr uint64 kVisibilityOffsetLimit = 256 * 1024;
+inline constexpr uint64 kVisibilityChunkSize = kVisibilityOffsetLimit;
+inline constexpr uint64 kPagesPerVisibilityChunk = kVisibilityChunkSize / kVisibilityPageSize;
 
 // The resolve modes Metal has (P76): depth resolves take sample 0, the
 // minimum or the maximum (MTLMultisampleDepthResolveFilter), stencil resolves
@@ -201,6 +204,10 @@ struct CommandListState {
     std::vector<CommandMemoryChunk> chunks;
     size_t chunk = 0;   // the chunk being filled
     uint64 used = 0;    // bytes used in it
+    // Visibility pages (allocateVisibilityPage): fixed chunks of
+    // kVisibilityChunkSize, `pagesUsed` pages taken since the last recycle.
+    std::vector<MTL::Buffer *> visibilityChunks;
+    uint64 pagesUsed = 0;
 
     // Lifecycle (P34, P56): Metal asserts or faults on misuse, so RI checks it
     // in every build. `recorded`: ended by cmdEnd and not submitted since.
@@ -284,7 +291,10 @@ void endEncoder(CommandListState &cmd);
 // of two, at least 16 recommended for root data), valid until the list is
 // reset, ending at most `limit` bytes into their chunk (visibility pages).
 CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListState &cmd, uint64 size,
-                                              uint64 alignment, uint64 limit = ~uint64{0});
+                                              uint64 alignment);
+// Commands.cpp: a section's visibility page (kVisibilityPageSize bytes, below
+// kVisibilityOffsetLimit in its buffer), command memory of its own (P115).
+CommandMemoryAllocation allocateVisibilityPage(DeviceState &state, CommandListState &cmd);
 // Commands.cpp: RI's Stage masks as MTLStages (proposal §6.2).
 uint64 stagesOf(Stage stage);
 // The stages render encoders run, and that their barriers accept.

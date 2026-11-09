@@ -2,7 +2,8 @@
 // (P20, P34, P36, P56, P85, P107, P115).
 //
 // Owns: command lists (an MTL4CommandAllocator, an MTL4CommandBuffer and one
-// MTL4ArgumentTable each), their command memory (allocateCommandMemory), the
+// MTL4ArgumentTable each), their command memory (allocateCommandMemory, and
+// allocateVisibilityPage for the sections' visibility pages), the
 // open encoder (computeEncoder, beginRenderEncoder, endEncoder), render passes
 // that only clear (runClearPass), cmdBegin / cmdEnd, cmdSetHeap,
 // cmdSetPipeline, cmdSetRootData, cmdDispatch, cmdBarrier (stage masks as
@@ -107,6 +108,7 @@ void recycle(CommandListState &cmd) {
     cmd.allocator->reset();
     cmd.chunk = 0;
     cmd.used = 0;
+    cmd.pagesUsed = 0;
 }
 
 // A fresh command buffer for a list whose last submission completed. Metal's
@@ -262,10 +264,9 @@ void endEncoder(CommandListState &cmd) {
 }
 
 CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListState &cmd, uint64 size,
-                                              uint64 alignment, uint64 limit) {
-    // A new chunk starts at offset 0, so `limit` holds there whenever size does.
+                                              uint64 alignment) {
     const auto fits = [&](size_t chunk, uint64 used) {
-        return ((used + alignment - 1) & ~(alignment - 1)) + size <= std::min(cmd.chunks[chunk].size, limit);
+        return ((used + alignment - 1) & ~(alignment - 1)) + size <= cmd.chunks[chunk].size;
     };
     if (cmd.chunk < cmd.chunks.size() && !fits(cmd.chunk, cmd.used)) {
         // Later chunks are free since the last recycle; skip those too small.
@@ -296,6 +297,27 @@ CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListSta
     return {.cpu = static_cast<std::byte *>(chunk.buffer->contents()) + offset,
             .gpuAddress = chunk.buffer->gpuAddress() + offset,
             .buffer = chunk.buffer,
+            .offset = offset};
+}
+
+// Fixed chunks, so a list of many sections takes 32 KiB per section and the
+// main chunks do not double for pages they could not hold.
+CommandMemoryAllocation allocateVisibilityPage(DeviceState &state, CommandListState &cmd) {
+    const size_t index = cmd.pagesUsed / kPagesPerVisibilityChunk;
+    if (index == cmd.visibilityChunks.size()) {
+        MTL::Buffer *buffer = state.device->newBuffer(kVisibilityChunkSize, kCommandMemoryOptions);
+        if (buffer == nullptr) {
+            reportError(ErrorCategory::eOutOfMemory, "command memory: newBuffer failed for visibility pages");
+        }
+        makeResident(state, buffer);
+        cmd.visibilityChunks.push_back(buffer);
+    }
+    MTL::Buffer *buffer = cmd.visibilityChunks[index];
+    const uint64 offset = (cmd.pagesUsed % kPagesPerVisibilityChunk) * kVisibilityPageSize;
+    ++cmd.pagesUsed;
+    return {.cpu = static_cast<std::byte *>(buffer->contents()) + offset,
+            .gpuAddress = buffer->gpuAddress() + offset,
+            .buffer = buffer,
             .offset = offset};
 }
 
@@ -352,6 +374,10 @@ void destroyCommandList(Device &device, CommandList &cmd) {
     for (CommandMemoryChunk &chunk : list->chunks) {
         makeNonResident(state, chunk.buffer);
         release(chunk.buffer);
+    }
+    for (MTL::Buffer *buffer : list->visibilityChunks) {
+        makeNonResident(state, buffer);
+        release(buffer);
     }
     release(list->argumentTable);
     release(list->commandBuffer);

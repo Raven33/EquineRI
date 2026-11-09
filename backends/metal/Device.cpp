@@ -227,8 +227,11 @@ Device createDevice(const DeviceDesc &desc) {
         // Min and max reductions need device support Metal reports nowhere (the
         // debug layer refuses them on the M4).
         .samplerMinMax = false,
-        .int64BufferAtomics = false, // P116 (2)
-        .int64SharedAtomics = true,
+        // P116 (2): MSC converts only some heap-buffer operations; groupshared
+        // ones convert, but Metal's compiler then fails at pipeline creation
+        // (MSC 4.0b3, macOS 27, M4: XPC_ERROR_CONNECTION_INTERRUPTED).
+        .int64BufferAtomics = false,
+        .int64SharedAtomics = false,
         .accelerationStructureScratchAlignment = state->rayTracing ? 256u : 0u, // RayTracing.cpp
         .depthResolveModes = kDepthResolveModes, // sample 0, min, max (Rendering.cpp)
         .stencilResolveModes = kStencilResolveModes,

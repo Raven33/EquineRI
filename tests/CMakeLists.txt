@@ -117,6 +117,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.copy_depth_upload
     texture.occlusion_and_statistics
     texture.occlusion
+    texture.occlusion_many_sections
     texture.indexed_draw_with_blending
     texture.stencil_test
     texture.stencil_reference_command
@@ -127,6 +128,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.indirect_level1
     texture.indirect_level2
     raytracing.build_trace_update
+    raytracing.empty_top_level
     texture.samplers
     texture.stage_link
     texture.line_strip
@@ -348,6 +350,7 @@ if (TARGET EquineMetalBackend)
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/HelperTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/RayTracingTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/metal/DeviceTests.cpp"
     )
     # The shaders of the registered cases (geometry and tessellation ones are
     # left out: those cases skip before loading them, P116 (1)).
@@ -366,6 +369,9 @@ if (TARGET EquineMetalBackend)
     # MSC refuses add and exchange on 64-bit heap atomics (P116 (2)); the test
     # skips itself since int64BufferAtomics is false.
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 NO_METAL SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/atomic64.hlsl")
+    # Converts, but Metal's compiler fails on it: int64SharedAtomics is false and
+    # validation builds report the pipeline (compute.int64_shared_atomics_reports).
+    equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${dir}/atomic64_shared.hlsl")
     target_include_directories(EquineRIMetalTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     # The helpers link the backend publicly: naming it again repeats the archive,
     # which Apple's linker warns about.
@@ -414,15 +420,19 @@ if (TARGET EquineMetalBackend)
         texture.rendering_without_attachments
         texture.rendering_desc_without_attachment_reports
         texture.occlusion
+        texture.occlusion_many_sections
         texture.resolve_color
         texture.resolve_depth
         texture.indirect_level1
         texture.indirect_level2
         raytracing.build_trace_update
+        raytracing.empty_top_level
         helpers.frame_ring_and_profiler
         helpers.allocators
         helpers.transfers
         helpers.group_grid
+        metal.native_access
+        metal.visibility_pages_bounded
         # Skip themselves: no geometry or tessellation on Metal (P116 (1)).
         texture.geometry_shader
         texture.tessellation
@@ -448,6 +458,10 @@ if (TARGET EquineMetalBackend)
             texture.depth_write_in_read_only_section_reports
             texture.missing_discard_reports
             texture.stage_link_mismatch_reports
+            compute.int64_shared_atomics_reports
+        )
+        list(APPEND EQUINE_METAL_ABORT_TESTS
+            "compute.int64_shared_atomics_reports|programmer error: createComputePipeline: the compute shader uses 64-bit atomics on groupshared memory"
         )
         foreach(entry IN LISTS EQUINE_GPU_SHARED_ABORT_TESTS)
             if (entry MATCHES "^(compute|threads)\\." OR

@@ -24,9 +24,9 @@ the 8 commits from `eb983e8` on are **not pushed**:
 | `82f5bb7` | stage 3b-2: resolves, occlusion queries, indirect execution (Level 1 and 2, GPU counts) |
 | `6b723ba` | inline ray tracing, `DeviceLimits::rayTracingHardware`, depth and stencil resolve modes |
 
-Tests on the M4 (macOS 27): **113/113** with `ctest --preset macos-debug` (ASan, UBSan, RI
-validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`), **99/99** in a build with RI
-validation off. No compiler or clang-tidy warnings. Every portable GPU test runs on Metal except
+Tests on the M4 (macOS 27), after the review fixes: **118/118** with `ctest --preset
+macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`),
+**102/102** in a build with RI validation off (`build/noval`). No compiler or clang-tidy warnings. Every portable GPU test runs on Metal except
 `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and the swapchain tests (not built). `texture.geometry_shader`, `texture.tessellation` and
@@ -49,9 +49,9 @@ and native sections (P27, P70, P77). `backends/metal/Unsupported.cpp` lists what
   built from source) and `EQUINE_MSC_DIR=~/dev/tools/msc` (Metal Shader Converter **4.0 beta 3**,
   extracted from Apple's pkg, not installed system-wide; CMake checks version 4.0.3).
 - Build and test: `cmake --preset macos-debug && cmake --build --preset macos-debug && ctest
-  --preset macos-debug`. The validation-off tree used for checks is in the session scratchpad
-  (`build-noval`, configured with `-DEQUINE_VALIDATION=OFF` and `EQUINE_METAL_BACKEND=ON`); make
-  a new one under `build/` if the scratchpad is gone.
+  --preset macos-debug`. The validation-off tree used for checks is `build/noval`
+  (`cmake --preset macos-debug -B build/noval -DEQUINE_VALIDATION=OFF -DEQUINE_METAL_BACKEND=ON`;
+  run its `ctest` with `MTL_DEBUG_LAYER=1 MTL_SHADER_VALIDATION=1`).
 - One case: `build/macos-debug/tests/EquineRIMetalTests <name>`, e.g. `texture.indirect_level1`
   (set `MTL_DEBUG_LAYER=1 MTL_SHADER_VALIDATION=1` as the preset does).
 - The user connects over Tailscale SSH and Michel may be using the screen: keep tests offscreen.
@@ -114,15 +114,17 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 
 ## 5. Known gaps (what is unchecked)
 
-- **Reviewed 2026-11-09** (the whole backend, with probes): see §7 for the bugs found, none
-  fixed yet. Stages 3a and 3b-1 had been reviewed by two agents each and their findings fixed.
+- **Reviewed 2026-11-09** (the whole backend, with probes): see §7 for the bugs found; all five
+  are fixed, each with a registered test (§7.1). Stages 3a and 3b-1 had been reviewed by two agents each and their findings fixed.
 - **Not compiled:** the D3D12 and Vulkan edits for `rayTracingHardware`
-  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), and the new portable test
-  `texture.occlusion` on those backends. Check on Windows and Linux.
+  (`backends/d3d12/Device.cpp`, `backends/vulkan/Device.cpp`), and the new portable tests
+  `texture.occlusion`, `texture.occlusion_many_sections` and `raytracing.empty_top_level` on
+  those backends. Check on Windows and Linux.
 - **Probed but not registered** (§7.3; the probes should become tests): indirect mesh draws,
   Level 2 dispatches with a count, many records; indexed or multiple BLAS geometries, several
   instances, instance masks, IDs and flags, `ePreferFastBuild`, TLAS refits; point lists;
-  layered rendering with resolves; `formatSupported` format by format (M4 only); `native()`.
+  layered rendering with resolves; `formatSupported` format by format (M4 only). `native()` is
+  now `metal.native_access`.
 - **Untested on Metal:** texture copies between different formats of one texel size; sampling
   a read-only depth attachment inside its section.
 - **Open behaviour:** a pipeline whose stencil writes, in a read-only stencil section, is not
@@ -159,7 +161,17 @@ warnings. Nothing was changed in the repository. The probes (not part of the rep
 (`Probe.cpp`, `Probe2.cpp`, shaders in `src/`, built by `mkshaders.sh`, `build.sh` and
 `build2.sh`; `sweep.log` holds the format sweep).
 
-### 7.1 Bugs found (not fixed)
+### 7.1 Bugs found (all fixed 2026-11-09)
+
+Fixes and tests: (1) pages from fixed 256 KiB chunks of their own (`allocateVisibilityPage`,
+`Commands.cpp`; `allocateCommandMemory` lost its `limit`), tests `metal.visibility_pages_bounded`
+(residency-set size after 64 sections, twice) and `texture.occlusion_many_sections` (portable);
+(2) `int64SharedAtomics` false, the user's decision, P116 (2) amended, test
+`compute.int64_shared_atomics_reports` (shader `atomic64_shared.hlsl`); (3) one 72-byte record
+kept for 0 instances (`instanceRecords`, `RayTracing.cpp`), test `raytracing.empty_top_level`
+(portable); (4) `native(const QueryPool &)` returns `NativeQueryPool{counters, results}`, and
+`applyName` labels an occlusion pool's buffer as a buffer, test `metal.native_access`; (5) both
+texts updated. Tests (1), (2) and (3) fail on the unfixed backend.
 
 1. **Visibility pages make command memory grow exponentially.** While any occlusion pool exists,
    each section takes a 32 KiB page that must end within the first 256 KiB of a chunk

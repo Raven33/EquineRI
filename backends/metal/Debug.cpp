@@ -53,7 +53,11 @@ void applyName([[maybe_unused]] DeviceState &state, const DescriptorHeap &heap, 
     EQ_MTL_TRACK_NAME(&state, heap.internal.id, name);
 }
 void applyName([[maybe_unused]] DeviceState &state, const QueryPool &pool, std::string_view name) {
-    label<MTL4::CounterHeap>(pool.internal.heap, name);
+    if (pool.type == QueryType::eOcclusion) {
+        label<MTL::Buffer>(pool.internal.heap, name);
+    } else {
+        label<MTL4::CounterHeap>(pool.internal.heap, name);
+    }
     EQ_MTL_TRACK_NAME(&state, pool.internal.id, name);
 }
 // MTLComputePipelineState has no label setter: the name reaches validation messages only.

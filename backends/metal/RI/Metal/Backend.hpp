@@ -244,7 +244,7 @@ struct QueryPool {
     uint32 count = 0;
     struct {
         DeviceState *device = nullptr;
-        void *heap = nullptr; // MTL4::CounterHeap (timestamps)
+        void *heap = nullptr; // MTL4::CounterHeap (timestamps) or MTL::Buffer (occlusion)
         uint64 id = 0;
     } internal;
 };
