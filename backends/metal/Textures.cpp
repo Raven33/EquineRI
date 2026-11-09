@@ -117,7 +117,8 @@ MTL::TextureUsage usageOf(const TextureDesc &desc) {
     if (has(desc.usage, TextureUsage::eRenderTarget | TextureUsage::eDepthStencil)) {
         flags |= MTL::TextureUsageRenderTarget;
     }
-    // Views in other formats (P74), and stencil views of a depth-stencil texture.
+    // Views in other formats (P74), and the X*_Stencil8 views of sampled
+    // depth-stencil textures (viewPixelFormatOf).
     if (!desc.viewFormats.empty() || (hasStencil(desc.format) && has(desc.usage, TextureUsage::eSampled))) {
         flags |= MTL::TextureUsagePixelFormatView;
     }
@@ -170,9 +171,13 @@ uint8 planesOf(Format format, Aspect aspect) {
 }
 
 // The pixel format a view reads: the stencil aspect of a depth-stencil
-// texture is Metal's X*_Stencil8 view; a depth view of one reads depth.
-MTL::PixelFormat viewPixelFormatOf(Format format, uint8 planes) {
-    if (planes == 2) {
+// texture is Metal's X*_Stencil8 view; a depth view of one reads depth. Only
+// sampled textures get X*_Stencil8 views (they alone have PixelFormatView,
+// which can cost depth buffers their lossless compression): other stencil
+// views serve copies, clears and attachments, which use the texture itself
+// with a blit option or attachment slot, so they keep its format.
+MTL::PixelFormat viewPixelFormatOf(Format format, uint8 planes, TextureUsage usage) {
+    if (planes == 2 && has(usage, TextureUsage::eSampled)) {
         return format == Format::eD24UnormS8Uint ? MTL::PixelFormatX24_Stencil8 : MTL::PixelFormatX32_Stencil8;
     }
     return pixelFormatOf(format);
@@ -225,7 +230,7 @@ TextureView makeView(DeviceState &state, const Texture &texture, const TextureVi
         type = MTL::TextureType3D;
     }
     auto *resource = static_cast<MTL::Texture *>(texture.internal.texture);
-    const MTL::PixelFormat pixelFormat = viewPixelFormatOf(format, planes);
+    const MTL::PixelFormat pixelFormat = viewPixelFormatOf(format, planes, texture.usage);
     // A volume view covers every slice: the slice range only picks render targets.
     const NS::Range levels(desc.baseMip, mipCount);
     const NS::Range slices = volume ? NS::Range(0, 1) : NS::Range(desc.baseLayer, layerCount);

@@ -52,6 +52,29 @@ inline constexpr uint32 kRootDataIndex = 2;     // kIRArgumentBufferBindPoint: t
 inline constexpr uint32 kDrawArgumentsIndex = 4; // kIRArgumentBufferDrawArgumentsBindPoint
 inline constexpr uint32 kUniformsIndex = 5;      // kIRArgumentBufferUniformsBindPoint: the index type
 inline constexpr uint32 kArgumentTableBuffers = 6;
+// Bytes between the index types of DeviceState::uniforms: argument-table
+// addresses stay 16-byte aligned, as Metal wants buffer addresses.
+inline constexpr uint64 kIndexTypeStride = 16;
+// MSC's index types (IRRuntime index types): the slots of DeviceState::uniforms.
+inline constexpr uint64 kNonIndexed = 0;
+inline constexpr uint64 kIndexUint16 = 1;
+inline constexpr uint64 kIndexUint32 = 2;
+
+// Occlusion queries (P115): a rendering section's visibility results go to a
+// page of this many 8-byte slots in command memory.
+inline constexpr uint32 kOcclusionSlotsPerSection = 4096;
+inline constexpr uint64 kVisibilityPageSize = uint64{kOcclusionSlotsPerSection} * 8;
+// Metal writes a visibility result at an offset of 256 KiB or more to offset
+// 0 instead, silently, also under the debug layer (probed on the M4): pages
+// end within the first 256 KiB of their chunk.
+inline constexpr uint64 kVisibilityOffsetLimit = 256 * 1024;
+
+// The resolve modes Metal has (P76): depth resolves take sample 0, the
+// minimum or the maximum (MTLMultisampleDepthResolveFilter), stencil resolves
+// sample 0 only (the other filter follows the depth resolve, no RI mode).
+inline constexpr uint32 kDepthResolveModes = resolveModeBit(ResolveMode::eSampleZero) |
+                                             resolveModeBit(ResolveMode::eMin) | resolveModeBit(ResolveMode::eMax);
+inline constexpr uint32 kStencilResolveModes = resolveModeBit(ResolveMode::eSampleZero);
 
 // One heap slot: MSC's IRDescriptorTableEntry (P114 (3)), as MSC's runtime
 // header writes it. Buffers: gpuVA = address, metadata low 32 bits = length.
@@ -91,8 +114,9 @@ struct DeviceState {
     // handlers, which may run after destroyDevice.
     std::shared_ptr<GpuFeedback> feedback = std::make_shared<GpuFeedback>();
 
-    // MSC's uniform at kUniformsIndex, one 16-bit index type per slot: 0
-    // non-indexed, 1 uint16, 2 uint32 (IRRuntime index types). Fixed, shared.
+    // MSC's uniform at kUniformsIndex, one 16-bit index type per slot of
+    // kIndexTypeStride bytes: 0 non-indexed, 1 uint16, 2 uint32 (IRRuntime
+    // index types). Fixed, shared by every command list.
     MTL::Buffer *uniforms = nullptr;
 
     // One sampler per distinct SamplerDesc (P99), created on first write and
@@ -103,6 +127,11 @@ struct DeviceState {
     // Orders counter-heap resolves, which run outside encoders, after the
     // queue's earlier work and before later encoders (Queries.cpp).
     MTL::Fence *resolveFence = nullptr;
+
+    // Occlusion query pools alive: while there are any, each rendering
+    // section gets a visibility page (P115), since Metal takes the visibility
+    // buffer when the section begins, before RI knows whether it holds queries.
+    std::atomic<uint32> occlusionPools{0};
 
 #if EQUINE_VALIDATION
     std::thread::id deviceThread; // the thread that called createDevice (P106)
@@ -125,14 +154,24 @@ struct CommandMemoryAllocation {
     uint64 offset = 0;             // in the chunk
 };
 
+// One occlusion query of the open section (P115): its slot in the section's
+// visibility page, copied to `pool` at `index` by cmdEndRendering.
+struct OcclusionSlot {
+    MTL::Buffer *pool = nullptr;
+    uint32 index = 0;
+    uint32 slot = 0;
+};
+
 // Recording state of one command list. Metal records through encoders: RI
-// keeps one compute encoder open for dispatches, copies and clears, and
-// carries barriers across encoder boundaries (P116, proposal §6.2).
+// keeps one compute encoder open for dispatches, copies and clears, opens a
+// render encoder per rendering section, and carries barriers across encoder
+// boundaries (P116, proposal §6.2). At most one encoder is open.
 struct CommandListState {
     MTL4::CommandAllocator *allocator = nullptr;
     MTL4::CommandBuffer *commandBuffer = nullptr;
     MTL4::ArgumentTable *argumentTable = nullptr; // kArgumentTableBuffers buffer slots
-    MTL4::ComputeCommandEncoder *compute = nullptr; // the open encoder, or null
+    MTL4::ComputeCommandEncoder *compute = nullptr; // the open compute encoder, or null
+    MTL4::RenderCommandEncoder *render = nullptr;   // the open section's encoder, or null
 
     // Barriers (P36) as MTLStages masks. `pendingBefore/After` were recorded
     // while no encoder was open: the next encoder starts with a queue barrier.
@@ -149,6 +188,7 @@ struct CommandListState {
     // in every build. `recorded`: ended by cmdEnd and not submitted since.
     bool recording = false;
     bool recorded = false;
+    bool everBegun = false; // the command buffer was begun once (renewCommandBuffer)
 
     // Bound state.
     bool heapSet = false;
@@ -156,7 +196,37 @@ struct CommandListState {
     MTL::ComputePipelineState *pipeline = nullptr;
     uint32 threadGroupSize[3] = {1, 1, 1};
     uint32 rootDataSize = 0;
-    bool rendering = false; // rendering sections: not built yet on Metal
+    // The graphics pipeline set last (a copy of the value: its state is
+    // applied to each render encoder), kept across sections as on D3D12.
+    Pipeline graphics;
+    bool graphicsSet = false;
+    // The index buffer (cmdSetIndexBuffer), kept until set again.
+    uint64 indexAddress = 0, indexLength = 0;
+    IndexFormat indexFormat = IndexFormat::eUint16;
+    bool indexSet = false;
+
+    // The open rendering section (P40, P103, P104, P75).
+    bool rendering = false;
+    uint32 renderWidth = 0, renderHeight = 0;
+    Viewport viewport;
+    Rect scissor;
+    uint8 stencilReference = 0;
+    bool stencilOverride = false; // cmdSetStencilReference was called in this section
+    bool depthReadOnly = false;
+    bool sectionDrawn = false;    // a draw was encoded in the section (cmdWriteTimestamp)
+    // The section's visibility page (P115): null when no occlusion pool
+    // existed as the section began. The query open, if any (Metal counts one
+    // at a time), and the queries the section took slots for.
+    MTL::Buffer *visibilityBuffer = nullptr;
+    uint64 visibilityOffset = 0;
+    std::vector<OcclusionSlot> occlusionSlots;
+    bool occlusionOpen = false;
+    OcclusionSlot openOcclusion;
+    // Markers inside a section are the render encoder's debug groups (a
+    // command-buffer group must not straddle an encoder): the names of those
+    // still open, and how many markers begun before the section ended in it.
+    std::vector<std::string> sectionMarkers;
+    uint32 deferredPops = 0;
     // A counter-heap resolve ran since the last encoder: the next encoder waits
     // for resolveFence (DeviceState's, borrowed) before its work.
     bool waitResolve = false;
@@ -181,23 +251,42 @@ uint64 completedValue(DeviceState &state);
 [[noreturn]] void reportNsError(ErrorCategory category, std::string_view call, NS::Error *error);
 
 // Commands.cpp: the open compute encoder, opened if needed (with the argument
-// table set and carried barriers issued). Ends an open encoder of another kind.
+// table set and carried barriers issued). Inside a rendering section it
+// reports the call as misplaced: the section's render encoder stays open.
 MTL4::ComputeCommandEncoder *computeEncoder(CommandListState &cmd);
+// Commands.cpp: opens a render encoder for `pass` (ending the open encoder),
+// with the argument table set for every render stage and the carried
+// barriers issued. Its fragment work (attachment loads and stores) waits for
+// all earlier work, and endEncoder makes every later encoder wait for it: an
+// attachment is ordered as D3D12's layout switches order it (P68).
+MTL4::RenderCommandEncoder *beginRenderEncoder(CommandListState &cmd, MTL4::RenderPassDescriptor *pass);
 // Commands.cpp: ends the open encoder, if any, carrying its barriers.
 void endEncoder(CommandListState &cmd);
 // Commands.cpp: `size` bytes of command memory aligned to `alignment` (a power
-// of two, at least 16 recommended for root data), valid until the list is reset.
+// of two, at least 16 recommended for root data), valid until the list is
+// reset, ending at most `limit` bytes into their chunk (visibility pages).
 CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListState &cmd, uint64 size,
-                                              uint64 alignment);
+                                              uint64 alignment, uint64 limit = ~uint64{0});
 // Commands.cpp: RI's Stage masks as MTLStages (proposal §6.2).
 uint64 stagesOf(Stage stage);
 // The stages render encoders run, and that their barriers accept.
 inline constexpr uint64 kRenderEncoderStages =
     MTL::StageVertex | MTL::StageObject | MTL::StageMesh | MTL::StageFragment;
 // Commands.cpp: encodes a render pass that only loads and stores (a clear
-// outside rendering sections). It waits for the barriers recorded before it,
-// and every later encoder waits for it, so it orders like a copy (P65).
+// outside rendering sections): beginRenderEncoder then endEncoder, so it
+// orders like D3D12's clear inside its layout switches (P65).
 void runClearPass(CommandListState &cmd, MTL4::RenderPassDescriptor *pass);
+// Rendering.cpp: cmdSetPipeline's half for graphics pipelines: keeps the
+// pipeline and, inside a section, sets its state on the render encoder.
+void bindGraphicsPipeline(CommandListState &cmd, const Pipeline &pipeline);
+// Rendering.cpp: every build, a draw needs an open section and a pipeline of
+// its kind (mesh or vertex): Metal faults otherwise.
+void checkDraw(CommandListState &cmd, const char *call, bool mesh);
+// Rendering.cpp: points kUniformsIndex at MSC's index type for the next draw.
+void bindIndexType(DeviceState &state, CommandListState &cmd, uint64 indexType);
+// Queries.cpp: the occlusion part of cmdEndRendering, once the section's
+// encoder ended: copies the section's results into their pools (P115).
+void copyOcclusionResults(CommandListState &cmd);
 
 // Textures.cpp: RI's formats as Metal's (Invalid for formats Metal lacks).
 MTL::PixelFormat pixelFormatOf(Format format);

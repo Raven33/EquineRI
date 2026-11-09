@@ -182,7 +182,10 @@ Device createDevice(const DeviceDesc &desc) {
 
     // MSC's index-type uniform (kUniformsIndex): bound per draw at the slot of
     // the draw's index type, so one fixed buffer serves every command list.
-    const uint16 indexTypes[3] = {0, 1, 2};
+    uint16 indexTypes[3 * kIndexTypeStride / sizeof(uint16)] = {};
+    for (uint16 type = 0; type < 3; ++type) {
+        indexTypes[type * kIndexTypeStride / sizeof(uint16)] = type;
+    }
     state->uniforms = state->device->newBuffer(indexTypes, sizeof(indexTypes),
                                                MTL::ResourceStorageModeShared | MTL::ResourceHazardTrackingModeUntracked);
     if (state->uniforms == nullptr) {
@@ -197,9 +200,9 @@ Device createDevice(const DeviceDesc &desc) {
     }
     state->resolveFence->setLabel(nsString("EquineRI counter resolves"));
 
-    // Stages 2 and 3a of the backend (P116): compute and textures without
-    // rendering. Features not built yet are reported false, even where the GPU
-    // has them (mesh, ray queries, indirect).
+    // Stages 2 to 3b-1 of the backend (P116): compute, textures, rendering and
+    // mesh draws. Features not built yet are reported false, even where the
+    // GPU has them (ray queries, indirect).
     device.limits = {
         // Heaps are plain buffers of 24-byte entries: no Metal limit binds
         // before memory does; RI keeps D3D12's tier-2 count as the portable size.
@@ -214,7 +217,7 @@ Device createDevice(const DeviceDesc &desc) {
         .maxConstantViewSize = 65536,
         .gpuUploadMemory = true, // unified memory: every heap is GPU memory
         .timestampFrequency = state->device->queryTimestampFrequency(),
-        .meshShaders = false,
+        .meshShaders = true, // object and mesh functions, from MSC (P116)
         .geometryShaders = false, // P116 (1): MSC's emulation later
         .tessellation = false,
         .indirectRootData = false,

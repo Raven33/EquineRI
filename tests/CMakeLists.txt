@@ -337,20 +337,29 @@ if (TARGET EquineD3D12Backend)
 endif()
 
 if (TARGET EquineMetalBackend)
-    # Stages 2 and 3a of the Metal backend (P113): compute, and textures without
-    # rendering, offscreen. The other portable tests join as their features
-    # are built on Metal.
+    # Stages 2 to 3b-1 of the Metal backend (P113): compute, textures,
+    # graphics pipelines, rendering sections and draws, offscreen. The other
+    # portable tests join as their features are built on Metal.
     add_executable(EquineRIMetalTests
         "${CMAKE_CURRENT_SOURCE_DIR}/TestMain.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ComputeTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/TextureTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/gpu/ThreadTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gpu/HelperTests.cpp"
     )
-    # The compute shaders of the registered cases; the graphics ones join with rendering.
+    # The shaders of the registered cases (geometry and tessellation ones are
+    # left out: those cases skip before loading them, P116 (1)).
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 SOURCES "${dir}/fill.hlsl" "${dir}/read_texture.hlsl"
                        "${dir}/write_storage.hlsl" "${dir}/sample_texture.hlsl" "${dir}/sample_cube.hlsl"
-                       "${dir}/write_faces.hlsl")
+                       "${dir}/write_faces.hlsl" "${dir}/read_volume.hlsl" "${dir}/grid_count.hlsl")
+    equine_add_shaders(EquineRIMetalTests PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
+                       "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/storage_raster_vs.hlsl")
+    equine_add_shaders(EquineRIMetalTests PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl"
+                       "${dir}/link_skip_ps.hlsl" "${dir}/storage_raster_ps.hlsl")
+    equine_add_shaders(EquineRIMetalTests PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl"
+                       "${dir}/fullscreen_payload_ms.hlsl")
+    equine_add_shaders(EquineRIMetalTests PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
     # MSC refuses add and exchange on 64-bit heap atomics (P116 (2)); the test
     # skips itself since int64BufferAtomics is false.
     equine_add_shaders(EquineRIMetalTests PROFILE cs_6_6 NO_METAL SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/atomic64.hlsl")
@@ -380,6 +389,31 @@ if (TARGET EquineMetalBackend)
         texture.samplers
         texture.cube_storage_then_sample
         texture.unlisted_view_format_reports
+        texture.render_then_sample
+        texture.msaa_render_then_sample
+        texture.clear_load_op
+        texture.depth_write_then_sample
+        texture.read_only_depth_section
+        texture.read_only_depth_section_sampling
+        texture.discard_after_aliasing
+        texture.timestamps
+        texture.indexed_draw_with_blending
+        texture.stencil_test
+        texture.stencil_reference_command
+        texture.mesh_shaders
+        texture.stage_link
+        texture.line_strip
+        texture.wireframe
+        texture.depth_bias
+        texture.depth_clamp
+        texture.volume_copy_render_sample
+        texture.viewport_and_scissor
+        texture.rendering_without_attachments
+        texture.rendering_desc_without_attachment_reports
+        helpers.frame_ring_and_profiler
+        helpers.allocators
+        helpers.transfers
+        helpers.group_grid
         # Skip themselves: no geometry or tessellation on Metal (P116 (1)).
         texture.geometry_shader
         texture.tessellation
@@ -387,6 +421,7 @@ if (TARGET EquineMetalBackend)
     )
     set(EQUINE_METAL_ABORT_TESTS
         "texture.unlisted_view_format_reports|programmer error: createView: format"
+        "texture.rendering_desc_without_attachment_reports|programmer error: cmdBeginRendering: the RenderingDesc has no attachment"
     )
     if (EQUINE_VALIDATION)
         list(APPEND EQUINE_METAL_TEST_NAMES
@@ -401,21 +436,24 @@ if (TARGET EquineMetalBackend)
             threads.call_from_other_thread_reports
             texture.copy_without_usage_reports
             texture.read_only_depth_sampling_on_color_reports
+            texture.depth_write_in_read_only_section_reports
+            texture.missing_discard_reports
+            texture.stage_link_mismatch_reports
         )
         foreach(entry IN LISTS EQUINE_GPU_SHARED_ABORT_TESTS)
             if (entry MATCHES "^(compute|threads)\\." OR
-                entry MATCHES "^texture\\.(copy_without_usage|read_only_depth_sampling_on_color)_reports")
+                entry MATCHES "^texture\\.(copy_without_usage|read_only_depth_sampling_on_color|depth_write_in_read_only_section|missing_discard|stage_link_mismatch)_reports")
                 list(APPEND EQUINE_METAL_ABORT_TESTS "${entry}")
             endif()
         endforeach()
     endif()
-    # Not yet, with rendering (stage 3b): the other texture.* cases (sections,
-    # draws, graphics pipelines, resolves, occlusion; texture.timestamps and
-    # texture.discard_after_aliasing render too; the *_reports cases of
-    # sections and graphics pipelines). Later stages: texture.mesh_shaders,
+    # Not yet: resolves (stage 3b-2) for texture.resolve_color and
+    # texture.resolve_depth; indirect execution (a later stage) for
     # texture.indirect_level1/2 (they would only skip today). Unsupported on
-    # Metal (P116): pipeline statistics, which texture.occlusion_and_statistics
-    # and texture.mesh_statistics also read.
+    # Metal (P116 (1)): pipeline statistics, which texture.occlusion_and_statistics
+    # and texture.mesh_statistics also read (the first needs occlusion queries
+    # too, stage 3b-2). helpers.shader_compiler compiles to plain DXIL, which
+    # the Metal backend refuses (P114: Metal takes the build's .mtl.dxil).
     foreach(name IN LISTS EQUINE_METAL_TEST_NAMES)
         add_test(NAME "mtl.${name}" COMMAND EquineRIMetalTests "${name}")
         set_tests_properties("mtl.${name}" PROPERTIES LABELS gpu TIMEOUT 120)

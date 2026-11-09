@@ -6,8 +6,9 @@
 // and Instruments show).
 //
 // Watch out: a debug group must not straddle an open encoder, so markers end
-// the open encoder first (the next command opens a new one, carrying the
-// barriers). Compute pipeline labels are fixed at creation
+// the open compute encoder first (the next command opens a new one, carrying
+// the barriers); inside a rendering section they are debug groups of its
+// render encoder instead (cmdEndRendering carries the open ones over). Compute pipeline labels are fixed at creation
 // (MTLComputePipelineDescriptor), so setName on a pipeline names it in
 // validation messages only. Texture and view names are applied in Textures.cpp,
 // next to the views they label.
@@ -103,9 +104,16 @@ void setName(Device &device, const CommandList &cmd, std::string_view name) {
 void cmdBeginMarker(CommandList &cmd, std::string_view name) {
     EQ_MTL_CHECK_THREAD(cmd.internal.device);
     CommandListState &state = *cmd.internal.state;
-    endEncoder(state);
     ++state.markerDepth;
     ScopedPool scope;
+    // Inside a section, the section's encoder holds the group (Rendering.cpp
+    // moves it to the command buffer if it is still open at the section's end).
+    if (state.render != nullptr) {
+        state.render->pushDebugGroup(nsString(name));
+        state.sectionMarkers.emplace_back(name);
+        return;
+    }
+    endEncoder(state);
     state.commandBuffer->pushDebugGroup(nsString(name));
 }
 
@@ -113,8 +121,20 @@ void cmdEndMarker(CommandList &cmd) {
     EQ_MTL_CHECK_THREAD(cmd.internal.device);
     CommandListState &state = *cmd.internal.state;
     EQ_VALIDATE(Validation::checkMarkerEnd(state.markerDepth));
-    endEncoder(state);
+    if (state.markerDepth == 0) {
+        return; // validation off: nothing to close
+    }
     --state.markerDepth;
+    if (state.render != nullptr) {
+        if (!state.sectionMarkers.empty()) {
+            state.render->popDebugGroup();
+            state.sectionMarkers.pop_back();
+        } else {
+            ++state.deferredPops; // begun before the section: closed once its encoder ends
+        }
+        return;
+    }
+    endEncoder(state);
     state.commandBuffer->popDebugGroup();
 }
 

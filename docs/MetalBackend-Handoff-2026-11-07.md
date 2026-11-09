@@ -180,9 +180,84 @@ Not yet decision rows: they go into `docs/FeatureProposal-Metal-2026-11-07.md` f
 - Known gaps: `samplerMinMax` stays false (the debug layer refuses min/max reductions on the M4,
   and Metal has no query for them); timestamps and 3D, cube-array, D32S8 stencil and R11G11B10
   clears were checked by a probe, not by a registered test (`texture.timestamps` and
-  `volume_copy_render_sample` render); `cmdCopyTexture` between textures of different formats of
-  the same texel size is untested against Metal's rules; texture lossless compression over aliased
+  `volume_copy_render_sample` render); texture lossless compression over aliased
   placement memory is left to Metal (no reset on create or discard); the formatSupported table is
   read from Apple's tables, not probed per format.
+- Review fixes (stage 3a): `cmdCopyTexture` goes through command memory (texture → buffer →
+  texture, each side with its blit option) when the two Metal pixel formats differ (Metal's copy
+  needs equal formats: unorm/sRGB, float/uint, D32Float into D32S8's depth) or when either view
+  is one aspect of a depth-stencil format (Metal's copy moves both aspects); stencil views of
+  depth-stencil textures without `eSampled` keep the texture's format (only sampled ones get
+  `PixelFormatView` and an `X32_Stencil8` view, which can cost depth buffers their lossless
+  compression); `cmdBegin` gives a list a fresh `MTL4CommandBuffer` once its last submission
+  completed (shader validation faulted at commit, in `HeapUsageTable::updateHeapUsage`, after
+  `freeMemory` of a heap an earlier recording of the same command buffer used). Registered
+  `helpers.allocators`, `helpers.transfers`, `helpers.group_grid` (HelperTests.cpp now built for
+  Metal); `helpers.frame_ring_and_profiler` renders (3b), `helpers.shader_compiler` yields plain
+  DXIL, which Metal refuses (P114). The new copy paths and the free-then-reuse case were checked
+  by probes, not registered tests (no portable test copies across formats or aspects). A list
+  re-begun without a reset while still in flight keeps its command buffer (Metal allows it), so
+  the shader-validation fault can still occur there. macOS: 82/82 (preset), 71/71 validation off.
 - **Next (stage 3b):** graphics pipelines, rendering sections, draws, resolves and occlusion
   queries; the remaining `texture.*` cases.
+
+## 8. Stage 3b-1 done (2026-11-08): graphics pipelines, sections and draws
+
+- `Pipeline.cpp`: `createGraphicsPipeline` for vertex + pixel and mesh (+ task) pipelines
+  (`MTLRenderPipelineDescriptor` / `MTLMeshRenderPipelineDescriptor`: formats, blend, samples,
+  topology class), an `MTLDepthStencilState` per pipeline, and the encoder state Metal keeps
+  outside pipelines (cull, winding, fill mode, depth bias, depth clip mode, P102) kept for
+  `cmdSetPipeline`. P101's stage-link check from the DXIL signatures, as D3D12; geometry, hull,
+  domain and patch lists report eUnsupported (Vulkan's messages, P116 (1)). `meshShaders` true.
+- `Rendering.cpp` (new): `cmdBeginRendering` (both forms; `MTL4RenderPassDescriptor`, color
+  attachments through the view's texture, depth and stencil through the whole texture at the
+  view's mip and layer; read-only aspects load and store, P75; P105 through
+  `renderTargetWidth/Height` and one raster sample), `cmdEndRendering`, viewport, scissor
+  (clipped to the section, as Metal requires), stencil reference (P104), `cmdDraw`,
+  `cmdSetIndexBuffer`, `cmdDrawIndexed` (draw arguments in command memory at index 4, the
+  index type at 5, as MSC's helpers bind them), `cmdDrawMesh` (object and mesh threadgroup
+  sizes from the DXIL).
+- `Commands.cpp`: one render encoder per section, its argument table set for every render
+  stage. A section's fragment work waits for all earlier work and every later encoder waits
+  for the section (D3D12's layout switches, P68), so no user barrier is needed around
+  attachments; clear passes share this. Pending barriers are taken over by the next encoder
+  and passed on by its producer barrier (which covers earlier encoders too, per
+  `MTL4CommandEncoder.h`). Commands that run outside sections report an error inside one.
+- `Queries.cpp`: timestamps outside sections are `MTL4CommandBuffer::writeTimestampIntoHeap`
+  (encoder timestamps on compute encoders resolved as 0 or out of order once a list had
+  several encoders: a 3a bug, found by `texture.timestamps`); inside a section, the render
+  encoder's, after the fragment stage (after the vertex stage before any draw: a fragment
+  timestamp before a draw stays 0).
+- `Debug.cpp`: markers inside a section are the render encoder's debug groups; one still open
+  at `cmdEndRendering` continues on the command buffer.
+- `src/RI/Reflection/Dxil.cpp`: the PSV0 stage numbers of mesh and amplification shaders were
+  wrong (8 and 9; DXC writes 13 and 14), so their numthreads read as 0. Only Metal uses them.
+- Registered: `texture.render_then_sample`, `msaa_render_then_sample`, `clear_load_op`,
+  `depth_write_then_sample`, `read_only_depth_section(_sampling)`, `discard_after_aliasing`,
+  `timestamps`, `indexed_draw_with_blending`, `stencil_test`, `stencil_reference_command`,
+  `mesh_shaders`, `stage_link`, `line_strip`, `wireframe`, `depth_bias`, `depth_clamp`,
+  `volume_copy_render_sample`, `viewport_and_scissor`, `rendering_without_attachments`,
+  `rendering_desc_without_attachment_reports`, `helpers.frame_ring_and_profiler`, and in
+  validation builds `depth_write_in_read_only_section_reports`, `missing_discard_reports`,
+  `stage_link_mismatch_reports`. macOS: 107/107 (preset), 93/93 validation off.
+- Not registered: `texture.resolve_color`, `resolve_depth` (3b-2), `occlusion_and_statistics`
+  (occlusion is 3b-2; statistics unsupported, P116), `mesh_statistics` (statistics
+  unsupported), `indirect_level1/2` (later stage), `helpers.shader_compiler` (plain DXIL, P114).
+  `cube_layered_render` still passes by skipping: it needs a geometry shader (P116 (1)); RI sets
+  `renderTargetArrayLength` for views of several layers, untested.
+- Known gaps: a barrier inside a section cannot make work wait for the section's earlier
+  fragment work (Metal accepts only Vertex, Object and Mesh before an in-pass barrier): validation
+  builds report it (proposal §6.2), other builds order what Metal can. MSC computes
+  `SV_VertexID = vertex_id - base_vertex` (probed), so first vertex and vertex offset never
+  show in SV_VertexID on Metal, unlike D3D12; `SV_InstanceID = instance_id - base_instance`
+  matches D3D12 (it excludes the first instance). Indexed strips always restart at 0xFFFF /
+  0xFFFFFFFF on Metal (D3D12 and Vulkan leave restart off; documented in `Backend.hpp`). A
+  pipeline whose stencil ops write, in a section with read-only stencil, is not reported
+  (RI has no portable check; D3D12 and Vulkan leave it to their native layers); depth
+  writes are checked at `cmdSetPipeline` and when a section opens with a pipeline set. Sampling a read-only depth attachment
+  inside its section is untested on Metal. Pipeline and pass format mismatches are left to
+  Metal's debug layer. Probes (not registered): IDs, in-section barriers and markers,
+  attachments at other mips and layers, render timestamps:
+  `/private/tmp/claude-502/-Users-arthur-dev-EquineRI/a8d0c79c-76bc-4da5-80ab-4d17527aad85/scratchpad/probe-3b1/`.
+- **Next (stage 3b-2):** resolves (at `cmdEndRendering` and `cmdResolve`), occlusion queries
+  (P115's visibility pages), then indirect execution (proposal §7).

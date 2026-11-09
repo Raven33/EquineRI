@@ -12,7 +12,10 @@
 // textures outside render passes: render targets and depth are cleared by a
 // render pass of one load action per mip and layer (runClearPass orders it
 // like a copy); storage textures by a blit of one row from command memory,
-// doubled inside the texture. Metal has no layouts, so a discard is the
+// doubled inside the texture. Texture-to-texture copies between different
+// pixel formats, or of one aspect of a depth-stencil format, go through
+// command memory (needsStaging): Metal's own copy needs equal formats and
+// moves both aspects. Metal has no layouts, so a discard is the
 // validation bookkeeping plus the full barrier RI promises (P69).
 //
 // D3D12 counterpart: the copy, clear and discard sections of
@@ -97,6 +100,41 @@ void checkBufferCopyRange([[maybe_unused]] const Buffer &buffer, [[maybe_unused]
 // array or cube, or a depth (z) of a volume.
 uint32 sliceOf(const TextureView &view, uint32 layer) { return isVolume(view) ? 0 : view.internal.baseLayer + layer; }
 uint32 zOf(const TextureView &view, uint32 layer) { return isVolume(view) ? view.internal.baseLayer + layer : 0; }
+
+// Metal copies texture to texture only between equal pixel formats, and
+// moves both aspects of a depth-stencil format. RI copies any formats of the
+// same texel size, one aspect at a time (as D3D12's planes and Vulkan's
+// aspect masks): those copies go through command memory instead.
+bool needsStaging(const TextureView &src, const TextureView &dst) {
+    return resourceOf(src)->pixelFormat() != resourceOf(dst)->pixelFormat() ||
+           blitOptionOf(src) != MTL::BlitOptionNone || blitOptionOf(dst) != MTL::BlitOptionNone;
+}
+
+// Bytes are bytes in a buffer: `region` of each layer of `src` goes out in
+// copyLayout's layout, then into `dst` at `dstOffset`, each with its aspect.
+void copyThroughBuffer(DeviceState &state, CommandListState &cmd, const TextureView &src, const TextureView &dst,
+                       Rect region, Offset dstOffset) {
+    Device device{.internal = {.state = &state}};
+    const CopyLayout layout = copyLayout(device, src, region);
+    const CommandMemoryAllocation staging = allocateCommandMemory(state, cmd, layout.size, layout.alignment);
+    MTL4::ComputeCommandEncoder *encoder = computeEncoder(cmd);
+    const uint64 imageBytes = layout.rowPitch * layout.height;
+    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+        encoder->copyFromTexture(resourceOf(src), sliceOf(src, layer), src.internal.baseMip,
+                                 MTL::Origin(region.x, region.y, zOf(src, layer)),
+                                 MTL::Size(region.width, region.height, 1), staging.buffer,
+                                 staging.offset + layer * layout.layerPitch, layout.rowPitch, imageBytes,
+                                 blitOptionOf(src));
+    }
+    // The second half reads what the first wrote.
+    encoder->barrierAfterEncoderStages(MTL::StageBlit, MTL::StageBlit, MTL4::VisibilityOptionDevice);
+    for (uint32 layer = 0; layer < layout.layers; ++layer) {
+        encoder->copyFromBuffer(staging.buffer, staging.offset + layer * layout.layerPitch, layout.rowPitch,
+                                imageBytes, MTL::Size(region.width, region.height, 1), resourceOf(dst),
+                                sliceOf(dst, layer), dst.internal.baseMip,
+                                MTL::Origin(dstOffset.x, dstOffset.y, zOf(dst, layer)), blitOptionOf(dst));
+    }
+}
 
 // ── Clear values as texel bytes (storage textures, blit clears) ──────────────
 
@@ -361,6 +399,10 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
     region = resolved(region, src);
     checkRegion({dstOffset.x, dstOffset.y, region.width, region.height}, dst, "destination", "cmdCopyTexture");
     MTL4::ComputeCommandEncoder *encoder = computeEncoder(list);
+    if (needsStaging(src, dst)) {
+        copyThroughBuffer(state, list, src, dst, region, dstOffset);
+        return;
+    }
     // One slice or layer at a time, so 3D and 2D-array views copy into each other.
     for (uint32 layer = 0; layer < src.internal.layerCount; ++layer) {
         encoder->copyFromTexture(resourceOf(src), sliceOf(src, layer), src.internal.baseMip,

@@ -25,6 +25,7 @@ add_library(EquineMetalBackend STATIC
     TextureCommands.cpp
     Pipeline.cpp
     Commands.cpp
+    Rendering.cpp
     Debug.cpp
     Queries.cpp
     Unsupported.cpp

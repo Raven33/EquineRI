@@ -1,10 +1,10 @@
 // What the Metal backend does not build yet (P113).
 //
 // Owns: notYet, and a definition of every function of RI/Metal/Backend.hpp
-// that stages 2 (buffers, compute, readback) and 3a (textures, views,
-// samplers, copies, clears, timestamps) do not cover: acceleration
-// structures, graphics pipelines, rendering and draws, indirect execution,
-// resolves, occlusion queries, swapchains and work graphs. Each reports
+// that stages 2 (buffers, compute, readback), 3a (textures, views, samplers,
+// copies, clears, timestamps), 3b-1 (graphics pipelines, rendering sections,
+// draws) and 3b-2 (resolves, occlusion queries) do not cover: indirect execution,
+// acceleration structures, swapchains and work graphs. Each reports
 // eUnsupported, so programs link and fail with a readable message. Capability
 // probes (presentModeSupported, screenStorageSupported) answer false instead,
 // so portable code takes its fallback as on the other backends.
@@ -25,7 +25,8 @@ namespace RI::Metal {
 void notYet(std::string_view call) {
     reportError(ErrorCategory::eUnsupported,
                 std::string(call) +
-                    ": not built yet on the Metal backend (stages 2 and 3a cover compute and textures; see "
+                    ": not built yet on the Metal backend (stages 2 to 3b-2 cover compute, textures, rendering and indirect "
+                    "execution; see "
                     "docs/FeatureProposal-Metal-2026-11-07.md)");
 }
 
@@ -56,21 +57,7 @@ void cmdBuildTlas(CommandList &, const AccelerationStructure &, const TlasDesc &
     notYet("cmdBuildTlas");
 }
 
-// ── Graphics pipelines, rendering and draws ──────────────────────────────────
-
-Pipeline createGraphicsPipeline(Device &, const GraphicsPipelineDesc &) { notYet("createGraphicsPipeline"); }
-void cmdBeginRendering(CommandList &, const RenderingDesc &) { notYet("cmdBeginRendering"); }
-void cmdBeginRendering(CommandList &, RenderingSize) { notYet("cmdBeginRendering"); }
-void cmdEndRendering(CommandList &) { notYet("cmdEndRendering"); }
-void cmdSetViewport(CommandList &, const Viewport &) { notYet("cmdSetViewport"); }
-void cmdSetScissor(CommandList &, const Rect &) { notYet("cmdSetScissor"); }
-void cmdSetStencilReference(CommandList &, uint8) { notYet("cmdSetStencilReference"); }
-void cmdDraw(CommandList &, uint32, uint32, uint32, uint32) { notYet("cmdDraw"); }
-void cmdSetIndexBuffer(CommandList &, const Buffer &, uint64, IndexFormat) { notYet("cmdSetIndexBuffer"); }
-void cmdDrawIndexed(CommandList &, uint32, uint32, uint32, int32, uint32) { notYet("cmdDrawIndexed"); }
-void cmdDrawMesh(CommandList &, uint32, uint32, uint32) { notYet("cmdDrawMesh"); }
-
-// ── Indirect execution ───────────────────────────────────────────────────────
+// ── Indirect execution (stage 3b-2, not built yet) ───────────────────────────
 
 void cmdExecuteIndirect(CommandList &, IndirectKind, const Buffer &, uint64, uint32, const Buffer *, uint64) {
     notYet("cmdExecuteIndirect");
@@ -82,15 +69,6 @@ void cmdExecuteIndirectWithRootData(CommandList &, IndirectKind, const Buffer &,
                                     const Buffer *, uint64) {
     notYet("cmdExecuteIndirectWithRootData");
 }
-
-// ── Resolves ─────────────────────────────────────────────────────────────────
-
-void cmdResolve(CommandList &, const TextureView &, const TextureView &, ResolveMode) { notYet("cmdResolve"); }
-
-// ── Occlusion queries (with rendering) ───────────────────────────────────────
-
-void cmdBeginQuery(CommandList &, const QueryPool &, uint32) { notYet("cmdBeginQuery"); }
-void cmdEndQuery(CommandList &, const QueryPool &, uint32) { notYet("cmdEndQuery"); }
 
 // ── Swapchains ───────────────────────────────────────────────────────────────
 

@@ -156,9 +156,12 @@ std::string findParts(std::span<const std::byte> bytes, Parts &parts) {
 constexpr uint64 kPsvStageOffset = 24;
 constexpr uint64 kPsvNumThreadsOffset = 36;
 constexpr uint64 kPsvRuntimeInfo2Size = 48;
+// PSVShaderKind (DxilPipelineStateValidation.h): Compute 5, Mesh 13,
+// Amplification 14 (verified with DXC 1.9.2609; only Metal reads the mesh and
+// amplification sizes, P114 (2)).
 constexpr uint8 kPsvStageCompute = 5;
-constexpr uint8 kPsvStageAmplification = 8;
-constexpr uint8 kPsvStageMesh = 9;
+constexpr uint8 kPsvStageMesh = 13;
+constexpr uint8 kPsvStageAmplification = 14;
 
 // PSVResourceBindInfo0: ResType, Space, LowerBound, UpperBound.
 constexpr uint64 kPsvResourceRecordMinSize = 16;

@@ -3,28 +3,32 @@
 //
 // Owns: command lists (an MTL4CommandAllocator, an MTL4CommandBuffer and one
 // MTL4ArgumentTable each), their command memory (allocateCommandMemory), the
-// open compute encoder (computeEncoder / endEncoder), render passes that only
-// clear (runClearPass), cmdBegin / cmdEnd,
-// cmdSetHeap, cmdSetPipeline, cmdSetRootData, cmdDispatch, cmdBarrier (stage
-// masks as MTLStages, stagesOf), cmdCopyBuffer, cmdClearBuffer,
-// cmdWriteSmallData, submit, wait and isReached (an MTLSharedEvent as the
-// timeline).
+// open encoder (computeEncoder, beginRenderEncoder, endEncoder), render passes
+// that only clear (runClearPass), cmdBegin / cmdEnd, cmdSetHeap,
+// cmdSetPipeline, cmdSetRootData, cmdDispatch, cmdBarrier (stage masks as
+// MTLStages, stagesOf), cmdCopyBuffer, cmdClearBuffer, cmdWriteSmallData,
+// submit, wait and isReached (an MTLSharedEvent as the timeline).
 //
 // Keeps: the bound heaps, pipeline and root data in the argument table, which
-// Metal snapshots at each dispatch; the table is set on every compute encoder
-// when it opens, so binding outlives encoder boundaries.
+// Metal snapshots at each dispatch and draw; the table is set on every encoder
+// when it opens (for every render stage on render encoders), so binding
+// outlives encoder boundaries.
 //
 // Watch out: Metal 4 has no setBytes. Argument tables hold addresses whose
 // bytes the GPU reads at execution, so root data, small writes and clear
 // patterns are copied into command memory, which lives until the list is
-// reset (P115). A compute encoder accepts only Dispatch, Blit and
-// AccelerationStructure stages in its own barriers; barriers that involve
-// other encoders go through queue barriers: a consumer barrier when an encoder
-// opens after barriers recorded with none open or in the encoder before it
-// (so it waits for every earlier encoder, not only that one), and a producer
-// barrier when an encoder that recorded barriers closes, which also orders
-// later submissions. Commit feedback arrives after the timeline event: wait
-// and isReached count a value as reached once both are (GpuFeedback).
+// reset (P115). Encoders accept only their own stages in encoder barriers
+// (compute: Dispatch, Blit, AccelerationStructure; render: Vertex, Object,
+// Mesh, Fragment); barriers that involve other encoders go through queue
+// barriers: a consumer barrier when an encoder opens after barriers recorded
+// with none open, and a producer barrier when an encoder that recorded (or
+// took) barriers closes. A producer barrier covers the work of the encoders
+// before it too (MTL4CommandEncoder.h), so it orders every later encoder and
+// submission. Render encoders also wait for all earlier work before their
+// fragment stage and make all later work wait for them (beginRenderEncoder):
+// attachments need no user barrier around a section, as on D3D12 (P68).
+// Commit feedback arrives after the timeline event: wait and isReached count
+// a value as reached once both are (GpuFeedback).
 //
 // D3D12 counterpart: backends/d3d12/Commands.cpp (and cmdClearBuffer /
 // cmdWriteSmallData in backends/d3d12/Rendering.cpp).
@@ -60,6 +64,9 @@ constexpr uint64 kWaitSliceMs = 100;
 constexpr MTL::ResourceOptions kCommandMemoryOptions =
     MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeWriteCombined | MTL::ResourceHazardTrackingModeUntracked;
 
+// Every stage an encoder runs: what is left of a pending barrier's consumers.
+constexpr uint64 kEncoderStages = kComputeEncoderStages | kRenderEncoderStages;
+
 MTL::Stages mtlStages(uint64 mask) { return static_cast<MTL::Stages>(mask); }
 
 // A barrier side inside the open compute encoder. A side left empty names
@@ -68,6 +75,25 @@ MTL::Stages mtlStages(uint64 mask) { return static_cast<MTL::Stages>(mask); }
 uint64 encoderSide(uint64 stages) {
     const uint64 restricted = stages & kComputeEncoderStages;
     return restricted != 0 ? restricted : (MTL::StageDispatch | MTL::StageBlit);
+}
+
+// Barriers recorded while no encoder was open, at the start of an encoder
+// running `stages`: its work waits for the earlier encoders', and the encoder
+// takes the barriers over, so its producer barrier at endEncoder passes them
+// to every later encoder (of either kind) and submission.
+void takePending(MTL4::CommandEncoder *encoder, CommandListState &cmd, uint64 stages) {
+    if (cmd.pendingBefore == 0) {
+        return;
+    }
+    const uint64 consumers = cmd.pendingAfter & stages;
+    if (consumers != 0) {
+        encoder->barrierAfterQueueStages(mtlStages(cmd.pendingBefore), mtlStages(consumers),
+                                         MTL4::VisibilityOptionDevice);
+    }
+    cmd.encoderBefore |= cmd.pendingBefore;
+    cmd.encoderAfter |= cmd.pendingAfter & kEncoderStages;
+    cmd.pendingBefore = 0;
+    cmd.pendingAfter = 0;
 }
 
 void checkNotRendering(const CommandListState &cmd, const char *call) {
@@ -81,6 +107,28 @@ void recycle(CommandListState &cmd) {
     cmd.allocator->reset();
     cmd.chunk = 0;
     cmd.used = 0;
+}
+
+// A fresh command buffer for a list whose last submission completed. Metal's
+// shader validation keeps the heaps a command buffer's earlier recordings
+// used, and faults at the next commit (HeapUsageTable::updateHeapUsage) once
+// one of them was freed: a new command buffer has no such history. It is a
+// light object (the allocator holds the commands), and it keeps the name.
+void renewCommandBuffer(DeviceState &state, CommandListState &cmd) {
+    if (!cmd.everBegun) {
+        cmd.everBegun = true;
+        return;
+    }
+    MTL4::CommandBuffer *fresh = state.device->newCommandBuffer();
+    if (fresh == nullptr) {
+        reportError(ErrorCategory::eOutOfMemory, "cmdBegin: newCommandBuffer failed");
+    }
+    ScopedPool scope; // the label getter may autorelease
+    if (NS::String *name = cmd.commandBuffer->label(); name != nullptr) {
+        fresh->setLabel(name);
+    }
+    release(cmd.commandBuffer);
+    cmd.commandBuffer = fresh;
 }
 
 } // namespace
@@ -126,6 +174,13 @@ MTL4::ComputeCommandEncoder *computeEncoder(CommandListState &cmd) {
     if (cmd.compute != nullptr) {
         return cmd.compute;
     }
+    // Ending the section's encoder here would end the section: every build.
+    if (cmd.rendering) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "a command that runs outside rendering sections (dispatch, copy, clear, small write, query "
+                    "resolve) was recorded inside one: call cmdEndRendering first");
+    }
+    endEncoder(cmd);
     {
         // The encoder is autoreleased: RI keeps its own reference until endEncoder.
         ScopedPool scope;
@@ -136,14 +191,7 @@ MTL4::ComputeCommandEncoder *computeEncoder(CommandListState &cmd) {
     if (cmd.pipeline != nullptr) {
         cmd.compute->setComputePipelineState(cmd.pipeline);
     }
-    // Barriers recorded while no encoder was open: this encoder's work waits for
-    // the earlier encoders' (of this list and of earlier submissions).
-    if (cmd.pendingBefore != 0) {
-        cmd.compute->barrierAfterQueueStages(mtlStages(cmd.pendingBefore), mtlStages(encoderSide(cmd.pendingAfter)),
-                                             MTL4::VisibilityOptionDevice);
-        cmd.pendingBefore = 0;
-        cmd.pendingAfter = 0;
-    }
+    takePending(cmd.compute, cmd, kComputeEncoderStages);
     // A resolve runs outside encoders: queue barriers do not see it, its fence does.
     if (cmd.waitResolve) {
         cmd.compute->waitForFence(cmd.resolveFence, MTL::StageDispatch | MTL::StageBlit);
@@ -152,46 +200,71 @@ MTL4::ComputeCommandEncoder *computeEncoder(CommandListState &cmd) {
     return cmd.compute;
 }
 
-void runClearPass(CommandListState &cmd, MTL4::RenderPassDescriptor *pass) {
+MTL4::RenderCommandEncoder *beginRenderEncoder(CommandListState &cmd, MTL4::RenderPassDescriptor *pass) {
     endEncoder(cmd);
-    ScopedPool scope;
-    MTL4::RenderCommandEncoder *encoder = cmd.commandBuffer->renderCommandEncoder(pass);
-    // The barriers recorded before the clear also hold for it; they stay
-    // pending for the next compute encoder too, which they were recorded for.
-    if (cmd.pendingBefore != 0) {
-        encoder->barrierAfterQueueStages(mtlStages(cmd.pendingBefore), mtlStages(kRenderEncoderStages),
-                                         MTL4::VisibilityOptionDevice);
+    {
+        ScopedPool scope;
+        cmd.render = cmd.commandBuffer->renderCommandEncoder(pass);
+        if (cmd.render == nullptr) {
+            reportError(ErrorCategory::eProgrammerError,
+                        "cmdBeginRendering: Metal could not open a render pass for these attachments");
+        }
+        cmd.render->retain();
     }
-    // A clear counts as Stage::eCopy (P65), which RI maps to blit stages: every
-    // later encoder waits for this pass's fragment work instead.
-    encoder->barrierAfterStages(mtlStages(kRenderEncoderStages), MTL::StageAll, MTL4::VisibilityOptionDevice);
-    encoder->endEncoding();
+    cmd.render->setArgumentTable(cmd.argumentTable, MTL::RenderStageVertex | MTL::RenderStageFragment |
+                                                        MTL::RenderStageObject | MTL::RenderStageMesh);
+    // Attachments are loaded once all earlier work is done (D3D12's switch
+    // into the attachment layouts waits for everything before it, P68).
+    cmd.render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+    takePending(cmd.render, cmd, kRenderEncoderStages);
+    if (cmd.waitResolve) {
+        cmd.render->waitForFence(cmd.resolveFence, mtlStages(kRenderEncoderStages));
+        cmd.waitResolve = false;
+    }
+    return cmd.render;
+}
+
+void runClearPass(CommandListState &cmd, MTL4::RenderPassDescriptor *pass) {
+    // Opening its encoder would end the section's: every build, as computeEncoder.
+    if (cmd.rendering) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "a command that runs outside rendering sections (dispatch, copy, clear, small write, query "
+                    "resolve) was recorded inside one: call cmdEndRendering first");
+    }
+    beginRenderEncoder(cmd, pass);
+    endEncoder(cmd);
 }
 
 void endEncoder(CommandListState &cmd) {
-    if (cmd.compute == nullptr) {
+    MTL4::CommandEncoder *encoder = cmd.compute != nullptr ? static_cast<MTL4::CommandEncoder *>(cmd.compute)
+                                                           : static_cast<MTL4::CommandEncoder *>(cmd.render);
+    if (encoder == nullptr) {
         return;
     }
-    // The barriers recorded in this encoder also hold for later encoders, of
-    // this list and of later submissions: a producer barrier carries them past
-    // this encoder's own work, and the next encoder of this list opens with a
-    // consumer barrier, which also waits for encoders before this one.
+    // The barriers recorded in (or taken by) this encoder also hold for later
+    // encoders, of this list and of later submissions: a producer barrier
+    // passes them on, for this encoder's work and every encoder's before it.
     if (cmd.encoderBefore != 0) {
-        cmd.compute->barrierAfterStages(mtlStages(cmd.encoderBefore), mtlStages(cmd.encoderAfter),
-                                        MTL4::VisibilityOptionDevice);
-        cmd.pendingBefore |= cmd.encoderBefore;
-        cmd.pendingAfter |= cmd.encoderAfter;
+        encoder->barrierAfterStages(mtlStages(cmd.encoderBefore), mtlStages(cmd.encoderAfter),
+                                    MTL4::VisibilityOptionDevice);
+    }
+    // A section's attachments are stored before any later work starts (D3D12's
+    // switch out of the attachment layouts blocks everything after it, P68).
+    if (cmd.render != nullptr) {
+        encoder->barrierAfterStages(mtlStages(kRenderEncoderStages), MTL::StageAll, MTL4::VisibilityOptionDevice);
     }
     cmd.encoderBefore = 0;
     cmd.encoderAfter = 0;
-    cmd.compute->endEncoding();
+    encoder->endEncoding();
     release(cmd.compute);
+    release(cmd.render);
 }
 
 CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListState &cmd, uint64 size,
-                                              uint64 alignment) {
+                                              uint64 alignment, uint64 limit) {
+    // A new chunk starts at offset 0, so `limit` holds there whenever size does.
     const auto fits = [&](size_t chunk, uint64 used) {
-        return ((used + alignment - 1) & ~(alignment - 1)) + size <= cmd.chunks[chunk].size;
+        return ((used + alignment - 1) & ~(alignment - 1)) + size <= std::min(cmd.chunks[chunk].size, limit);
     };
     if (cmd.chunk < cmd.chunks.size() && !fits(cmd.chunk, cmd.used)) {
         // Later chunks are free since the last recycle; skip those too small.
@@ -317,6 +390,7 @@ void cmdBegin(CommandList &cmd) {
     // is done with it, otherwise it keeps growing until the next reset.
     if (cmd.internal.lastSubmitted <= completedValue(*cmd.internal.device)) {
         recycle(list);
+        renewCommandBuffer(*cmd.internal.device, list);
     }
     list.commandBuffer->beginCommandBuffer(list.allocator);
     list.recording = true;
@@ -327,7 +401,16 @@ void cmdBegin(CommandList &cmd) {
     list.pipeline = nullptr;
     list.threadGroupSize[0] = list.threadGroupSize[1] = list.threadGroupSize[2] = 1;
     list.rootDataSize = 0;
+    list.graphics = {};
+    list.graphicsSet = false;
+    list.indexSet = false;
     list.rendering = false;
+    list.depthReadOnly = false;
+    list.sectionMarkers.clear();
+    list.deferredPops = 0;
+    list.visibilityBuffer = nullptr;
+    list.occlusionSlots.clear();
+    list.occlusionOpen = false;
     list.waitResolve = false;
     list.markerDepth = 0;
     list.pendingBefore = list.pendingAfter = 0;
@@ -342,16 +425,22 @@ void cmdEnd(CommandList &cmd) {
     if (!list.recording) {
         reportError(ErrorCategory::eProgrammerError, "cmdEnd: the command list is not recording: call cmdBegin first");
     }
+    // Metal faults on a command buffer ended with a render encoder open: every build.
+    if (list.rendering) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "cmdEnd: a rendering section is still open: call cmdEndRendering first");
+    }
     EQ_VALIDATE(Validation::checkMarkersClosed(list.markerDepth));
     // Barriers recorded after the last encoder still order later submissions:
     // an empty encoder takes them and its producer barrier passes them on. A
     // last resolve is waited for the same way.
     if (list.pendingBefore != 0 || list.waitResolve) {
-        const uint64 before = list.pendingBefore | (list.waitResolve ? MTL::StageBlit | MTL::StageDispatch : 0);
-        const uint64 after = list.pendingAfter | (list.waitResolve ? MTL::StageAll : 0);
+        const bool resolve = list.waitResolve;
         computeEncoder(list);
-        list.encoderBefore |= before;
-        list.encoderAfter |= after;
+        if (resolve) {
+            list.encoderBefore |= MTL::StageBlit | MTL::StageDispatch;
+            list.encoderAfter |= kEncoderStages;
+        }
     }
     endEncoder(list);
     list.commandBuffer->endCommandBuffer();
@@ -384,12 +473,14 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_MTL_CHECK_ALIVE(cmd.internal.device, pipeline.internal.id, "pipeline");
     CommandListState &list = *cmd.internal.state;
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(list.heapSet));
+    EQ_VALIDATE(Validation::checkDepthWriteAllowed(list.rendering && list.depthReadOnly, pipeline.internal.depthWrite));
+    list.rootDataSize = pipeline.rootDataSize;
     if (pipeline.internal.graphics) {
-        notYet("cmdSetPipeline with a graphics pipeline");
+        bindGraphicsPipeline(list, pipeline);
+        return;
     }
     list.pipeline = static_cast<MTL::ComputePipelineState *>(pipeline.internal.pipelineState);
     std::copy_n(pipeline.internal.threadGroupSize, 3, list.threadGroupSize);
-    list.rootDataSize = pipeline.rootDataSize;
     // Otherwise set when the next compute encoder opens.
     if (list.compute != nullptr) {
         list.compute->setComputePipelineState(list.pipeline);
@@ -439,6 +530,33 @@ void cmdBarrier(CommandList &cmd, Stage before, Stage after) {
         return;
     }
     CommandListState &list = *cmd.internal.state;
+    if (list.render != nullptr) {
+        // Inside a section: an encoder barrier between the section's own
+        // stages, and a queue barrier on the encoders before it. Apple GPUs
+        // render tile by tile: nothing in a render pass can wait for its
+        // earlier fragment work (Metal accepts only Vertex, Object and Mesh
+        // before an encoder barrier), so validation builds report a barrier
+        // that asks for it (proposal §6.2) and other builds order what Metal can.
+        const uint64 renderConsumers = consumers & kRenderEncoderStages;
+        EQ_VALIDATE((producers & MTL::StageFragment) == 0 || renderConsumers == 0
+                        ? Validation::CheckResult{}
+                        : Validation::CheckResult{
+                              "cmdBarrier: inside a rendering section, Metal cannot make work wait for earlier pixel, "
+                              "render-target or depth-stencil work (Apple GPUs render tile by tile): end the section "
+                              "with cmdEndRendering and begin another (P36, P116)"});
+        const uint64 renderProducers = producers & (MTL::StageVertex | MTL::StageObject | MTL::StageMesh);
+        if (renderProducers != 0 && renderConsumers != 0) {
+            list.render->barrierAfterEncoderStages(mtlStages(renderProducers), mtlStages(renderConsumers),
+                                                   MTL4::VisibilityOptionDevice);
+        }
+        if (renderConsumers != 0) {
+            list.render->barrierAfterQueueStages(mtlStages(producers), mtlStages(renderConsumers),
+                                                 MTL4::VisibilityOptionDevice);
+        }
+        list.encoderBefore |= producers;
+        list.encoderAfter |= consumers;
+        return;
+    }
     if (list.compute == nullptr) {
         list.pendingBefore |= producers;
         list.pendingAfter |= consumers;

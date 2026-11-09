@@ -299,10 +299,24 @@ struct Pipeline {
     struct {
         void *pipelineState = nullptr; // MTL::ComputePipelineState or MTL::RenderPipelineState
         bool graphics = false;
-        uint32 threadGroupSize[3] = {1, 1, 1}; // compute: numthreads, from the DXIL (P114 (2))
+        // Compute and mesh: numthreads, from the DXIL (P114 (2)); the task
+        // shader's in taskThreadGroupSize (Metal's object stage).
+        uint32 threadGroupSize[3] = {1, 1, 1};
+        uint32 taskThreadGroupSize[3] = {1, 1, 1};
         bool depthWrite = false;     // checked against read-only depth sections (P75)
         bool imported = false;       // P77: RI holds no reference
         uint8 stencilReference = 0;  // set by cmdSetPipeline (P104)
+        // Graphics: the state Metal keeps on the render encoder, applied by
+        // cmdSetPipeline (P38, P102).
+        void *depthStencilState = nullptr; // MTL::DepthStencilState
+        bool mesh = false;           // drawn with cmdDrawMesh
+        bool task = false;           // a mesh pipeline with a task (object) shader
+        uint8 primitiveType = 0;     // MTL::PrimitiveType of draws
+        uint8 cullMode = 0;          // MTL::CullMode
+        uint8 winding = 0;           // MTL::Winding of front faces
+        uint8 fillMode = 0;          // MTL::TriangleFillMode
+        uint8 depthClipMode = 0;     // MTL::DepthClipMode
+        float depthBias[3] = {0.0f, 0.0f, 0.0f}; // constant, slope, clamp
         uint64 id = 0;
     } internal;
 };
@@ -365,7 +379,10 @@ void cmdSetStencilReference(CommandList &cmd, uint8 reference);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
 // Indexed draws (P39): indices come from an index buffer; vertices are still
-// pulled by the shader (SV_VertexID is the index value plus vertexOffset).
+// pulled by the shader. SV_VertexID is the index value alone on Metal (D3D12
+// adds vertexOffset), and indexed line and triangle strips always restart at
+// the format's largest index (0xFFFF or 0xFFFFFFFF; D3D12 and Vulkan leave
+// restart off).
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format);
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0,
                     int32 vertexOffset = 0, uint32 firstInstance = 0);

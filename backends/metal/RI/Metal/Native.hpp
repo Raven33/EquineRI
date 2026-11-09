@@ -44,12 +44,26 @@ inline NativeDescriptorHeap native(const DescriptorHeap &heap) {
             .samplers = static_cast<MTL::Buffer *>(heap.internal.samplerBuffer)};
 }
 
-// A compute pipeline's state; graphics pipelines are not built yet on Metal.
-inline MTL::ComputePipelineState *native(const Pipeline &pipeline) {
-    return pipeline.internal.graphics ? nullptr : static_cast<MTL::ComputePipelineState *>(pipeline.internal.pipelineState);
+// A pipeline's states: `compute` for compute pipelines; `render` (from an
+// MTLRenderPipelineDescriptor, or an MTLMeshRenderPipelineDescriptor for mesh
+// pipelines) and `depthStencil` for graphics ones. The rest of the graphics
+// state (cull mode, winding, fill mode, depth bias and clip mode) is render
+// encoder state on Metal, set by cmdSetPipeline.
+struct NativePipeline {
+    MTL::ComputePipelineState *compute = nullptr;
+    MTL::RenderPipelineState *render = nullptr;
+    MTL::DepthStencilState *depthStencil = nullptr;
+};
+inline NativePipeline native(const Pipeline &pipeline) {
+    if (!pipeline.internal.graphics) {
+        return {.compute = static_cast<MTL::ComputePipelineState *>(pipeline.internal.pipelineState)};
+    }
+    return {.render = static_cast<MTL::RenderPipelineState *>(pipeline.internal.pipelineState),
+            .depthStencil = static_cast<MTL::DepthStencilState *>(pipeline.internal.depthStencilState)};
 }
 
-// The command buffer being recorded. RI opens and closes encoders itself.
+// The command buffer being recorded (cmdBegin may replace it once the last
+// submission completed: fetch it per recording). RI opens and closes encoders itself.
 MTL4::CommandBuffer *native(const CommandList &cmd);
 
 } // namespace RI::Metal
