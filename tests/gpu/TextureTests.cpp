@@ -2072,8 +2072,8 @@ EQ_TEST(texture, indirect_draw_records) {
         RI::DrawIndirectArgs args;
     };
     static_assert(sizeof(DrawRecord) == 36 && sizeof(DrawRecord) == RI::indirectStride(RI::IndirectKind::eDraw, sizeof(DrawRoot)));
-    // Two placements: D3D12 aligns each buffer to 64 KiB.
-    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 17)};
+    // Three placements (records, count, Level 1 arguments): D3D12 aligns each buffer to 64 KiB.
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 18)};
     RI::Buffer records = placeBuffer(f.device, upload, {.size = 3 * sizeof(DrawRecord), .usage = RI::BufferUsage::eIndirect});
     const RI::DrawIndirectArgs triangle{.vertexCount = 3, .instanceCount = 1};
     const DrawRecord list[3] = {{{.color = {1, 0, 0, 1}, .depth = 0.5f}, triangle},
