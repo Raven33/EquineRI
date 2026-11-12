@@ -29,6 +29,7 @@ Call `dxc` or the DXC library with RI's arguments, as `equine_add_shaders` does 
 `cmake/EquineDXC.cmake`:
 
 - both: `-T <profile> -E main -HV 2021 -I <RI's shaders directory>`;
-- SPIR-V: `-spirv -fspv-target-env=vulkan1.3 -fvk-use-dx-layout -fvk-bind-sampler-heap 0 1`;
+- SPIR-V: `-spirv -fspv-target-env=vulkan1.3 -fvk-use-dx-layout -fvk-bind-sampler-heap 0 1
+  -fvk-support-nonzero-base-vertex`;
 - DXIL: no extra argument (RI's build adds `-Qstrip_reflect -Qstrip_debug` to show RI does
   not need reflection). Libraries (`lib_` profiles) compile to DXIL only, without `-E`.

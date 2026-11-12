@@ -802,6 +802,43 @@ EQ_TEST(texture, indexed_draw_with_blending) {
     RI::destroyTexture(f.device, target);
 }
 
+// SV_VertexID leaves out the first vertex and the vertex offset on every
+// backend (P117): two additive draws, each of fullscreen_vs's vertices 0 to 2
+// (the full-screen triangle), one from firstVertex 3 and one indexed with
+// vertexOffset 3. Vertices 3 to 5 would cover half the target.
+EQ_TEST(texture, vertex_id_excludes_offsets) {
+    Fixture f;
+    RI::Texture target = placeTexture(f.device, f.gpu,
+                                      {.width = kSize, .height = kSize, .format = RI::Format::eRGBA16Float,
+                                       .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eSampled});
+    Arena upload{.memory = RI::allocateMemory(f.device, RI::MemoryKind::eUpload, 1 << 20)}; // D3D12: 64 KiB per buffer
+    RI::Buffer indices = placeBuffer(f.device, upload, {.size = 16, .usage = RI::BufferUsage::eIndex});
+    const uint16 values[] = {0, 1, 2, 0};
+    std::memcpy(indices.mapped, values, sizeof(values));
+
+    std::vector<std::byte> vs = loadShader("fullscreen_vs"), ps = loadShader("solid_ps");
+    const RI::BlendState additive{.enable = true,
+                                  .srcColor = RI::BlendFactor::eOne,
+                                  .dstColor = RI::BlendFactor::eOne,
+                                  .srcAlpha = RI::BlendFactor::eOne,
+                                  .dstAlpha = RI::BlendFactor::eOne};
+    RI::Pipeline pipeline = RI::createGraphicsPipeline(
+        f.device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA16Float}, .blend = {additive}});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.25f, 0.25f, 0.25f, 0.25f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3, 1, 3);
+    RI::cmdSetIndexBuffer(f.cmd, indices, 0, RI::IndexFormat::eUint16);
+    RI::cmdDrawIndexed(f.cmd, 3, 1, 0, 3);
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<float> texels = f.readBack(target.view);
+    EQ_CHECK(all(texels, 0, 0.5f) && all(texels, 3, 0.5f));
+    RI::destroyPipeline(f.device, pipeline);
+    RI::destroyBuffer(f.device, indices);
+    RI::freeMemory(f.device, upload.memory);
+    RI::destroyTexture(f.device, target);
+}
+
 // The stencil test (P38): pass 1 writes 1 everywhere; a draw testing for 2 is
 // stopped, one testing for 1 (writing only green) goes through.
 EQ_TEST(texture, stencil_test) {

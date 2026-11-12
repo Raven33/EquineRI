@@ -229,6 +229,7 @@ void requireFeatures(const DeviceSetup &setup, const DeviceFeatures &f) {
     };
     need(setup.mutableDescriptor ? VK_TRUE : VK_FALSE, "VK_EXT_mutable_descriptor_type");
     need(f.mutableDescriptor.mutableDescriptorType, "mutableDescriptorType");
+    need(f.v11.shaderDrawParameters, "shaderDrawParameters"); // SV_VertexID reads the base vertex (P117)
     need(f.v12.timelineSemaphore, "timelineSemaphore");
     need(f.v12.bufferDeviceAddress, "bufferDeviceAddress");
     need(f.v12.descriptorIndexing, "descriptorIndexing");

@@ -404,7 +404,9 @@ void cmdSetStencilReference(CommandList &cmd, uint8 reference);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
 // Indexed draws (P39): indices come from an index buffer; vertices are still
-// pulled by the shader (SV_VertexID is the index value plus vertexOffset).
+// pulled by the shader. SV_VertexID is the index value alone, and counts from
+// 0 in cmdDraw: firstVertex and vertexOffset are left out on every backend
+// (P117); shader model 6.8 reads them as SV_StartVertexLocation.
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format);
 void cmdDrawIndexed(CommandList &cmd, uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0,
                     int32 vertexOffset = 0, uint32 firstInstance = 0);

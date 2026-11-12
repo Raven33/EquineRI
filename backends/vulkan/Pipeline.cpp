@@ -98,6 +98,21 @@ ShaderInfo reflect(Bytecode bytecode, SpvReflectShaderStageFlagBits stage, const
     }
 #endif
 
+    // SV_VertexID (P117): DXC's default is gl_VertexIndex, which includes the
+    // first vertex and vertex offset; RI's rule subtracts gl_BaseVertex.
+    if (problem.empty()) {
+        bool vertexIndex = false;
+        bool baseVertex = false;
+        for (uint32 i = 0; i < module.input_variable_count; ++i) {
+            vertexIndex |= module.input_variables[i]->built_in == SpvBuiltInVertexIndex;
+            baseVertex |= module.input_variables[i]->built_in == SpvBuiltInBaseVertex;
+        }
+        if (vertexIndex && !baseVertex) {
+            problem = "SV_VertexID would include the first vertex and vertex offset (DXC's default): compile the "
+                      "shader with -fvk-support-nonzero-base-vertex (P117)";
+        }
+    }
+
     // Only the descriptor heaps: set 0 binding 0 (ResourceDescriptorHeap) and
     // set 1 binding 0 (SamplerDescriptorHeap with -fvk-bind-sampler-heap 0 1).
     for (uint32 i = 0; problem.empty() && i < module.descriptor_binding_count; ++i) {

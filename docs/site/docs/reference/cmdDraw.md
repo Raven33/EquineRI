@@ -13,7 +13,7 @@ symbols: [RI::cmdDraw, RI::cmdSetIndexBuffer, RI::cmdDrawIndexed, RI::IndexForma
 [rendering section](../concepts/rendering.md).
 
 There are no vertex buffers ([P39](../design-notes/decisions.md#p39)). The vertex shader
-receives `SV_VertexID` (from `firstVertex` to `firstVertex + vertexCount - 1`) and
+receives `SV_VertexID` (from 0 to `vertexCount - 1`) and
 `SV_InstanceID`, and fetches its data itself, from buffers in the descriptor heap: **vertex
 pulling**. A full-screen triangle needs no data at all:
 
@@ -24,9 +24,16 @@ pulling**. A full-screen triangle needs no data at all:
 **Indexed draws**: `RI::cmdSetIndexBuffer(cmd, buffer, offset, format)` sets a buffer of 16- or
 32-bit indices (`IndexFormat::eUint16`, `eUint32`; the buffer needs `BufferUsage::eIndex`, the
 offset a multiple of the index size), and `RI::cmdDrawIndexed(cmd, indexCount, instanceCount,
-firstIndex, vertexOffset, firstInstance)` draws with it. `SV_VertexID` is then the index value
-plus `vertexOffset`: the vertex shader still pulls its data, the indices only say which
+firstIndex, vertexOffset, firstInstance)` draws with it. `SV_VertexID` is then the index
+value: the vertex shader still pulls its data, the indices only say which
 vertices make each primitive (and let the GPU reuse shaded vertices).
+
+**`firstVertex` and `vertexOffset` are not part of `SV_VertexID`**, on any backend
+([P117](../design-notes/decisions.md#p117)): this is D3D12's rule, and RI's SPIR-V compile rule
+(`-fvk-support-nonzero-base-vertex`) gives Vulkan the same. `SV_InstanceID` leaves out
+`firstInstance` in the same way. A shader that wants an offset takes it from
+[root data](../concepts/root-data.md), or reads `SV_StartVertexLocation` and
+`SV_StartInstanceLocation` (shader model 6.8).
 
 **Mesh draws** (`device.limits.meshShaders`): with a mesh pipeline set,
 `RI::cmdDrawMesh(cmd, x, y, z)` launches `x * y * z` groups of the task shader, or of the mesh

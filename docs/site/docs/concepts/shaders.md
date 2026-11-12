@@ -25,6 +25,7 @@ Shaders for RI must be compiled with these DXC options
 | `-spirv -fspv-target-env=vulkan1.3` | SPIR-V | Vulkan 1.3 SPIR-V |
 | `-fvk-use-dx-layout` | SPIR-V | D3D12's buffer layout, so one C++ struct fits both ([P54](../design-notes/decisions.md#p54)) |
 | `-fvk-bind-sampler-heap 0 1` | SPIR-V | samplers in set 1, binding 0, where RI's [heap](descriptors.md) puts them ([P94](../design-notes/decisions.md#p94)) |
+| `-fvk-support-nonzero-base-vertex` | SPIR-V | `SV_VertexID` without the first vertex or vertex offset, as on D3D12 ([P117](../design-notes/decisions.md#p117)) |
 
 Nothing is needed for DXIL beyond the common options. RI reads what it needs from DXIL with
 its own reader, even with reflection and debug information stripped
@@ -34,7 +35,8 @@ By hand:
 
 ```text
 dxc -T cs_6_6 -E main -HV 2021 -I shaders -spirv -fspv-target-env=vulkan1.3 \
-    -fvk-use-dx-layout -fvk-bind-sampler-heap 0 1 -Fo my_shader.spv my_shader.hlsl
+    -fvk-use-dx-layout -fvk-bind-sampler-heap 0 1 -fvk-support-nonzero-base-vertex \
+    -Fo my_shader.spv my_shader.hlsl
 dxc -T cs_6_6 -E main -HV 2021 -I shaders -Fo my_shader.dxil my_shader.hlsl
 ```
 
@@ -118,7 +120,9 @@ from another compiler are not checked on Vulkan.
   (`declared resources are not supported yet; reach resources through ResourceDescriptorHeap[]`,
   [P30](../design-notes/decisions.md#p30));
 - on Vulkan, `SamplerDescriptorHeap` is at set 0, binding 1, DXC's default: the message tells
-  you to add `-fvk-bind-sampler-heap 0 1`.
+  you to add `-fvk-bind-sampler-heap 0 1`;
+- on Vulkan, a shader reads `SV_VertexID` and was compiled without
+  `-fvk-support-nonzero-base-vertex` ([P117](../design-notes/decisions.md#p117)).
 
 Root data larger than the device allows is an **unsupported** error
 ([Root data](root-data.md)).
