@@ -107,10 +107,16 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
   repacks 64-byte instances into Metal's 72-byte ones at the start of the scratch, then writes
   the header with a GPU copy into a buffer placed after the structure (eGPU memory is not CPU
   visible). `Stage::eAccelerationStructure` therefore also covers Dispatch and Blit on Metal.
-- **Divergences from D3D12, documented in `Backend.hpp`:** `SV_VertexID` excludes the first
-  vertex and vertex offset; indexed strips always restart; occlusion queries begin and end
-  inside one section, one at a time, with the pool created before the section; indirect calls
-  encode `maxCount` commands on the CPU.
+- **Divergences from D3D12, documented in `Backend.hpp`:** indexed strips always restart;
+  occlusion queries begin and end inside one section, one at a time, with the pool created
+  before the section; indirect calls encode `maxCount` commands on the CPU. `SV_VertexID`
+  without the first vertex and vertex offset is **not** a divergence: it is D3D12's rule and,
+  since P117 (master, 2026-11-12), RI's rule on every backend.
+- **Decided 2026-11-12 (user), to do when master and P112 are merged in:** add
+  `texture.vertex_id_excludes_offsets` (P117's test, on master) to `EQUINE_METAL_TEST_NAMES`
+  and run it; bindful constant buffers stay unsupported on Metal (P116 (6)):
+  `DeviceLimits::constantBuffers` false, `cmdSetConstantBuffer` reporting `eUnsupported`,
+  and the declared-resource message of `reflectStage` naming the flag for space 998.
 
 ## 5. Known gaps (what is unchecked)
 

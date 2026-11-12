@@ -33,8 +33,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from docs_common import API_JSON, REPO_DIR, SIGNATURES_DIR, symbol_file_name, write_if_changed  # noqa: E402
 
-BACKEND_NAMES = {"Vk": "vulkan", "D3D12": "d3d12"}
-BACKEND_LABELS = {"common": "Portable", "vulkan": "Vulkan", "d3d12": "D3D12"}
+BACKEND_NAMES = {"Vk": "vulkan", "D3D12": "d3d12", "Metal": "metal"}
+BACKEND_LABELS = {"common": "Portable", "vulkan": "Vulkan", "d3d12": "D3D12", "metal": "Metal"}
 
 
 @dataclass
@@ -54,7 +54,7 @@ class Decl:
     namespace: str  # e.g. RI::Vk
     header: str  # repository-relative path
     include: str  # what user code includes, e.g. <RI/Vk/Native.hpp>
-    backend: str  # common | vulkan | d3d12
+    backend: str  # common | vulkan | d3d12 | metal
     native: bool
     comment: str
     code: str  # the declaration as written (comments inside kept)

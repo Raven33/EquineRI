@@ -24,8 +24,9 @@
 // setVertexBytes, but Metal 4 has no setBytes, so the arguments go to command
 // memory (P115) and index 5 points at DeviceState::uniforms. MSC computes
 // SV_InstanceID as instance_id - base_instance, as D3D12 (it excludes the
-// first instance), and SV_VertexID as vertex_id - base_vertex (probed): unlike
-// D3D12, the first vertex and vertex offset do not show in SV_VertexID.
+// first instance), and SV_VertexID as vertex_id - base_vertex (probed): the
+// first vertex and vertex offset do not show in SV_VertexID, which is RI's
+// rule on every backend.
 // Indexed strips always restart at 0xFFFF / 0xFFFFFFFF on Metal; D3D12 and
 // Vulkan leave restart off. Barriers inside a section cannot wait for its fragment
 // work (Commands.cpp). Metal wants scissors inside the attachments, so RI

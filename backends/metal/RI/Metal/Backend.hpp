@@ -380,8 +380,9 @@ void cmdSetStencilReference(CommandList &cmd, uint8 reference);
 void cmdDraw(CommandList &cmd, uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0,
              uint32 firstInstance = 0);
 // Indexed draws (P39): indices come from an index buffer; vertices are still
-// pulled by the shader. SV_VertexID is the index value alone on Metal (D3D12
-// adds vertexOffset), and indexed line and triangle strips always restart at
+// pulled by the shader. SV_VertexID is the index value alone, and counts from
+// 0 in cmdDraw, as on every backend. Unlike the others,
+// indexed line and triangle strips always restart at
 // the format's largest index (0xFFFF or 0xFFFFFFFF; D3D12 and Vulkan leave
 // restart off).
 void cmdSetIndexBuffer(CommandList &cmd, const Buffer &buffer, uint64 offset, IndexFormat format);
