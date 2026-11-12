@@ -244,10 +244,14 @@ void cmdSetRootData(CommandList &cmd, std::span<const std::byte> data) {
     std::memcpy(cmd.internal.rootData, data.data(), std::min<size_t>(size, sizeof(cmd.internal.rootData)));
     cmd.internal.rootDataBytes = size;
     cmd.internal.rootDataGraphics = cmd.internal.graphics;
+    // D3D12 reads whole 32-bit values: a span whose size is not a multiple of
+    // 4 ends inside the last one, so the values come from the kept copy.
+    const void *values = size <= sizeof(cmd.internal.rootData) ? static_cast<const void *>(cmd.internal.rootData)
+                                                               : static_cast<const void *>(data.data());
     if (cmd.internal.graphics) {
-        list(cmd)->SetGraphicsRoot32BitConstants(0, (size + 3) / 4, data.data(), 0);
+        list(cmd)->SetGraphicsRoot32BitConstants(0, (size + 3) / 4, values, 0);
     } else {
-        list(cmd)->SetComputeRoot32BitConstants(0, (size + 3) / 4, data.data(), 0);
+        list(cmd)->SetComputeRoot32BitConstants(0, (size + 3) / 4, values, 0);
     }
 }
 

@@ -1,5 +1,16 @@
 # Handoff
 
+> **Read first (2026-11-12):** the text below dates from 2026-10-16 and is behind. A review of
+> every branch is in `docs/reviews/Review-2026-11-12.md`; it lists the open branches
+> (`metal-backend`, `p110-agility-sdk`, `p111-work-graph-input-limits`, `p112-constant-buffers`),
+> their merge order, and what is unverified. Corrections to the text below:
+> - Items 0b and 0c say the D3D12 code is not compiled yet. It was built and run on Windows:
+>   206/206 at `2880650` and 209/209 at `f347d3f`, on NVIDIA and AMD. The logs are on the
+>   branches `win-verify-2880650` and `win-verify-f347d3f`, not merged into master.
+> - "Windows verification logs live in `docs/measurements/windows/verify/<commit>/`, not on
+>   branches" no longer holds: three `win-verify-*` branches carry logs master lacks.
+> - `CONTEXT.md` now goes to P109 on master (P110 to P116 on the branches).
+
 State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), plus samplers
 (P99), RI as a subproject (P100) and the vertex-to-pixel check (P101). The sample ports
 (`Raven33/EquineRI-Samples`) are **stopped** by the user after the pilot batch
