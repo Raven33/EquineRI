@@ -131,6 +131,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.indirect_draw_records
     texture.indirect_mesh
     texture.point_list
+    texture.layered_vertex_output
     raytracing.build_trace_update
     raytracing.empty_top_level
     raytracing.scene
@@ -338,8 +339,6 @@ if (TARGET EquineD3D12Backend)
         d3d12.native_section
         d3d12.import_objects
         d3d12.work_graph
-        # Portable, but not on Vulkan (shaderOutputLayer is not turned on).
-        texture.layered_vertex_output
     )
     equine_add_gpu_tests(EquineRID3D12Tests d3d12 ${EQUINE_D3D12_TEST_NAMES})
     set_tests_properties(d3d12.unknown_gpu_reports PROPERTIES

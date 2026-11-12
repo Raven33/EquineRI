@@ -10,8 +10,8 @@ then this.
 
 ## 1. Where things stand
 
-Branch `metal-backend`, 10 commits over `master`; `origin/metal-backend` stops at `808498d`, so
-the 8 commits from `eb983e8` on are **not pushed**:
+Branch `metal-backend`, 17 commits over `master` at `aa641ce`, all pushed (`origin/metal-backend`
+is at `aa641ce`, checked 2026-11-12). The feature commits:
 
 | Commit | Content |
 |---|---|
@@ -122,8 +122,12 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
   `WindowSystem::eCocoa` case and every new portable test. `texture.indirect_mesh` skips on
   the AMD iGPU (D3D12 MeshShaderTier 0). Two test fixes came out of it (`19df9c3`,
   `15b79e1`): upload arenas sized for D3D12's 64 KiB buffer alignment, and
-  `compute.int64_shared_atomics_reports` compiled on Metal only. **Not checked on Linux**
-  (Vulkan on RADV, X11 and Wayland swapchains).
+  `compute.int64_shared_atomics_reports` compiled on Metal only.
+- **Checked on Linux (2026-11-12, at `aa641ce`):** 140/140 with `clang-debug` (Vulkan, validation
+  on) on the Radeon 680M (RADV), `window.swapchain_x11` and `_wayland` included. From that run:
+  `texture.layered_vertex_output` was compiled out on Vulkan on the claim that RI does not turn
+  on `shaderOutputLayer`; RI turns on every Vulkan 1.2 feature the GPU has, and the test passes
+  on RADV, so it is now a shared test (141/141 with it; not yet run on Windows Vulkan).
 - **Probed but not registered:** `formatSupported` format by format (M4 only; the sweep is one
   process per case). Every other probe of §7.3 is now a registered test (§7.4).
 - **Untested on Metal:** texture copies between different formats of one texel size; sampling

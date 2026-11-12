@@ -2219,9 +2219,7 @@ EQ_TEST(texture, point_list) {
 
 // Layered rendering with the layer chosen by the vertex shader
 // (SV_RenderTargetArrayIndex), into 2 layers: single-sampled, and 4x with a
-// resolve of every layer at cmdEndRendering. Not on Vulkan: RI does not turn
-// on shaderOutputLayer there.
-#if !EQUINE_BACKEND_VULKAN
+// resolve of every layer at cmdEndRendering.
 EQ_TEST(texture, layered_vertex_output) {
     Fixture f;
     const std::vector<std::byte> vs = loadShader("layer_vs"), ps = loadShader("layer_ps");
@@ -2259,4 +2257,3 @@ EQ_TEST(texture, layered_vertex_output) {
         }
     }
 }
-#endif
