@@ -23,6 +23,7 @@ about the GPU is queried natively ([P60](../design-notes/decisions.md#p60)).
 | `geometryShaders` | [geometry shaders](graphicsPipeline.md) | `geometryShader` | always |
 | `tessellation` | hull and domain shaders, `Topology::ePatchList` | `tessellationShader` | always |
 | `indirectRootData` | indirect Level 2, [`cmdExecuteIndirectWithRootData`](indirect.md) | `VK_EXT_device_generated_commands` (Vulkan 1.4 devices) | always |
+| `constantBuffers` | [bindful constant buffers](cmdSetConstantBuffer.md): `EQ_CONSTANT_BUFFER`, `cmdSetConstantBuffer` | push descriptors (Vulkan 1.4, or `VK_KHR_push_descriptor`) | always |
 | `rayTracing`, `accelerationStructureScratchAlignment` | [inline ray tracing](raytracing.md) and the scratch address alignment | `VK_KHR_acceleration_structure` + `VK_KHR_ray_query`, and acceleration structures accepted as a mutable descriptor type; `minAccelerationStructureScratchOffsetAlignment` | raytracing tier 1.1; 256 bytes |
 | `samplerMinMax` | [`Reduction::eMin` / `eMax` samplers](writeSamplers.md) | `samplerFilterMinmax` (Vulkan 1.2) | `D3D12_OPTIONS::TiledResourcesTier` at least 2 |
 | `int64BufferAtomics` | 64-bit integer atomics (`InterlockedAdd`, `InterlockedMin`, … on `uint64_t`/`int64_t`) on buffers reached through the heap ([P105](../design-notes/decisions.md#p105)) | `shaderBufferInt64Atomics` and `shaderInt64` | `D3D12_OPTIONS11::AtomicInt64OnDescriptorHeapResourceSupported` and `D3D12_OPTIONS1::Int64ShaderOps` |

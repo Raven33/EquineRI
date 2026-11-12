@@ -568,6 +568,7 @@ bool expected(const float *out, uint32 base, float offset) {
 // Two slots, then slot 3 rebound at another offset between dispatches.
 EQ_TEST(compute, constant_buffers) {
     ConstantFixture f;
+    EQ_CHECK(f.device.limits.constantBuffers);
     EQ_CHECK(f.pipeline.constantBuffers == 0b1001u);
     RI::cmdSetPipeline(f.cmd, f.pipeline);
     RI::cmdSetConstantBuffer(f.cmd, 0, f.blocks, 0);

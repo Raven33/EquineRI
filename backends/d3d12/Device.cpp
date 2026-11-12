@@ -251,6 +251,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
         .geometryShaders = true, // every D3D12 device (P102)
         .tessellation = true,
         .indirectRootData = true, // ExecuteIndirect sets root constants on every D3D12 device (P48)
+        .constantBuffers = true,  // root CBVs (P112)
         .rayTracing = state->rayTracing,
         .workGraphs = workGraphs,
         .samplerMinMax = state->samplerMinMax,

@@ -199,7 +199,7 @@ VkPipelineLayout createLayout(DeviceState &state, const DeviceLimits &limits, ui
     if (slots.mask != 0 && !state.pushDescriptors) {
         reportError(ErrorCategory::eUnsupported,
                     std::format("{}: EQ_CONSTANT_BUFFER needs push descriptors (Vulkan 1.4 or VK_KHR_push_descriptor), "
-                                "which this GPU lacks (P112)",
+                                "which this GPU lacks (DeviceLimits::constantBuffers, P112)",
                                 call));
     }
     return createPipelineLayout(state, rootDataSize, slots.mask);

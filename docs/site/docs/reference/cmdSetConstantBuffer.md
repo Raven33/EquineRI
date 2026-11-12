@@ -44,6 +44,10 @@ RI::cmdDraw(cmd, 3);
 - **D3D12**: the slots are `register(b<slot>, space998)`, and RI adds one root CBV per slot to
   the root signature, after the root constants.
 
+`device.limits.constantBuffers` says whether the device has them
+([`DeviceLimits`](DeviceLimits.md)): always on D3D12, on Vulkan with push descriptors. A
+pipeline that declares a slot without them is reported unsupported.
+
 On RADV, a pushed constant buffer reads as fast as a heap-indexed one. A bind costs about
 120 ns more on the CPU than writing a heap index (`docs/measurements/constant_buffers/`).
 

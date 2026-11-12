@@ -64,6 +64,7 @@ struct DeviceLimits {
     bool geometryShaders = false;      // GraphicsPipelineDesc::geometry (P102)
     bool tessellation = false;         // GraphicsPipelineDesc::hull and domain (P102)
     bool indirectRootData = false;     // indirect Level 2: cmdExecuteIndirectWithRootData (P48)
+    bool constantBuffers = false;      // EQ_CONSTANT_BUFFER and cmdSetConstantBuffer (P112)
     bool rayTracing = false;           // acceleration structures and RayQuery (P49)
     bool workGraphs = false;           // work graphs, D3D12 only (P50)
     bool samplerMinMax = false;        // Reduction::eMin and eMax samplers

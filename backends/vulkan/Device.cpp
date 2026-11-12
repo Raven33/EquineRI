@@ -626,6 +626,7 @@ Device createDevice(const DeviceDesc &desc, const NativeDeviceAdditions &additio
     state->generatedCommands = device.limits.indirectRootData;
     state->pushDescriptorsCore = setup.v14 && chain.f.v14.pushDescriptor == VK_TRUE;
     state->pushDescriptors = state->pushDescriptorsCore || setup.pushDescriptorExtension;
+    device.limits.constantBuffers = state->pushDescriptors;
     // Inline ray tracing (P49): acceleration structures and ray queries.
     state->rayTracing = setup.rayQuery && chain.f.accelerationStructure.accelerationStructure == VK_TRUE &&
                         chain.f.rayQuery.rayQuery == VK_TRUE;
