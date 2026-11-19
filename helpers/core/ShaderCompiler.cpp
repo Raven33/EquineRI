@@ -88,9 +88,10 @@ CompiledShader compileShader(ShaderCompiler &compiler, const ShaderSource &sourc
         args.insert(args.end(), {L"-D", wide(define)});
     }
 #if EQUINE_BACKEND_VULKAN
-    // RI's rule (P93, P94): DX layout, samplers in their own set.
+    // RI's rule (P93, P94): DX layout, samplers in their own set, stage values numbered by semantic name rather
+    // than declaration order (P101 (5)).
     args.insert(args.end(), {L"-spirv", L"-fspv-target-env=vulkan1.3", L"-fvk-use-dx-layout", L"-fvk-bind-sampler-heap",
-                             L"0", L"1"});
+                             L"0", L"1", L"-fvk-stage-io-order=alpha"});
 #endif
     std::vector<LPCWSTR> pointers;
     for (const std::wstring &arg : args) {

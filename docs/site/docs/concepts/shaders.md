@@ -25,6 +25,7 @@ Shaders for RI must be compiled with these DXC options
 | `-spirv -fspv-target-env=vulkan1.3` | SPIR-V | Vulkan 1.3 SPIR-V |
 | `-fvk-use-dx-layout` | SPIR-V | D3D12's buffer layout, so one C++ struct fits both ([P54](../design-notes/decisions.md#p54)) |
 | `-fvk-bind-sampler-heap 0 1` | SPIR-V | samplers in set 1, binding 0, where RI's [heap](descriptors.md) puts them ([P94](../design-notes/decisions.md#p94)) |
+| `-fvk-stage-io-order=alpha` | SPIR-V | values passed between stages numbered by semantic name, not declaration order ([P101](../design-notes/decisions.md#p101)) |
 
 Nothing is needed for DXIL beyond the common options. RI reads what it needs from DXIL with
 its own reader, even with reflection and debug information stripped
@@ -34,7 +35,7 @@ By hand:
 
 ```text
 dxc -T cs_6_6 -E main -HV 2021 -I shaders -spirv -fspv-target-env=vulkan1.3 \
-    -fvk-use-dx-layout -fvk-bind-sampler-heap 0 1 -Fo my_shader.spv my_shader.hlsl
+    -fvk-use-dx-layout -fvk-bind-sampler-heap 0 1 -fvk-stage-io-order=alpha -Fo my_shader.spv my_shader.hlsl
 dxc -T cs_6_6 -E main -HV 2021 -I shaders -Fo my_shader.dxil my_shader.hlsl
 ```
 

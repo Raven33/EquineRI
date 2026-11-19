@@ -95,8 +95,9 @@ function(equine_add_shaders target)
             add_custom_target("${shader_target}" DEPENDS "${out_dir}/${name}.dxil")
         elseif (NOT TARGET "${shader_target}")
             set(common -T ${ARG_PROFILE} -E main -HV 2021 -I "${EQUINE_SHADER_INCLUDE_DIR}" -WX)
-            # Samplers in their own set, so heaps of any size share one layout (P94).
-            set(spirv_rules -fvk-bind-sampler-heap 0 1)
+            # Samplers in their own set, so heaps of any size share one layout (P94); stage values numbered by
+            # semantic name (P101 (5)).
+            set(spirv_rules -fvk-bind-sampler-heap 0 1 -fvk-stage-io-order=alpha)
             add_custom_command(
                 OUTPUT "${out_dir}/${name}.spv" "${out_dir}/${name}.dxil"
                 COMMAND "${CMAKE_COMMAND}" -E make_directory "${out_dir}"

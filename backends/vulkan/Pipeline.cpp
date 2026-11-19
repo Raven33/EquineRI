@@ -9,7 +9,8 @@
 // from the description (P104); root data must agree between stages. In validation builds the
 // pixel shader's inputs are matched to the outputs of the stage before it
 // (geometry, domain, vertex or mesh) by DXC's interface names and locations
-// (P101).
+// (P101). Mesh pipelines: pixel inputs read from per-primitive outputs are
+// decorated PerPrimitiveEXT here (P101 (5)).
 //
 // D3D12 counterpart: backends/d3d12/Pipeline.cpp.
 
@@ -22,7 +23,10 @@
 
 #include <spirv_reflect.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <cstring>
+#include <span>
 #include <format>
 #include <string>
 #include <string_view>
@@ -144,6 +148,121 @@ VkPipelineLayout createLayout(DeviceState &state, const DeviceLimits &limits, ui
     checkVk(state.functions.vkCreatePipelineLayout(state.device, &layoutInfo, nullptr, &layout), "vkCreatePipelineLayout");
     return layout;
 }
+
+// Per-primitive pixel inputs (P101 (5)). D3D12 links a mesh pipeline's pixel inputs to the mesh outputs by
+// semantic, so HLSL pixel shaders declare per-primitive values like any other input. Vulkan needs the fragment
+// input itself decorated PerPrimitiveEXT, which DXC cannot know when it compiles the pixel shader alone. RI knows
+// both stages here: every pixel input at the location of a per-primitive mesh output is decorated, with the
+// MeshShadingEXT capability and the SPV_EXT_mesh_shader extension if the module lacks them. Inputs that already
+// carry the decoration (EQ_PER_PRIMITIVE, equine/perprimitive.hlsli, or GLSL's perprimitiveEXT) are left as they are.
+namespace spirv {
+constexpr uint32 kOpExtension = 10, kOpCapability = 17, kOpVariable = 59, kOpDecorate = 71;
+constexpr uint32 kDecorationLocation = 30, kDecorationPerPrimitive = 5271;
+constexpr uint32 kStorageInput = 1, kStorageOutput = 3;
+constexpr uint32 kCapabilityMeshShading = 5283;
+constexpr std::string_view kMeshExtension = "SPV_EXT_mesh_shader";
+constexpr size_t kHeaderWords = 5;
+
+std::span<const uint32> words(Bytecode code) {
+    return {reinterpret_cast<const uint32 *>(code.data()), code.size() / sizeof(uint32)};
+}
+
+// Calls fn(opcode, operands) for each instruction after the header.
+template <typename Fn>
+void forEachInstruction(std::span<const uint32> w, Fn fn) {
+    for (size_t i = kHeaderWords; i < w.size();) {
+        const uint32 count = w[i] >> 16;
+        if (count == 0 || i + count > w.size()) {
+            return;
+        }
+        fn(w[i] & 0xffffu, w.subspan(i + 1, count - 1), i);
+        i += count;
+    }
+}
+
+struct Interface {
+    std::vector<std::pair<uint32, uint32>> locations; // (variable id, location)
+    std::vector<uint32> perPrimitive;                 // ids decorated PerPrimitiveEXT
+    std::vector<uint32> variables;                    // ids of variables in the storage class asked for
+    bool meshCapability = false;
+    bool meshExtension = false;
+};
+
+Interface readInterface(std::span<const uint32> w, uint32 storageClass) {
+    Interface out;
+    forEachInstruction(w, [&](uint32 op, std::span<const uint32> a, size_t) {
+        if (op == kOpCapability && !a.empty() && a[0] == kCapabilityMeshShading) {
+            out.meshCapability = true;
+        } else if (op == kOpExtension) {
+            const char *text = reinterpret_cast<const char *>(a.data());
+            out.meshExtension |= std::string_view(text, strnlen(text, a.size() * 4)) == kMeshExtension;
+        } else if (op == kOpDecorate && a.size() >= 2) {
+            if (a[1] == kDecorationLocation && a.size() >= 3) {
+                out.locations.emplace_back(a[0], a[2]);
+            } else if (a[1] == kDecorationPerPrimitive) {
+                out.perPrimitive.push_back(a[0]);
+            }
+        } else if (op == kOpVariable && a.size() >= 3 && a[2] == storageClass) {
+            out.variables.push_back(a[1]);
+        }
+    });
+    return out;
+}
+
+bool contains(const std::vector<uint32> &v, uint32 x) { return std::find(v.begin(), v.end(), x) != v.end(); }
+
+// Locations of the mesh shader's per-primitive outputs.
+std::vector<uint32> perPrimitiveLocations(Bytecode mesh) {
+    const Interface in = readInterface(words(mesh), kStorageOutput);
+    std::vector<uint32> result;
+    for (const auto &[id, location] : in.locations) {
+        if (contains(in.perPrimitive, id) && contains(in.variables, id)) {
+            result.push_back(location);
+        }
+    }
+    return result;
+}
+
+// The pixel shader with its inputs at `locations` decorated PerPrimitiveEXT; empty when nothing had to change.
+std::vector<uint32> decoratePerPrimitiveInputs(Bytecode pixel, const std::vector<uint32> &locations) {
+    const std::span<const uint32> w = words(pixel);
+    const Interface in = readInterface(w, kStorageInput);
+    std::vector<uint32> targets;
+    for (const auto &[id, location] : in.locations) {
+        if (contains(in.variables, id) && contains(locations, location) && !contains(in.perPrimitive, id)) {
+            targets.push_back(id);
+        }
+    }
+    if (targets.empty()) {
+        return {};
+    }
+    std::vector<uint32> out(w.begin(), w.begin() + kHeaderWords);
+    bool capabilityDone = in.meshCapability, extensionDone = in.meshExtension, decorationsDone = false;
+    forEachInstruction(w, [&](uint32 op, std::span<const uint32>, size_t at) {
+        // SPIR-V module order: capabilities, then extensions, ..., then annotations.
+        if (!capabilityDone && op != kOpCapability) {
+            out.insert(out.end(), {(2u << 16) | kOpCapability, kCapabilityMeshShading});
+            capabilityDone = true;
+        }
+        if (!extensionDone && op != kOpCapability && op != kOpExtension) {
+            std::vector<uint32> text((kMeshExtension.size() + 4) / 4, 0); // null-terminated, padded to words
+            std::memcpy(text.data(), kMeshExtension.data(), kMeshExtension.size());
+            out.push_back(static_cast<uint32>((1 + text.size()) << 16) | kOpExtension);
+            out.insert(out.end(), text.begin(), text.end());
+            extensionDone = true;
+        }
+        if (!decorationsDone && op == kOpDecorate) {
+            for (uint32 id : targets) {
+                out.insert(out.end(), {(3u << 16) | kOpDecorate, id, kDecorationPerPrimitive});
+            }
+            decorationsDone = true;
+        }
+        const uint32 count = w[at] >> 16;
+        out.insert(out.end(), w.begin() + static_cast<std::ptrdiff_t>(at), w.begin() + static_cast<std::ptrdiff_t>(at + count));
+    });
+    return out;
+}
+} // namespace spirv
 
 VkShaderModule createModule(DeviceState &state, Bytecode bytecode) {
     const VkShaderModuleCreateInfo moduleInfo{
@@ -370,10 +489,16 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
                                                hasStencil(desc.depthFormat)));
     const VkPipelineLayout layout = createLayout(state, device.limits, rootDataSize, kCall);
 
+    // Mesh pipelines: the pixel inputs that read per-primitive outputs get PerPrimitiveEXT (see spirv:: above).
+    std::vector<uint32> linkedPixel;
+    if (meshPipeline && !desc.pixel.empty()) {
+        linkedPixel = spirv::decoratePerPrimitiveInputs(desc.pixel, spirv::perPrimitiveLocations(desc.mesh));
+    }
     std::vector<VkShaderModule> modules;
     std::vector<VkPipelineShaderStageCreateInfo> stages;
     for (const Stage &stage : stageList) {
-        modules.push_back(createModule(state, stage.code));
+        const bool patched = stage.stage == VK_SHADER_STAGE_FRAGMENT_BIT && !linkedPixel.empty();
+        modules.push_back(createModule(state, patched ? std::as_bytes(std::span(linkedPixel)) : stage.code));
         stages.push_back({.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                           .stage = stage.stage,
                           .module = modules.back(),
