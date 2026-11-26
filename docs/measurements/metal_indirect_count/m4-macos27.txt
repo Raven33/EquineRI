@@ -1,0 +1,11 @@
+GPU Apple M4; Level 2 records of 32 bytes; target 1920 x 1080
+maxCount    count | A: RI (copy + CPU draws)     | B: ICB, reset past count     | B2: ICB, GPU range          
+     256        2 | cpu   0.023 gpu   0.043 ms   | cpu   0.006 gpu   0.047 ms   | cpu   0.006 gpu   0.046 ms  
+     256      128 | cpu   0.028 gpu   0.043 ms   | cpu   0.006 gpu   0.049 ms   | cpu   0.006 gpu   0.051 ms  
+     256      256 | cpu   0.029 gpu   0.045 ms   | cpu   0.006 gpu   0.052 ms   | cpu   0.007 gpu   0.054 ms  
+    4096       40 | cpu   0.316 gpu   0.123 ms   | cpu   0.006 gpu   0.089 ms   | cpu   0.006 gpu   0.048 ms  
+    4096     2048 | cpu   0.309 gpu   0.129 ms   | cpu   0.006 gpu   0.131 ms   | cpu   0.006 gpu   0.117 ms  
+    4096     4096 | cpu   0.320 gpu   0.134 ms   | cpu   0.006 gpu   0.184 ms   | cpu   0.006 gpu   0.184 ms  
+   65536      655 | cpu   4.877 gpu   1.396 ms   | cpu   0.014 gpu   0.912 ms   | cpu   0.006 gpu   0.090 ms  
+   65536    32768 | cpu   4.805 gpu   1.621 ms   | cpu   0.028 gpu   1.947 ms   | cpu   0.028 gpu   1.375 ms  
+   65536    65536 | cpu   4.801 gpu   1.798 ms   | cpu   0.027 gpu   2.742 ms   | cpu   0.028 gpu   2.677 ms  

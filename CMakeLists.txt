@@ -317,6 +317,7 @@ if (EQUINE_BUILD_SAMPLES)
     add_subdirectory(tools/descriptor_bench) # the P94 measurement
     add_subdirectory(tools/statistics_bench) # the P105 statistics-cost measurement
     add_subdirectory(tools/metal_view_bench) # the cost of Metal's pixel-format views (P74)
+    add_subdirectory(tools/indirect_count_bench) # Metal's GPU-written indirect counts against ICBs (P116 (3))
 endif()
 
 if (EQUINE_BUILD_DOC_SNIPPETS)

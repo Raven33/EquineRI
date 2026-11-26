@@ -142,7 +142,8 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 - **Open behaviour:** a pipeline whose stencil writes, in a read-only stencil section, is not
   reported, and on Metal the stencil **is written** (probed 2026-11-26, §10): now reported on
   every backend (§11). An indirect draw counts as a draw for timestamps even if
-  every record is empty. The ICB variant of indirect counts (proposal §7 (a)) is not measured.
+  every record is empty. The ICB variant of indirect counts (proposal §7 (a)) is measured
+  (2026-11-26, §14), not built.
 - **Other GPUs:** only the M4 was used. Whether M1 and M2 report `supportsRaytracing`, and the
   `rayTracingHardware` family check, are unverified. The GPU-error to `eDeviceLost` path has no
   test: no GPU fault could be provoked on the M4 (§10).
@@ -448,4 +449,15 @@ Tests: `metal.multisampled_copy_through_view` (4x RGBA8 with a triangle's mixed 
 4x R32Uint and back, through a view of the source and then of the destination; the resolves
 match byte for byte), `metal.copy_between_formats_through_view` (1x, 16 MiB, no command memory
 taken). Both fail on the previous code.
+
+## 14. Indirect counts against ICBs, measured (2026-11-26)
+
+`tools/indirect_count_bench`, results in `docs/measurements/metal_indirect_count/` (P116 (3)
+asked for it). Nothing in RI changed. In short: RI's path costs about 73 ns of CPU per record of
+`maxCount` (4.8 ms at 65,536) and about 21 ns of GPU per empty record; GPU-encoded ICBs cost a
+few microseconds of CPU, but about 41 ns of GPU per drawn record against RI's 27 ns. With a
+GPU-written execution range, records past the count cost nothing (0.09 ms against 1.40 ms for
+655 of 65,536), but that variant draws nothing under `MTL_SHADER_VALIDATION`. An ICB path in RI
+would need pipelines with `supportIndirectCommandBuffers`, ICB memory RI does not own today
+(P31), and mesh and dispatch variants: the user's decision.
 
