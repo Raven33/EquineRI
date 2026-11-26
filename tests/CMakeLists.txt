@@ -119,6 +119,7 @@ set(EQUINE_GPU_SHARED_TEST_NAMES
     texture.occlusion
     texture.occlusion_many_sections
     texture.indexed_draw_with_blending
+    texture.vertex_id_excludes_offsets
     texture.stencil_test
     texture.stencil_reference_command
     texture.mesh_shaders
