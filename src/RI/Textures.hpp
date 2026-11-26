@@ -83,7 +83,9 @@ struct TextureDesc {
     Format format = Format::eUndefined;
     TextureUsage usage = TextureUsage::eNone;
     // Other formats views may use (P74). Empty: views use `format` only, which
-    // lets drivers keep compression.
+    // lets drivers keep compression. On Metal any entry turns compression off
+    // for color formats: on an M4, rendering to such a texture takes 2 to 3
+    // times as long (docs/measurements/metal_pixel_format_view/).
     std::vector<Format> viewFormats;
     std::string_view name; // empty: unnamed (P106)
 };

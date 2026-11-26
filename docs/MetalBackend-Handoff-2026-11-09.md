@@ -26,9 +26,9 @@ is at `aa641ce`, checked 2026-11-12). The feature commits:
 
 Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains, geometry and
 tessellation, the merge of master (P117), the coverage tests of §10 and the fixes of §11
-(2026-11-26) and the indirect draws of §12: **149/149** with `ctest
+(2026-11-26), the indirect draws of §12 and the copies of §13: **151/151** with `ctest
 --preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`;
-10 runs in a row), **131/131** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+10 runs in a row), **133/133** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader` (without its pipeline-statistics part),
@@ -430,4 +430,22 @@ the pipeline and the index type, so only the object threadgroup counts depend on
   domain shader reads the record's root data at index 3; fails without that binding). The
   emulation fixture's buffers are a deque now (references into a growing vector, a latent
   use-after-free).
+
+## 13. Multisampled copies between formats (2026-11-26)
+
+Measured first (P18): `MTLTextureUsagePixelFormatView`, which a view in another format needs,
+costs 2.1 to 3.1 times the GPU time on M4 color targets and nothing on depth-stencil
+(`docs/measurements/metal_pixel_format_view/`, `tools/metal_view_bench`). So RI does not set it
+for copies: `cmdCopyTexture` copies between formats directly through a view (`viewedPair`,
+`TextureCommands.cpp`; the view kept in `CommandListState::copyViews` until recycle) when one of
+the two textures already has the flag (it lists `viewFormats`), at any sample count. Otherwise
+1x copies are staged as before and multisampled ones report `eUnsupported`, now naming
+`viewFormats`. One aspect of a depth-stencil format still needs staging (Metal has no
+depth-only view), so its multisampled copies stay unsupported. P116 records the choice for the
+user's review; `viewFormats`' comment and the texture and copies pages give the cost.
+
+Tests: `metal.multisampled_copy_through_view` (4x RGBA8 with a triangle's mixed edge samples to
+4x R32Uint and back, through a view of the source and then of the destination; the resolves
+match byte for byte), `metal.copy_between_formats_through_view` (1x, 16 MiB, no command memory
+taken). Both fail on the previous code.
 

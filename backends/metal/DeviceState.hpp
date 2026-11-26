@@ -223,6 +223,8 @@ struct CommandListState {
     size_t chunk = 0;   // the chunk being filled
     uint64 used = 0;    // bytes used in it
     std::vector<MTL::Buffer *> oversized; // one allocation each, released at recycle
+    // Texture views made for copies between formats (cmdCopyTexture), released at recycle.
+    std::vector<MTL::Texture *> copyViews;
     // Visibility pages (allocateVisibilityPage): fixed chunks of
     // kVisibilityChunkSize, `pagesUsed` pages taken since the last recycle.
     std::vector<MTL::Buffer *> visibilityChunks;

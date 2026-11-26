@@ -20,7 +20,11 @@ The description:
 - `format`: one of the [formats](../concepts/textures.md#formats);
 - `usage`: everything the texture will be used for (below);
 - `viewFormats`: other formats views may use, such as the sRGB version of the format. Empty by
-  default ([P74](../design-notes/decisions.md#p74)).
+  default ([P74](../design-notes/decisions.md#p74)). List only what you need: drivers may
+  compress textures less once other formats are allowed. On Metal, any entry turns lossless
+  compression off for color formats: on an Apple M4, rendering into such a texture took 2 to 3
+  times as long (2.1 to 3.1×, 1x and 4x RGBA8 and RGBA16Float targets; depth-stencil formats
+  are not affected).
 
 Creating a texture also **resets** it: its contents are undefined but valid, ready for any use
 ([P69](../design-notes/decisions.md#p69)). RI records that reset itself, submits it on the

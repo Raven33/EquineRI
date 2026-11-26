@@ -482,3 +482,94 @@ EQ_TEST(metal, multisampled_depth_aspect_copy_reports) {
     RI::TextureView to = RI::createView(f.device, b, {.aspect = RI::Aspect::eDepth});
     RI::cmdCopyTexture(f.cmd, from, to);
 }
+
+// Multisampled copies between formats through a pixel-format view (P74): a
+// triangle rendered into a 4x RGBA8 texture that lists R32Uint in its
+// viewFormats (edge pixels get mixed samples) is copied to a 4x R32Uint
+// texture (a view of the source), then into another 4x RGBA8 that lists
+// R32Uint (a view of the destination). Both resolves match byte for byte.
+EQ_TEST(metal, multisampled_copy_through_view) {
+    Fixture f;
+    const RI::TextureUsage usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc |
+                                   RI::TextureUsage::eCopyDst;
+    const RI::TextureDesc viewed{.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eRGBA8Unorm,
+                                 .usage = usage, .viewFormats = {RI::Format::eR32Uint}};
+    const RI::Texture &a = f.texture(viewed);
+    const RI::Texture &b = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eR32Uint, .usage = usage});
+    const RI::Texture &c = f.texture(viewed);
+    const RI::Texture &first = f.target();
+    const RI::Texture &second = f.target();
+    const std::vector<std::byte> vs = loadShader("triangle_vs"), ps = loadShader("solid_ps");
+    RI::Pipeline pipeline = f.pipeline({.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}, .samples = 4});
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = a.view, .load = RI::LoadOp::eClear,
+                                              .clear = {.color = {0.1f, 0.2f, 0.3f, 0.4f}},
+                                              .resolveTo = first.view}}});
+    RI::cmdSetPipeline(f.cmd, pipeline);
+    RI::Helpers::cmdSetRootData(f.cmd, DrawRoot{.color = {0.9f, 0.6f, 0.3f, 1.0f}, .depth = 0.5f});
+    RI::cmdDraw(f.cmd, 3);
+    RI::cmdEndRendering(f.cmd);
+    RI::cmdBarrier(f.cmd, RI::Stage::eRenderTarget, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, a.view, b.view);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, b.view, c.view);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eRenderTarget);
+    // A section that only loads c and resolves it.
+    RI::cmdBeginRendering(f.cmd, {.colors = {{.view = c.view, .resolveTo = second.view}}});
+    RI::cmdEndRendering(f.cmd);
+    const std::vector<uint32> expected = f.readBack(first.view);
+    const std::vector<uint32> copied = f.readBack(second.view);
+    uint32 mixed = 0, wrong = 0;
+    for (uint32 i = 0; i < kSize * kSize; ++i) {
+        wrong += copied[i] != expected[i] ? 1 : 0;
+        mixed += expected[i] != expected[0] && expected[i] != expected[kSize * kSize / 2 + kSize / 2] ? 1 : 0;
+    }
+    EQ_CHECK(wrong == 0);
+    EQ_CHECK(mixed > 0); // the triangle's edges resolve to colors in between
+}
+
+// The same at 1x: a copy between formats is direct (no command memory) when
+// the source lists the destination's format.
+EQ_TEST(metal, copy_between_formats_through_view) {
+    Fixture f;
+    const MTL::ResidencySet *residency = RI::Metal::native(f.device).residencySet;
+    const RI::TextureUsage usage = RI::TextureUsage::eCopySrc | RI::TextureUsage::eCopyDst;
+    const RI::Texture &a = f.texture({.width = 2048, .height = 2048, .format = RI::Format::eRGBA8Unorm, .usage = usage,
+                                      .viewFormats = {RI::Format::eR32Uint}});
+    const RI::Texture &b = f.texture({.width = 2048, .height = 2048, .format = RI::Format::eR32Uint, .usage = usage});
+    const RI::Texture &small = f.texture({.width = kSize, .height = kSize, .format = RI::Format::eR32Uint, .usage = usage});
+    const RI::CopyLayout layout = RI::copyLayout(f.device, small.view);
+    const RI::Buffer &staging = f.buffer(f.upload, layout.size, RI::BufferUsage::eCopySrc);
+    auto *bytes = static_cast<uint8 *>(staging.mapped);
+    for (uint32 y = 0; y < kSize; ++y) {
+        for (uint32 x = 0; x < kSize * 4; ++x) {
+            bytes[y * layout.rowPitch + x] = pattern(x / 4, y, x % 4);
+        }
+    }
+    // The pattern into a's corner (through b's format: a direct copy too).
+    RI::cmdCopyBufferToTexture(f.cmd, staging, 0, small.view);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, small.view, a.view, {.width = kSize, .height = kSize});
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    f.submitAndWait();
+    const uint64 before = residency->allocatedSize();
+    RI::cmdCopyTexture(f.cmd, a.view, b.view); // 16 MiB; staged, it would take an oversized buffer
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, b.view, small.view, {.width = kSize, .height = kSize});
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+    EQ_CHECK(residency->allocatedSize() == before);
+    RI::resetCommandList(f.cmd);
+    f.begin();
+    const std::vector<uint32> words = f.readBack(small.view);
+    uint32 wrong = 0;
+    for (uint32 y = 0; y < kSize; ++y) {
+        for (uint32 x = 0; x < kSize; ++x) {
+            uint32 expected = 0;
+            for (uint32 ch = 0; ch < 4; ++ch) {
+                expected |= uint32{pattern(x, y, ch)} << (8 * ch);
+            }
+            wrong += words[y * kSize + x] != expected ? 1 : 0;
+        }
+    }
+    EQ_CHECK(wrong == 0);
+}

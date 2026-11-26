@@ -441,6 +441,8 @@ if (TARGET EquineMetalBackend)
         metal.command_memory_bounded
         metal.multisampled_copy_between_formats_reports
         metal.multisampled_depth_aspect_copy_reports
+        metal.multisampled_copy_through_view
+        metal.copy_between_formats_through_view
     )
     set(EQUINE_METAL_ABORT_TESTS ${EQUINE_GPU_SHARED_ABORT_TESTS}
         "metal.multisampled_copy_between_formats_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"

@@ -108,12 +108,17 @@ void checkNotRendering(const CommandListState &cmd, const char *call) {
 }
 
 // Command memory starts over once the GPU is done with the list (P115).
+// Oversized command memory and copy views: what a list holds for one recording.
 void releaseOversized(DeviceState &state, CommandListState &cmd) {
     for (MTL::Buffer *buffer : cmd.oversized) {
         makeNonResident(state, buffer);
         release(buffer);
     }
     cmd.oversized.clear();
+    for (MTL::Texture *view : cmd.copyViews) {
+        release(view);
+    }
+    cmd.copyViews.clear();
 }
 
 // Only once the list's last submission is reached (resetCommandList's rule, P115).

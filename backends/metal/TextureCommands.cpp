@@ -15,8 +15,11 @@
 // doubled inside the texture. Texture-to-texture copies between different
 // pixel formats, or of one aspect of a depth-stencil format, go through
 // command memory (needsStaging): Metal's own copy needs equal formats and
-// moves both aspects. Multisampled textures cannot go through a buffer, so
-// those copies report eUnsupported. Metal has no layouts, so a discard is the
+// moves both aspects. A copy between formats where one texture allows views
+// of other formats (it lists viewFormats, P74) is direct instead, through a
+// view of that texture in the other's format (viewedPair). Multisampled
+// textures cannot go through a buffer, so their other copies report
+// eUnsupported. Metal has no layouts, so a discard is the
 // validation bookkeeping plus the full barrier RI promises (P69).
 //
 // D3D12 counterpart: the copy, clear and discard sections of
@@ -32,6 +35,8 @@
 #include <cmath>
 #include <cstring>
 #include <format>
+#include <tuple>
+#include <utility>
 
 namespace RI::Metal {
 
@@ -109,6 +114,37 @@ uint32 zOf(const TextureView &view, uint32 layer) { return isVolume(view) ? view
 bool needsStaging(const TextureView &src, const TextureView &dst) {
     return resourceOf(src)->pixelFormat() != resourceOf(dst)->pixelFormat() ||
            blitOptionOf(src) != MTL::BlitOptionNone || blitOptionOf(dst) != MTL::BlitOptionNone;
+}
+
+// A copy between formats, directly: Metal copies only between equal pixel
+// formats, but a texture made with MTLTextureUsagePixelFormatView (one that
+// lists viewFormats, P74) can be viewed in the other texture's format. Returns
+// the pair to copy (one side a new view, kept by the list until recycle), or
+// nulls when neither texture allows it. Not for one aspect of a depth-stencil
+// format: Metal has no depth-only view of one.
+std::pair<MTL::Texture *, MTL::Texture *> viewedPair(CommandListState &cmd, const TextureView &src,
+                                                     const TextureView &dst) {
+    MTL::Texture *from = resourceOf(src);
+    MTL::Texture *to = resourceOf(dst);
+    if (blitOptionOf(src) != MTL::BlitOptionNone || blitOptionOf(dst) != MTL::BlitOptionNone) {
+        return {nullptr, nullptr};
+    }
+    const auto viewable = [](MTL::Texture *texture) {
+        return (texture->usage() & MTL::TextureUsagePixelFormatView) != 0;
+    };
+    MTL::Texture *view = nullptr;
+    if (viewable(to)) {
+        view = to->newTextureView(from->pixelFormat());
+        to = view;
+    } else if (viewable(from)) {
+        view = from->newTextureView(to->pixelFormat());
+        from = view;
+    }
+    if (view == nullptr) {
+        return {nullptr, nullptr};
+    }
+    cmd.copyViews.push_back(view);
+    return {from, to};
 }
 
 // Bytes are bytes in a buffer: `region` of each layer of `src` goes out in
@@ -399,23 +435,29 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
     checkRegion(region, src, "source", "cmdCopyTexture");
     region = resolved(region, src);
     checkRegion({dstOffset.x, dstOffset.y, region.width, region.height}, dst, "destination", "cmdCopyTexture");
-    // Metal copies no multisampled texture to a buffer (the debug layer
-    // asserts; without it the copy is undefined): every build.
-    if (src.samples > 1 && needsStaging(src, dst)) {
-        reportError(ErrorCategory::eUnsupported,
-                    "cmdCopyTexture: on Metal, multisampled copies need equal formats and a format without "
-                    "stencil (no copy between formats, and no aspect of a depth-stencil format)");
-    }
-    MTL4::ComputeCommandEncoder *encoder = computeEncoder(list);
+    MTL::Texture *from = resourceOf(src);
+    MTL::Texture *to = resourceOf(dst);
     if (needsStaging(src, dst)) {
+        std::tie(from, to) = viewedPair(list, src, dst);
+    }
+    if (from == nullptr) {
+        // Metal copies no multisampled texture to a buffer (the debug layer
+        // asserts; without it the copy is undefined): every build.
+        if (src.samples > 1) {
+            reportError(ErrorCategory::eUnsupported,
+                        "cmdCopyTexture: on Metal, multisampled copies between formats need one of the two "
+                        "textures to list the other's format in viewFormats (P74); multisampled copies of one "
+                        "aspect of a depth-stencil format are unsupported");
+        }
         copyThroughBuffer(state, list, src, dst, region, dstOffset);
         return;
     }
+    MTL4::ComputeCommandEncoder *encoder = computeEncoder(list);
     // One slice or layer at a time, so 3D and 2D-array views copy into each other.
     for (uint32 layer = 0; layer < src.internal.layerCount; ++layer) {
-        encoder->copyFromTexture(resourceOf(src), sliceOf(src, layer), src.internal.baseMip,
+        encoder->copyFromTexture(from, sliceOf(src, layer), src.internal.baseMip,
                                  MTL::Origin(region.x, region.y, zOf(src, layer)),
-                                 MTL::Size(region.width, region.height, 1), resourceOf(dst), sliceOf(dst, layer),
+                                 MTL::Size(region.width, region.height, 1), to, sliceOf(dst, layer),
                                  dst.internal.baseMip, MTL::Origin(dstOffset.x, dstOffset.y, zOf(dst, layer)));
     }
 }

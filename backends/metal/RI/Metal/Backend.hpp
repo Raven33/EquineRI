@@ -439,9 +439,10 @@ void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buff
                             Rect region = {});
 // `region` of `src` lands at `dstOffset` in `dst`, in every layer. Same layer
 // count, sample count and texel size. Unlike D3D12 and Vulkan, multisampled
-// views copy only between equal formats without stencil: other multisampled
-// copies report eUnsupported (Metal copies no multisampled texture to a
-// buffer, the path such copies take).
+// views copy between formats only when one of the two textures lists the
+// other's format in viewFormats, and not by one aspect of a depth-stencil
+// format: other multisampled copies report eUnsupported (Metal copies no
+// multisampled texture to a buffer, the path such copies take otherwise).
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst, Rect region = {},
                     Offset dstOffset = {});
 

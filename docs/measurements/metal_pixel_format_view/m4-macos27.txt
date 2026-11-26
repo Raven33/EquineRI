@@ -1,0 +1,13 @@
+GPU Apple M4, 3840 x 2160
+RGBA8Unorm   4x without               : 8 load/blend/store passes   6.057 ms, resolve  0.535 ms, read  0.725 ms
+RGBA8Unorm   4x with PixelFormatView  : 8 load/blend/store passes  18.653 ms, resolve  1.433 ms, read  1.162 ms
+RGBA16Float  4x without               : 8 load/blend/store passes  14.418 ms, resolve  1.307 ms, read  1.346 ms
+RGBA16Float  4x with PixelFormatView  : 8 load/blend/store passes  38.207 ms, resolve  2.932 ms, read  2.380 ms
+D32Float_S8  4x without               : 8 load/write/store passes  14.192 ms
+D32Float_S8  4x with PixelFormatView  : 8 load/write/store passes  14.312 ms
+RGBA8Unorm   1x without               : 8 load/blend/store passes   2.209 ms, resolve  0.000 ms, read  0.201 ms
+RGBA8Unorm   1x with PixelFormatView  : 8 load/blend/store passes   4.697 ms, resolve  0.000 ms, read  0.358 ms
+RGBA16Float  1x without               : 8 load/blend/store passes   4.044 ms, resolve  0.000 ms, read  0.319 ms
+RGBA16Float  1x with PixelFormatView  : 8 load/blend/store passes   9.416 ms, resolve  0.000 ms, read  0.654 ms
+D32Float_S8  1x without               : 8 load/write/store passes   4.181 ms
+D32Float_S8  1x with PixelFormatView  : 8 load/write/store passes   4.157 ms
