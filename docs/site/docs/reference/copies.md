@@ -111,7 +111,10 @@ Buffer-to-buffer copies are [`cmdCopyBuffer`](cmdCopyBuffer.md).
   Depth, stencil and multisampled views copy only whole, as D3D12 requires (**programmer
   error** for a smaller region, on both backends).
 - `cmdCopyTexture`: the region fits at `dstOffset` in the destination; same layer count, sample
-  count and texel size.
+  count and texel size. On Metal, multisampled views copy only between equal formats without
+  stencil: a multisampled copy between formats, or of one aspect of a depth-stencil format, is
+  **unsupported** there (Metal would stage it through a buffer, which multisampled textures
+  cannot use).
 - Not inside a rendering section. Copies count as `Stage::eCopy` for
   [barriers](cmdBarrier.md): a barrier from the work that wrote the source, and one to the
   work that reads the destination.

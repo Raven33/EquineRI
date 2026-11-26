@@ -96,6 +96,9 @@ const bool hit = query.CommittedStatus() == COMMITTED_TRIANGLE_HIT;
   barrier between a bottom-level build and the top-level build that uses it, and from the
   top-level build to the shaders that trace.
 - Building into one structure while shaders trace it is a race, as for any write.
+- `cmdBuildBlas` needs a structure created with `topLevel` false, and `cmdBuildTlas` one
+  created with `topLevel` true (**programmer error** in validation builds; on Metal,
+  `cmdBuildTlas` reports it in every build).
 - Everything here without `device.limits.rayTracing` is **unsupported**.
 
 ## Related decisions

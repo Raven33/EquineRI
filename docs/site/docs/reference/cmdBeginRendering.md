@@ -149,7 +149,9 @@ A read-only depth section, sampling the depth texture while testing against it:
   (validation builds report it at `cmdBeginRendering`).
 - Read-only depth: set `stencilReadOnly` too for formats with stencil, keep `load` at `eLoad`,
   and use pipelines that do not write depth (validation builds report one at
-  `cmdSetPipeline`).
+  `cmdSetPipeline`). With `stencilReadOnly`, pipelines must not write stencil either (a
+  stencil test with a write mask and an operation other than `eKeep`): validation builds report
+  one at `cmdSetPipeline`, since Metal would write it.
 - Each pipeline used in the section must have the attachments' formats and sample count
   ([`createGraphicsPipeline`](graphicsPipeline.md)).
 - `StoreOp::eDontCare` is a hint: on D3D12 it has no effect today.
