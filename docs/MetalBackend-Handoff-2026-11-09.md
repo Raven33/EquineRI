@@ -1,5 +1,8 @@
 # Metal backend: handoff (2026-11-09)
 
+> Superseded as the starting point by `MetalBackend-Handoff-2026-11-26.md` (next: native
+> sections and import); this file stays as the detailed log, §10 to §14 for 2026-11-26.
+
 State of branch `metal-backend` after stages 1 to 3 and ray tracing, and what the next session
 does first. It replaces `MetalBackend-Handoff-2026-11-07.md` as the starting point; that file
 stays as the stage-by-stage log (§5 to §10 there hold details and probe paths cited below).

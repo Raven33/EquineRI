@@ -13,7 +13,7 @@
 >
 > **Metal (branch `metal-backend`, 2026-11-26):** a third backend, `RI::Metal::` (P113 to
 > P116), with master merged in (P117). Its state, environment (a borrowed Mac mini M4) and next
-> steps are in `docs/MetalBackend-Handoff-2026-11-09.md`; read that instead of this file for
+> steps are in `docs/MetalBackend-Handoff-2026-11-26.md`; read that instead of this file for
 > Metal work. On this branch, `ARCHITECTURE.md` describes all three backends.
 
 State on 2026-10-15: **v1 is implemented** (Milestones 1–4, `docs/Plan.md`), plus samplers
@@ -124,7 +124,7 @@ instructions. The Linux session (`linux-ri`) has the RADV GPU. Docs site: `docs/
 
 Presets: `clangcl-debug` (Windows, D3D12 and Vulkan), `clang-debug` (Linux, Vulkan) and, on
 `metal-backend`, `macos-debug` (macOS, Metal; needs Xcode, a local DXC and Metal Shader
-Converter, `docs/MetalBackend-Handoff-2026-11-09.md` §2). The
+Converter, `docs/MetalBackend-Handoff-2026-11-26.md` §2). The
 D3D12 backend downloads the Agility SDK 1.619.6 at configure time. The scaffold holds only
 what v1 needs: integer aliases (`src/types.hpp`), RavenLib's bitmask, backend header-check
 targets, the Agility SDK module, and an empty GPU-free test harness. Validated on

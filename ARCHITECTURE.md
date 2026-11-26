@@ -8,7 +8,7 @@ Using RI from another repository (a git submodule and `add_subdirectory`):
 `docs/site/docs/getting-started/use-in-your-project.md`.
 
 Other documents: `CONTEXT.md` (every decision, `P1`…, and why), `docs/Plan.md` (milestones),
-`HANDOFF.md` (current state; the Metal backend's is `docs/MetalBackend-Handoff-2026-11-09.md`), the docs site `docs/site/` (for people using RI), and the
+`HANDOFF.md` (current state; the Metal backend's is `docs/MetalBackend-Handoff-2026-11-26.md`), the docs site `docs/site/` (for people using RI), and the
 [Vulkan / D3D12 → RI glossary](docs/site/docs/concepts/glossary.md).
 
 ## 1. Layout
@@ -166,7 +166,7 @@ Every change keeps these. The decision behind each is in `CONTEXT.md`.
    `clangcl-debug` and runs the suite on each GPU on request; it pushes logs to a branch,
    never to master. D3D12 code is only compiled there.
 3. macOS (Metal): `cmake --preset macos-debug`, build, `ctest --preset macos-debug`, on the
-   borrowed Mac's M4 (`docs/MetalBackend-Handoff-2026-11-09.md` §2). Metal code is only compiled
+   borrowed Mac's M4 (`docs/MetalBackend-Handoff-2026-11-26.md` §2). Metal code is only compiled
    there; Vulkan and D3D12 code is not compiled on it.
 4. Before committing: no warnings, all tests pass, the docs build strictly.
 
