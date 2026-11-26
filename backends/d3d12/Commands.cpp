@@ -209,6 +209,8 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapSet));
     EQ_VALIDATE(Validation::checkDepthWriteAllowed(cmd.internal.rendering && cmd.internal.depthReadOnly,
                                                    pipeline.internal.depthWrite));
+    EQ_VALIDATE(Validation::checkStencilWriteAllowed(cmd.internal.rendering && cmd.internal.stencilReadOnly,
+                                                     pipeline.internal.stencilWrite));
     list(cmd)->SetPipelineState(static_cast<ID3D12PipelineState *>(pipeline.internal.pipelineState));
     const int point = pipeline.internal.graphics ? 1 : 0;
     if (cmd.internal.rootSignature[point] != pipeline.internal.rootSignature) {

@@ -177,7 +177,9 @@ struct DeviceState {
 };
 
 // Command memory (P115): shared-storage chunks owned by one command list,
-// growing (64 KiB, then doubling) and recycled at reset.
+// growing (64 KiB, then doubling up to kMaxCommandMemoryChunk) and recycled at
+// reset. An allocation that no such chunk holds (a staged copy of a large
+// texture) gets a chunk of its own, released at the next recycle.
 struct CommandMemoryChunk {
     MTL::Buffer *buffer = nullptr;
     uint64 size = 0;
@@ -219,6 +221,7 @@ struct CommandListState {
     std::vector<CommandMemoryChunk> chunks;
     size_t chunk = 0;   // the chunk being filled
     uint64 used = 0;    // bytes used in it
+    std::vector<MTL::Buffer *> oversized; // one allocation each, released at recycle
     // Visibility pages (allocateVisibilityPage): fixed chunks of
     // kVisibilityChunkSize, `pagesUsed` pages taken since the last recycle.
     std::vector<MTL::Buffer *> visibilityChunks;
@@ -253,6 +256,7 @@ struct CommandListState {
     uint8 stencilReference = 0;
     bool stencilOverride = false; // cmdSetStencilReference was called in this section
     bool depthReadOnly = false;
+    bool stencilReadOnly = false;
     bool sectionDrawn = false;    // a draw was encoded in the section (cmdWriteTimestamp)
     // The section's visibility page (P115): null when no occlusion pool
     // existed as the section began. The query open, if any (Metal counts one

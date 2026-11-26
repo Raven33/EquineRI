@@ -13,6 +13,23 @@
 
 namespace RI::Validation {
 
+bool writesStencil(const StencilState &stencil) {
+    const auto changes = [](const StencilFace &face) {
+        return face.fail != StencilOp::eKeep || face.depthFail != StencilOp::eKeep || face.pass != StencilOp::eKeep;
+    };
+    return stencil.test && stencil.writeMask != 0 && (changes(stencil.front) || changes(stencil.back));
+}
+
+CheckResult checkBuildLevel(bool createdTopLevel, bool buildsTopLevel) {
+    if (createdTopLevel == buildsTopLevel) {
+        return {};
+    }
+    return buildsTopLevel ? std::string("cmdBuildTlas: the structure was created as a bottom level "
+                                        "(createAccelerationStructure)")
+                          : std::string("cmdBuildBlas: the structure was created as a top level "
+                                        "(createAccelerationStructure)");
+}
+
 CheckResult checkSlot(uint32 slot, uint32 count, std::string_view heap) {
     if (slot >= count) {
         return std::format("slot {} is outside the {} heap (it has {} slots)", slot, heap, count);

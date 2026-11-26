@@ -264,6 +264,7 @@ void cmdBegin(CommandList &cmd) {
     cmd.internal.rootDataBytes = 0;
     cmd.internal.native = false;
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
     cmd.internal.heapResourceSet = 0;
     cmd.internal.heapSamplerSet = 0;
     cmd.internal.rootDataSize = 0;
@@ -305,6 +306,8 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(cmd.internal.heapResourceSet != 0));
     EQ_VALIDATE(Validation::checkDepthWriteAllowed(cmd.internal.rendering && cmd.internal.depthReadOnly,
                                                    pipeline.internal.depthWrite));
+    EQ_VALIDATE(Validation::checkStencilWriteAllowed(cmd.internal.rendering && cmd.internal.stencilReadOnly,
+                                                     pipeline.internal.stencilWrite));
     const uint32 index = bindIndex(pipeline.internal.graphics);
     fn(cmd).vkCmdBindPipeline(native(cmd), bindPointOf(index), native(pipeline).pipeline);
     cmd.internal.graphics = pipeline.internal.graphics;
@@ -509,6 +512,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
     bool stencilAspect = false;
     cmd.internal.depth = {};
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
     if (desc.depth) {
         const DepthAttachment &d = *desc.depth;
         EQ_VK_CHECK_ALIVE(&state, d.view.internal.textureId, "texture");
@@ -563,6 +567,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         cmd.internal.depth = d.view;
         cmd.internal.depthLayout = static_cast<uint32>(layout);
         cmd.internal.depthReadOnly = d.depthReadOnly;
+        cmd.internal.stencilReadOnly = d.stencilReadOnly && hasStencil(d.view.format);
     }
     pipelineBarrier(cmd, barriers);
 
@@ -587,6 +592,7 @@ void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
     cmd.internal.depth = {};
     cmd.internal.depthResolve = {};
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
     // Dynamic rendering takes zero attachments; the render area gives the size.
     const VkRenderingInfo info{
         .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -677,6 +683,7 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.depth = {};
     cmd.internal.rendering = false;
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
 }
 
 void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {

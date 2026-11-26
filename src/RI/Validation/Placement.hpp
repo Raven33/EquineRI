@@ -37,5 +37,8 @@ CheckResult checkDiscarded(const PlacementTracker &tracker, uint64 textureId, st
 
 // A pipeline that writes depth is not used in a read-only depth section (P75).
 CheckResult checkDepthWriteAllowed(bool sectionDepthReadOnly, bool pipelineWritesDepth);
+// The same for stencil: a pipeline that can change stencil values
+// (writesStencil, Checks.hpp) in a section whose stencil is read-only.
+CheckResult checkStencilWriteAllowed(bool sectionStencilReadOnly, bool pipelineWritesStencil);
 
 } // namespace RI::Validation

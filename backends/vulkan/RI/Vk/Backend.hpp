@@ -304,6 +304,7 @@ struct Pipeline {
         uint64 layout = 0;   // VkPipelineLayout
         bool graphics = false;
         bool depthWrite = false; // checked against read-only depth sections (P75)
+        bool stencilWrite = false; // checked against read-only stencil sections (P75)
         bool imported = false;   // P77: RI does not destroy it
         uint8 stencilReference = 0; // dynamic state, set by cmdSetPipeline (P104)
         uint64 id = 0;
@@ -342,6 +343,7 @@ struct CommandList {
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
         bool rendering = false;
         bool depthReadOnly = false;
+        bool stencilReadOnly = false;
         uint32 colorCount = 0;
         TextureView colors[8];
         TextureView depth;

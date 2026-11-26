@@ -210,7 +210,7 @@ void applyPipeline(CommandListState &cmd) {
 
 // The state every section starts with (P103, P104): viewport and scissor
 // cover the section, the stencil reference is the pipeline's.
-void openSection(CommandListState &cmd, uint32 width, uint32 height, bool depthReadOnly) {
+void openSection(CommandListState &cmd, uint32 width, uint32 height, bool depthReadOnly, bool stencilReadOnly) {
     cmd.rendering = true;
     cmd.renderWidth = width;
     cmd.renderHeight = height;
@@ -219,6 +219,7 @@ void openSection(CommandListState &cmd, uint32 width, uint32 height, bool depthR
     cmd.stencilOverride = false;
     cmd.stencilReference = cmd.graphicsSet ? cmd.graphics.internal.stencilReference : 0;
     cmd.depthReadOnly = depthReadOnly;
+    cmd.stencilReadOnly = stencilReadOnly;
     cmd.sectionDrawn = false;
     cmd.sectionMarkers.clear();
     cmd.deferredPops = 0;
@@ -226,6 +227,7 @@ void openSection(CommandListState &cmd, uint32 width, uint32 height, bool depthR
         // A pipeline set before the section: Metal has no read-only
         // attachments and would store its depth writes (P75, P88).
         EQ_VALIDATE(Validation::checkDepthWriteAllowed(depthReadOnly, cmd.graphics.internal.depthWrite));
+        EQ_VALIDATE(Validation::checkStencilWriteAllowed(stencilReadOnly, cmd.graphics.internal.stencilWrite));
         applyPipeline(cmd);
     }
     applyViewport(cmd);
@@ -336,7 +338,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         cover(a.view);
     }
 
-    bool depthReadOnly = false;
+    bool depthReadOnly = false, stencilReadOnly = false;
     if (desc.depth) {
         const DepthAttachment &d = *desc.depth;
         EQ_MTL_CHECK_ALIVE(&state, d.view.internal.textureId, "texture");
@@ -375,6 +377,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
             }
         }
         depthReadOnly = d.depthReadOnly;
+        stencilReadOnly = d.stencilReadOnly && hasStencil(d.view.format);
         cover(d.view);
     }
     // Layered rendering: the shader picks the layer (SV_RenderTargetArrayIndex).
@@ -385,7 +388,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
     beginRenderEncoder(list, pass);
     pass->release();
     pool->release();
-    openSection(list, width, height, depthReadOnly);
+    openSection(list, width, height, depthReadOnly, stencilReadOnly);
 }
 
 // A section without attachments (P105): Metal rasterizes the size given, one sample per pixel.
@@ -406,7 +409,7 @@ void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
     beginRenderEncoder(list, pass);
     pass->release();
     pool->release();
-    openSection(list, size.width, size.height, false);
+    openSection(list, size.width, size.height, false, false);
 }
 
 void cmdEndRendering(CommandList &cmd) {
@@ -440,6 +443,7 @@ void cmdEndRendering(CommandList &cmd) {
     pool->release();
     list.rendering = false;
     list.depthReadOnly = false;
+    list.stencilReadOnly = false;
     copyOcclusionResults(list);
 }
 

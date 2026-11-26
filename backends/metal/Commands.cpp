@@ -54,6 +54,10 @@ struct ScopedPool {
 };
 
 constexpr uint64 kFirstChunkSize = 64 * 1024;
+// Chunks double up to this size; larger allocations get a chunk of their own
+// (CommandListState::oversized), so one large staged copy does not leave a
+// list holding, and doubling from, a chunk of its size.
+constexpr uint64 kMaxCommandMemoryChunk = 4ull << 20;
 // Bytes of the value written into command memory by a pattern clear; the rest
 // of the range is filled by copies that double inside the destination.
 constexpr uint64 kClearPatternSize = 4096;
@@ -104,7 +108,17 @@ void checkNotRendering(const CommandListState &cmd, const char *call) {
 }
 
 // Command memory starts over once the GPU is done with the list (P115).
-void recycle(CommandListState &cmd) {
+void releaseOversized(DeviceState &state, CommandListState &cmd) {
+    for (MTL::Buffer *buffer : cmd.oversized) {
+        makeNonResident(state, buffer);
+        release(buffer);
+    }
+    cmd.oversized.clear();
+}
+
+// Only once the list's last submission is reached (resetCommandList's rule, P115).
+void recycle(DeviceState &state, CommandListState &cmd) {
+    releaseOversized(state, cmd);
     cmd.allocator->reset();
     cmd.chunk = 0;
     cmd.used = 0;
@@ -265,6 +279,24 @@ void endEncoder(CommandListState &cmd) {
 
 CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListState &cmd, uint64 size,
                                               uint64 alignment) {
+    const auto newBuffer = [&](uint64 bytes) {
+        MTL::Buffer *buffer = state.device->newBuffer(bytes, kCommandMemoryOptions);
+        if (buffer == nullptr) {
+            reportError(ErrorCategory::eOutOfMemory,
+                        std::format("command memory: newBuffer failed for a chunk of {} bytes", bytes));
+        }
+        makeResident(state, buffer);
+        return buffer;
+    };
+    if (size + alignment > kMaxCommandMemoryChunk) {
+        // Buffers start on a page, which covers every alignment asked here.
+        MTL::Buffer *buffer = newBuffer(size);
+        cmd.oversized.push_back(buffer);
+        return {.cpu = static_cast<std::byte *>(buffer->contents()),
+                .gpuAddress = buffer->gpuAddress(),
+                .buffer = buffer,
+                .offset = 0};
+    }
     const auto fits = [&](size_t chunk, uint64 used) {
         return ((used + alignment - 1) & ~(alignment - 1)) + size <= cmd.chunks[chunk].size;
     };
@@ -277,16 +309,12 @@ CommandMemoryAllocation allocateCommandMemory(DeviceState &state, CommandListSta
         }
     }
     if (cmd.chunk >= cmd.chunks.size()) {
-        uint64 chunkSize = cmd.chunks.empty() ? kFirstChunkSize : cmd.chunks.back().size * 2;
+        uint64 chunkSize =
+            cmd.chunks.empty() ? kFirstChunkSize : std::min(cmd.chunks.back().size * 2, kMaxCommandMemoryChunk);
         while (chunkSize < size + alignment) {
-            chunkSize *= 2;
+            chunkSize *= 2; // at most kMaxCommandMemoryChunk: larger sizes are oversized
         }
-        MTL::Buffer *buffer = state.device->newBuffer(chunkSize, kCommandMemoryOptions);
-        if (buffer == nullptr) {
-            reportError(ErrorCategory::eOutOfMemory,
-                        std::format("command memory: newBuffer failed for a chunk of {} bytes", chunkSize));
-        }
-        makeResident(state, buffer);
+        MTL::Buffer *buffer = newBuffer(chunkSize);
         cmd.chunks.push_back({.buffer = buffer, .size = chunkSize});
         cmd.chunk = cmd.chunks.size() - 1;
         cmd.used = 0;
@@ -379,6 +407,7 @@ void destroyCommandList(Device &device, CommandList &cmd) {
         makeNonResident(state, buffer);
         release(buffer);
     }
+    releaseOversized(state, *list);
     release(list->argumentTable);
     release(list->commandBuffer);
     release(list->allocator);
@@ -397,7 +426,7 @@ void resetCommandList(CommandList &cmd) {
                     "resetCommandList: the command list is still recording: call cmdEnd first");
     }
     EQ_VALIDATE(Validation::checkCommandListIdle(cmd.internal.lastSubmitted, completedValue(state), "resetting"));
-    recycle(list);
+    recycle(state, list);
     list.recorded = false; // the reset frees the recorded commands
 }
 
@@ -416,7 +445,7 @@ void cmdBegin(CommandList &cmd) {
     // Re-recorded without a reset: command memory starts over only once the GPU
     // is done with it, otherwise it keeps growing until the next reset.
     if (cmd.internal.lastSubmitted <= completedValue(*cmd.internal.device)) {
-        recycle(list);
+        recycle(*cmd.internal.device, list);
         renewCommandBuffer(*cmd.internal.device, list);
     }
     list.commandBuffer->beginCommandBuffer(list.allocator);
@@ -433,6 +462,7 @@ void cmdBegin(CommandList &cmd) {
     list.indexSet = false;
     list.rendering = false;
     list.depthReadOnly = false;
+    list.stencilReadOnly = false;
     list.sectionMarkers.clear();
     list.deferredPops = 0;
     list.visibilityBuffer = nullptr;
@@ -501,6 +531,8 @@ void cmdSetPipeline(CommandList &cmd, const Pipeline &pipeline) {
     CommandListState &list = *cmd.internal.state;
     EQ_VALIDATE(Validation::checkHeapSetBeforePipeline(list.heapSet));
     EQ_VALIDATE(Validation::checkDepthWriteAllowed(list.rendering && list.depthReadOnly, pipeline.internal.depthWrite));
+    EQ_VALIDATE(Validation::checkStencilWriteAllowed(list.rendering && list.stencilReadOnly,
+                                                     pipeline.internal.stencilWrite));
     list.rootDataSize = pipeline.rootDataSize;
     if (pipeline.internal.graphics) {
         bindGraphicsPipeline(list, pipeline);

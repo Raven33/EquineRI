@@ -231,6 +231,7 @@ void destroyAccelerationStructure(Device &device, AccelerationStructure &structu
 void cmdBuildBlas(CommandList &cmd, const AccelerationStructure &dst, const BlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkBuildLevel(dst.topLevel, false));
     Geometry g = blasGeometry(desc);
     build(cmd, dst, g, scratch, scratchOffset, update, "cmdBuildBlas");
 }
@@ -238,6 +239,7 @@ void cmdBuildBlas(CommandList &cmd, const AccelerationStructure &dst, const Blas
 void cmdBuildTlas(CommandList &cmd, const AccelerationStructure &dst, const TlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
     EQ_VK_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkBuildLevel(dst.topLevel, true));
     Geometry g = tlasGeometry(desc);
     build(cmd, dst, g, scratch, scratchOffset, update, "cmdBuildTlas");
 }

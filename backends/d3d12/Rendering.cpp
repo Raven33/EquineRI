@@ -223,6 +223,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
 
     D3D12_CPU_DESCRIPTOR_HANDLE dsv{};
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
     cmd.internal.depth = {};
     if (desc.depth) {
         const DepthAttachment &d = *desc.depth;
@@ -263,6 +264,7 @@ void cmdBeginRendering(CommandList &cmd, const RenderingDesc &desc) {
         }
         cmd.internal.depthLayout = static_cast<uint32>(layout);
         cmd.internal.depthReadOnly = d.depthReadOnly;
+        cmd.internal.stencilReadOnly = d.stencilReadOnly && hasStencil(d.view.format);
         width = std::min(width, d.view.width);
         height = std::min(height, d.view.height);
     }
@@ -280,6 +282,7 @@ void cmdBeginRendering(CommandList &cmd, RenderingSize size) {
     cmd.internal.depth = {};
     cmd.internal.depthResolve = {};
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
     // No render targets: the viewport and scissor alone bound rasterization.
     list(cmd)->OMSetRenderTargets(0, nullptr, FALSE, nullptr);
     openSection(cmd, size.width, size.height);
@@ -318,6 +321,7 @@ void cmdEndRendering(CommandList &cmd) {
     cmd.internal.colorCount = 0;
     cmd.internal.rendering = false;
     cmd.internal.depthReadOnly = false;
+    cmd.internal.stencilReadOnly = false;
 }
 
 void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z) {

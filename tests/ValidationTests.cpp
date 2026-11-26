@@ -5,6 +5,7 @@
 
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/ObjectTracker.hpp>
+#include <RI/Validation/Placement.hpp>
 
 #include <RI/Commands.hpp>
 #include <RI/Resources.hpp>
@@ -352,4 +353,30 @@ EQ_TEST(validation, tracker_names) {
     EQ_CHECK(tracker.destroyed.size() == kDestroyedNames);
     const CheckResult forgotten = checkAlive(tracker, named, "buffer");
     EQ_CHECK(forgotten && forgotten->find("'particles'") == std::string::npos);
+}
+
+// Which stencil states count as writing (P75): read-only stencil sections
+// refuse those pipelines (checkStencilWriteAllowed).
+EQ_TEST(validation, writes_stencil) {
+    using RI::StencilOp;
+    RI::StencilState state{.test = true};
+    EQ_CHECK(!RI::Validation::writesStencil(state)); // eKeep everywhere
+    state.back.depthFail = StencilOp::eIncrementWrap;
+    EQ_CHECK(RI::Validation::writesStencil(state));
+    state.writeMask = 0;
+    EQ_CHECK(!RI::Validation::writesStencil(state));
+    state.writeMask = 0xff;
+    state.test = false;
+    EQ_CHECK(!RI::Validation::writesStencil(state));
+    EQ_CHECK(!RI::Validation::checkStencilWriteAllowed(true, false));
+    EQ_CHECK(!RI::Validation::checkStencilWriteAllowed(false, true));
+    EQ_CHECK(RI::Validation::checkStencilWriteAllowed(true, true).has_value());
+}
+
+// The level a build call names against the level the structure was made as (P49).
+EQ_TEST(validation, build_level) {
+    EQ_CHECK(!RI::Validation::checkBuildLevel(false, false));
+    EQ_CHECK(!RI::Validation::checkBuildLevel(true, true));
+    EQ_CHECK(RI::Validation::checkBuildLevel(true, false).has_value());
+    EQ_CHECK(RI::Validation::checkBuildLevel(false, true).has_value());
 }

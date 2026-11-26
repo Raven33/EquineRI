@@ -550,6 +550,27 @@ EQ_TEST(texture, depth_write_in_read_only_section_reports) {
     RI::cmdSetPipeline(f.cmd, pipeline);
 }
 
+// A stencil-writing pipeline in a read-only stencil section (P75); one that
+// only tests stencil is accepted there first.
+EQ_TEST(texture, stencil_write_in_read_only_section_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    Fixture f;
+    const RI::Format format = RI::Format::eD32FloatS8Uint;
+    RI::Texture depth = placeTexture(f.device, f.gpu,
+                                     {.width = kSize, .height = kSize, .format = format,
+                                      .usage = RI::TextureUsage::eDepthStencil});
+    std::vector<std::byte> vs = loadShader("fullscreen_vs");
+    RI::StencilState testing{.test = true};
+    testing.front = testing.back = {.compare = RI::CompareOp::eEqual};
+    RI::StencilState writing = testing;
+    writing.front.pass = writing.back.pass = RI::StencilOp::eReplace;
+    RI::Pipeline tests = RI::createGraphicsPipeline(f.device, {.vertex = vs, .depthFormat = format, .stencil = testing});
+    RI::Pipeline writes = RI::createGraphicsPipeline(f.device, {.vertex = vs, .depthFormat = format, .stencil = writing});
+    RI::cmdBeginRendering(f.cmd, {.depth = RI::DepthAttachment{.view = depth.view, .stencilReadOnly = true}});
+    RI::cmdSetPipeline(f.cmd, tests);
+    RI::cmdSetPipeline(f.cmd, writes);
+}
+
 // A texture placed over used memory and rendered without discard (P69).
 EQ_TEST(texture, missing_discard_reports) {
     std::signal(SIGABRT, [](int) { std::_Exit(0); });

@@ -15,7 +15,8 @@
 // doubled inside the texture. Texture-to-texture copies between different
 // pixel formats, or of one aspect of a depth-stencil format, go through
 // command memory (needsStaging): Metal's own copy needs equal formats and
-// moves both aspects. Metal has no layouts, so a discard is the
+// moves both aspects. Multisampled textures cannot go through a buffer, so
+// those copies report eUnsupported. Metal has no layouts, so a discard is the
 // validation bookkeeping plus the full barrier RI promises (P69).
 //
 // D3D12 counterpart: the copy, clear and discard sections of
@@ -398,6 +399,13 @@ void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView 
     checkRegion(region, src, "source", "cmdCopyTexture");
     region = resolved(region, src);
     checkRegion({dstOffset.x, dstOffset.y, region.width, region.height}, dst, "destination", "cmdCopyTexture");
+    // Metal copies no multisampled texture to a buffer (the debug layer
+    // asserts; without it the copy is undefined): every build.
+    if (src.samples > 1 && needsStaging(src, dst)) {
+        reportError(ErrorCategory::eUnsupported,
+                    "cmdCopyTexture: on Metal, multisampled copies need equal formats and a format without "
+                    "stencil (no copy between formats, and no aspect of a depth-stencil format)");
+    }
     MTL4::ComputeCommandEncoder *encoder = computeEncoder(list);
     if (needsStaging(src, dst)) {
         copyThroughBuffer(state, list, src, dst, region, dstOffset);

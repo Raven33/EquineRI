@@ -15,6 +15,15 @@
 
 namespace RI::Validation {
 
+// Whether a pipeline's stencil state can change stencil values: the test on,
+// a write mask, and an operation other than eKeep on either face. Used in
+// every build (pipelines record it for checkStencilWriteAllowed).
+bool writesStencil(const StencilState &stencil);
+
+// cmdBuildBlas and cmdBuildTlas (P49): the structure was created as the level
+// the call builds (createAccelerationStructure's topLevel).
+CheckResult checkBuildLevel(bool createdTopLevel, bool buildsTopLevel);
+
 // A descriptor slot inside its heap (P59). RI computes native addresses from
 // slots, so an out-of-range slot would silently write past the heap on D3D12.
 CheckResult checkSlot(uint32 slot, uint32 count, std::string_view heap);

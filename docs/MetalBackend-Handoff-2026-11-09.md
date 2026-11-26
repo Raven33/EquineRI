@@ -25,9 +25,10 @@ is at `aa641ce`, checked 2026-11-12). The feature commits:
 | `6b723ba` | inline ray tracing, `DeviceLimits::rayTracingHardware`, depth and stencil resolve modes |
 
 Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains, geometry and
-tessellation, the merge of master (P117) and the coverage tests of §10 (2026-11-26): **137/137** with `ctest
+tessellation, the merge of master (P117), the coverage tests of §10 and the fixes of §11
+(2026-11-26): **144/144** with `ctest
 --preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`;
-10 runs in a row), **121/121** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+10 runs in a row), **126/126** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader` (without its pipeline-statistics part),
@@ -140,7 +141,8 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 - **Tested 2026-11-26 (§10):** texture copies between formats of one texel size, sampling a
   read-only depth attachment inside its section.
 - **Open behaviour:** a pipeline whose stencil writes, in a read-only stencil section, is not
-  reported, and on Metal the stencil **is written** (probed 2026-11-26, §10). An indirect draw counts as a draw for timestamps even if
+  reported, and on Metal the stencil **is written** (probed 2026-11-26, §10): now reported on
+  every backend (§11). An indirect draw counts as a draw for timestamps even if
   every record is empty. The ICB variant of indirect counts (proposal §7 (a)) is not measured.
 - **Other GPUs:** only the M4 was used. Whether M1 and M2 report `supportsRaytracing`, and the
   `rayTracingHardware` family check, are unverified. The GPU-error to `eDeviceLost` path has no
@@ -372,3 +374,23 @@ It now passes the reflected count (`emulationConfig[2]`). The test also draws tw
 
 **Still to do elsewhere:** the on-screen swapchain run and HDR10 (the `arthur` GUI session);
 Windows and Linux builds of the shared test changes; M1 or M2.
+
+## 11. Fixes of the review's findings (2026-11-26)
+
+The user's choices: multisampled copies through a buffer report `eUnsupported` on Metal (a
+path through a texture view may come later); the other confirmed findings fixed; structure
+sizes (§10) left as they are. No on-screen test and nothing that could stall the GPU on this Mac
+(the user cannot see the screen).
+
+| Finding | Fix | Test |
+|---|---|---|
+| Command memory only grows (review §3 (1)) | chunks double up to 4 MiB (`kMaxCommandMemoryChunk`, `Commands.cpp`); a larger allocation gets a buffer of its own (`CommandListState::oversized`), released at the next recycle and at destroy; P115 amended | `metal.command_memory_bounded` (fails on the old code) |
+| Multisampled staged copies (§3 (2)) | `cmdCopyTexture` reports `eUnsupported` in every build when a multisampled copy would be staged (between formats, or one aspect of a format with stencil); documented in Metal's `Backend.hpp` | `metal.multisampled_copy_between_formats_reports`, `metal.multisampled_depth_aspect_copy_reports` |
+| Stencil writes in a read-only stencil section | `Validation::writesStencil` (test on, write mask, an operation other than eKeep) recorded as `stencilWrite` by each backend's pipelines; `checkStencilWriteAllowed` at `cmdSetPipeline` on all three backends, and at `cmdBeginRendering` on Metal, as the depth check | `texture.stencil_write_in_read_only_section_reports` (portable), `validation.writes_stencil` |
+| `cmdBuildBlas` into a top level (§3 (8)) | `Validation::checkBuildLevel` in both build calls on all three backends (Metal's `cmdBuildTlas` keeps reporting in every build) | `raytracing.blas_build_into_top_level_reports` (portable), `validation.build_level` |
+
+**D3D12 and Vulkan changes are not compiled** (this Mac builds Metal only): `Backend.hpp`
+(`stencilWrite`, `stencilReadOnly`), `Pipeline.cpp`, `Commands.cpp`, `Rendering.cpp` (D3D12),
+`RayTracing.cpp`. The two new portable tests are registered for them too. Run both on Windows
+and Linux before merging.
+

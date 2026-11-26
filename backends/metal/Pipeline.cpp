@@ -499,6 +499,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
         in.taskThreadGroupSize[i] = task.threadGroupSize[i] != 0 ? task.threadGroupSize[i] : 1;
     }
     in.depthWrite = desc.depth.write;
+    in.stencilWrite = Validation::writesStencil(desc.stencil);
     in.stencilReference = desc.stencil.reference;
     in.primitiveType = static_cast<uint8>(primitiveTypeOf(desc.topology));
     in.cullMode = static_cast<uint8>(desc.cull == CullMode::eFront  ? MTL::CullModeFront

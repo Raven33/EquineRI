@@ -35,6 +35,8 @@ set(EQUINE_RI_TEST_NAMES
     validation.small_write
     validation.copy_region
     validation.clear_range
+    validation.writes_stencil
+    validation.build_level
     dxil.fill_heap_and_root_data
     dxil.root_data_4_bytes
     dxil.root_data_64_bytes
@@ -181,6 +183,8 @@ if (EQUINE_VALIDATION)
         compute.named_buffer_used_after_destroy_reports
         compute.unclosed_marker_reports
         texture.depth_write_in_read_only_section_reports
+        texture.stencil_write_in_read_only_section_reports
+        raytracing.blas_build_into_top_level_reports
         texture.missing_discard_reports
         texture.read_only_depth_sampling_on_color_reports
         texture.copy_without_usage_reports
@@ -197,6 +201,8 @@ if (EQUINE_VALIDATION)
         "compute.named_buffer_used_after_destroy_reports|programmer error: this buffer 'particles' was destroyed"
         "compute.unclosed_marker_reports|programmer error: cmdEnd: 1 marker region(s) left open"
         "texture.depth_write_in_read_only_section_reports|programmer error: cmdSetPipeline: the pipeline writes depth"
+        "texture.stencil_write_in_read_only_section_reports|programmer error: cmdSetPipeline: the pipeline writes stencil"
+        "raytracing.blas_build_into_top_level_reports|programmer error: cmdBuildBlas: the structure was created as a top level"
         "texture.missing_discard_reports|programmer error: cmdBeginRendering: the texture was placed over memory"
         "texture.copy_without_usage_reports|programmer error: cmdCopyTextureToBuffer: the texture needs TextureUsage::eCopySrc"
         "texture.read_only_depth_sampling_on_color_reports|programmer error: createTexture: eReadOnlyDepthSampling needs a depth format"
@@ -478,11 +484,16 @@ if (TARGET EquineMetalBackend)
         metal.copy_depth_stencil_aspects
         metal.sample_read_only_depth_in_section
         metal.scissor_outside_section
+        metal.command_memory_bounded
+        metal.multisampled_copy_between_formats_reports
+        metal.multisampled_depth_aspect_copy_reports
     )
     set(EQUINE_METAL_ABORT_TESTS
         "texture.unlisted_view_format_reports|programmer error: createView: format"
         "metal.geometry_indirect_reports|unsupported: cmdExecuteIndirect: on Metal, pipelines with geometry or tessellation shaders"
         "texture.rendering_desc_without_attachment_reports|programmer error: cmdBeginRendering: the RenderingDesc has no attachment"
+        "metal.multisampled_copy_between_formats_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
+        "metal.multisampled_depth_aspect_copy_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
     )
     if (EQUINE_VALIDATION)
         list(APPEND EQUINE_METAL_TEST_NAMES
@@ -498,6 +509,8 @@ if (TARGET EquineMetalBackend)
             texture.copy_without_usage_reports
             texture.read_only_depth_sampling_on_color_reports
             texture.depth_write_in_read_only_section_reports
+            texture.stencil_write_in_read_only_section_reports
+            raytracing.blas_build_into_top_level_reports
             texture.missing_discard_reports
             texture.stage_link_mismatch_reports
             compute.int64_shared_atomics_reports
@@ -507,7 +520,8 @@ if (TARGET EquineMetalBackend)
         )
         foreach(entry IN LISTS EQUINE_GPU_SHARED_ABORT_TESTS)
             if (entry MATCHES "^(compute|threads)\\." OR
-                entry MATCHES "^texture\\.(copy_without_usage|read_only_depth_sampling_on_color|depth_write_in_read_only_section|missing_discard|stage_link_mismatch)_reports")
+                entry MATCHES "^raytracing\\.blas_build_into_top_level_reports" OR
+                entry MATCHES "^texture\\.(copy_without_usage|read_only_depth_sampling_on_color|depth_write_in_read_only_section|stencil_write_in_read_only_section|missing_discard|stage_link_mismatch)_reports")
                 list(APPEND EQUINE_METAL_ABORT_TESTS "${entry}")
             endif()
         endforeach()

@@ -305,6 +305,7 @@ struct Pipeline {
         uint32 threadGroupSize[3] = {1, 1, 1};
         uint32 taskThreadGroupSize[3] = {1, 1, 1};
         bool depthWrite = false;     // checked against read-only depth sections (P75)
+        bool stencilWrite = false;   // checked against read-only stencil sections (P75)
         bool imported = false;       // P77: RI holds no reference
         uint8 stencilReference = 0;  // set by cmdSetPipeline (P104)
         // Graphics: the state Metal keeps on the render encoder, applied by
@@ -437,7 +438,10 @@ void cmdCopyBufferToTexture(CommandList &cmd, const Buffer &src, uint64 srcOffse
 void cmdCopyTextureToBuffer(CommandList &cmd, const TextureView &src, const Buffer &dst, uint64 dstOffset,
                             Rect region = {});
 // `region` of `src` lands at `dstOffset` in `dst`, in every layer. Same layer
-// count, sample count and texel size.
+// count, sample count and texel size. Unlike D3D12 and Vulkan, multisampled
+// views copy only between equal formats without stencil: other multisampled
+// copies report eUnsupported (Metal copies no multisampled texture to a
+// buffer, the path such copies take).
 void cmdCopyTexture(CommandList &cmd, const TextureView &src, const TextureView &dst, Rect region = {},
                     Offset dstOffset = {});
 

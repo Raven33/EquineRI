@@ -272,6 +272,7 @@ void destroyAccelerationStructure(Device &device, AccelerationStructure &structu
 void cmdBuildBlas(CommandList &cmd, const AccelerationStructure &dst, const BlasDesc &desc, const Buffer &scratch,
                   uint64 scratchOffset, bool update) {
     EQ_MTL_CHECK_THREAD(cmd.internal.device);
+    EQ_VALIDATE(Validation::checkBuildLevel(dst.topLevel, false));
     DeviceState &state = *cmd.internal.device;
     CommandListState &list = *cmd.internal.state;
     NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
@@ -298,9 +299,9 @@ void cmdBuildTlas(CommandList &cmd, const AccelerationStructure &dst, const Tlas
     const AccelerationStructureSizes sizes = sizesOf(state, native, area);
     const uint64 scratchSize = update ? sizes.updateScratchSize : sizes.buildScratchSize;
     checkBuild(list, state, dst, scratch, scratchOffset, scratchSize, "cmdBuildTlas");
-    if (!dst.topLevel) {
-        reportError(ErrorCategory::eProgrammerError,
-                    "cmdBuildTlas: the structure was created as a bottom level (createAccelerationStructure)");
+    // Every build: a bottom level has no header buffer to write.
+    if (const Validation::CheckResult wrong = Validation::checkBuildLevel(dst.topLevel, true)) {
+        reportError(ErrorCategory::eProgrammerError, *wrong);
     }
     MTL4::ComputeCommandEncoder *encoder = computeEncoder(list);
 

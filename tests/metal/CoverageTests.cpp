@@ -2,7 +2,8 @@
 // review (§3) list as untested on Metal: texture copies between formats and of
 // one depth aspect, sampling a read-only depth attachment inside its section,
 // a scissor outside the section, and geometry shaders after tessellation, on
-// strips and with instancing (MetalBackend-Handoff-2026-11-09.md §10).
+// strips and with instancing (MetalBackend-Handoff-2026-11-09.md §10); and
+// fixes of the review's findings (§11).
 
 #include <TestHarness.hpp>
 
@@ -12,8 +13,11 @@
 #include <RI/Metal/Native.hpp>
 #include <RI/RI.hpp>
 
+#include <csignal>
+#include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <span>
 #include <vector>
 
 namespace {
@@ -398,4 +402,83 @@ EQ_TEST(metal, scissor_outside_section) {
         }
     }
     EQ_CHECK(wrong == 0);
+}
+
+// Command memory stays bounded (review 2026-11-12 §3 (1)): two staged copies
+// of a 2048 x 2048 depth aspect (16 MiB each) in one list take chunks of
+// their own, released at reset, and the list's chunks stop doubling at 4 MiB.
+EQ_TEST(metal, command_memory_bounded) {
+    Fixture f;
+    const MTL::ResidencySet *residency = RI::Metal::native(f.device).residencySet;
+    const RI::TextureUsage usage = RI::TextureUsage::eCopySrc | RI::TextureUsage::eCopyDst |
+                                   RI::TextureUsage::eDepthStencil;
+    const RI::TextureDesc desc{.width = 2048, .height = 2048, .format = RI::Format::eD32FloatS8Uint, .usage = usage};
+    const RI::Texture &a = f.texture(desc);
+    const RI::Texture &b = f.texture(desc);
+    RI::TextureView from = RI::createView(f.device, a, {.aspect = RI::Aspect::eDepth});
+    RI::TextureView to = RI::createView(f.device, b, {.aspect = RI::Aspect::eDepth});
+    const RI::Buffer &small = f.buffer(f.gpu, 256, RI::BufferUsage::eCopyDst);
+    const uint32 word = 1;
+    const auto smallWrites = [&](int count) {
+        for (int i = 0; i < count; ++i) {
+            RI::cmdWriteSmallData(f.cmd, small, 0, std::as_bytes(std::span{&word, 1}));
+        }
+    };
+    smallWrites(1);
+    f.submitAndWait();
+    const uint64 before = residency->allocatedSize();
+
+    RI::cmdCopyTexture(f.cmd, from, to);
+    RI::cmdBarrier(f.cmd, RI::Stage::eCopy, RI::Stage::eCopy);
+    RI::cmdCopyTexture(f.cmd, from, to);
+    RI::cmdEnd(f.cmd);
+    RI::wait(f.device.graphicsQueue, RI::submit(f.device.graphicsQueue, f.cmd));
+    const uint64 during = residency->allocatedSize();
+    RI::resetCommandList(f.cmd);
+    f.begin();
+    smallWrites(1);
+    f.submitAndWait();
+    const uint64 after = residency->allocatedSize();
+    EQ_CHECK(during >= before + (32ull << 20));
+    EQ_CHECK(after == before);
+
+    // 64 KiB of small writes per list, 8 lists: the chunks stay at or under
+    // 64 KiB + 128 KiB + ... + 4 MiB.
+    for (int list = 0; list < 8; ++list) {
+        smallWrites(4096);
+        f.submitAndWait();
+    }
+    EQ_CHECK(residency->allocatedSize() - before <= (8ull << 20));
+    RI::destroyView(f.device, from);
+    RI::destroyView(f.device, to);
+}
+
+// Multisampled copies between formats report eUnsupported (review 2026-11-12
+// §3 (2)): they would go through a buffer, which Metal refuses.
+EQ_TEST(metal, multisampled_copy_between_formats_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    Fixture f;
+    const RI::TextureUsage usage = RI::TextureUsage::eCopySrc | RI::TextureUsage::eCopyDst |
+                                   RI::TextureUsage::eRenderTarget;
+    const RI::Texture &a = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eRGBA8Unorm, .usage = usage});
+    const RI::Texture &b = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eR32Uint, .usage = usage});
+    RI::cmdCopyTexture(f.cmd, a.view, b.view);
+}
+
+// Multisampled copies of one aspect of a depth-stencil format report too; a
+// format without stencil, and equal formats, copy directly.
+EQ_TEST(metal, multisampled_depth_aspect_copy_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    Fixture f;
+    const RI::TextureUsage usage = RI::TextureUsage::eCopySrc | RI::TextureUsage::eCopyDst |
+                                   RI::TextureUsage::eDepthStencil;
+    const RI::Texture &plain = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eD32Float, .usage = usage});
+    const RI::Texture &plain2 = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eD32Float, .usage = usage});
+    RI::cmdCopyTexture(f.cmd, plain.view, plain2.view);
+    f.submitAndWait();
+    const RI::Texture &a = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eD32FloatS8Uint, .usage = usage});
+    const RI::Texture &b = f.texture({.width = kSize, .height = kSize, .samples = 4, .format = RI::Format::eD32FloatS8Uint, .usage = usage});
+    RI::TextureView from = RI::createView(f.device, a, {.aspect = RI::Aspect::eDepth});
+    RI::TextureView to = RI::createView(f.device, b, {.aspect = RI::Aspect::eDepth});
+    RI::cmdCopyTexture(f.cmd, from, to);
 }

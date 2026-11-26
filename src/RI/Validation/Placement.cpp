@@ -41,4 +41,12 @@ CheckResult checkDepthWriteAllowed(bool sectionDepthReadOnly, bool pipelineWrite
     return {};
 }
 
+CheckResult checkStencilWriteAllowed(bool sectionStencilReadOnly, bool pipelineWritesStencil) {
+    if (sectionStencilReadOnly && pipelineWritesStencil) {
+        return std::string("cmdSetPipeline: the pipeline writes stencil, but the rendering section's stencil is "
+                           "read-only (P75); Metal would write it");
+    }
+    return {};
+}
+
 } // namespace RI::Validation

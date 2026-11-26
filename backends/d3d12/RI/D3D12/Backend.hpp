@@ -306,6 +306,7 @@ struct Pipeline {
         void *rootSignature = nullptr; // ID3D12RootSignature, built by RI (P67)
         bool graphics = false;
         bool depthWrite = false; // checked against read-only depth sections (P75)
+        bool stencilWrite = false; // checked against read-only stencil sections (P75)
         uint32 topology = 0;     // D3D_PRIMITIVE_TOPOLOGY
         bool imported = false;   // P77: RI holds no reference
         uint8 stencilReference = 0; // set by cmdSetPipeline (P104)
@@ -335,6 +336,7 @@ struct CommandList {
         // The open rendering section: its attachments go back to rest at cmdEndRendering.
         bool rendering = false;
         bool depthReadOnly = false;
+        bool stencilReadOnly = false;
         uint32 colorCount = 0;
         TextureView colors[8];
         TextureView depth;

@@ -501,6 +501,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.layout = reinterpret_cast<uint64>(layout);
     out.internal.graphics = true;
     out.internal.depthWrite = desc.depth.test && desc.depth.write;
+    out.internal.stencilWrite = Validation::writesStencil(desc.stencil);
     out.internal.stencilReference = desc.stencil.reference;
     out.internal.id = EQ_VK_TRACK(&state);
     if (!desc.name.empty()) {

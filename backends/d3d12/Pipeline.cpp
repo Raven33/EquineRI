@@ -450,6 +450,7 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     out.internal.rootSignature = rootSignature;
     out.internal.graphics = true;
     out.internal.depthWrite = desc.depth.write;
+    out.internal.stencilWrite = Validation::writesStencil(desc.stencil);
     out.internal.stencilReference = desc.stencil.reference;
     out.internal.topology = topologyOf(desc.topology, desc.patchControlPoints);
     out.internal.id = EQ_DX_TRACK(&state);

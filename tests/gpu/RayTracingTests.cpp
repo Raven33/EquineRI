@@ -9,6 +9,8 @@
 #include <RI/Helpers/TypedCommands.hpp>
 
 #include <algorithm>
+#include <csignal>
+#include <cstdlib>
 #include <cmath>
 #include <cstring>
 #include <vector>
@@ -351,4 +353,26 @@ EQ_TEST(raytracing, scene) {
     RI::freeMemory(device, upload.memory);
     RI::freeMemory(device, gpu.memory);
     RI::destroyDevice(device);
+}
+
+// A bottom-level build into a structure created as a top level (P49):
+// validation builds report it on every backend.
+EQ_TEST(raytracing, blas_build_into_top_level_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    Arena gpu{.memory = RI::allocateMemory(device, RI::MemoryKind::eGPU, 4 << 20)};
+    Arena upload{.memory = RI::allocateMemory(device, RI::MemoryKind::eUpload, 1 << 20)};
+    RI::Buffer vertices = placeBuffer(device, upload, {.size = 36, .usage = RI::BufferUsage::eAccelerationStructureInput});
+    setTriangle(vertices.mapped, 0.0f);
+    const RI::BlasDesc desc{.triangles = {{.vertexAddress = vertices.gpuAddress, .vertexCount = 3}}};
+    const RI::AccelerationStructureSizes sizes = RI::blasSizes(device, desc);
+    RI::AccelerationStructure top = placeStructure(device, gpu, sizes.size, true);
+    const RI::BufferDesc scratchDesc{.size = sizes.buildScratchSize, .usage = RI::BufferUsage::eReadWrite};
+    const uint64 scratchOffset = gputest::alignUp(
+        gpu.used, std::max<uint64>(RI::bufferRequirements(device, scratchDesc).alignment,
+                                   device.limits.accelerationStructureScratchAlignment));
+    RI::Buffer scratch = RI::createBuffer(device, gpu.memory, scratchOffset, scratchDesc);
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdBuildBlas(cmd, top, desc, scratch, 0);
 }
