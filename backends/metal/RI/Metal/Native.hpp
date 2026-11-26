@@ -6,7 +6,12 @@
 // `id<MTL...>` with `(__bridge id)`, as they are the same objects.
 //
 // Not yet on Metal: native sections and the import of native objects (P27,
-// P70, P77).
+// P70, P77). When native sections are built, they must let user code run its
+// own indirect command buffers (P116 (3), the user's decision of 2026-11-26:
+// RI keeps its own indirect path and builds no ICB one): give the open render
+// and compute encoders (executeCommandsInBuffer), let the ICB join the
+// residency set (native(device).residencySet), and set RI's argument table,
+// pipeline and depth-stencil state again when the section ends.
 
 #include <RI/Metal/Backend.hpp>
 

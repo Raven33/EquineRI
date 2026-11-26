@@ -50,7 +50,10 @@ So neither path wins everywhere: ICBs remove the CPU cost (which dominates from 
 thousand records on) and win on the GPU when the count is small against `maxCount` (culling);
 RI's path wins on the GPU when most records are drawn.
 
-What an ICB path in RI would need (not built; for the user's decision): pipelines created with
+**Decision (user, 2026-11-26): keep RI's path.** No ICB path is built. Metal native sections
+(P27, P70), when built, must let user code run its own ICBs inside a section instead (P116 (3)).
+
+What an ICB path in RI would have needed: pipelines created with
 `supportIndirectCommandBuffers` (its own cost unmeasured), an ICB of `maxCount` commands per
 call (memory RI does not own today, P31: user scratch through `indirectScratchRequirements`, or
 command memory, P115), a mesh-draw and a dispatch variant, and B rather than B2 while shader

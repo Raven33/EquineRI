@@ -161,7 +161,8 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
 3. **Push** `metal-backend` and run the D3D12 and Vulkan builds on their platforms (the
    `rayTracingHardware` and `texture.occlusion` changes), when the user asks.
 4. Later, per P113 and P116: ~~geometry and tessellation through MSC's emulation~~ (done
-   2026-11-09, §9), the Metal 3 path, measuring indirect counts against an ICB, native import.
+   2026-11-09, §9), the Metal 3 path, ~~measuring indirect counts against an ICB~~ (§14),
+   native import and native sections (which must run user ICBs, §14).
 
 ## 7. Review (2026-11-09)
 
@@ -459,5 +460,9 @@ few microseconds of CPU, but about 41 ns of GPU per drawn record against RI's 27
 GPU-written execution range, records past the count cost nothing (0.09 ms against 1.40 ms for
 655 of 65,536), but that variant draws nothing under `MTL_SHADER_VALIDATION`. An ICB path in RI
 would need pipelines with `supportIndirectCommandBuffers`, ICB memory RI does not own today
-(P31), and mesh and dispatch variants: the user's decision.
+(P31), and mesh and dispatch variants. **Decided (user, 2026-11-26): keep the current path.**
+Instead, Metal native sections must let user code run its own ICBs (P116 (3); the requirement
+is also in `RI/Metal/Native.hpp`): the open render and compute encoders, the residency set for
+the ICB, and RI's bindings set again after the section. A test for native sections should run
+a user ICB inside one.
 
