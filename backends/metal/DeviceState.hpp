@@ -161,6 +161,7 @@ struct DeviceState {
     struct Builtins {
         MTL::ComputePipelineState *countKernel = nullptr;
         MTL::RenderPipelineState *countVertex = nullptr; // rasterization off, inside sections
+        MTL::RenderPipelineState *emulationGroups = nullptr; // the same, for emulated indirect draws
         MTL::ComputePipelineState *repackKernel = nullptr;
         // An empty fragment function, for depth-only emulated pipelines
         // (MSC's pipeline helpers need one): Emulation.cpp.
@@ -373,6 +374,17 @@ MTL::RenderPipelineState *newEmulationPipeline(DeviceState &state, const Graphic
                                                const char *call);
 void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint32 count, uint32 instanceCount,
                   uint32 first, int32 vertexOffset, uint32 firstInstance);
+// The same for maxCount indirect records at `records` (RI's layout: root data
+// of `rootSize` bytes when `level2`, then draw arguments), `stride` apart.
+void drawEmulatedIndirect(DeviceState &state, CommandListState &cmd, bool indexed, uint64 records, uint32 stride,
+                          uint32 rootSize, uint32 maxCount, bool level2);
+// Indirect.cpp: runs RI's built-in kernel inside the open section, turning
+// each record's draw arguments (vertex or index count, instance count) into
+// MSC's object threadgroup counts, ceil((count - overlap) / vertexStride) by
+// instance count; returns the address of the first of maxCount 12-byte
+// MTLDispatchThreadgroupsIndirectArguments (command memory).
+uint64 emulationGroups(DeviceState &state, CommandListState &cmd, uint64 records, uint32 stride, uint32 rootSize,
+                       uint32 maxCount, uint32 vertexStride, uint32 overlap);
 
 // Unsupported.cpp: reports `call` as not built yet on the Metal backend.
 [[noreturn]] void notYet(std::string_view call);

@@ -12,16 +12,17 @@
 // vertex shader, with a stage-in function linked in, the MTLS part), the
 // geometry or domain shader into a mesh function, and the hull shader into
 // object-stage work; the pipeline is a mesh pipeline, drawn with
-// drawMeshThreadgroups. A draw computes the threadgroup counts on the CPU from
+// drawMeshThreadgroups. A direct draw computes the threadgroup counts on the CPU from
 // the draw and the pipeline's reflection numbers (the MTLR parts, written at
 // build time by equine_metal_pack), writes the draw arguments and MSC's draw
 // info to command memory (P115) and points argument-table indices 4 and 5 at
 // them. Root data is bound at index 2 and, for hull and domain shaders, 3
 // (cmdSetRootData sets both).
 //
-// Watch out: indirect draws of these pipelines are unsupported (Indirect.cpp
-// reports them): the helpers compute threadgroup counts on the CPU. RI has
-// no vertex inputs, so the vertex-buffer table at index 6 stays empty and the
+// Indirect draws compute those counts on the GPU instead, with RI's built-in
+// kernel (drawEmulatedIndirect).
+//
+// Watch out: RI has no vertex inputs, so the vertex-buffer table at index 6 stays empty and the
 // stage-in function was made for an empty layout. MSC's helpers build the
 // pipeline with the classic MTLDevice call; Metal 4 encoders take it.
 //
@@ -240,8 +241,19 @@ MTL::RenderPipelineState *newEmulationPipeline(DeviceState &state, const Graphic
 // fields (UBSan reports their store) and for Metal's buffer addresses, so RI
 // writes the arguments and the draw info to separate 16-byte-aligned ranges
 // of command memory (P115) and encodes the same draw.
-void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint32 count, uint32 instanceCount,
-                  uint32 first, int32 vertexOffset, uint32 firstInstance) {
+namespace {
+
+// What every draw of the emulated pipeline set shares: MSC's draw info (in
+// command memory, bound at kUniformsIndex with the vertex-buffer table and,
+// for tessellation, the tessellator tables) and the threadgroup sizes.
+struct EmulatedDraw {
+    uint32 objectThreads = 0;
+    uint32 meshThreads = 0;
+    uint32 vertexStride = 0; // input vertices per object threadgroup (objectThreadgroupVertexStride)
+    IRRuntimePrimitiveType topology{};
+};
+
+EmulatedDraw prepareEmulated(DeviceState &state, CommandListState &cmd, bool indexed) {
     const Pipeline &pipeline = cmd.graphics;
     const auto topology = static_cast<IRRuntimePrimitiveType>(pipeline.internal.emulationTopology);
     const bool tessellation = pipeline.internal.emulation == 2;
@@ -249,7 +261,7 @@ void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint3
                                      : cmd.indexFormat == IndexFormat::eUint32 ? MTL::IndexTypeUInt32
                                                                                : MTL::IndexTypeUInt16;
     IRRuntimeDrawInfo info{};
-    uint32 objectThreads = 0, meshThreads = 0;
+    EmulatedDraw draw{.topology = topology};
     if (tessellation) {
         const IRRuntimeTessellationPipelineConfig c = tessellationConfigOf(pipeline);
         info = IRRuntimeCalculateDrawInfoForGSTSEmulation(topology, indexType, c.outputPrimitiveType,
@@ -259,7 +271,7 @@ void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint3
         IRRuntimeCalculateThreadgroupSizeForTessellationAndGeometry(c.hsMaxPatchesPerObjectThreadgroup,
                                                                     c.hsMaxObjectThreadsPerThreadgroup,
                                                                     c.gsMaxInputPrimitivesPerMeshThreadgroup,
-                                                                    &objectThreads, &meshThreads);
+                                                                    &draw.objectThreads, &draw.meshThreads);
     } else {
         const IRRuntimeGeometryPipelineConfig c = geometryConfigOf(pipeline);
         // The last argument is the geometry shader's [instance(n)] count (the
@@ -270,32 +282,18 @@ void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint3
                                                         c.gsMaxInputPrimitivesPerMeshThreadgroup,
                                                         pipeline.internal.emulationConfig[2]);
         IRRuntimeCalculateThreadgroupSizeForGeometry(topology, c.gsMaxInputPrimitivesPerMeshThreadgroup,
-                                                     info.objectThreadgroupVertexStride, &objectThreads, &meshThreads);
+                                                     info.objectThreadgroupVertexStride, &draw.objectThreads,
+                                                     &draw.meshThreads);
     }
-    IRRuntimeDrawParams params{};
     if (indexed) {
         info.indexBuffer = cmd.indexAddress;
-        params.drawIndexed = {.indexCountPerInstance = count,
-                              .instanceCount = instanceCount,
-                              .startIndexLocation = first,
-                              .baseVertexLocation = vertexOffset,
-                              .startInstanceLocation = firstInstance};
     } else {
         info.indexType = kIRNonIndexedDraw;
-        params.draw = {.vertexCountPerInstance = count,
-                       .instanceCount = instanceCount,
-                       .startVertexLocation = first,
-                       .startInstanceLocation = firstInstance};
     }
-    const MTL::Size groups =
-        IRRuntimeCalculateObjectTgCountForTessellationAndGeometryEmulation(count, info.objectThreadgroupVertexStride,
-                                                                           topology, instanceCount);
+    draw.vertexStride = info.objectThreadgroupVertexStride;
 
-    const CommandMemoryAllocation paramsMemory = allocateCommandMemory(state, cmd, sizeof(params), 16);
-    std::memcpy(paramsMemory.cpu, &params, sizeof(params));
     const CommandMemoryAllocation infoMemory = allocateCommandMemory(state, cmd, sizeof(info), 16);
     std::memcpy(infoMemory.cpu, &info, sizeof(info));
-    cmd.argumentTable->setAddress(paramsMemory.gpuAddress, kDrawArgumentsIndex);
     cmd.argumentTable->setAddress(infoMemory.gpuAddress, kUniformsIndex);
     cmd.argumentTable->setAddress(state.emulation->gpuAddress(), kVertexBuffersIndex);
     if (tessellation) {
@@ -303,7 +301,73 @@ void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint3
         // The helpers' object threadgroup memory for the hull stage.
         cmd.render->setObjectThreadgroupMemoryLength(15360, 0);
     }
-    cmd.render->drawMeshThreadgroups(groups, MTL::Size(objectThreads, 1, 1), MTL::Size(meshThreads, 1, 1));
+    return draw;
+}
+
+// The vertices that start no primitive of their own at the end of a strip
+// (IRRuntimePrimitiveTypeVertexOverlap's, for the strips it counts).
+uint32 stripOverlap(IRRuntimePrimitiveType topology) {
+    switch (topology) {
+    case IRRuntimePrimitiveTypeLineStrip:
+    case IRRuntimePrimitiveTypeTriangleStrip:
+    case IRRuntimePrimitiveTypeLineStripWithAdj: return IRRuntimePrimitiveTypeVertexOverlap(topology);
+    default: return 0;
+    }
+}
+
+} // namespace
+
+void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint32 count, uint32 instanceCount,
+                  uint32 first, int32 vertexOffset, uint32 firstInstance) {
+    const EmulatedDraw draw = prepareEmulated(state, cmd, indexed);
+    // IRRuntimeDrawParams: RI's DrawIndirectArgs and DrawIndexedIndirectArgs.
+    IRRuntimeDrawParams params{};
+    if (indexed) {
+        params.drawIndexed = {.indexCountPerInstance = count,
+                              .instanceCount = instanceCount,
+                              .startIndexLocation = first,
+                              .baseVertexLocation = vertexOffset,
+                              .startInstanceLocation = firstInstance};
+    } else {
+        params.draw = {.vertexCountPerInstance = count,
+                       .instanceCount = instanceCount,
+                       .startVertexLocation = first,
+                       .startInstanceLocation = firstInstance};
+    }
+    const CommandMemoryAllocation paramsMemory = allocateCommandMemory(state, cmd, sizeof(params), 16);
+    std::memcpy(paramsMemory.cpu, &params, sizeof(params));
+    cmd.argumentTable->setAddress(paramsMemory.gpuAddress, kDrawArgumentsIndex);
+    // MSC's IRRuntimeCalculateObjectTgCountForTessellationAndGeometryEmulation,
+    // without its wrap-around for a strip shorter than one primitive.
+    const uint32 overlap = stripOverlap(draw.topology);
+    const uint32 groups = count > overlap ? (count - overlap + draw.vertexStride - 1) / draw.vertexStride : 0;
+    if (groups == 0 || instanceCount == 0) {
+        return;
+    }
+    cmd.render->drawMeshThreadgroups(MTL::Size(groups, instanceCount, 1), MTL::Size(draw.objectThreads, 1, 1),
+                                     MTL::Size(draw.meshThreads, 1, 1));
+}
+
+// Indirect draws (P48): each record's arguments are MSC's draw parameters as
+// they are (bound at kDrawArgumentsIndex); RI's built-in kernel
+// (equine_emulation_groups, Indirect.cpp) turns them into the object
+// threadgroup counts on the GPU, one MTLDispatchThreadgroupsIndirectArguments
+// per record in command memory, which drawMeshThreadgroups then reads.
+void drawEmulatedIndirect(DeviceState &state, CommandListState &cmd, bool indexed, uint64 records, uint32 stride,
+                          uint32 rootSize, uint32 maxCount, bool level2) {
+    const EmulatedDraw draw = prepareEmulated(state, cmd, indexed);
+    const uint64 groups = emulationGroups(state, cmd, records, stride, rootSize, maxCount, draw.vertexStride,
+                                          stripOverlap(draw.topology));
+    for (uint32 i = 0; i < maxCount; ++i) {
+        const uint64 record = records + uint64{i} * stride;
+        if (level2) {
+            cmd.argumentTable->setAddress(record, kRootDataIndex);
+            cmd.argumentTable->setAddress(record, kHullDomainRootDataIndex);
+        }
+        cmd.argumentTable->setAddress(record + rootSize, kDrawArgumentsIndex);
+        cmd.render->drawMeshThreadgroups(groups + uint64{i} * 12, MTL::Size(draw.objectThreads, 1, 1),
+                                         MTL::Size(draw.meshThreads, 1, 1));
+    }
 }
 
 } // namespace RI::Metal

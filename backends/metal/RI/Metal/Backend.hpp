@@ -408,9 +408,9 @@ void cmdDrawMesh(CommandList &cmd, uint32 x, uint32 y, uint32 z);
 // bytes at `offset` in `args`, with the count read from `count` at `countOffset`
 // when given (at most maxCount). Dispatches take one record and no count.
 // Buffers need BufferUsage::eIndirect; the GPU reads them at Stage::eIndirect.
-// On Metal, pipelines with geometry or tessellation shaders (MSC's emulation,
-// P116 (1)) are drawn by cmdDraw and cmdDrawIndexed only: indirect draws of
-// them report eUnsupported.
+// On Metal, indirect draws of pipelines with geometry or tessellation shaders
+// (MSC's emulation, P116 (1)) run a small kernel of RI's first, which turns
+// each record into MSC's threadgroup counts.
 void cmdExecuteIndirect(CommandList &cmd, IndirectKind kind, const Buffer &args, uint64 offset, uint32 maxCount,
                         const Buffer *count = nullptr, uint64 countOffset = 0);
 // Level 2 (DeviceLimits::indirectRootData): each record starts with the root

@@ -26,16 +26,15 @@ is at `aa641ce`, checked 2026-11-12). The feature commits:
 
 Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains, geometry and
 tessellation, the merge of master (P117), the coverage tests of §10 and the fixes of §11
-(2026-11-26): **145/145** with `ctest
+(2026-11-26) and the indirect draws of §12: **149/149** with `ctest
 --preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`;
-10 runs in a row), **127/127** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+10 runs in a row), **131/131** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader` (without its pipeline-statistics part),
 `texture.tessellation` and `texture.cube_layered_render` run through MSC's emulation (§9).
 
-**Not done on Metal:** indirect draws of geometry and tessellation pipelines (MSC emulation,
-later), work graphs (D3D12 only), pipeline statistics, the Metal 3 path (P113), native import
+**Not done on Metal:** work graphs (D3D12 only), pipeline statistics, the Metal 3 path (P113), native import
 and native sections (P27, P70, P77). `backends/metal/Unsupported.cpp` lists what still reports
 `eUnsupported`.
 
@@ -307,11 +306,11 @@ every test vertex shader converted with emulation still passes the whole suite.
 - **Behaviour:** `SV_VertexID` and `SV_InstanceID` as in RI's other Metal draws (vertex offset
   and first vertex left out; first instance left out, as D3D12). `SV_RenderTargetArrayIndex`
   from a geometry shader works (`texture.cube_layered_render`). Indirect draws of these
-  pipelines report `eUnsupported` (`Indirect.cpp`, documented in `Backend.hpp`).
+  pipelines reported `eUnsupported` until 2026-11-26; they are supported since (§12).
 - **Tests:** `texture.geometry_shader` (its statistics part compiled out on Metal),
   `texture.tessellation`, `texture.cube_layered_render`, and in `tests/metal/EmulationTests.cpp`
   `metal.geometry_indexed_instanced`, `metal.tessellation_indexed_depth_only` and
-  `metal.geometry_indirect_reports`. New shaders `grid_instances_vs`, `point_pass_gs`. 10 runs in
+  `metal.geometry_indirect_reports` (replaced by the tests of §12). New shaders `grid_instances_vs`, `point_pass_gs`. 10 runs in
   a row pass.
 - **Covered since (2026-11-26, §10):** a geometry shader after tessellation, line and triangle
   strips into a geometry shader, geometry-shader instancing (`[instance(n)]`, which ran instance
@@ -403,4 +402,32 @@ test now runs on Metal without an edit; skipping one there means naming it in th
 It caught `raytracing.blas_build_into_top_level_reports` compiled outside `#if
 EQUINE_VALIDATION` (fixed), which would also have failed the D3D12 and Vulkan
 `registry_matches` in builds with validation off.
+
+## 12. Indirect draws of geometry and tessellation pipelines (2026-11-26)
+
+Supported now (P116 (1) amended). MSC's draw parameters have RI's record layout
+(`IRRuntimeDrawArgument`, `IRRuntimeDrawIndexedArgument`), and its draw info depends only on
+the pipeline and the index type, so only the object threadgroup counts depend on the record.
+
+- **How:** `drawEmulatedIndirect` (`Emulation.cpp`) writes the draw info once
+  (`prepareEmulated`, shared with direct draws), then `emulationGroups` (`Indirect.cpp`) runs RI's
+  built-in vertex function `equine_emulation_groups` (rasterization off, inside the section, as
+  the count copy) that writes one `MTLDispatchThreadgroupsIndirectArguments` per record into
+  command memory: width `ceil((count - overlap) / objectThreadgroupVertexStride)`, height the
+  instance count. A vertex barrier orders it before the mesh draws, one
+  `drawMeshThreadgroups(indirect)` per record with `kDrawArgumentsIndex` at the record's
+  arguments (and, for Level 2, indices 2 and 3 at its root data). A GPU count first goes
+  through the existing count copy, which zeroes the instance count of records past it (height
+  0).
+- **A fix on the way:** MSC's count function wraps around for a strip shorter than one
+  primitive (`count - overlap` unsigned), which would launch about 4 billion threadgroups. RI's
+  direct and indirect paths both give 0 instead. The GPU test does not draw such a strip (a
+  wrong clamp could stall the GPU); the direct path's is CPU arithmetic.
+- **Tests** (`tests/metal/EmulationTests.cpp`, replacing `metal.geometry_indirect_reports`):
+  `metal.geometry_indirect` (Level 1, instances, a GPU count), `metal.geometry_indirect_root_data`
+  (Level 2, additive), `metal.tessellation_indirect_indexed` (indexed, an empty record first),
+  `metal.geometry_indirect_strip` (strip overlap), `metal.tessellation_indirect_root_data` (the
+  domain shader reads the record's root data at index 3; fails without that binding). The
+  emulation fixture's buffers are a deque now (references into a growing vector, a latent
+  use-after-free).
 

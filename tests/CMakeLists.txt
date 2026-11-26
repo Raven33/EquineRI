@@ -425,7 +425,11 @@ if (TARGET EquineMetalBackend)
         # Geometry and tessellation through MSC's emulation (P116 (1)).
         metal.geometry_indexed_instanced
         metal.tessellation_indexed_depth_only
-        metal.geometry_indirect_reports
+        metal.geometry_indirect
+        metal.geometry_indirect_root_data
+        metal.tessellation_indirect_indexed
+        metal.geometry_indirect_strip
+        metal.tessellation_indirect_root_data
         # What the 2026-11-09 handoff and the 2026-11-12 review list as untested.
         metal.geometry_after_tessellation
         metal.geometry_strip_input
@@ -439,7 +443,6 @@ if (TARGET EquineMetalBackend)
         metal.multisampled_depth_aspect_copy_reports
     )
     set(EQUINE_METAL_ABORT_TESTS ${EQUINE_GPU_SHARED_ABORT_TESTS}
-        "metal.geometry_indirect_reports|unsupported: cmdExecuteIndirect: on Metal, pipelines with geometry or tessellation shaders"
         "metal.multisampled_copy_between_formats_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
         "metal.multisampled_depth_aspect_copy_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
     )
