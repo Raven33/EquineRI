@@ -26,9 +26,9 @@ is at `aa641ce`, checked 2026-11-12). The feature commits:
 
 Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains, geometry and
 tessellation, the merge of master (P117), the coverage tests of §10 and the fixes of §11
-(2026-11-26): **144/144** with `ctest
+(2026-11-26): **145/145** with `ctest
 --preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`;
-10 runs in a row), **126/126** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+10 runs in a row), **127/127** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader` (without its pipeline-statistics part),
@@ -393,4 +393,14 @@ sizes (§10) left as they are. No on-screen test and nothing that could stall th
 (`stencilWrite`, `stencilReadOnly`), `Pipeline.cpp`, `Commands.cpp`, `Rendering.cpp` (D3D12),
 `RayTracing.cpp`. The two new portable tests are registered for them too. Run both on Windows
 and Linux before merging.
+
+**The Metal test list (review §3 (7), done 2026-11-26):** `EQUINE_METAL_TEST_NAMES` is now the
+shared list minus `EQUINE_METAL_SKIPPED_TESTS` (`texture.occlusion_and_statistics`,
+`texture.mesh_statistics`, `helpers.shader_compiler`, compiled out on Metal with
+`#if !EQUINE_BACKEND_METAL`), plus Metal's own cases; every shared abort test joins Metal's
+list. `mtl.registry_matches` checks that every case compiled is registered. A new portable
+test now runs on Metal without an edit; skipping one there means naming it in the skip list.
+It caught `raytracing.blas_build_into_top_level_reports` compiled outside `#if
+EQUINE_VALIDATION` (fixed), which would also have failed the D3D12 and Vulkan
+`registry_matches` in builds with validation off.
 

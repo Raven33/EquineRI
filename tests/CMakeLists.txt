@@ -404,78 +404,28 @@ if (TARGET EquineMetalBackend)
     target_link_libraries(EquineRIMetalTests PRIVATE EquineHelpersMetal glfw)
     equine_copy_sanitizer_runtime(EquineRIMetalTests)
 
-    set(EQUINE_METAL_TEST_NAMES
-        compute.buffer_compute_readback
-        compute.command_list_reuse_and_timeline
-        compute.memory_kinds
-        compute.names_and_markers
-        compute.int64_atomics
-        compute.clear_large_buffer
-        compute.clear_buffer_range
-        compute.write_small_data
-        compute.names_at_creation
-        threads.pipelines_on_other_threads
-        texture.create_and_views
-        texture.storage_write_then_sample
-        texture.clear_commands
-        texture.copy_round_trip
-        texture.copy_regions
-        texture.copy_depth_upload
-        texture.samplers
-        texture.cube_storage_then_sample
-        texture.unlisted_view_format_reports
-        texture.render_then_sample
-        texture.msaa_render_then_sample
-        texture.clear_load_op
-        texture.depth_write_then_sample
-        texture.read_only_depth_section
-        texture.read_only_depth_section_sampling
-        texture.discard_after_aliasing
-        texture.timestamps
-        texture.indexed_draw_with_blending
-        texture.stencil_test
-        texture.stencil_reference_command
-        texture.mesh_shaders
-        texture.stage_link
-        texture.line_strip
-        texture.wireframe
-        texture.depth_bias
-        texture.depth_clamp
-        texture.volume_copy_render_sample
-        texture.viewport_and_scissor
-        texture.rendering_without_attachments
-        texture.rendering_desc_without_attachment_reports
-        texture.occlusion
-        texture.occlusion_many_sections
-        texture.resolve_color
-        texture.resolve_depth
-        texture.indirect_level1
-        texture.indirect_level2
-        texture.indirect_dispatch_count
-        texture.indirect_draw_records
-        texture.indirect_mesh
-        texture.point_list
-        texture.layered_vertex_output
-        texture.vertex_id_excludes_offsets
-        raytracing.build_trace_update
-        raytracing.empty_top_level
-        raytracing.scene
-        helpers.frame_ring_and_profiler
-        helpers.allocators
-        helpers.transfers
-        helpers.group_grid
+    # Every portable case runs on Metal except these, which are compiled out
+    # there: pipeline statistics do not exist on Metal (P116 (1);
+    # texture.occlusion covers occlusion queries alone), and
+    # helpers.shader_compiler compiles to plain DXIL, which the Metal backend
+    # refuses (P114: Metal takes the build's .mtl.dxil).
+    set(EQUINE_METAL_SKIPPED_TESTS
+        texture.occlusion_and_statistics
+        texture.mesh_statistics
+        helpers.shader_compiler
+    )
+    set(EQUINE_METAL_TEST_NAMES ${EQUINE_GPU_SHARED_TEST_NAMES})
+    list(REMOVE_ITEM EQUINE_METAL_TEST_NAMES ${EQUINE_METAL_SKIPPED_TESTS})
+    # Metal's own cases (tests/metal/).
+    list(APPEND EQUINE_METAL_TEST_NAMES
         metal.native_access
         metal.visibility_pages_bounded
-        # Open a GLFW window; over SSH it is on no display and the tests still run.
-        window.swapchain
+        # Opens a GLFW window; over SSH it is on no display and the test still runs.
         metal.screen_contents
+        # Geometry and tessellation through MSC's emulation (P116 (1)).
         metal.geometry_indexed_instanced
         metal.tessellation_indexed_depth_only
         metal.geometry_indirect_reports
-        # Geometry and tessellation through MSC's emulation (P116 (1)).
-        texture.geometry_shader
-        texture.tessellation
-        texture.cube_layered_render
         # What the 2026-11-09 handoff and the 2026-11-12 review list as untested.
         metal.geometry_after_tessellation
         metal.geometry_strip_input
@@ -488,48 +438,18 @@ if (TARGET EquineMetalBackend)
         metal.multisampled_copy_between_formats_reports
         metal.multisampled_depth_aspect_copy_reports
     )
-    set(EQUINE_METAL_ABORT_TESTS
-        "texture.unlisted_view_format_reports|programmer error: createView: format"
+    set(EQUINE_METAL_ABORT_TESTS ${EQUINE_GPU_SHARED_ABORT_TESTS}
         "metal.geometry_indirect_reports|unsupported: cmdExecuteIndirect: on Metal, pipelines with geometry or tessellation shaders"
-        "texture.rendering_desc_without_attachment_reports|programmer error: cmdBeginRendering: the RenderingDesc has no attachment"
         "metal.multisampled_copy_between_formats_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
         "metal.multisampled_depth_aspect_copy_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
     )
     if (EQUINE_VALIDATION)
-        list(APPEND EQUINE_METAL_TEST_NAMES
-            compute.root_data_size_mismatch_reports
-            compute.pipeline_before_heap_reports
-            compute.descriptor_slot_out_of_range_reports
-            compute.buffer_used_after_destroy_reports
-            compute.named_buffer_used_after_destroy_reports
-            compute.unclosed_marker_reports
-            compute.too_many_groups_reports
-            compute.small_write_too_large_reports
-            threads.call_from_other_thread_reports
-            texture.copy_without_usage_reports
-            texture.read_only_depth_sampling_on_color_reports
-            texture.depth_write_in_read_only_section_reports
-            texture.stencil_write_in_read_only_section_reports
-            raytracing.blas_build_into_top_level_reports
-            texture.missing_discard_reports
-            texture.stage_link_mismatch_reports
-            compute.int64_shared_atomics_reports
-        )
+        # Compiled on Metal only (P116 (2)).
+        list(APPEND EQUINE_METAL_TEST_NAMES compute.int64_shared_atomics_reports)
         list(APPEND EQUINE_METAL_ABORT_TESTS
             "compute.int64_shared_atomics_reports|programmer error: createComputePipeline: the compute shader uses 64-bit atomics on groupshared memory"
         )
-        foreach(entry IN LISTS EQUINE_GPU_SHARED_ABORT_TESTS)
-            if (entry MATCHES "^(compute|threads)\\." OR
-                entry MATCHES "^raytracing\\.blas_build_into_top_level_reports" OR
-                entry MATCHES "^texture\\.(copy_without_usage|read_only_depth_sampling_on_color|depth_write_in_read_only_section|stencil_write_in_read_only_section|missing_discard|stage_link_mismatch)_reports")
-                list(APPEND EQUINE_METAL_ABORT_TESTS "${entry}")
-            endif()
-        endforeach()
     endif()
-    # Unsupported on Metal (P116 (1)): pipeline statistics, which
-    # texture.occlusion_and_statistics and texture.mesh_statistics read
-    # (texture.occlusion covers occlusion queries alone). helpers.shader_compiler compiles to plain DXIL, which
-    # the Metal backend refuses (P114: Metal takes the build's .mtl.dxil).
     foreach(name IN LISTS EQUINE_METAL_TEST_NAMES)
         add_test(NAME "mtl.${name}" COMMAND EquineRIMetalTests "${name}")
         set_tests_properties("mtl.${name}" PROPERTIES LABELS gpu TIMEOUT 120)
@@ -542,6 +462,9 @@ if (TARGET EquineMetalBackend)
         string(REPLACE ")" "\\)" message "${message}")
         set_tests_properties("mtl.${name}" PROPERTIES PASS_REGULAR_EXPRESSION "\\[EquineRI\\] ${message}")
     endforeach()
+    # Every case compiled into the executable is registered above.
+    list(LENGTH EQUINE_METAL_TEST_NAMES EQUINE_METAL_TEST_COUNT)
+    add_test(NAME mtl.registry_matches COMMAND EquineRIMetalTests --expect-count ${EQUINE_METAL_TEST_COUNT})
 endif()
 
 # ── Backend conformance (P83) ────────────────────────────────────────────────

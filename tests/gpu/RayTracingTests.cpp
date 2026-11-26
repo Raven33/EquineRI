@@ -355,6 +355,7 @@ EQ_TEST(raytracing, scene) {
     RI::destroyDevice(device);
 }
 
+#if EQUINE_VALIDATION
 // A bottom-level build into a structure created as a top level (P49):
 // validation builds report it on every backend.
 EQ_TEST(raytracing, blas_build_into_top_level_reports) {
@@ -376,3 +377,4 @@ EQ_TEST(raytracing, blas_build_into_top_level_reports) {
     RI::cmdBegin(cmd);
     RI::cmdBuildBlas(cmd, top, desc, scratch, 0);
 }
+#endif

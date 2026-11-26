@@ -139,6 +139,7 @@ EQ_TEST(helpers, frame_ring_and_profiler) {
     RI::destroyDevice(device);
 }
 
+#if !EQUINE_BACKEND_METAL // not on Metal (EQUINE_METAL_SKIPPED_TESTS)
 // Runtime HLSL compilation with RI's rule: the pipeline reads its root data.
 EQ_TEST(helpers, shader_compiler) {
     RI::Device device = createTestDevice();
@@ -163,6 +164,7 @@ void main(uint3 id : SV_DispatchThreadID) {
     RI::Helpers::destroyShaderCompiler(compiler);
     RI::destroyDevice(device);
 }
+#endif
 
 // Group grids (P106): counts above kMaxGroupsPerDimension fold into rows, and
 // eqLinearGroup numbers every group once.

@@ -770,6 +770,7 @@ EQ_TEST(texture, copy_depth_upload) {
     RI::destroyTexture(f.device, depth);
 }
 
+#if !EQUINE_BACKEND_METAL // not on Metal (EQUINE_METAL_SKIPPED_TESTS)
 // Occlusion counts every covered sample; pipeline statistics count draws and
 // dispatches at the offsets pipelineStatisticsLayout gives (P71).
 EQ_TEST(texture, occlusion_and_statistics) {
@@ -835,6 +836,7 @@ EQ_TEST(texture, occlusion_and_statistics) {
     RI::destroyPipeline(f.device, pipeline);
     RI::destroyTexture(f.device, target);
 }
+#endif
 
 // Occlusion queries alone (P115), for backends without pipeline statistics:
 // a full-screen draw counts every sample, a query around no draw counts none,
@@ -1168,6 +1170,7 @@ EQ_TEST(texture, mesh_shaders) {
     RI::destroyTexture(f.device, target);
 }
 
+#if !EQUINE_BACKEND_METAL // not on Metal (EQUINE_METAL_SKIPPED_TESTS)
 // The mesh counter set and the mesh-primitives query (P105) around a mesh draw
 // of one full-screen triangle. Vulkan forbids the classic set there. The
 // primitives query is begun first: nested inside the statistics query, NVIDIA's
@@ -1234,6 +1237,7 @@ EQ_TEST(texture, mesh_statistics) {
     RI::destroyPipeline(f.device, pipeline);
     RI::destroyTexture(f.device, target);
 }
+#endif
 
 // Color resolves (P52): at cmdEndRendering through resolveTo, and with
 // cmdResolve outside a section.
