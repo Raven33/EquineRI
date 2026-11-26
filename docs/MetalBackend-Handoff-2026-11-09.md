@@ -24,10 +24,10 @@ is at `aa641ce`, checked 2026-11-12). The feature commits:
 | `82f5bb7` | stage 3b-2: resolves, occlusion queries, indirect execution (Level 1 and 2, GPU counts) |
 | `6b723ba` | inline ray tracing, `DeviceLimits::rayTracingHardware`, depth and stencil resolve modes |
 
-Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains and geometry and
-tessellation: **129/129** with `ctest
---preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`),
-**113/113** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
+Tests on the M4 (macOS 27), after the review fixes, the probe tests, swapchains, geometry and
+tessellation, the merge of master (P117) and the coverage tests of §10 (2026-11-26): **137/137** with `ctest
+--preset macos-debug` (ASan, UBSan, RI validation, `MTL_DEBUG_LAYER=1`, `MTL_SHADER_VALIDATION=1`;
+10 runs in a row), **121/121** in a build with RI validation off (`build/noval`). No compiler or clang-tidy
 warnings. Every portable GPU test runs on Metal except `texture.occlusion_and_statistics` and `texture.mesh_statistics` (pipeline statistics do not
 exist on Metal, P116 (1)), `helpers.shader_compiler` (plain DXIL; Metal takes `.mtl.dxil`, P114)
 and `window.swapchain_x11`/`_wayland` (Linux only). `texture.geometry_shader` (without its pipeline-statistics part),
@@ -137,14 +137,14 @@ Each file opens with an Owns / How / Watch out header; read it before changing t
   on RADV, so it is now a shared test (141/141 with it; not yet run on Windows Vulkan).
 - **Probed but not registered:** `formatSupported` format by format (M4 only; the sweep is one
   process per case). Every other probe of §7.3 is now a registered test (§7.4).
-- **Untested on Metal:** texture copies between different formats of one texel size; sampling
-  a read-only depth attachment inside its section.
+- **Tested 2026-11-26 (§10):** texture copies between formats of one texel size, sampling a
+  read-only depth attachment inside its section.
 - **Open behaviour:** a pipeline whose stencil writes, in a read-only stencil section, is not
-  reported (RI has no portable check). An indirect draw counts as a draw for timestamps even if
+  reported, and on Metal the stencil **is written** (probed 2026-11-26, §10). An indirect draw counts as a draw for timestamps even if
   every record is empty. The ICB variant of indirect counts (proposal §7 (a)) is not measured.
 - **Other GPUs:** only the M4 was used. Whether M1 and M2 report `supportsRaytracing`, and the
   `rayTracingHardware` family check, are unverified. The GPU-error to `eDeviceLost` path has no
-  test.
+  test: no GPU fault could be provoked on the M4 (§10).
 - **Small leftovers:** `cmdClearBuffer` does not reject eUpload or eReadback memory; the
   `writeDescriptors` usage check lives in the backend, not `src/RI/Validation`; `samplerMinMax`
   stays false (the debug layer refuses it on the M4).
@@ -311,8 +311,64 @@ every test vertex shader converted with emulation still passes the whole suite.
   `metal.geometry_indexed_instanced`, `metal.tessellation_indexed_depth_only` and
   `metal.geometry_indirect_reports`. New shaders `grid_instances_vs`, `point_pass_gs`. 10 runs in
   a row pass.
-- **Not covered:** a geometry shader after tessellation, line and triangle strips into a
-  geometry shader, geometry-shader instancing (`[instance(n)]`), stream output (RI has none),
-  performance. Shared test files changed (`TextureTests.cpp`'s statistics guard): not yet
+- **Covered since (2026-11-26, §10):** a geometry shader after tessellation, line and triangle
+  strips into a geometry shader, geometry-shader instancing (`[instance(n)]`, which ran instance
+  0 alone: fixed). **Not covered:** stream output (RI has none), performance. Shared test files changed (`TextureTests.cpp`'s statistics guard): not yet
   compiled on Windows or Linux.
 
+## 10. Testing what was noted (2026-11-26)
+
+After rebasing the geometry and tessellation commit on `origin/metal-backend` and merging master
+(P117, `docs/reviews/Review-2026-11-12.md`), every item of §5, §9 and the review's §3 that this
+Mac can check was tested. New registered tests in `tests/metal/CoverageTests.cpp` (shaders
+`depth_sample_ps`, `triangle_pass_gs`, `line_pass_gs`, `instanced_gs`, `strip_vs`), and
+`texture.vertex_id_excludes_offsets` (P117) joined `EQUINE_METAL_TEST_NAMES`: it passes, so
+Metal already follows P117.
+
+| Test | Result |
+|---|---|
+| `metal.geometry_after_tessellation` | passes |
+| `metal.geometry_strip_input` | passes (triangle and line strips) |
+| `metal.geometry_instancing` | **failed, fixed**: only instance 0 of `[instance(2)]` ran |
+| `metal.copy_between_formats` | passes (RGBA8 to R32Uint to BGRA8, with a region and an offset) |
+| `metal.copy_depth_stencil_aspects` | passes (depth into D32Float; stencil kept apart from depth) |
+| `metal.sample_read_only_depth_in_section` | passes |
+| `metal.scissor_outside_section` | passes, no debug-layer message (RI refuses negative origins) |
+
+**The bug:** `drawEmulated` (`Emulation.cpp`) passed the draw's instance count as the last
+argument of `IRRuntimeCalculateDrawInfoForGSEmulation`, which is the geometry shader's
+`[instance(n)]` count; MSC's own `IRRuntime…GeometryEmulation` helpers do the same (MSC 4.0b3).
+It now passes the reflected count (`emulationConfig[2]`). The test also draws two instances.
+
+**Probed, not registered** (`ProbeTests.cpp` in this session's scratchpad,
+`/private/tmp/claude-502/-Users-arthur-dev-EquineRI/d63b78cf-8d8e-4e49-bcee-89522a99d8ff/scratchpad/probe/`):
+
+- **Review §3 (2), confirmed:** multisampled staged copies fail. 4x RGBA8 to 4x R32Uint, and the
+  depth aspect of 4x D32FloatS8Uint, stop on the debug layer's assertion ("destinationBytesPerRow
+  (256) must be >= (512)", `copyThroughBuffer`). Without the debug layer the result is undefined.
+  The stencil aspect passes the debug layer but goes through the same buffer path (unchecked).
+  A 4x same-format copy (direct) works. Needs a decision: report these on Metal, or a different
+  path (a texture view of the destination in the source's format, then a direct copy).
+- **Review §3 (1), confirmed:** one staged copy of a 3840 x 2160 depth aspect (`copyLayout`
+  33 MB) leaves 32 MiB of command memory resident after resets and small lists; two such
+  copies in one list add a 64 MiB chunk (96 MiB in all).
+- **Review §3 (5), confirmed:** a one-triangle bottom level of 640 bytes takes 65,536 bytes of
+  memory (RI's `kHeapGranularity`); Metal's own placement is 640 bytes aligned to 16 KiB.
+- **Review §3 (8):** `cmdBuildBlas` into a structure created as a top level builds with no
+  report, debug layer included.
+- **Stencil in a read-only section:** a pipeline writing stencil 9 in a section with
+  `stencilReadOnly` leaves 9 (3 was cleared): Metal writes it.
+- **`cmdClearBuffer` on upload memory** works on Metal (the leftover of §5 is about rejecting it
+  everywhere).
+- **Review §3 (6):** on the M4, `supports32BitMSAA` and `supports32BitFloatFiltering` are true,
+  as the table assumes. M1 and M2 remain unchecked.
+- **`eDeviceLost`:** a heap entry pointing at unmapped addresses (far, or 1 GiB past a buffer;
+  read or write) gives no GPU error on the M4, with shader validation on or off, so the path
+  stays untested. A GPU timeout (an endless kernel) would reach it, but stalls the GPU of
+  whoever uses the screen.
+- **Review §3 (4), `acquire`:** over SSH the layer never runs out of drawables (6 held, none
+  presented, and `acquire` still returns), so the endless loop cannot be shown without the GUI
+  session.
+
+**Still to do elsewhere:** the on-screen swapchain run and HDR10 (the `arthur` GUI session);
+Windows and Linux builds of the shared test changes; M1 or M2.

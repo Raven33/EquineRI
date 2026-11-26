@@ -262,8 +262,13 @@ void drawEmulated(DeviceState &state, CommandListState &cmd, bool indexed, uint3
                                                                     &objectThreads, &meshThreads);
     } else {
         const IRRuntimeGeometryPipelineConfig c = geometryConfigOf(pipeline);
+        // The last argument is the geometry shader's [instance(n)] count (the
+        // draw info's gsInstanceCount), not the draw's instance count, which
+        // MSC's own IRRuntime…GeometryEmulation helpers pass there: with them,
+        // a shader of [instance(2)] drawn once runs only its instance 0.
         info = IRRuntimeCalculateDrawInfoForGSEmulation(topology, indexType, c.gsVertexSizeInBytes,
-                                                        c.gsMaxInputPrimitivesPerMeshThreadgroup, instanceCount);
+                                                        c.gsMaxInputPrimitivesPerMeshThreadgroup,
+                                                        pipeline.internal.emulationConfig[2]);
         IRRuntimeCalculateThreadgroupSizeForGeometry(topology, c.gsMaxInputPrimitivesPerMeshThreadgroup,
                                                      info.objectThreadgroupVertexStride, &objectThreads, &meshThreads);
     }

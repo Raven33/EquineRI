@@ -362,6 +362,7 @@ if (TARGET EquineMetalBackend)
         "${CMAKE_CURRENT_SOURCE_DIR}/metal/DeviceTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/metal/SwapchainTests.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/metal/EmulationTests.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/metal/CoverageTests.cpp"
     )
     # The shaders of the registered cases.
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
@@ -372,15 +373,16 @@ if (TARGET EquineMetalBackend)
     equine_add_shaders(EquineRIMetalTests PROFILE vs_6_6 SOURCES "${dir}/fullscreen_vs.hlsl" "${dir}/link_vs.hlsl"
                        "${dir}/lines_vs.hlsl" "${dir}/triangle_vs.hlsl" "${dir}/storage_raster_vs.hlsl"
                        "${dir}/grid_points_vs.hlsl" "${dir}/layer_vs.hlsl" "${dir}/point_vs.hlsl"
-                       "${dir}/patch_vs.hlsl" "${dir}/grid_instances_vs.hlsl")
+                       "${dir}/patch_vs.hlsl" "${dir}/grid_instances_vs.hlsl" "${dir}/strip_vs.hlsl")
     # Geometry and tessellation, through MSC's emulation (P116 (1)).
     equine_add_shaders(EquineRIMetalTests PROFILE gs_6_6 SOURCES "${dir}/fullscreen_gs.hlsl" "${dir}/layered_gs.hlsl"
-                       "${dir}/point_pass_gs.hlsl")
+                       "${dir}/point_pass_gs.hlsl" "${dir}/triangle_pass_gs.hlsl" "${dir}/line_pass_gs.hlsl"
+                       "${dir}/instanced_gs.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE hs_6_6 SOURCES "${dir}/patch_hs.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ds_6_6 SOURCES "${dir}/patch_ds.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ps_6_6 SOURCES "${dir}/solid_ps.hlsl" "${dir}/link_ps.hlsl"
                        "${dir}/link_skip_ps.hlsl" "${dir}/storage_raster_ps.hlsl" "${dir}/layer_ps.hlsl"
-                       "${dir}/color_ps.hlsl")
+                       "${dir}/color_ps.hlsl" "${dir}/depth_sample_ps.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE ms_6_6 SOURCES "${dir}/fullscreen_ms.hlsl"
                        "${dir}/fullscreen_payload_ms.hlsl")
     equine_add_shaders(EquineRIMetalTests PROFILE as_6_6 SOURCES "${dir}/fullscreen_as.hlsl")
@@ -448,6 +450,7 @@ if (TARGET EquineMetalBackend)
         texture.indirect_mesh
         texture.point_list
         texture.layered_vertex_output
+        texture.vertex_id_excludes_offsets
         raytracing.build_trace_update
         raytracing.empty_top_level
         raytracing.scene
@@ -467,6 +470,14 @@ if (TARGET EquineMetalBackend)
         texture.geometry_shader
         texture.tessellation
         texture.cube_layered_render
+        # What the 2026-11-09 handoff and the 2026-11-12 review list as untested.
+        metal.geometry_after_tessellation
+        metal.geometry_strip_input
+        metal.geometry_instancing
+        metal.copy_between_formats
+        metal.copy_depth_stencil_aspects
+        metal.sample_read_only_depth_in_section
+        metal.scissor_outside_section
     )
     set(EQUINE_METAL_ABORT_TESTS
         "texture.unlisted_view_format_reports|programmer error: createView: format"
