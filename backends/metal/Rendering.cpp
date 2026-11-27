@@ -45,6 +45,7 @@
 
 #include "DeviceState.hpp"
 
+#include <RI/Metal/Native.hpp>
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/Placement.hpp>
 
@@ -629,6 +630,47 @@ void cmdResolve(CommandList &cmd, const TextureView &src, const TextureView &dst
         pass->release();
         pool->release();
     }
+}
+
+// ── Native sections (P27, P70, P118) ──────────────────────────────────────────
+
+NativeCommands beginNative(CommandList &cmd) {
+    EQ_MTL_CHECK_THREAD(cmd.internal.device);
+    CommandListState &list = *cmd.internal.state;
+    // Every build: RI's encoder bookkeeping would be lost, and Metal faults.
+    if (!list.recording) {
+        reportError(ErrorCategory::eProgrammerError, "beginNative: the command list is not recording");
+    }
+    if (list.native) {
+        reportError(ErrorCategory::eProgrammerError, "beginNative: a native section is already open");
+    }
+    list.native = true;
+    if (list.render != nullptr) {
+        return {.renderEncoder = list.render};
+    }
+    // Native encoders follow: barriers recorded so far must reach them.
+    endEncoderCarrying(list);
+    return {.commandBuffer = list.commandBuffer};
+}
+
+void endNative(CommandList &cmd) {
+    EQ_MTL_CHECK_THREAD(cmd.internal.device);
+    CommandListState &list = *cmd.internal.state;
+    if (!list.native) {
+        reportError(ErrorCategory::eProgrammerError, "endNative: no native section is open");
+    }
+    list.native = false;
+    if (list.render == nullptr) {
+        return; // RI's next encoder sets its argument table and pipeline itself
+    }
+    list.render->setArgumentTable(list.argumentTable, MTL::RenderStageVertex | MTL::RenderStageFragment |
+                                                          MTL::RenderStageObject | MTL::RenderStageMesh);
+    if (list.graphicsSet) {
+        applyPipeline(list);
+    }
+    applyViewport(list);
+    applyScissor(list);
+    list.render->setStencilReferenceValue(list.stencilReference);
 }
 
 } // namespace RI::Metal

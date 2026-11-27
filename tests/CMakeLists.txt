@@ -419,6 +419,10 @@ if (TARGET EquineMetalBackend)
     # Metal's own cases (tests/metal/).
     list(APPEND EQUINE_METAL_TEST_NAMES
         metal.native_access
+        metal.native_section
+        metal.native_section_nested_reports
+        metal.end_native_without_begin_reports
+        metal.end_in_native_section_reports
         metal.visibility_pages_bounded
         # Opens a GLFW window; over SSH it is on no display and the test still runs.
         metal.screen_contents
@@ -447,6 +451,9 @@ if (TARGET EquineMetalBackend)
     set(EQUINE_METAL_ABORT_TESTS ${EQUINE_GPU_SHARED_ABORT_TESTS}
         "metal.multisampled_copy_between_formats_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
         "metal.multisampled_depth_aspect_copy_reports|unsupported: cmdCopyTexture: on Metal, multisampled copies"
+        "metal.native_section_nested_reports|programmer error: beginNative: a native section is already open"
+        "metal.end_native_without_begin_reports|programmer error: endNative: no native section is open"
+        "metal.end_in_native_section_reports|programmer error: cmdEnd: a native section is still open"
     )
     if (EQUINE_VALIDATION)
         # Compiled on Metal only (P116 (2)).

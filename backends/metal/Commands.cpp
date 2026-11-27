@@ -257,6 +257,20 @@ void runClearPass(CommandListState &cmd, MTL4::RenderPassDescriptor *pass) {
     endEncoder(cmd);
 }
 
+void endEncoderCarrying(CommandListState &cmd) {
+    // An empty encoder takes the pending barriers and its producer barrier
+    // passes them on. A last resolve is waited for the same way.
+    if (cmd.pendingBefore != 0 || cmd.waitResolve) {
+        const bool resolve = cmd.waitResolve;
+        computeEncoder(cmd);
+        if (resolve) {
+            cmd.encoderBefore |= MTL::StageBlit | MTL::StageDispatch;
+            cmd.encoderAfter |= kEncoderStages;
+        }
+    }
+    endEncoder(cmd);
+}
+
 void endEncoder(CommandListState &cmd) {
     MTL4::CommandEncoder *encoder = cmd.compute != nullptr ? static_cast<MTL4::CommandEncoder *>(cmd.compute)
                                                            : static_cast<MTL4::CommandEncoder *>(cmd.render);
@@ -477,6 +491,7 @@ void cmdBegin(CommandList &cmd) {
     list.markerDepth = 0;
     list.pendingBefore = list.pendingAfter = 0;
     list.encoderBefore = list.encoderAfter = 0;
+    list.native = false;
 }
 
 // Writes are visible to the CPU once the timeline value is reached: shared
@@ -492,19 +507,12 @@ void cmdEnd(CommandList &cmd) {
         reportError(ErrorCategory::eProgrammerError,
                     "cmdEnd: a rendering section is still open: call cmdEndRendering first");
     }
-    EQ_VALIDATE(Validation::checkMarkersClosed(list.markerDepth));
-    // Barriers recorded after the last encoder still order later submissions:
-    // an empty encoder takes them and its producer barrier passes them on. A
-    // last resolve is waited for the same way.
-    if (list.pendingBefore != 0 || list.waitResolve) {
-        const bool resolve = list.waitResolve;
-        computeEncoder(list);
-        if (resolve) {
-            list.encoderBefore |= MTL::StageBlit | MTL::StageDispatch;
-            list.encoderAfter |= kEncoderStages;
-        }
+    if (list.native) {
+        reportError(ErrorCategory::eProgrammerError, "cmdEnd: a native section is still open: call endNative first");
     }
-    endEncoder(list);
+    EQ_VALIDATE(Validation::checkMarkersClosed(list.markerDepth));
+    // Barriers recorded after the last encoder still order later submissions.
+    endEncoderCarrying(list);
     list.commandBuffer->endCommandBuffer();
     // Encoders ended: carried barriers start over with the next cmdBegin.
     list.pendingBefore = list.pendingAfter = 0;

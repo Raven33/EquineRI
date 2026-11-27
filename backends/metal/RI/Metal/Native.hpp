@@ -5,13 +5,7 @@
 // objects. The pointers are metal-cpp's; Objective-C code casts them to
 // `id<MTL...>` with `(__bridge id)`, as they are the same objects.
 //
-// Not yet on Metal: native sections and the import of native objects (P27,
-// P70, P77). When native sections are built, they must let user code run its
-// own indirect command buffers (P116 (3), the user's decision of 2026-11-26:
-// RI keeps its own indirect path and builds no ICB one): give the open render
-// and compute encoders (executeCommandsInBuffer), let the ICB join the
-// residency set (native(device).residencySet), and set RI's argument table,
-// pipeline and depth-stencil state again when the section ends.
+// Not yet on Metal: the import of native objects (P77).
 
 #include <RI/Metal/Backend.hpp>
 
@@ -83,7 +77,34 @@ inline NativePipeline native(const Pipeline &pipeline) {
 }
 
 // The command buffer being recorded (cmdBegin may replace it once the last
-// submission completed: fetch it per recording). RI opens and closes encoders itself.
+// submission completed: fetch it per recording). RI opens and closes encoders
+// itself: record native commands in a native section.
 MTL4::CommandBuffer *native(const CommandList &cmd);
+
+// ── Native sections (P27, P70, P118) ──────────────────────────────────────────
+// Native commands in the middle of a command list. Exactly one field is set:
+// - Outside a rendering section, `commandBuffer`: RI has ended its encoder;
+//   open and end your own (compute, render, your indirect command buffers
+//   with executeCommandsInBuffer), and leave none open at endNative.
+// - Inside a rendering section, `renderEncoder`: the section's encoder. Do
+//   not end it, change attachments or set its visibility result mode (the
+//   section's visibility buffer is RI's occlusion queries').
+// Record no RI commands in between. Synchronization with RI's commands is
+// yours, a native barrier or cmdBarrier, on either side of the section. What
+// the GPU reads must be resident: keep your own MTL::ResidencySet, added to the
+// queue (native(device).graphicsQueue) or the command buffer and committed by
+// you; RI's set is RI's, not to change. Metal has no image layouts: there is
+// nothing to hand back (P118 (3)).
+struct NativeCommands {
+    MTL4::CommandBuffer *commandBuffer = nullptr;
+    MTL4::RenderCommandEncoder *renderEncoder = nullptr;
+};
+NativeCommands beginNative(CommandList &cmd);
+// Sets RI's state again (P70 (1)): inside a rendering section, the argument
+// table on every render stage (heaps, root data, draw arguments), the last
+// graphics pipeline and its encoder state (depth-stencil, cull mode, winding,
+// fill mode, depth clip and bias), the viewport, scissor and stencil
+// reference. Outside sections, RI's next encoder starts from its own state.
+void endNative(CommandList &cmd);
 
 } // namespace RI::Metal

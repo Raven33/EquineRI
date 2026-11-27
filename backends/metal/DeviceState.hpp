@@ -279,6 +279,8 @@ struct CommandListState {
     bool waitResolve = false;
     MTL::Fence *resolveFence = nullptr;
     uint32 markerDepth = 0;
+    // Between beginNative and endNative (P27, P70, P118).
+    bool native = false;
 };
 
 // ── Shared helpers (defined in the file named) ───────────────────────────────
@@ -309,6 +311,10 @@ MTL4::ComputeCommandEncoder *computeEncoder(CommandListState &cmd);
 MTL4::RenderCommandEncoder *beginRenderEncoder(CommandListState &cmd, MTL4::RenderPassDescriptor *pass);
 // Commands.cpp: ends the open encoder, if any, carrying its barriers.
 void endEncoder(CommandListState &cmd);
+// Commands.cpp: endEncoder, and barriers still pending with no encoder open
+// (and a resolve's wait) carried by an empty encoder, so that every later
+// encoder of any kind, RI's or native code's, and later submissions see them.
+void endEncoderCarrying(CommandListState &cmd);
 // Commands.cpp: `size` bytes of command memory aligned to `alignment` (a power
 // of two, at least 16 recommended for root data), valid until the list is
 // reset.
