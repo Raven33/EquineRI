@@ -5,7 +5,6 @@
 // objects. The pointers are metal-cpp's; Objective-C code casts them to
 // `id<MTL...>` with `(__bridge id)`, as they are the same objects.
 //
-// Not yet on Metal: the import of native objects (P77).
 
 #include <RI/Metal/Backend.hpp>
 
@@ -106,5 +105,63 @@ NativeCommands beginNative(CommandList &cmd);
 // fill mode, depth clip and bias), the viewport, scissor and stencil
 // reference. Outside sections, RI's next encoder starts from its own state.
 void endNative(CommandList &cmd);
+
+// ── Import (P77, P119) ────────────────────────────────────────────────────────
+// Natively created objects as RI objects. RI holds no reference and releases
+// nothing: importing joins the object to RI's residency set, and destroying
+// the RI object only removes it from the set and forgets it (RI's own views of
+// an imported texture are released). Keep the native object alive meanwhile.
+
+// A placement heap (MTLHeapTypePlacement) with the storage mode of `kind`:
+// private for eGPU, shared for the others (best write-combined for eUpload and
+// eGPUUpload). RI maps CPU kinds through a buffer it places over the whole heap.
+Memory importMemory(Device &device, MTL::Heap *heap, MemoryKind kind);
+// At least desc.size bytes long. Mapped (contents()) unless its storage is private.
+Buffer importBuffer(Device &device, MTL::Buffer *buffer, const BufferDesc &desc);
+// A texture matching `desc` (type, pixel format, size, mips, layers, samples),
+// in private storage, with at least the MTLTextureUsage RI gives desc.usage
+// (and PixelFormatView when desc.viewFormats lists formats). No layout to
+// bring it into: Metal has none.
+Texture importTexture(Device &device, MTL::Texture *texture, const TextureDesc &desc);
+
+// Pipelines that follow RI's binding model (P114): shaders converted by Metal
+// Shader Converter with RI's root signature, or written to the same argument
+// table layout. Metal keeps state outside its pipeline objects that Vulkan and
+// D3D12 keep inside, so it is passed here. Geometry and tessellation pipelines
+// (RI's emulation) cannot be imported; an imported pipeline skips the
+// read-only depth and stencil checks (P75), as on D3D12.
+//
+// Compute: Metal takes the threadgroup size (numthreads) at each dispatch.
+Pipeline importPipeline(Device &device, MTL::ComputePipelineState *pipeline, uint32 rootDataSize,
+                        MTL::Size threadGroupSize);
+// Graphics: the render encoder state cmdSetPipeline sets, Metal's defaults
+// (and RI's clockwise front faces) when left out.
+struct NativeRenderState {
+    MTL::DepthStencilState *depthStencil = nullptr; // nullptr: no depth or stencil test
+    MTL::PrimitiveType primitiveType = MTL::PrimitiveTypeTriangle;
+    MTL::CullMode cullMode = MTL::CullModeNone;
+    MTL::Winding winding = MTL::WindingClockwise;
+    MTL::TriangleFillMode fillMode = MTL::TriangleFillModeFill;
+    MTL::DepthClipMode depthClipMode = MTL::DepthClipModeClip;
+    float depthBias = 0.0f, depthSlopeScale = 0.0f, depthBiasClamp = 0.0f;
+    uint8 stencilReference = 0;
+    // Mesh pipelines (drawn with cmdDrawMesh): the object (task) and mesh
+    // stages' threadgroup sizes; the object size is ignored without an object stage.
+    bool mesh = false;
+    MTL::Size objectThreadGroupSize{1, 1, 1};
+    MTL::Size meshThreadGroupSize{1, 1, 1};
+};
+Pipeline importPipeline(Device &device, MTL::RenderPipelineState *pipeline, uint32 rootDataSize,
+                        const NativeRenderState &state = {});
+
+// A raw heap entry (P77 (2)): Metal Shader Converter's IRDescriptorTableEntry,
+// for views RI does not model. What it points at must be resident: in RI's
+// memory, imported, or in your own residency set.
+struct NativeDescriptor {
+    uint64 gpuVA = 0;
+    uint64 textureViewID = 0;
+    uint64 metadata = 0;
+};
+void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, const NativeDescriptor &entry);
 
 } // namespace RI::Metal

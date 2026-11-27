@@ -423,6 +423,8 @@ if (TARGET EquineMetalBackend)
         metal.native_section_nested_reports
         metal.end_native_without_begin_reports
         metal.end_in_native_section_reports
+        metal.import_objects
+        metal.import_mismatched_texture_reports
         metal.visibility_pages_bounded
         # Opens a GLFW window; over SSH it is on no display and the test still runs.
         metal.screen_contents
@@ -454,6 +456,7 @@ if (TARGET EquineMetalBackend)
         "metal.native_section_nested_reports|programmer error: beginNative: a native section is already open"
         "metal.end_native_without_begin_reports|programmer error: endNative: no native section is open"
         "metal.end_in_native_section_reports|programmer error: cmdEnd: a native section is still open"
+        "metal.import_mismatched_texture_reports|programmer error: importTexture: the texture does not match desc"
     )
     if (EQUINE_VALIDATION)
         # Compiled on Metal only (P116 (2)).

@@ -299,3 +299,170 @@ EQ_TEST(metal, end_in_native_section_reports) {
     RI::Metal::beginNative(cmd);
     RI::cmdEnd(cmd);
 }
+
+// ── Import (P77, P119) ───────────────────────────────────────────────────────
+
+namespace {
+
+struct WriteRoot {
+    uint32 textureSlot;
+    uint32 width;
+    uint32 height;
+    float value;
+};
+
+} // namespace
+
+// Native heaps, a buffer and a texture, imported and used by RI's commands;
+// an imported compute pipeline (RI's own, imported again) writes the imported
+// texture through a raw heap entry; an imported graphics pipeline draws.
+// Importing joins RI's residency set, destroying the RI objects only leaves it:
+// the native objects stay valid.
+EQ_TEST(metal, import_objects) {
+    RI::Device device = createTestDevice();
+    const RI::Metal::NativeDevice nd = RI::Metal::native(device);
+    NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
+    const uint64 residentBefore = nd.residencySet->allocationCount();
+
+    // A shared placement heap as eReadback memory, a private one as eGPU memory.
+    MTL::HeapDescriptor *heapDesc = MTL::HeapDescriptor::alloc()->init();
+    heapDesc->setType(MTL::HeapTypePlacement);
+    heapDesc->setSize(1 << 20);
+    heapDesc->setResourceOptions(MTL::ResourceStorageModeShared | MTL::ResourceHazardTrackingModeUntracked);
+    MTL::Heap *sharedHeap = nd.device->newHeap(heapDesc);
+    heapDesc->setResourceOptions(MTL::ResourceStorageModePrivate | MTL::ResourceHazardTrackingModeUntracked);
+    MTL::Heap *privateHeap = nd.device->newHeap(heapDesc);
+    heapDesc->release();
+    EQ_CHECK(sharedHeap != nullptr && privateHeap != nullptr);
+    RI::Memory readbackMemory = RI::Metal::importMemory(device, sharedHeap, RI::MemoryKind::eReadback);
+    RI::Memory gpuMemory = RI::Metal::importMemory(device, privateHeap, RI::MemoryKind::eGPU);
+    EQ_CHECK(readbackMemory.mapped != nullptr && gpuMemory.mapped == nullptr);
+    EQ_CHECK(RI::Metal::native(readbackMemory) == sharedHeap);
+
+    // A native shared buffer as the copy source, a native private texture as storage.
+    MTL::Buffer *nativeBuffer = nd.device->newBuffer(4096, MTL::ResourceStorageModeShared);
+    RI::Buffer staging = RI::Metal::importBuffer(device, nativeBuffer, {.size = 4096, .usage = RI::BufferUsage::eCopySrc});
+    EQ_CHECK(staging.mapped == nativeBuffer->contents() && staging.gpuAddress == nativeBuffer->gpuAddress());
+    auto *pattern = static_cast<uint8 *>(staging.mapped);
+    for (uint32 i = 0; i < 4096; ++i) {
+        pattern[i] = static_cast<uint8>(i * 7);
+    }
+    MTL::TextureDescriptor *texDesc =
+        MTL::TextureDescriptor::texture2DDescriptor(MTL::PixelFormatRGBA32Float, 16, 16, false);
+    texDesc->setStorageMode(MTL::StorageModePrivate);
+    texDesc->setUsage(MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    MTL::Texture *nativeTexture = nd.device->newTexture(texDesc);
+    const RI::TextureDesc storageDesc{.width = 16, .height = 16, .format = RI::Format::eRGBA32Float,
+                                      .usage = RI::TextureUsage::eStorage | RI::TextureUsage::eCopySrc};
+    RI::Texture storage = RI::Metal::importTexture(device, nativeTexture, storageDesc);
+    EQ_CHECK(RI::Metal::native(storage) == nativeTexture);
+
+    // RI buffers and a render target in the imported heaps.
+    const RI::CopyLayout storageLayout = RI::copyLayout(device, storage.view);
+    RI::Buffer gpuCopy = RI::createBuffer(device, gpuMemory, 0, {.size = 4096, .usage = RI::BufferUsage::eCopySrc | RI::BufferUsage::eCopyDst});
+    const RI::TextureDesc targetDesc{.width = 16, .height = 16, .format = RI::Format::eRGBA8Unorm,
+                                     .usage = RI::TextureUsage::eRenderTarget | RI::TextureUsage::eCopySrc};
+    const RI::MemoryRequirements targetNeeds = RI::textureRequirements(device, targetDesc);
+    const uint64 targetOffset = (4096 + targetNeeds.alignment - 1) / targetNeeds.alignment * targetNeeds.alignment;
+    RI::Texture target = RI::createTexture(device, gpuMemory, targetOffset, targetDesc);
+    const RI::CopyLayout targetLayout = RI::copyLayout(device, target.view);
+    RI::Buffer back = RI::createBuffer(device, readbackMemory, 0, {.size = 4096, .usage = RI::BufferUsage::eCopyDst});
+    RI::Buffer storageBack = RI::createBuffer(device, readbackMemory, 64 << 10, {.size = storageLayout.size, .usage = RI::BufferUsage::eCopyDst});
+    RI::Buffer targetBack = RI::createBuffer(device, readbackMemory, 128 << 10, {.size = targetLayout.size, .usage = RI::BufferUsage::eCopyDst});
+
+    // RI's pipelines, imported a second time; the storage texture through a raw entry.
+    RI::DescriptorHeap heap = RI::createDescriptorHeap(device, {.resourceCount = 4});
+    RI::Metal::writeNativeDescriptor(device, heap, 3, {.textureViewID = nativeTexture->gpuResourceID()._impl});
+    const std::vector<std::byte> cs = gputest::loadShader("write_storage");
+    RI::Pipeline write = RI::createComputePipeline(device, {.shader = cs});
+    const auto *groups = write.internal.threadGroupSize;
+    RI::Pipeline importedWrite = RI::Metal::importPipeline(device, RI::Metal::native(write).compute, write.rootDataSize,
+                                                          MTL::Size(groups[0], groups[1], groups[2]));
+    const std::vector<std::byte> vs = gputest::loadShader("fullscreen_vs"), ps = gputest::loadShader("solid_ps");
+    RI::Pipeline red = RI::createGraphicsPipeline(device, {.vertex = vs, .pixel = ps, .colorFormats = {RI::Format::eRGBA8Unorm}});
+    RI::Pipeline importedRed = RI::Metal::importPipeline(device, RI::Metal::native(red).render, red.rootDataSize,
+                                                        {.depthStencil = RI::Metal::native(red).depthStencil});
+    EQ_CHECK(importedWrite.rootDataSize == sizeof(WriteRoot) && importedRed.rootDataSize == sizeof(DrawRoot));
+
+    RI::CommandList cmd = RI::createCommandList(device);
+    RI::cmdBegin(cmd);
+    RI::cmdSetHeap(cmd, heap);
+    RI::cmdCopyBuffer(cmd, staging, 0, gpuCopy, 0, 4096);
+    RI::cmdSetPipeline(cmd, importedWrite);
+    RI::Helpers::cmdSetRootData(cmd, WriteRoot{.textureSlot = 3, .width = 16, .height = 16, .value = 9.0f});
+    RI::cmdDispatch(cmd, 2, 2, 1);
+    RI::cmdBarrier(cmd, RI::Stage::eCopy | RI::Stage::eCompute, RI::Stage::eCopy);
+    RI::cmdCopyBuffer(cmd, gpuCopy, 0, back, 0, 4096);
+    RI::cmdCopyTextureToBuffer(cmd, storage.view, storageBack, 0);
+    RI::cmdBeginRendering(cmd, {.colors = {{.view = target.view, .load = RI::LoadOp::eClear}}});
+    RI::cmdSetPipeline(cmd, importedRed);
+    RI::Helpers::cmdSetRootData(cmd, DrawRoot{.color = {1, 0, 0, 1}, .depth = 0.5f});
+    RI::cmdDraw(cmd, 3);
+    RI::cmdEndRendering(cmd);
+    RI::cmdBarrier(cmd, RI::Stage::eRenderTarget, RI::Stage::eCopy);
+    RI::cmdCopyTextureToBuffer(cmd, target.view, targetBack, 0);
+    RI::cmdEnd(cmd);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, cmd));
+
+    uint32 wrong = 0;
+    const auto *copied = static_cast<const uint8 *>(back.mapped);
+    for (uint32 i = 0; i < 4096; ++i) {
+        wrong += copied[i] != static_cast<uint8>(i * 7);
+    }
+    EQ_CHECK(wrong == 0);
+    wrong = 0;
+    for (uint32 y = 0; y < 16; ++y) {
+        const auto *row = reinterpret_cast<const float *>(static_cast<const uint8 *>(storageBack.mapped) + y * storageLayout.rowPitch);
+        const auto *pixels = reinterpret_cast<const uint32 *>(static_cast<const uint8 *>(targetBack.mapped) + y * targetLayout.rowPitch);
+        for (uint32 x = 0; x < 16; ++x) {
+            wrong += row[x * 4] != float(x) || row[x * 4 + 1] != float(y) || row[x * 4 + 2] != 9.0f;
+            wrong += pixels[x] != 0xFF0000FFu;
+        }
+    }
+    EQ_CHECK(wrong == 0);
+
+    RI::destroyCommandList(device, cmd);
+    RI::destroyPipeline(device, importedRed); // forgets only
+    RI::destroyPipeline(device, importedWrite);
+    EQ_CHECK(RI::Metal::native(red).render->retainCount() >= 1);
+    RI::destroyPipeline(device, red);
+    RI::destroyPipeline(device, write);
+    RI::destroyDescriptorHeap(device, heap);
+    RI::destroyBuffer(device, targetBack);
+    RI::destroyBuffer(device, storageBack);
+    RI::destroyBuffer(device, back);
+    RI::destroyTexture(device, target);
+    RI::destroyBuffer(device, gpuCopy);
+    RI::destroyTexture(device, storage); // releases RI's view, forgets the texture
+    RI::destroyBuffer(device, staging);  // forgets only
+    RI::freeMemory(device, gpuMemory);
+    RI::freeMemory(device, readbackMemory);
+    // Nothing imported is left in RI's set once a submission commits it, and
+    // the native objects still work.
+    RI::CommandList empty = RI::createCommandList(device);
+    RI::cmdBegin(empty);
+    RI::cmdEnd(empty);
+    RI::wait(device.graphicsQueue, RI::submit(device.graphicsQueue, empty));
+    RI::destroyCommandList(device, empty);
+    EQ_CHECK(nd.residencySet->allocationCount() == residentBefore);
+    EQ_CHECK(nativeTexture->width() == 16 && static_cast<uint8 *>(nativeBuffer->contents())[1] == 7);
+    EQ_CHECK(sharedHeap->size() >= (1 << 20) && privateHeap->usedSize() == 0);
+    nativeTexture->release();
+    nativeBuffer->release();
+    privateHeap->release();
+    sharedHeap->release();
+    pool->release();
+    RI::destroyDevice(device);
+}
+
+// A texture that is not what its description says, reported in every build.
+EQ_TEST(metal, import_mismatched_texture_reports) {
+    std::signal(SIGABRT, [](int) { std::_Exit(0); });
+    RI::Device device = createTestDevice();
+    MTL::TextureDescriptor *desc = MTL::TextureDescriptor::texture2DDescriptor(MTL::PixelFormatRGBA8Unorm, 16, 16, false);
+    desc->setStorageMode(MTL::StorageModePrivate);
+    desc->setUsage(MTL::TextureUsageShaderRead);
+    MTL::Texture *texture = RI::Metal::native(device).device->newTexture(desc);
+    RI::Metal::importTexture(device, texture, {.width = 32, .height = 16, .format = RI::Format::eRGBA8Unorm,
+                                               .usage = RI::TextureUsage::eSampled});
+}

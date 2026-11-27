@@ -392,11 +392,72 @@ void destroyTexture(Device &device, Texture &texture) {
     Validation::markDiscarded(state.placements, texture.internal.id);
 #endif
     releaseView(state, texture.view);
-    if (!texture.internal.imported) { // P77: an imported texture stays the user's
-        auto *native = static_cast<MTL::Texture *>(texture.internal.texture);
+    auto *native = static_cast<MTL::Texture *>(texture.internal.texture);
+    if (texture.internal.imported) { // P77: an imported texture stays the user's
+        makeNonResident(state, native);
+    } else {
         release(native);
     }
     texture = {};
+}
+
+Texture importTexture(Device &device, MTL::Texture *texture, const TextureDesc &desc) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    DeviceState &state = *device.internal.state;
+    requireFormat(device, desc.format, "importTexture");
+    EQ_VALIDATE(Validation::checkTextureUsage(desc.format, desc.usage));
+    EQ_VALIDATE(Validation::checkTextureShape(desc));
+    // Every build: RI's views, copies and attachments follow `desc`, and Metal
+    // faults on a texture that is not what they take it for.
+    if (texture == nullptr) {
+        reportError(ErrorCategory::eProgrammerError, "importTexture: no texture");
+    }
+    MTL::TextureDescriptor *expected = newDescriptor(desc);
+    const MTL::TextureUsage usage = expected->usage();
+    const bool matches = texture->textureType() == expected->textureType() &&
+                         texture->pixelFormat() == expected->pixelFormat() && texture->width() == expected->width() &&
+                         texture->height() == expected->height() && texture->depth() == expected->depth() &&
+                         texture->mipmapLevelCount() == expected->mipmapLevelCount() &&
+                         texture->arrayLength() == expected->arrayLength() &&
+                         texture->sampleCount() == expected->sampleCount();
+    expected->release();
+    if (!matches) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "importTexture: the texture does not match desc (type, pixel format, size, mips, layers, samples)");
+    }
+    if (texture->storageMode() != MTL::StorageModePrivate) {
+        reportError(ErrorCategory::eProgrammerError, "importTexture: the texture must be in private storage, as RI's");
+    }
+    if ((texture->usage() & usage) != usage) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "importTexture: the texture lacks a MTLTextureUsage that desc.usage needs (ShaderRead for "
+                    "eSampled, ShaderWrite for eStorage, RenderTarget for attachments, PixelFormatView for "
+                    "viewFormats)");
+    }
+
+    Texture result;
+    result.shape = desc.shape;
+    result.width = desc.width;
+    result.height = desc.height;
+    result.depth = desc.depth;
+    result.layers = desc.layers;
+    result.mips = desc.mips;
+    result.samples = desc.samples;
+    result.format = desc.format;
+    result.usage = desc.usage;
+    result.internal.texture = texture;
+    result.internal.imported = true;
+    for (Format format : desc.viewFormats) {
+        result.internal.viewFormats |= formatBit(format);
+    }
+    result.internal.id = EQ_MTL_TRACK(&state);
+    // Not covered by a heap of RI's, or by one the user made resident: joins the set itself.
+    makeResident(state, texture);
+    result.view = makeView(state, result, {});
+    if (!desc.name.empty()) {
+        applyName(state, result, desc.name);
+    }
+    return result;
 }
 
 // ── Views (P73, P74) ─────────────────────────────────────────────────────────

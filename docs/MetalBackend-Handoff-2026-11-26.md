@@ -10,6 +10,13 @@ Read in this order: `ARCHITECTURE.md` (now covers three backends), `CONTEXT.md` 
 the Metal decisions and the vertex-ID rule; P27, P70, P77, P84 the native ones),
 `docs/FeatureProposal-Metal-2026-11-07.md` §11, this file, then the 2026-11-09 handoff as needed.
 
+> **Update (2026-11-27):** §3 is done. Native sections (P118, `98cd2be`) and import (P119) are
+> built on Metal, with `metal.native_section`, `metal.import_objects` and four misuse cases;
+> 157/157 with the preset, 139/139 in `build/noval`. The site pages `native/sections.md` and
+> `import.md` cover Metal. Next on Metal: the Metal 3 path (§1 "Not done"). Still not compiled
+> on Windows or Linux since 2026-11-26 (this work touched Metal files and Metal's part of `tests/CMakeLists.txt` only, plus `CONTEXT.md`
+> and the site pages).
+
 ## 1. Where things stand
 
 - Branch `metal-backend`, **pushed** (`origin/metal-backend` = `5750962`), `master` merged in

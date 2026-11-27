@@ -300,6 +300,13 @@ Q4).
 them to `id<MTL…>` with `(__bridge id)`. Internally, RI keeps `void *` and retains and releases
 explicitly, as D3D12 keeps COM pointers.
 
+**Built (2026-11-27):** native sections (P118): outside a rendering section `beginNative` hands
+over the command buffer once RI's encoder has ended, inside one the section's render encoder;
+`endNative(cmd)` takes no list; native code keeps its own residency set. Import (P119):
+`importMemory`, `importBuffer`, `importTexture`, `importPipeline` (compute with its threadgroup
+size, graphics with a `NativeRenderState`) and `writeNativeDescriptor` (a raw
+`IRDescriptorTableEntry`). Tests `metal.native_section`, `metal.import_objects`.
+
 ## 12. Later: a Metal 3 path
 
 Kept possible by the design: heaps, `IRDescriptorTableEntry` heaps, the fixed root signature and

@@ -26,6 +26,8 @@
 
 #include "DeviceState.hpp"
 
+#include <RI/Metal/Native.hpp>
+
 #include <RI/Reflection/Dxil.hpp>
 #include <RI/Validation/Checks.hpp>
 
@@ -519,6 +521,75 @@ Pipeline createGraphicsPipeline(Device &device, const GraphicsPipelineDesc &desc
     if (!desc.name.empty()) {
         applyName(state, out, desc.name);
     }
+    return out;
+}
+
+// ── Import (P77, P119) ───────────────────────────────────────────────────────
+
+Pipeline importPipeline(Device &device, MTL::ComputePipelineState *pipeline, uint32 rootDataSize,
+                        MTL::Size threadGroupSize) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    // Every build: Metal faults on a dispatch whose threadgroup exceeds the pipeline's.
+    const uint64 threads = uint64{threadGroupSize.width} * threadGroupSize.height * threadGroupSize.depth;
+    if (pipeline == nullptr || threads == 0 || threads > pipeline->maxTotalThreadsPerThreadgroup()) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "importPipeline: the threadgroup size must be at least 1 x 1 x 1 and at most the pipeline's "
+                    "maxTotalThreadsPerThreadgroup");
+    }
+    if (rootDataSize > kMaxRootDataSize || rootDataSize % 4 != 0) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("importPipeline: rootDataSize must be a multiple of 4, at most {} bytes", kMaxRootDataSize));
+    }
+    Pipeline out;
+    out.rootDataSize = rootDataSize;
+    auto &in = out.internal;
+    in.pipelineState = pipeline;
+    in.threadGroupSize[0] = static_cast<uint32>(threadGroupSize.width);
+    in.threadGroupSize[1] = static_cast<uint32>(threadGroupSize.height);
+    in.threadGroupSize[2] = static_cast<uint32>(threadGroupSize.depth);
+    in.imported = true;
+    in.id = EQ_MTL_TRACK(&state);
+    return out;
+}
+
+Pipeline importPipeline(Device &device, MTL::RenderPipelineState *pipeline, uint32 rootDataSize,
+                        const NativeRenderState &native) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    if (pipeline == nullptr) {
+        reportError(ErrorCategory::eProgrammerError, "importPipeline: no pipeline");
+    }
+    if (rootDataSize > kMaxRootDataSize || rootDataSize % 4 != 0) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("importPipeline: rootDataSize must be a multiple of 4, at most {} bytes", kMaxRootDataSize));
+    }
+    Pipeline out;
+    out.rootDataSize = rootDataSize;
+    auto &in = out.internal;
+    in.pipelineState = pipeline;
+    in.depthStencilState = native.depthStencil;
+    in.graphics = true;
+    in.mesh = native.mesh;
+    // By value: metal-cpp's MTL::Size is packed, so no pointers to it.
+    const auto copySize = [](MTL::Size size, uint32 *out) {
+        out[0] = static_cast<uint32>(std::max<NS::UInteger>(size.width, 1));
+        out[1] = static_cast<uint32>(std::max<NS::UInteger>(size.height, 1));
+        out[2] = static_cast<uint32>(std::max<NS::UInteger>(size.depth, 1));
+    };
+    copySize(native.meshThreadGroupSize, in.threadGroupSize);
+    copySize(native.objectThreadGroupSize, in.taskThreadGroupSize);
+    in.stencilReference = native.stencilReference;
+    in.primitiveType = static_cast<uint8>(native.primitiveType);
+    in.cullMode = static_cast<uint8>(native.cullMode);
+    in.winding = static_cast<uint8>(native.winding);
+    in.fillMode = static_cast<uint8>(native.fillMode);
+    in.depthClipMode = static_cast<uint8>(native.depthClipMode);
+    in.depthBias[0] = native.depthBias;
+    in.depthBias[1] = native.depthSlopeScale;
+    in.depthBias[2] = native.depthBiasClamp;
+    in.imported = true;
+    in.id = EQ_MTL_TRACK(&state);
     return out;
 }
 

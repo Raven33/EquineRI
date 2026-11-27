@@ -22,6 +22,7 @@
 
 #include "DeviceState.hpp"
 
+#include <RI/Metal/Native.hpp>
 #include <RI/Validation/Checks.hpp>
 #include <RI/Validation/Placement.hpp>
 
@@ -180,16 +181,54 @@ void freeMemory(Device &device, Memory &memory) {
 #if EQUINE_VALIDATION
     Validation::forgetMemory(state.placements, memory.internal.id);
 #endif
+    auto *whole = static_cast<MTL::Buffer *>(memory.internal.mapBuffer);
+    release(whole); // RI's, imported heap or not
+    auto *heap = static_cast<MTL::Heap *>(memory.internal.heap);
+    if (heap != nullptr) {
+        makeNonResident(state, heap);
+    }
     if (!memory.internal.imported) { // P77: an imported heap stays the user's
-        auto *whole = static_cast<MTL::Buffer *>(memory.internal.mapBuffer);
-        release(whole);
-        auto *heap = static_cast<MTL::Heap *>(memory.internal.heap);
-        if (heap != nullptr) {
-            makeNonResident(state, heap);
-        }
         release(heap);
     }
     memory = {};
+}
+
+Memory importMemory(Device &device, MTL::Heap *heap, MemoryKind kind) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    DeviceState &state = *device.internal.state;
+    // Every build: RI places buffers and textures in it, and maps CPU kinds.
+    if (heap == nullptr || heap->type() != MTL::HeapTypePlacement) {
+        reportError(ErrorCategory::eProgrammerError,
+                    "importMemory: the heap must be a placement heap (MTLHeapTypePlacement)");
+    }
+    if (kind == MemoryKind::eGPUUpload && !device.limits.gpuUploadMemory) {
+        reportError(ErrorCategory::eUnsupported,
+                    std::format("memory kind {} is not available on '{}' (see DeviceLimits::gpuUploadMemory)",
+                                nameOf(kind), device.gpu.name));
+    }
+    const MTL::StorageMode storage = kind == MemoryKind::eGPU ? MTL::StorageModePrivate : MTL::StorageModeShared;
+    if (heap->storageMode() != storage) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("importMemory: {} memory needs a heap of {} storage", nameOf(kind),
+                                kind == MemoryKind::eGPU ? "private" : "shared"));
+    }
+    Memory result;
+    result.kind = kind;
+    result.size = heap->size();
+    if (kind != MemoryKind::eGPU) {
+        MTL::Buffer *whole = heap->newBuffer(heap->size(), heap->resourceOptions(), 0);
+        if (whole == nullptr) {
+            reportError(ErrorCategory::eOutOfMemory,
+                        std::format("importMemory: Metal could not map the heap of {} bytes", heap->size()));
+        }
+        result.mapped = whole->contents();
+        result.internal.mapBuffer = whole;
+    }
+    makeResident(state, heap);
+    result.internal.heap = heap;
+    result.internal.imported = true;
+    result.internal.id = EQ_MTL_TRACK(&state);
+    return result;
 }
 
 // ── Buffers ──────────────────────────────────────────────────────────────────
@@ -261,11 +300,37 @@ void destroyBuffer(Device &device, Buffer &buffer) {
     [[maybe_unused]] DeviceState &state = *device.internal.state;
     EQ_MTL_CHECK_ALIVE(&state, buffer.internal.id, "buffer");
     EQ_MTL_UNTRACK(&state, buffer.internal.id);
-    if (!buffer.internal.imported) { // P77: an imported buffer stays the user's
-        auto *native = static_cast<MTL::Buffer *>(buffer.internal.buffer);
+    auto *native = static_cast<MTL::Buffer *>(buffer.internal.buffer);
+    if (buffer.internal.imported) { // P77: an imported buffer stays the user's
+        makeNonResident(state, native);
+    } else {
         release(native);
     }
     buffer = {};
+}
+
+Buffer importBuffer(Device &device, MTL::Buffer *buffer, const BufferDesc &desc) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    DeviceState &state = *device.internal.state;
+    // Every build: RI's commands and views would reach past its end.
+    if (buffer == nullptr || buffer->length() < desc.size) {
+        reportError(ErrorCategory::eProgrammerError,
+                    std::format("importBuffer: the buffer must hold desc.size ({} bytes)", desc.size));
+    }
+    Buffer result;
+    result.size = desc.size;
+    result.usage = desc.usage;
+    result.gpuAddress = buffer->gpuAddress();
+    result.mapped = buffer->storageMode() != MTL::StorageModePrivate ? buffer->contents() : nullptr;
+    result.internal.buffer = buffer;
+    result.internal.imported = true;
+    result.internal.id = EQ_MTL_TRACK(&state);
+    // Not covered by a heap of RI's, or by one the user made resident: joins the set itself.
+    makeResident(state, buffer);
+    if (!desc.name.empty()) {
+        applyName(state, result, desc.name);
+    }
+    return result;
 }
 
 // ── Descriptor heaps (P94, P114 (3)) ─────────────────────────────────────────
@@ -407,6 +472,16 @@ void writeSamplers(Device &device, DescriptorHeap &heap, std::span<const Sampler
 }
 
 // ── Descriptor writes (P87, P94) ─────────────────────────────────────────────
+
+void writeNativeDescriptor(Device &device, DescriptorHeap &heap, uint32 slot, const NativeDescriptor &entry) {
+    EQ_MTL_CHECK_THREAD(device.internal.state);
+    [[maybe_unused]] DeviceState &state = *device.internal.state;
+    EQ_MTL_CHECK_ALIVE(&state, heap.internal.id, "descriptor heap");
+    EQ_VALIDATE(Validation::checkSlot(slot, heap.resourceCount, "resource"));
+    static_assert(sizeof(NativeDescriptor) == sizeof(DescriptorEntry));
+    auto *entries = static_cast<DescriptorEntry *>(static_cast<MTL::Buffer *>(heap.internal.resourceBuffer)->contents());
+    entries[slot] = {.gpuVA = entry.gpuVA, .textureViewID = entry.textureViewID, .metadata = entry.metadata};
+}
 
 void writeDescriptors(Device &device, DescriptorHeap &heap, std::initializer_list<DescriptorWrite> writes) {
     EQ_MTL_CHECK_THREAD(device.internal.state);
